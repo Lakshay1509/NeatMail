@@ -3,6 +3,7 @@ import { handle } from "hono/vercel";
 import email from './email'
 import webhook from './gmail-webhook'
 import watch from './activate-watch'
+import clerk from './clerk'
 
 
 export const runtime = "nodejs";
@@ -13,7 +14,8 @@ const app = new Hono().basePath("/api");
 const routes = app
     .route('/email',email)
     .route('/gmail-webhook',webhook)
-    .route('/activate-watch',watch);
+    .route('/activate-watch',watch)
+    .route('/clerk',clerk)
 
 
 

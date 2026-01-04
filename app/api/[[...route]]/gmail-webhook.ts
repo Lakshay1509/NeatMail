@@ -43,7 +43,7 @@ const app = new Hono().post("/", async (ctx) => {
   const tokenData = tokenResponse.data[0]?.token;
 
     if (!tokenData) {
-      console.log("❌ No token found for user");
+      console.log("No token found for user");
       return ctx.json({ success: true }, 200);
     }
     console.log("✅ Token retrieved");
@@ -51,7 +51,7 @@ const app = new Hono().post("/", async (ctx) => {
     const lastHistoryId = await getLastHistoryId(emailAddress);
     
     if (!lastHistoryId || !lastHistoryId.last_history_id) {
-      console.log("⚠️ No previous historyId found, storing current one");
+      console.log("No previous historyId found, storing current one");
       await updateHistoryId(emailAddress, newHistoryId);
       return ctx.json({ success: true }, 200);
     }
@@ -60,7 +60,7 @@ const app = new Hono().post("/", async (ctx) => {
     oauth2Client.setCredentials({ access_token: tokenData });
     const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
-    console.log("🔍 Fetching history...");
+   
     const history = await gmail.users.history.list({
       userId: "me",
       startHistoryId: lastHistoryId.last_history_id,
