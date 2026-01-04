@@ -1,5 +1,6 @@
 import { createGmailDraft } from "@/lib/gmail";
 import { classifyEmail, generateEmailReply } from "@/lib/openai";
+import { isMessageProcessed, markMessageProcessed } from "@/lib/redis";
 import { getLastHistoryId, getUserToken, updateHistoryId } from "@/lib/supabase";
 import { google } from "googleapis";
 import { Hono } from "hono";
@@ -65,6 +66,11 @@ const app = new Hono().post("/", async (ctx) => {
     for (const msg of messages) {
       const messageId = msg.message?.id;
       if (!messageId) continue;
+
+      if (await isMessageProcessed(messageId)) {
+    console.log(`⏭️ Skipping duplicate: ${messageId}`);
+    continue;
+  }
 
       console.log(`\n📨 Processing message: ${messageId}`);
 
@@ -135,6 +141,7 @@ const app = new Hono().post("/", async (ctx) => {
         
         console.log(`✅ Draft created! ID: ${draft.id}`);
       }
+      await markMessageProcessed(messageId);
     }
 
     await updateHistoryId(emailAddress, String(newHistoryId));
