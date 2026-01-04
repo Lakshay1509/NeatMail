@@ -30,6 +30,25 @@ export default function Home() {
     setLoading(false);
   };
 
+  const handleActivateAutoLabel = async () => {
+  
+  try {
+    // Save token first
+    await fetch('/api/user/store-token', { method: 'POST' });
+    
+    // Activate watch
+    const response = await fetch('/api/activate-watch', { method: 'POST' });
+    const data = await response.json();
+    
+    if (data.success) {
+      alert('🎉 Auto-labeling activated! New emails will be labeled automatically.');
+    }
+  } catch (error) {
+    alert('Failed to activate');
+  }
+  
+};
+
   return (
     <main className="flex min-h-screen flex-col items-center p-24">
       <div className="w-full max-w-4xl flex justify-between items-center mb-8">
@@ -58,6 +77,13 @@ export default function Home() {
           </div>
         ))}
       </div>
+      <button
+  onClick={handleActivateAutoLabel}
+  className="bg-purple-500 text-white px-6 py-3 rounded-lg"
+>
+  Activate Auto-Labeling
+</button>
+
     </main>
   );
 }

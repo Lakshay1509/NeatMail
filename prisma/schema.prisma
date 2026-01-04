@@ -1,0 +1,22 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "./generated/prisma"
+  previewFeatures = ["multiSchema", "views"]
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["public"]
+}
+
+model user_tokens {
+  id            String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  clerk_user_id String    @unique
+  gmail_email   String    @unique
+  access_token  String
+  refresh_token String?
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  updated_at    DateTime? @default(now()) @db.Timestamp(6)
+
+  @@schema("public")
+}
