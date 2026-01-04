@@ -56,3 +56,23 @@ export async function updateHistoryId(email:string|undefined,historyId:string|un
   }
 }
 
+export async function labelColor(label:string) {
+
+  try{
+    const data = await db.tag.findUnique({
+      where:{name:label}
+    })
+
+    if (!data) {
+      throw new Error(`No color for this : ${label}`);
+    }
+
+    return data;
+
+
+  } catch(error){
+    console.error(`Error getting tag`,error);
+    throw error;
+  }
+  
+}

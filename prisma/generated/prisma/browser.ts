@@ -22,3 +22,8 @@ export * from './enums';
  * 
  */
 export type user_tokens = Prisma.user_tokensModel
+/**
+ * Model tag
+ * 
+ */
+export type tag = Prisma.tagModel

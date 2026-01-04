@@ -9,4 +9,5 @@
  * 🟢 You can import this file directly.
  */
 export type * from './models/user_tokens'
+export type * from './models/tag'
 export type * from './commonInputTypes'
