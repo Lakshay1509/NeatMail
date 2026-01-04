@@ -134,3 +134,46 @@ export async function applyLabelsToEmails(
     });
   }
 }
+
+
+export async function createGmailDraft(
+  gmail: any,
+  threadId: string,
+  messageId: string,
+  subject: string,
+  to: string,
+  draftBody: string
+) {
+  // Create RFC 2822 formatted message
+  const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+  const messageParts = [
+    'MIME-Version: 1.0',
+    `To: ${to}`,
+    `Subject: Re: ${utf8Subject}`,
+    `In-Reply-To: ${messageId}`,
+    `References: ${messageId}`,
+    'Content-Type: text/html; charset=utf-8',
+    'Content-Transfer-Encoding: 7bit',
+    '',
+    draftBody,
+  ];
+  
+  const message = messageParts.join('\n');
+  const encodedMessage = Buffer.from(message)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+
+  const draft = await gmail.users.drafts.create({
+    userId: 'me',
+    requestBody: {
+      message: {
+        raw: encodedMessage,
+        threadId: threadId,
+      },
+    },
+  });
+
+  return draft.data;
+}

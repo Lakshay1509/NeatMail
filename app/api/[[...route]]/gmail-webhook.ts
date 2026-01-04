@@ -1,4 +1,5 @@
-import { classifyEmail } from "@/lib/openai";
+import { createGmailDraft } from "@/lib/gmail";
+import { classifyEmail, generateEmailReply } from "@/lib/openai";
 import { getLastHistoryId, getUserToken, updateHistoryId } from "@/lib/supabase";
 import { google } from "googleapis";
 import { Hono } from "hono";
@@ -74,6 +75,7 @@ const app = new Hono().post("/", async (ctx) => {
 
       const emailData = {
         id: email.data.id,
+        threadId : email.data.threadId,
         subject: email.data.payload?.headers?.find(h => h.name === 'Subject')?.value || '',
         from: email.data.payload?.headers?.find(h => h.name === 'From')?.value || '',
         bodySnippet: email.data.snippet || '',
@@ -115,6 +117,24 @@ const app = new Hono().post("/", async (ctx) => {
         },
       });
       console.log("✅ Label applied successfully");
+
+      if (labelName === 'Pending Response') {
+        console.log("🤖 Generating draft response...");
+        
+        const draftBody = await generateEmailReply(emailData);
+        console.log(`✍️ Draft generated: ${draftBody.substring(0, 100)}...`);
+        
+        const draft = await createGmailDraft(
+          gmail,
+          emailData.threadId!,
+          messageId,
+          emailData.subject,
+          emailData.from,
+          draftBody
+        );
+        
+        console.log(`✅ Draft created! ID: ${draft.id}`);
+      }
     }
 
     await updateHistoryId(emailAddress, String(newHistoryId));
