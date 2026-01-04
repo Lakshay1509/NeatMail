@@ -1,18 +1,20 @@
 import { db } from "./prisma";
 
-export async function getUserToken(email: string) {
-  try {
-    const data = await db.user_tokens.findUnique({
-      where: { gmail_email: email },
-    });
+export async function getUserByEmail(email:string){
 
-    if (!data) {
-      throw new Error(`No user token found for email: ${email}`);
+  try{
+    const data = await db.user_tokens.findUnique({
+      where:{gmail_email:email}
+    })
+
+    if(!data){
+      throw new Error('No email found');
     }
 
     return data;
-  } catch (error) {
-    console.error(`Error getting user token for ${email}:`, error);
+  }
+  catch(error){
+    console.error('Error getting clerk id');
     throw error;
   }
 }

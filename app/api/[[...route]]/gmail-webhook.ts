@@ -1,32 +1,46 @@
 import { createGmailDraft } from "@/lib/gmail";
 import { classifyEmail, generateEmailReply } from "@/lib/openai";
 import { isMessageProcessed, markMessageProcessed } from "@/lib/redis";
-import { getLastHistoryId, getUserToken, updateHistoryId } from "@/lib/supabase";
+import { getLastHistoryId, getUserByEmail, updateHistoryId } from "@/lib/supabase";
+import { clerkClient } from "@clerk/nextjs/server";
 import { google } from "googleapis";
 import { Hono } from "hono";
 
 const app = new Hono().post("/", async (ctx) => {
   try {
-    console.log("📨 Webhook received");
+   
     const body = await ctx.req.json();
-    console.log("Body:", JSON.stringify(body, null, 2));
     const message = body.message;
 
     if (!message?.data) {
-      console.log("⚠️ No message data, skipping");
       return ctx.json({ success: true }, 200);
     }
 
     const decodedData = Buffer.from(message.data, "base64").toString();
-    console.log("Decoded data:", decodedData);
+    
 
     const notification = JSON.parse(decodedData);
-    console.log("Notification:", notification);
+    
 
     const { emailAddress, historyId: newHistoryId } = notification;
-    console.log(`📧 Email: ${emailAddress}, History ID: ${newHistoryId}`);
+    
+    const user = await getUserByEmail(emailAddress);
 
-    const tokenData = await getUserToken(emailAddress);
+    if(!user){
+      console.log('No user found');
+      return ctx.json({success:true},200);
+    }
+
+    const clerkUserId = user.clerk_user_id;
+
+    const client = await clerkClient();
+
+    const tokenResponse = await client.users.getUserOauthAccessToken(
+    clerkUserId,
+    'google'
+  );
+  
+  const tokenData = tokenResponse.data[0]?.token;
 
     if (!tokenData) {
       console.log("❌ No token found for user");
@@ -43,7 +57,7 @@ const app = new Hono().post("/", async (ctx) => {
     }
 
     const oauth2Client = new google.auth.OAuth2();
-    oauth2Client.setCredentials({ access_token: tokenData.access_token });
+    oauth2Client.setCredentials({ access_token: tokenData });
     const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
     console.log("🔍 Fetching history...");
