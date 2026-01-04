@@ -9,7 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.36.5",
+    "@tanstack/react-query": "^5.90.16",
+    "googleapis": "^169.0.0",
+    "hono": "^4.11.3",
     "next": "16.1.1",
+    "openai": "^6.15.0",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
