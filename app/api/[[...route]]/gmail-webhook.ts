@@ -116,7 +116,7 @@ const app = new Hono().post("/", async (ctx) => {
     console.log("✅ Label applied successfully");
   }
 
-  await updateHistoryId(emailAddress, newHistoryId);
+  await updateHistoryId(emailAddress, String(newHistoryId));
   console.log(`✅ Updated historyId to: ${newHistoryId}`);
 
   console.log("\n✨ Webhook processing complete");
