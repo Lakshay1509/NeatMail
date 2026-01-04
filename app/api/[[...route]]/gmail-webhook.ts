@@ -1,5 +1,5 @@
 import { classifyEmail } from "@/lib/openai";
-import { getUserToken } from "@/lib/supabase";
+import { getLastHistoryId, getUserToken, updateHistoryId } from "@/lib/supabase";
 import { google } from "googleapis";
 import { Hono } from "hono";
 
@@ -20,8 +20,8 @@ const app = new Hono().post("/", async (ctx) => {
   const notification = JSON.parse(decodedData);
   console.log("Notification:", notification);
 
-  const { emailAddress, historyId } = notification;
-  console.log(`📧 Email: ${emailAddress}, History ID: ${historyId}`);
+  const { emailAddress, historyId: newHistoryId } = notification;
+  console.log(`📧 Email: ${emailAddress}, History ID: ${newHistoryId}`);
 
   const tokenData = await getUserToken(emailAddress);
 
@@ -31,6 +31,14 @@ const app = new Hono().post("/", async (ctx) => {
   }
   console.log("✅ Token retrieved");
 
+  const lastHistoryId = await getLastHistoryId(emailAddress);
+  
+  if (!lastHistoryId || !lastHistoryId.last_history_id) {
+    console.log("⚠️ No previous historyId found, storing current one");
+    await updateHistoryId(emailAddress, newHistoryId);
+    return ctx.json({ success: true }, 200);
+  }
+
   const oauth2Client = new google.auth.OAuth2();
   oauth2Client.setCredentials({ access_token: tokenData.access_token });
   const gmail = google.gmail({ version: "v1", auth: oauth2Client });
@@ -38,7 +46,7 @@ const app = new Hono().post("/", async (ctx) => {
   console.log("🔍 Fetching history...");
   const history = await gmail.users.history.list({
     userId: "me",
-    startHistoryId: historyId,
+    startHistoryId: lastHistoryId.last_history_id,
     historyTypes: ["messageAdded"],
   });
 
@@ -52,15 +60,15 @@ const app = new Hono().post("/", async (ctx) => {
 
   console.log(`📬 Found ${messages.length} new messages`);
 
-  for(const msg of messages){
+  for (const msg of messages) {
     const messageId = msg.message?.id;
-    if(!messageId) continue;
+    if (!messageId) continue;
 
     console.log(`\n📨 Processing message: ${messageId}`);
 
     const email = await gmail.users.messages.get({
-      userId:'me',
-      id:messageId
+      userId: 'me',
+      id: messageId
     });
 
     const emailData = {
@@ -107,6 +115,9 @@ const app = new Hono().post("/", async (ctx) => {
     });
     console.log("✅ Label applied successfully");
   }
+
+  await updateHistoryId(emailAddress, newHistoryId);
+  console.log(`✅ Updated historyId to: ${newHistoryId}`);
 
   console.log("\n✨ Webhook processing complete");
   return ctx.json({ success: true }, 200);

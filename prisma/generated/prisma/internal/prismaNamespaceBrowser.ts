@@ -77,7 +77,8 @@ export const User_tokensScalarFieldEnum = {
   access_token: 'access_token',
   refresh_token: 'refresh_token',
   created_at: 'created_at',
-  updated_at: 'updated_at'
+  updated_at: 'updated_at',
+  last_history_id: 'last_history_id'
 } as const
 
 export type User_tokensScalarFieldEnum = (typeof User_tokensScalarFieldEnum)[keyof typeof User_tokensScalarFieldEnum]

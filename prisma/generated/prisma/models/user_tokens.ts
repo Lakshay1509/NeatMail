@@ -32,6 +32,7 @@ export type User_tokensMinAggregateOutputType = {
   refresh_token: string | null
   created_at: Date | null
   updated_at: Date | null
+  last_history_id: string | null
 }
 
 export type User_tokensMaxAggregateOutputType = {
@@ -42,6 +43,7 @@ export type User_tokensMaxAggregateOutputType = {
   refresh_token: string | null
   created_at: Date | null
   updated_at: Date | null
+  last_history_id: string | null
 }
 
 export type User_tokensCountAggregateOutputType = {
@@ -52,6 +54,7 @@ export type User_tokensCountAggregateOutputType = {
   refresh_token: number
   created_at: number
   updated_at: number
+  last_history_id: number
   _all: number
 }
 
@@ -64,6 +67,7 @@ export type User_tokensMinAggregateInputType = {
   refresh_token?: true
   created_at?: true
   updated_at?: true
+  last_history_id?: true
 }
 
 export type User_tokensMaxAggregateInputType = {
@@ -74,6 +78,7 @@ export type User_tokensMaxAggregateInputType = {
   refresh_token?: true
   created_at?: true
   updated_at?: true
+  last_history_id?: true
 }
 
 export type User_tokensCountAggregateInputType = {
@@ -84,6 +89,7 @@ export type User_tokensCountAggregateInputType = {
   refresh_token?: true
   created_at?: true
   updated_at?: true
+  last_history_id?: true
   _all?: true
 }
 
@@ -167,6 +173,7 @@ export type User_tokensGroupByOutputType = {
   refresh_token: string | null
   created_at: Date | null
   updated_at: Date | null
+  last_history_id: string | null
   _count: User_tokensCountAggregateOutputType | null
   _min: User_tokensMinAggregateOutputType | null
   _max: User_tokensMaxAggregateOutputType | null
@@ -198,6 +205,7 @@ export type user_tokensWhereInput = {
   refresh_token?: Prisma.StringNullableFilter<"user_tokens"> | string | null
   created_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
   updated_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
+  last_history_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
 }
 
 export type user_tokensOrderByWithRelationInput = {
@@ -208,6 +216,7 @@ export type user_tokensOrderByWithRelationInput = {
   refresh_token?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrderInput | Prisma.SortOrder
   updated_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  last_history_id?: Prisma.SortOrderInput | Prisma.SortOrder
 }
 
 export type user_tokensWhereUniqueInput = Prisma.AtLeast<{
@@ -221,6 +230,7 @@ export type user_tokensWhereUniqueInput = Prisma.AtLeast<{
   refresh_token?: Prisma.StringNullableFilter<"user_tokens"> | string | null
   created_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
   updated_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
+  last_history_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
 }, "id" | "clerk_user_id" | "gmail_email">
 
 export type user_tokensOrderByWithAggregationInput = {
@@ -231,6 +241,7 @@ export type user_tokensOrderByWithAggregationInput = {
   refresh_token?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrderInput | Prisma.SortOrder
   updated_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  last_history_id?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.user_tokensCountOrderByAggregateInput
   _max?: Prisma.user_tokensMaxOrderByAggregateInput
   _min?: Prisma.user_tokensMinOrderByAggregateInput
@@ -247,6 +258,7 @@ export type user_tokensScalarWhereWithAggregatesInput = {
   refresh_token?: Prisma.StringNullableWithAggregatesFilter<"user_tokens"> | string | null
   created_at?: Prisma.DateTimeNullableWithAggregatesFilter<"user_tokens"> | Date | string | null
   updated_at?: Prisma.DateTimeNullableWithAggregatesFilter<"user_tokens"> | Date | string | null
+  last_history_id?: Prisma.StringNullableWithAggregatesFilter<"user_tokens"> | string | null
 }
 
 export type user_tokensCreateInput = {
@@ -257,6 +269,7 @@ export type user_tokensCreateInput = {
   refresh_token?: string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  last_history_id?: string | null
 }
 
 export type user_tokensUncheckedCreateInput = {
@@ -267,6 +280,7 @@ export type user_tokensUncheckedCreateInput = {
   refresh_token?: string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  last_history_id?: string | null
 }
 
 export type user_tokensUpdateInput = {
@@ -277,6 +291,7 @@ export type user_tokensUpdateInput = {
   refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type user_tokensUncheckedUpdateInput = {
@@ -287,6 +302,7 @@ export type user_tokensUncheckedUpdateInput = {
   refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type user_tokensCreateManyInput = {
@@ -297,6 +313,7 @@ export type user_tokensCreateManyInput = {
   refresh_token?: string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
+  last_history_id?: string | null
 }
 
 export type user_tokensUpdateManyMutationInput = {
@@ -307,6 +324,7 @@ export type user_tokensUpdateManyMutationInput = {
   refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type user_tokensUncheckedUpdateManyInput = {
@@ -317,6 +335,7 @@ export type user_tokensUncheckedUpdateManyInput = {
   refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type user_tokensCountOrderByAggregateInput = {
@@ -327,6 +346,7 @@ export type user_tokensCountOrderByAggregateInput = {
   refresh_token?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
+  last_history_id?: Prisma.SortOrder
 }
 
 export type user_tokensMaxOrderByAggregateInput = {
@@ -337,6 +357,7 @@ export type user_tokensMaxOrderByAggregateInput = {
   refresh_token?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
+  last_history_id?: Prisma.SortOrder
 }
 
 export type user_tokensMinOrderByAggregateInput = {
@@ -347,6 +368,7 @@ export type user_tokensMinOrderByAggregateInput = {
   refresh_token?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
+  last_history_id?: Prisma.SortOrder
 }
 
 export type StringFieldUpdateOperationsInput = {
@@ -371,6 +393,7 @@ export type user_tokensSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   refresh_token?: boolean
   created_at?: boolean
   updated_at?: boolean
+  last_history_id?: boolean
 }, ExtArgs["result"]["user_tokens"]>
 
 export type user_tokensSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -381,6 +404,7 @@ export type user_tokensSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   refresh_token?: boolean
   created_at?: boolean
   updated_at?: boolean
+  last_history_id?: boolean
 }, ExtArgs["result"]["user_tokens"]>
 
 export type user_tokensSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -391,6 +415,7 @@ export type user_tokensSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   refresh_token?: boolean
   created_at?: boolean
   updated_at?: boolean
+  last_history_id?: boolean
 }, ExtArgs["result"]["user_tokens"]>
 
 export type user_tokensSelectScalar = {
@@ -401,9 +426,10 @@ export type user_tokensSelectScalar = {
   refresh_token?: boolean
   created_at?: boolean
   updated_at?: boolean
+  last_history_id?: boolean
 }
 
-export type user_tokensOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clerk_user_id" | "gmail_email" | "access_token" | "refresh_token" | "created_at" | "updated_at", ExtArgs["result"]["user_tokens"]>
+export type user_tokensOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clerk_user_id" | "gmail_email" | "access_token" | "refresh_token" | "created_at" | "updated_at" | "last_history_id", ExtArgs["result"]["user_tokens"]>
 
 export type $user_tokensPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "user_tokens"
@@ -416,6 +442,7 @@ export type $user_tokensPayload<ExtArgs extends runtime.Types.Extensions.Interna
     refresh_token: string | null
     created_at: Date | null
     updated_at: Date | null
+    last_history_id: string | null
   }, ExtArgs["result"]["user_tokens"]>
   composites: {}
 }
@@ -846,6 +873,7 @@ export interface user_tokensFieldRefs {
   readonly refresh_token: Prisma.FieldRef<"user_tokens", 'String'>
   readonly created_at: Prisma.FieldRef<"user_tokens", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"user_tokens", 'DateTime'>
+  readonly last_history_id: Prisma.FieldRef<"user_tokens", 'String'>
 }
     
 

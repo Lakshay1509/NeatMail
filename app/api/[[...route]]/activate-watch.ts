@@ -1,13 +1,17 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { updateHistoryId } from "@/lib/supabase";
+import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import { google } from "googleapis";
 import { Hono } from "hono";
 
 const app = new Hono().post("/", async (ctx) => {
   const { userId } = await auth();
+  const user = await currentUser();
 
   if (!userId) {
     return ctx.json({ error: "Unauthorized" }, 401);
   }
+
+  const email = user?.emailAddresses[0].emailAddress;
 
   const client = await clerkClient();
 
@@ -31,6 +35,11 @@ const app = new Hono().post("/", async (ctx) => {
     userId: "me",
     requestBody: watchRequest,
   });
+
+  const initialHistoryId = response.data.historyId;
+await updateHistoryId(email, initialHistoryId);
+
+console.log(`✅ Watch activated with historyId: ${initialHistoryId}`);
 
   if (!response) {
     return ctx.json({ error: "Error setting up watch" }, 500);
