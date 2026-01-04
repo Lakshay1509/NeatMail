@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import { handle } from "hono/vercel";
 import email from './email'
-import user from './user'
 import webhook from './gmail-webhook'
 import watch from './activate-watch'
 
@@ -13,7 +12,6 @@ export const dynamicParams = true;
 const app = new Hono().basePath("/api");
 const routes = app
     .route('/email',email)
-    .route('/user',user)
     .route('/gmail-webhook',webhook)
     .route('/activate-watch',watch);
 

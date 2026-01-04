@@ -74,8 +74,6 @@ export const User_tokensScalarFieldEnum = {
   id: 'id',
   clerk_user_id: 'clerk_user_id',
   gmail_email: 'gmail_email',
-  access_token: 'access_token',
-  refresh_token: 'refresh_token',
   created_at: 'created_at',
   updated_at: 'updated_at',
   last_history_id: 'last_history_id'

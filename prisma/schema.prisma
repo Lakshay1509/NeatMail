@@ -13,8 +13,6 @@ model user_tokens {
   id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   clerk_user_id   String    @unique
   gmail_email     String    @unique
-  access_token    String
-  refresh_token   String?
   created_at      DateTime? @default(now()) @db.Timestamp(6)
   updated_at      DateTime? @default(now()) @db.Timestamp(6)
   last_history_id String?

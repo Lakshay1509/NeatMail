@@ -23,7 +23,7 @@ const config: runtime.GetPrismaClientConfig = {
   "clientVersion": "7.2.0",
   "engineVersion": "0c8ef2ce45c83248ab3df073180d5eda9e8be7a3",
   "activeProvider": "postgresql",
-  "inlineSchema": "generator client {\n  provider        = \"prisma-client\"\n  output          = \"./generated/prisma\"\n  previewFeatures = [\"multiSchema\", \"views\"]\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  schemas  = [\"public\"]\n}\n\nmodel user_tokens {\n  id              String    @id @default(dbgenerated(\"uuid_generate_v4()\")) @db.Uuid\n  clerk_user_id   String    @unique\n  gmail_email     String    @unique\n  access_token    String\n  refresh_token   String?\n  created_at      DateTime? @default(now()) @db.Timestamp(6)\n  updated_at      DateTime? @default(now()) @db.Timestamp(6)\n  last_history_id String?\n\n  @@schema(\"public\")\n}\n",
+  "inlineSchema": "generator client {\n  provider        = \"prisma-client\"\n  output          = \"./generated/prisma\"\n  previewFeatures = [\"multiSchema\", \"views\"]\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  schemas  = [\"public\"]\n}\n\nmodel user_tokens {\n  id              String    @id @default(dbgenerated(\"uuid_generate_v4()\")) @db.Uuid\n  clerk_user_id   String    @unique\n  gmail_email     String    @unique\n  created_at      DateTime? @default(now()) @db.Timestamp(6)\n  updated_at      DateTime? @default(now()) @db.Timestamp(6)\n  last_history_id String?\n\n  @@schema(\"public\")\n}\n",
   "runtimeDataModel": {
     "models": {},
     "enums": {},
@@ -31,7 +31,7 @@ const config: runtime.GetPrismaClientConfig = {
   }
 }
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"user_tokens\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"clerk_user_id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"gmail_email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"access_token\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"refresh_token\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"created_at\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updated_at\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"last_history_id\",\"kind\":\"scalar\",\"type\":\"String\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"user_tokens\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"clerk_user_id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"gmail_email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"created_at\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"updated_at\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"last_history_id\",\"kind\":\"scalar\",\"type\":\"String\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
 
 async function decodeBase64AsWasm(wasmBase64: string): Promise<WebAssembly.Module> {
   const { Buffer } = await import('node:buffer')

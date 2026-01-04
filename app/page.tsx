@@ -33,8 +33,6 @@ export default function Home() {
   const handleActivateAutoLabel = async () => {
   
   try {
-    // Save token first
-    await fetch('/api/user/store-token', { method: 'POST' });
     
     // Activate watch
     const response = await fetch('/api/activate-watch', { method: 'POST' });

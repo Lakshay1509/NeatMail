@@ -28,8 +28,6 @@ export type User_tokensMinAggregateOutputType = {
   id: string | null
   clerk_user_id: string | null
   gmail_email: string | null
-  access_token: string | null
-  refresh_token: string | null
   created_at: Date | null
   updated_at: Date | null
   last_history_id: string | null
@@ -39,8 +37,6 @@ export type User_tokensMaxAggregateOutputType = {
   id: string | null
   clerk_user_id: string | null
   gmail_email: string | null
-  access_token: string | null
-  refresh_token: string | null
   created_at: Date | null
   updated_at: Date | null
   last_history_id: string | null
@@ -50,8 +46,6 @@ export type User_tokensCountAggregateOutputType = {
   id: number
   clerk_user_id: number
   gmail_email: number
-  access_token: number
-  refresh_token: number
   created_at: number
   updated_at: number
   last_history_id: number
@@ -63,8 +57,6 @@ export type User_tokensMinAggregateInputType = {
   id?: true
   clerk_user_id?: true
   gmail_email?: true
-  access_token?: true
-  refresh_token?: true
   created_at?: true
   updated_at?: true
   last_history_id?: true
@@ -74,8 +66,6 @@ export type User_tokensMaxAggregateInputType = {
   id?: true
   clerk_user_id?: true
   gmail_email?: true
-  access_token?: true
-  refresh_token?: true
   created_at?: true
   updated_at?: true
   last_history_id?: true
@@ -85,8 +75,6 @@ export type User_tokensCountAggregateInputType = {
   id?: true
   clerk_user_id?: true
   gmail_email?: true
-  access_token?: true
-  refresh_token?: true
   created_at?: true
   updated_at?: true
   last_history_id?: true
@@ -169,8 +157,6 @@ export type User_tokensGroupByOutputType = {
   id: string
   clerk_user_id: string
   gmail_email: string
-  access_token: string
-  refresh_token: string | null
   created_at: Date | null
   updated_at: Date | null
   last_history_id: string | null
@@ -201,8 +187,6 @@ export type user_tokensWhereInput = {
   id?: Prisma.UuidFilter<"user_tokens"> | string
   clerk_user_id?: Prisma.StringFilter<"user_tokens"> | string
   gmail_email?: Prisma.StringFilter<"user_tokens"> | string
-  access_token?: Prisma.StringFilter<"user_tokens"> | string
-  refresh_token?: Prisma.StringNullableFilter<"user_tokens"> | string | null
   created_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
   updated_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
   last_history_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
@@ -212,8 +196,6 @@ export type user_tokensOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   clerk_user_id?: Prisma.SortOrder
   gmail_email?: Prisma.SortOrder
-  access_token?: Prisma.SortOrder
-  refresh_token?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrderInput | Prisma.SortOrder
   updated_at?: Prisma.SortOrderInput | Prisma.SortOrder
   last_history_id?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -226,8 +208,6 @@ export type user_tokensWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.user_tokensWhereInput | Prisma.user_tokensWhereInput[]
   OR?: Prisma.user_tokensWhereInput[]
   NOT?: Prisma.user_tokensWhereInput | Prisma.user_tokensWhereInput[]
-  access_token?: Prisma.StringFilter<"user_tokens"> | string
-  refresh_token?: Prisma.StringNullableFilter<"user_tokens"> | string | null
   created_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
   updated_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
   last_history_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
@@ -237,8 +217,6 @@ export type user_tokensOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   clerk_user_id?: Prisma.SortOrder
   gmail_email?: Prisma.SortOrder
-  access_token?: Prisma.SortOrder
-  refresh_token?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrderInput | Prisma.SortOrder
   updated_at?: Prisma.SortOrderInput | Prisma.SortOrder
   last_history_id?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -254,8 +232,6 @@ export type user_tokensScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"user_tokens"> | string
   clerk_user_id?: Prisma.StringWithAggregatesFilter<"user_tokens"> | string
   gmail_email?: Prisma.StringWithAggregatesFilter<"user_tokens"> | string
-  access_token?: Prisma.StringWithAggregatesFilter<"user_tokens"> | string
-  refresh_token?: Prisma.StringNullableWithAggregatesFilter<"user_tokens"> | string | null
   created_at?: Prisma.DateTimeNullableWithAggregatesFilter<"user_tokens"> | Date | string | null
   updated_at?: Prisma.DateTimeNullableWithAggregatesFilter<"user_tokens"> | Date | string | null
   last_history_id?: Prisma.StringNullableWithAggregatesFilter<"user_tokens"> | string | null
@@ -265,8 +241,6 @@ export type user_tokensCreateInput = {
   id?: string
   clerk_user_id: string
   gmail_email: string
-  access_token: string
-  refresh_token?: string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
   last_history_id?: string | null
@@ -276,8 +250,6 @@ export type user_tokensUncheckedCreateInput = {
   id?: string
   clerk_user_id: string
   gmail_email: string
-  access_token: string
-  refresh_token?: string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
   last_history_id?: string | null
@@ -287,8 +259,6 @@ export type user_tokensUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   clerk_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   gmail_email?: Prisma.StringFieldUpdateOperationsInput | string
-  access_token?: Prisma.StringFieldUpdateOperationsInput | string
-  refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -298,8 +268,6 @@ export type user_tokensUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   clerk_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   gmail_email?: Prisma.StringFieldUpdateOperationsInput | string
-  access_token?: Prisma.StringFieldUpdateOperationsInput | string
-  refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -309,8 +277,6 @@ export type user_tokensCreateManyInput = {
   id?: string
   clerk_user_id: string
   gmail_email: string
-  access_token: string
-  refresh_token?: string | null
   created_at?: Date | string | null
   updated_at?: Date | string | null
   last_history_id?: string | null
@@ -320,8 +286,6 @@ export type user_tokensUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   clerk_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   gmail_email?: Prisma.StringFieldUpdateOperationsInput | string
-  access_token?: Prisma.StringFieldUpdateOperationsInput | string
-  refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -331,8 +295,6 @@ export type user_tokensUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   clerk_user_id?: Prisma.StringFieldUpdateOperationsInput | string
   gmail_email?: Prisma.StringFieldUpdateOperationsInput | string
-  access_token?: Prisma.StringFieldUpdateOperationsInput | string
-  refresh_token?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -342,8 +304,6 @@ export type user_tokensCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   clerk_user_id?: Prisma.SortOrder
   gmail_email?: Prisma.SortOrder
-  access_token?: Prisma.SortOrder
-  refresh_token?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrder
@@ -353,8 +313,6 @@ export type user_tokensMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   clerk_user_id?: Prisma.SortOrder
   gmail_email?: Prisma.SortOrder
-  access_token?: Prisma.SortOrder
-  refresh_token?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrder
@@ -364,8 +322,6 @@ export type user_tokensMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   clerk_user_id?: Prisma.SortOrder
   gmail_email?: Prisma.SortOrder
-  access_token?: Prisma.SortOrder
-  refresh_token?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrder
@@ -375,12 +331,12 @@ export type StringFieldUpdateOperationsInput = {
   set?: string
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
-}
-
 export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
+}
+
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null
 }
 
 
@@ -389,8 +345,6 @@ export type user_tokensSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   id?: boolean
   clerk_user_id?: boolean
   gmail_email?: boolean
-  access_token?: boolean
-  refresh_token?: boolean
   created_at?: boolean
   updated_at?: boolean
   last_history_id?: boolean
@@ -400,8 +354,6 @@ export type user_tokensSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   id?: boolean
   clerk_user_id?: boolean
   gmail_email?: boolean
-  access_token?: boolean
-  refresh_token?: boolean
   created_at?: boolean
   updated_at?: boolean
   last_history_id?: boolean
@@ -411,8 +363,6 @@ export type user_tokensSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   id?: boolean
   clerk_user_id?: boolean
   gmail_email?: boolean
-  access_token?: boolean
-  refresh_token?: boolean
   created_at?: boolean
   updated_at?: boolean
   last_history_id?: boolean
@@ -422,14 +372,12 @@ export type user_tokensSelectScalar = {
   id?: boolean
   clerk_user_id?: boolean
   gmail_email?: boolean
-  access_token?: boolean
-  refresh_token?: boolean
   created_at?: boolean
   updated_at?: boolean
   last_history_id?: boolean
 }
 
-export type user_tokensOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clerk_user_id" | "gmail_email" | "access_token" | "refresh_token" | "created_at" | "updated_at" | "last_history_id", ExtArgs["result"]["user_tokens"]>
+export type user_tokensOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clerk_user_id" | "gmail_email" | "created_at" | "updated_at" | "last_history_id", ExtArgs["result"]["user_tokens"]>
 
 export type $user_tokensPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "user_tokens"
@@ -438,8 +386,6 @@ export type $user_tokensPayload<ExtArgs extends runtime.Types.Extensions.Interna
     id: string
     clerk_user_id: string
     gmail_email: string
-    access_token: string
-    refresh_token: string | null
     created_at: Date | null
     updated_at: Date | null
     last_history_id: string | null
@@ -869,8 +815,6 @@ export interface user_tokensFieldRefs {
   readonly id: Prisma.FieldRef<"user_tokens", 'String'>
   readonly clerk_user_id: Prisma.FieldRef<"user_tokens", 'String'>
   readonly gmail_email: Prisma.FieldRef<"user_tokens", 'String'>
-  readonly access_token: Prisma.FieldRef<"user_tokens", 'String'>
-  readonly refresh_token: Prisma.FieldRef<"user_tokens", 'String'>
   readonly created_at: Prisma.FieldRef<"user_tokens", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"user_tokens", 'DateTime'>
   readonly last_history_id: Prisma.FieldRef<"user_tokens", 'String'>
