@@ -190,6 +190,7 @@ export type user_tokensWhereInput = {
   created_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
   updated_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
   last_history_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
+  user_tags?: Prisma.User_tagsListRelationFilter
 }
 
 export type user_tokensOrderByWithRelationInput = {
@@ -199,6 +200,7 @@ export type user_tokensOrderByWithRelationInput = {
   created_at?: Prisma.SortOrderInput | Prisma.SortOrder
   updated_at?: Prisma.SortOrderInput | Prisma.SortOrder
   last_history_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  user_tags?: Prisma.user_tagsOrderByRelationAggregateInput
 }
 
 export type user_tokensWhereUniqueInput = Prisma.AtLeast<{
@@ -211,6 +213,7 @@ export type user_tokensWhereUniqueInput = Prisma.AtLeast<{
   created_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
   updated_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
   last_history_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
+  user_tags?: Prisma.User_tagsListRelationFilter
 }, "id" | "clerk_user_id" | "gmail_email">
 
 export type user_tokensOrderByWithAggregationInput = {
@@ -244,6 +247,7 @@ export type user_tokensCreateInput = {
   created_at?: Date | string | null
   updated_at?: Date | string | null
   last_history_id?: string | null
+  user_tags?: Prisma.user_tagsCreateNestedManyWithoutUser_tokensInput
 }
 
 export type user_tokensUncheckedCreateInput = {
@@ -253,6 +257,7 @@ export type user_tokensUncheckedCreateInput = {
   created_at?: Date | string | null
   updated_at?: Date | string | null
   last_history_id?: string | null
+  user_tags?: Prisma.user_tagsUncheckedCreateNestedManyWithoutUser_tokensInput
 }
 
 export type user_tokensUpdateInput = {
@@ -262,6 +267,7 @@ export type user_tokensUpdateInput = {
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  user_tags?: Prisma.user_tagsUpdateManyWithoutUser_tokensNestedInput
 }
 
 export type user_tokensUncheckedUpdateInput = {
@@ -271,6 +277,7 @@ export type user_tokensUncheckedUpdateInput = {
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  user_tags?: Prisma.user_tagsUncheckedUpdateManyWithoutUser_tokensNestedInput
 }
 
 export type user_tokensCreateManyInput = {
@@ -327,6 +334,11 @@ export type user_tokensMinOrderByAggregateInput = {
   last_history_id?: Prisma.SortOrder
 }
 
+export type User_tokensScalarRelationFilter = {
+  is?: Prisma.user_tokensWhereInput
+  isNot?: Prisma.user_tokensWhereInput
+}
+
 export type StringFieldUpdateOperationsInput = {
   set?: string
 }
@@ -339,6 +351,101 @@ export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
 }
 
+export type user_tokensCreateNestedOneWithoutUser_tagsInput = {
+  create?: Prisma.XOR<Prisma.user_tokensCreateWithoutUser_tagsInput, Prisma.user_tokensUncheckedCreateWithoutUser_tagsInput>
+  connectOrCreate?: Prisma.user_tokensCreateOrConnectWithoutUser_tagsInput
+  connect?: Prisma.user_tokensWhereUniqueInput
+}
+
+export type user_tokensUpdateOneRequiredWithoutUser_tagsNestedInput = {
+  create?: Prisma.XOR<Prisma.user_tokensCreateWithoutUser_tagsInput, Prisma.user_tokensUncheckedCreateWithoutUser_tagsInput>
+  connectOrCreate?: Prisma.user_tokensCreateOrConnectWithoutUser_tagsInput
+  upsert?: Prisma.user_tokensUpsertWithoutUser_tagsInput
+  connect?: Prisma.user_tokensWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.user_tokensUpdateToOneWithWhereWithoutUser_tagsInput, Prisma.user_tokensUpdateWithoutUser_tagsInput>, Prisma.user_tokensUncheckedUpdateWithoutUser_tagsInput>
+}
+
+export type user_tokensCreateWithoutUser_tagsInput = {
+  id?: string
+  clerk_user_id: string
+  gmail_email: string
+  created_at?: Date | string | null
+  updated_at?: Date | string | null
+  last_history_id?: string | null
+}
+
+export type user_tokensUncheckedCreateWithoutUser_tagsInput = {
+  id?: string
+  clerk_user_id: string
+  gmail_email: string
+  created_at?: Date | string | null
+  updated_at?: Date | string | null
+  last_history_id?: string | null
+}
+
+export type user_tokensCreateOrConnectWithoutUser_tagsInput = {
+  where: Prisma.user_tokensWhereUniqueInput
+  create: Prisma.XOR<Prisma.user_tokensCreateWithoutUser_tagsInput, Prisma.user_tokensUncheckedCreateWithoutUser_tagsInput>
+}
+
+export type user_tokensUpsertWithoutUser_tagsInput = {
+  update: Prisma.XOR<Prisma.user_tokensUpdateWithoutUser_tagsInput, Prisma.user_tokensUncheckedUpdateWithoutUser_tagsInput>
+  create: Prisma.XOR<Prisma.user_tokensCreateWithoutUser_tagsInput, Prisma.user_tokensUncheckedCreateWithoutUser_tagsInput>
+  where?: Prisma.user_tokensWhereInput
+}
+
+export type user_tokensUpdateToOneWithWhereWithoutUser_tagsInput = {
+  where?: Prisma.user_tokensWhereInput
+  data: Prisma.XOR<Prisma.user_tokensUpdateWithoutUser_tagsInput, Prisma.user_tokensUncheckedUpdateWithoutUser_tagsInput>
+}
+
+export type user_tokensUpdateWithoutUser_tagsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  clerk_user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  gmail_email?: Prisma.StringFieldUpdateOperationsInput | string
+  created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+}
+
+export type user_tokensUncheckedUpdateWithoutUser_tagsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  clerk_user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  gmail_email?: Prisma.StringFieldUpdateOperationsInput | string
+  created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  updated_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+}
+
+
+/**
+ * Count Type User_tokensCountOutputType
+ */
+
+export type User_tokensCountOutputType = {
+  user_tags: number
+}
+
+export type User_tokensCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  user_tags?: boolean | User_tokensCountOutputTypeCountUser_tagsArgs
+}
+
+/**
+ * User_tokensCountOutputType without action
+ */
+export type User_tokensCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the User_tokensCountOutputType
+   */
+  select?: Prisma.User_tokensCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * User_tokensCountOutputType without action
+ */
+export type User_tokensCountOutputTypeCountUser_tagsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.user_tagsWhereInput
+}
 
 
 export type user_tokensSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -348,6 +455,8 @@ export type user_tokensSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   created_at?: boolean
   updated_at?: boolean
   last_history_id?: boolean
+  user_tags?: boolean | Prisma.user_tokens$user_tagsArgs<ExtArgs>
+  _count?: boolean | Prisma.User_tokensCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user_tokens"]>
 
 export type user_tokensSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -378,10 +487,18 @@ export type user_tokensSelectScalar = {
 }
 
 export type user_tokensOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clerk_user_id" | "gmail_email" | "created_at" | "updated_at" | "last_history_id", ExtArgs["result"]["user_tokens"]>
+export type user_tokensInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  user_tags?: boolean | Prisma.user_tokens$user_tagsArgs<ExtArgs>
+  _count?: boolean | Prisma.User_tokensCountOutputTypeDefaultArgs<ExtArgs>
+}
+export type user_tokensIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type user_tokensIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
 
 export type $user_tokensPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "user_tokens"
-  objects: {}
+  objects: {
+    user_tags: Prisma.$user_tagsPayload<ExtArgs>[]
+  }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     clerk_user_id: string
@@ -783,6 +900,7 @@ readonly fields: user_tokensFieldRefs;
  */
 export interface Prisma__user_tokensClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  user_tags<T extends Prisma.user_tokens$user_tagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user_tokens$user_tagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$user_tagsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -835,6 +953,10 @@ export type user_tokensFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.I
    */
   omit?: Prisma.user_tokensOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.user_tokensInclude<ExtArgs> | null
+  /**
    * Filter, which user_tokens to fetch.
    */
   where: Prisma.user_tokensWhereUniqueInput
@@ -853,6 +975,10 @@ export type user_tokensFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Exten
    */
   omit?: Prisma.user_tokensOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.user_tokensInclude<ExtArgs> | null
+  /**
    * Filter, which user_tokens to fetch.
    */
   where: Prisma.user_tokensWhereUniqueInput
@@ -870,6 +996,10 @@ export type user_tokensFindFirstArgs<ExtArgs extends runtime.Types.Extensions.In
    * Omit specific fields from the user_tokens
    */
   omit?: Prisma.user_tokensOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.user_tokensInclude<ExtArgs> | null
   /**
    * Filter, which user_tokens to fetch.
    */
@@ -919,6 +1049,10 @@ export type user_tokensFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Extens
    */
   omit?: Prisma.user_tokensOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.user_tokensInclude<ExtArgs> | null
+  /**
    * Filter, which user_tokens to fetch.
    */
   where?: Prisma.user_tokensWhereInput
@@ -967,6 +1101,10 @@ export type user_tokensFindManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    */
   omit?: Prisma.user_tokensOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.user_tokensInclude<ExtArgs> | null
+  /**
    * Filter, which user_tokens to fetch.
    */
   where?: Prisma.user_tokensWhereInput
@@ -1009,6 +1147,10 @@ export type user_tokensCreateArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Omit specific fields from the user_tokens
    */
   omit?: Prisma.user_tokensOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.user_tokensInclude<ExtArgs> | null
   /**
    * The data needed to create a user_tokens.
    */
@@ -1057,6 +1199,10 @@ export type user_tokensUpdateArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Omit specific fields from the user_tokens
    */
   omit?: Prisma.user_tokensOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.user_tokensInclude<ExtArgs> | null
   /**
    * The data needed to update a user_tokens.
    */
@@ -1124,6 +1270,10 @@ export type user_tokensUpsertArgs<ExtArgs extends runtime.Types.Extensions.Inter
    */
   omit?: Prisma.user_tokensOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.user_tokensInclude<ExtArgs> | null
+  /**
    * The filter to search for the user_tokens to update in case it exists.
    */
   where: Prisma.user_tokensWhereUniqueInput
@@ -1150,6 +1300,10 @@ export type user_tokensDeleteArgs<ExtArgs extends runtime.Types.Extensions.Inter
    */
   omit?: Prisma.user_tokensOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.user_tokensInclude<ExtArgs> | null
+  /**
    * Filter which user_tokens to delete.
    */
   where: Prisma.user_tokensWhereUniqueInput
@@ -1170,6 +1324,30 @@ export type user_tokensDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.I
 }
 
 /**
+ * user_tokens.user_tags
+ */
+export type user_tokens$user_tagsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the user_tags
+   */
+  select?: Prisma.user_tagsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the user_tags
+   */
+  omit?: Prisma.user_tagsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.user_tagsInclude<ExtArgs> | null
+  where?: Prisma.user_tagsWhereInput
+  orderBy?: Prisma.user_tagsOrderByWithRelationInput | Prisma.user_tagsOrderByWithRelationInput[]
+  cursor?: Prisma.user_tagsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.User_tagsScalarFieldEnum | Prisma.User_tagsScalarFieldEnum[]
+}
+
+/**
  * user_tokens without action
  */
 export type user_tokensDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1181,4 +1359,8 @@ export type user_tokensDefaultArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Omit specific fields from the user_tokens
    */
   omit?: Prisma.user_tokensOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.user_tokensInclude<ExtArgs> | null
 }

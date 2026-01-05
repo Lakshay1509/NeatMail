@@ -385,7 +385,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   user_tokens: 'user_tokens',
-  tag: 'tag'
+  tag: 'tag',
+  user_tags: 'user_tags'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -401,7 +402,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user_tokens" | "tag"
+    modelProps: "user_tokens" | "tag" | "user_tags"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -553,6 +554,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    user_tags: {
+      payload: Prisma.$user_tagsPayload<ExtArgs>
+      fields: Prisma.user_tagsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.user_tagsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_tagsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.user_tagsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_tagsPayload>
+        }
+        findFirst: {
+          args: Prisma.user_tagsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_tagsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.user_tagsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_tagsPayload>
+        }
+        findMany: {
+          args: Prisma.user_tagsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_tagsPayload>[]
+        }
+        create: {
+          args: Prisma.user_tagsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_tagsPayload>
+        }
+        createMany: {
+          args: Prisma.user_tagsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.user_tagsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_tagsPayload>[]
+        }
+        delete: {
+          args: Prisma.user_tagsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_tagsPayload>
+        }
+        update: {
+          args: Prisma.user_tagsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_tagsPayload>
+        }
+        deleteMany: {
+          args: Prisma.user_tagsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.user_tagsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.user_tagsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_tagsPayload>[]
+        }
+        upsert: {
+          args: Prisma.user_tagsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$user_tagsPayload>
+        }
+        aggregate: {
+          args: Prisma.User_tagsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUser_tags>
+        }
+        groupBy: {
+          args: Prisma.user_tagsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.User_tagsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.user_tagsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.User_tagsCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -612,6 +687,15 @@ export const TagScalarFieldEnum = {
 } as const
 
 export type TagScalarFieldEnum = (typeof TagScalarFieldEnum)[keyof typeof TagScalarFieldEnum]
+
+
+export const User_tagsScalarFieldEnum = {
+  user_id: 'user_id',
+  tag_id: 'tag_id',
+  created_at: 'created_at'
+} as const
+
+export type User_tagsScalarFieldEnum = (typeof User_tagsScalarFieldEnum)[keyof typeof User_tagsScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -782,6 +866,7 @@ export type PrismaClientOptions = ({
 export type GlobalOmitConfig = {
   user_tokens?: Prisma.user_tokensOmit
   tag?: Prisma.tagOmit
+  user_tags?: Prisma.user_tagsOmit
 }
 
 /* Types for Logging */

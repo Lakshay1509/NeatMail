@@ -4,6 +4,7 @@ import email from './email'
 import webhook from './gmail-webhook'
 import watch from './activate-watch'
 import clerk from './clerk'
+import tags from './tags'
 
 
 export const runtime = "nodejs";
@@ -16,6 +17,7 @@ const routes = app
     .route('/gmail-webhook',webhook)
     .route('/activate-watch',watch)
     .route('/clerk',clerk)
+    .route('/tags',tags)
 
 
 

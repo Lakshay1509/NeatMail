@@ -52,7 +52,8 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   user_tokens: 'user_tokens',
-  tag: 'tag'
+  tag: 'tag',
+  user_tags: 'user_tags'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -91,6 +92,15 @@ export const TagScalarFieldEnum = {
 } as const
 
 export type TagScalarFieldEnum = (typeof TagScalarFieldEnum)[keyof typeof TagScalarFieldEnum]
+
+
+export const User_tagsScalarFieldEnum = {
+  user_id: 'user_id',
+  tag_id: 'tag_id',
+  created_at: 'created_at'
+} as const
+
+export type User_tagsScalarFieldEnum = (typeof User_tagsScalarFieldEnum)[keyof typeof User_tagsScalarFieldEnum]
 
 
 export const SortOrder = {

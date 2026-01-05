@@ -10,21 +10,36 @@ datasource db {
 }
 
 model user_tokens {
-  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  clerk_user_id   String    @unique
-  gmail_email     String    @unique
-  created_at      DateTime? @default(now()) @db.Timestamp(6)
-  updated_at      DateTime? @default(now()) @db.Timestamp(6)
+  id              String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  clerk_user_id   String      @unique
+  gmail_email     String      @unique
+  created_at      DateTime?   @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?   @default(now()) @db.Timestamp(6)
   last_history_id String?
+  user_tags       user_tags[]
 
   @@schema("public")
 }
 
 model tag {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name       String   @unique
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  color      String   @unique
+  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String      @unique
+  created_at DateTime    @default(now()) @db.Timestamptz(6)
+  color      String      @unique
+  user_tags  user_tags[]
 
+  @@schema("public")
+}
+
+model user_tags {
+  user_id     String
+  tag_id      String      @db.Uuid
+  created_at  DateTime?   @default(now()) @db.Timestamptz(6)
+  tag         tag         @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "user_tags_tag_fkey")
+  user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade, onUpdate: NoAction, map: "user_tags_user_fkey")
+
+  @@id([user_id, tag_id])
+  @@index([tag_id], map: "idx_user_tags_tag_id")
+  @@index([user_id], map: "idx_user_tags_user_id")
   @@schema("public")
 }

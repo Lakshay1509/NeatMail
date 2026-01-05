@@ -49,3 +49,8 @@ export type user_tokens = Prisma.user_tokensModel
  * 
  */
 export type tag = Prisma.tagModel
+/**
+ * Model user_tags
+ * 
+ */
+export type user_tags = Prisma.user_tagsModel

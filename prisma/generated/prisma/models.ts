@@ -10,4 +10,5 @@
  */
 export type * from './models/user_tokens'
 export type * from './models/tag'
+export type * from './models/user_tags'
 export type * from './commonInputTypes'
