@@ -4,6 +4,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import "./globals.css";
 import Navbar from "../components/Navbar";
 import { QueryProviders } from "@/providers/QueryProvider";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,6 +33,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <QueryProviders>
+          <Toaster richColors theme="light"/>
         <Navbar/>
         {children}
         </QueryProviders>
