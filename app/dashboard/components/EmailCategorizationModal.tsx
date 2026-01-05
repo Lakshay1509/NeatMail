@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogDescription, DialogFooter } 
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { addTagstoUser } from "@/features/tags/use-add-tag-user"
+import { addWatch } from "@/features/watch/use-post-watch"
 
 const CATEGORIES = [
 	{ name: 'Action Needed', color: '#cc3a21', description: 'Emails you need to respond to' },
@@ -26,7 +27,7 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 	
 	const [selectedCategories, setSelectedCategories] = useState<string[]>([])
     const mutation = addTagstoUser();
-
+	const watchMutation = addWatch();
 	const toggleCategory = (categoryName: string) => {
 		setSelectedCategories(prev =>
 			prev.includes(categoryName)
@@ -38,6 +39,9 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
     const handleSubmit = async()=>{
         await mutation.mutateAsync({tags:selectedCategories});
         onOpenChange(false);
+
+		await watchMutation.mutateAsync({});
+		
     }
 
 	return (
