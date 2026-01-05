@@ -86,7 +86,8 @@ const app = new Hono().post("/", async (ctx) => {
         continue;
       }
 
-     
+      // Mark as processed immediately to prevent race conditions
+      await markMessageProcessed(messageId);
 
       const email = await gmail.users.messages.get({
         userId: "me",
@@ -163,7 +164,6 @@ const app = new Hono().post("/", async (ctx) => {
 
         
       }
-      await markMessageProcessed(messageId);
     }
 
     await updateHistoryId(emailAddress, String(newHistoryId));
