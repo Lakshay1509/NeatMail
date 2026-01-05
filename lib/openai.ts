@@ -64,7 +64,7 @@ Write a concise, professional reply that:
 Only provide the email body, no subject line.`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4.1-nano",
+    model: "gpt-4o-mini",
     messages: [
       {
         role: "system",
