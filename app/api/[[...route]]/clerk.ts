@@ -42,8 +42,12 @@ const app = new Hono().post("/webhook", async (ctx) => {
   if (eventType === "user.created") {
     const { id, email_addresses } = evt.data;
 
-    const data = await db.user_tokens.create({
-      data: {
+    const data = await db.user_tokens.upsert({
+      where: { clerk_user_id: id },
+      update: {
+        gmail_email: email_addresses[0]?.email_address,
+      },
+      create: {
         clerk_user_id: id,
         gmail_email: email_addresses[0]?.email_address,
       },
@@ -56,9 +60,13 @@ const app = new Hono().post("/webhook", async (ctx) => {
 
   if (eventType === "user.updated") {
     const { id, email_addresses } = evt.data;
-    const data = await db.user_tokens.update({
+    const data = await db.user_tokens.upsert({
       where: { clerk_user_id: id },
-      data: { gmail_email: email_addresses[0]?.email_address },
+      update: { gmail_email: email_addresses[0]?.email_address },
+      create: {
+        clerk_user_id: id,
+        gmail_email: email_addresses[0]?.email_address,
+      },
     });
 
     if (!data) {
