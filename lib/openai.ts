@@ -23,10 +23,23 @@ export async function classifyEmail(email: {
   const messages = [
     {
       role: "system" as const,
-      content: `You are an email classifier. Classify the email into exactly one of these categories:
-${tagNames}.
-If none of the categories fit, return an empty string for the category.
-Respond ONLY with valid JSON: {"category": "chosen category"}.`,
+      content: `
+You are an email classification system.
+
+Your task is to classify the given email into exactly ONE category from the list below:
+${tagNames}
+
+Rules:
+- Choose ONLY from the provided categories.
+- If the email does NOT clearly fit any category, return an empty string "".
+- Do NOT invent new categories.
+- Match the category name EXACTLY as provided.
+- Return ONLY valid JSON.
+- Do NOT include explanations, comments, or extra text.
+
+Output format (strict):
+{"category":"<category name or empty string>"}
+`,
     },
     {
       role: "user" as const,
