@@ -3,6 +3,7 @@ import { classifyEmail, generateEmailReply } from "@/lib/openai";
 import { isMessageProcessed, markMessageProcessed } from "@/lib/redis";
 import {
   getLastHistoryId,
+  getTagsUser,
   getUserByEmail,
   labelColor,
   updateHistoryId,
@@ -10,6 +11,7 @@ import {
 import { clerkClient } from "@clerk/nextjs/server";
 import { google } from "googleapis";
 import { Hono } from "hono";
+
 
 const app = new Hono().post("/", async (ctx) => {
   try {
@@ -106,11 +108,19 @@ const app = new Hono().post("/", async (ctx) => {
         bodySnippet: email.data.snippet || "",
       };
 
+      const tagsOfUser = await getTagsUser(clerkUserId);
      
-     
-      const labelName = await classifyEmail(emailData);
+      const labelName = await classifyEmail(emailData,tagsOfUser);
+
+       if(labelName===''){
+        console.log(`No label assigned for message: ${messageId}`);
+        continue;
+      }
 
       const colourofLabel = await labelColor(labelName);
+      
+     
+     
 
     
       const labelsResponse = await gmail.users.labels.list({ userId: "me" });

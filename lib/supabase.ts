@@ -76,3 +76,30 @@ export async function labelColor(label:string) {
   }
   
 }
+
+export async function getTagsUser(id:string){
+  try{
+    const data = await db.user_tags.findMany({
+      where:{
+        user_id:id
+      },
+      include:{
+        tag:{
+          select:{
+            name:true
+          }
+        }
+      }
+    })
+
+    if (!data) {
+      throw new Error(`No label for this : ${id}`);
+    }
+
+    return data;
+
+  }catch(error){
+    console.error(`Error getting tags for this id`);
+    throw error
+  }
+}

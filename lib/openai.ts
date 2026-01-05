@@ -4,16 +4,28 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!, 
 });
 
+export type UserTag = ({
+  tag: {
+      name: string;
+  };
+} & {
+  created_at: Date | null;
+  user_id: string;
+  tag_id: string;
+});
+
 export async function classifyEmail(email: {
   subject: string;
   from: string;
   bodySnippet: string;
-}): Promise<string> {
+}, tags: UserTag[]): Promise<string> {
+  const tagNames = tags.map(t => `"${t.tag.name}"`).join(", ");
   const messages = [
     {
       role: "system" as const,
       content: `You are an email classifier. Classify the email into exactly one of these categories:
-"Action Needed", "Read only", "Discussion", "Automated alerts", "Event update", "Pending Response", "Resolved", "Marketing".
+${tagNames}.
+If none of the categories fit, return an empty string for the category.
 Respond ONLY with valid JSON: {"category": "chosen category"}.`,
     },
     {
