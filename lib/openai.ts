@@ -25,7 +25,7 @@ Snippet: ${email.bodySnippet}`,
   ];
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5-nano",
+    model: "gpt-4.1-nano",
     messages,
     response_format: { type: "json_object" },
     max_completion_tokens: 20, // ✅ FIX
@@ -64,7 +64,7 @@ Write a concise, professional reply that:
 Only provide the email body, no subject line.`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4.1",
+    model: "gpt-4.1-nano",
     messages: [
       {
         role: "system",
