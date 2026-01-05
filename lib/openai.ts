@@ -18,7 +18,7 @@ export async function classifyEmail(email: { subject: string; from: string; body
   ];
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: "gpt-5-nano",
     messages,
     response_format: { type: 'json_object' },
     max_tokens: 20,
@@ -56,7 +56,7 @@ Write a concise, professional reply that:
 Only provide the email body, no subject line.`;
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini', // or 'gpt-4o' for better quality
+    model: "gpt-4.1", 
     messages: [
       {
         role: 'system',
