@@ -36,12 +36,16 @@ export async function getLastHistoryId(email:string){
   }
 }
 
-export async function updateHistoryId(email:string|undefined,historyId:string|undefined|null){
+export async function updateHistoryId(email:string|undefined,historyId:string|undefined|null,activated:boolean){
   try {
+    
     const data = await db.user_tokens.update({
       where:{gmail_email:email},
       data:{
-        last_history_id:historyId
+        last_history_id:historyId,
+        watch_activated:activated,
+        updated_at: new Date().toISOString()
+
       }
     })
 

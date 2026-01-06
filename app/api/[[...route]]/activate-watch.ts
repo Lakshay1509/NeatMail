@@ -38,9 +38,9 @@ const app = new Hono().post("/", async (ctx) => {
     });
 
     const initialHistoryId = response.data.historyId;
-await updateHistoryId(email, initialHistoryId);
+    await updateHistoryId(email, initialHistoryId, true);
 
-console.log(`✅ Watch activated with historyId: ${initialHistoryId}`);
+    console.log(`✅ Watch activated with historyId: ${initialHistoryId}`);
 
     if (!response) {
       return ctx.json({ error: "Error setting up watch" }, 500);
@@ -54,6 +54,56 @@ console.log(`✅ Watch activated with historyId: ${initialHistoryId}`);
     console.error("❌ Error activating watch:", error);
     return ctx.json({ error: "Failed to activate watch", details: error instanceof Error ? error.message : "Unknown error" }, 500);
   }
-});
+})
+
+.post('/deactivate',async(ctx)=>{
+  try{
+    const { userId } = await auth();
+    const user = await currentUser();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const email = user?.emailAddresses[0].emailAddress;
+
+    const client = await clerkClient();
+
+    const tokenResponse = await client.users.getUserOauthAccessToken(
+      userId,
+      "google"
+    );
+
+    const accessToken = tokenResponse.data[0]?.token;
+
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({ access_token: accessToken });
+    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+    const response = await gmail.users.stop({
+      userId:'me'
+    })
+
+    
+    await updateHistoryId(email, null, false);
+
+    console.log("✅ Watch deactivated");
+
+    if (!response) {
+      return ctx.json({ error: "Error stopping watch" }, 500);
+    }
+
+    return ctx.json(
+      { success: true},
+      200
+    );
+
+  }catch(error){
+    console.error("❌ Error deactivating watch:", error);
+    return ctx.json({ error: "Failed to deactivate watch", details: error instanceof Error ? error.message : "Unknown error" }, 500);
+
+  }
+
+})
 
 export default app;

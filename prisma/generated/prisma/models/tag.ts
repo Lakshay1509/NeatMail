@@ -174,6 +174,7 @@ export type tagWhereInput = {
   name?: Prisma.StringFilter<"tag"> | string
   created_at?: Prisma.DateTimeFilter<"tag"> | Date | string
   color?: Prisma.StringFilter<"tag"> | string
+  email_tracked?: Prisma.Email_trackedListRelationFilter
   user_tags?: Prisma.User_tagsListRelationFilter
 }
 
@@ -182,6 +183,7 @@ export type tagOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   color?: Prisma.SortOrder
+  email_tracked?: Prisma.email_trackedOrderByRelationAggregateInput
   user_tags?: Prisma.user_tagsOrderByRelationAggregateInput
 }
 
@@ -193,6 +195,7 @@ export type tagWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.tagWhereInput[]
   NOT?: Prisma.tagWhereInput | Prisma.tagWhereInput[]
   created_at?: Prisma.DateTimeFilter<"tag"> | Date | string
+  email_tracked?: Prisma.Email_trackedListRelationFilter
   user_tags?: Prisma.User_tagsListRelationFilter
 }, "id" | "name" | "color">
 
@@ -221,6 +224,7 @@ export type tagCreateInput = {
   name: string
   created_at?: Date | string
   color: string
+  email_tracked?: Prisma.email_trackedCreateNestedManyWithoutTagInput
   user_tags?: Prisma.user_tagsCreateNestedManyWithoutTagInput
 }
 
@@ -229,6 +233,7 @@ export type tagUncheckedCreateInput = {
   name: string
   created_at?: Date | string
   color: string
+  email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutTagInput
   user_tags?: Prisma.user_tagsUncheckedCreateNestedManyWithoutTagInput
 }
 
@@ -237,6 +242,7 @@ export type tagUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   color?: Prisma.StringFieldUpdateOperationsInput | string
+  email_tracked?: Prisma.email_trackedUpdateManyWithoutTagNestedInput
   user_tags?: Prisma.user_tagsUpdateManyWithoutTagNestedInput
 }
 
@@ -245,6 +251,7 @@ export type tagUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   color?: Prisma.StringFieldUpdateOperationsInput | string
+  email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutTagNestedInput
   user_tags?: Prisma.user_tagsUncheckedUpdateManyWithoutTagNestedInput
 }
 
@@ -313,11 +320,26 @@ export type tagUpdateOneRequiredWithoutUser_tagsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.tagUpdateToOneWithWhereWithoutUser_tagsInput, Prisma.tagUpdateWithoutUser_tagsInput>, Prisma.tagUncheckedUpdateWithoutUser_tagsInput>
 }
 
+export type tagCreateNestedOneWithoutEmail_trackedInput = {
+  create?: Prisma.XOR<Prisma.tagCreateWithoutEmail_trackedInput, Prisma.tagUncheckedCreateWithoutEmail_trackedInput>
+  connectOrCreate?: Prisma.tagCreateOrConnectWithoutEmail_trackedInput
+  connect?: Prisma.tagWhereUniqueInput
+}
+
+export type tagUpdateOneRequiredWithoutEmail_trackedNestedInput = {
+  create?: Prisma.XOR<Prisma.tagCreateWithoutEmail_trackedInput, Prisma.tagUncheckedCreateWithoutEmail_trackedInput>
+  connectOrCreate?: Prisma.tagCreateOrConnectWithoutEmail_trackedInput
+  upsert?: Prisma.tagUpsertWithoutEmail_trackedInput
+  connect?: Prisma.tagWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.tagUpdateToOneWithWhereWithoutEmail_trackedInput, Prisma.tagUpdateWithoutEmail_trackedInput>, Prisma.tagUncheckedUpdateWithoutEmail_trackedInput>
+}
+
 export type tagCreateWithoutUser_tagsInput = {
   id?: string
   name: string
   created_at?: Date | string
   color: string
+  email_tracked?: Prisma.email_trackedCreateNestedManyWithoutTagInput
 }
 
 export type tagUncheckedCreateWithoutUser_tagsInput = {
@@ -325,6 +347,7 @@ export type tagUncheckedCreateWithoutUser_tagsInput = {
   name: string
   created_at?: Date | string
   color: string
+  email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutTagInput
 }
 
 export type tagCreateOrConnectWithoutUser_tagsInput = {
@@ -348,6 +371,7 @@ export type tagUpdateWithoutUser_tagsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   color?: Prisma.StringFieldUpdateOperationsInput | string
+  email_tracked?: Prisma.email_trackedUpdateManyWithoutTagNestedInput
 }
 
 export type tagUncheckedUpdateWithoutUser_tagsInput = {
@@ -355,6 +379,55 @@ export type tagUncheckedUpdateWithoutUser_tagsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   color?: Prisma.StringFieldUpdateOperationsInput | string
+  email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutTagNestedInput
+}
+
+export type tagCreateWithoutEmail_trackedInput = {
+  id?: string
+  name: string
+  created_at?: Date | string
+  color: string
+  user_tags?: Prisma.user_tagsCreateNestedManyWithoutTagInput
+}
+
+export type tagUncheckedCreateWithoutEmail_trackedInput = {
+  id?: string
+  name: string
+  created_at?: Date | string
+  color: string
+  user_tags?: Prisma.user_tagsUncheckedCreateNestedManyWithoutTagInput
+}
+
+export type tagCreateOrConnectWithoutEmail_trackedInput = {
+  where: Prisma.tagWhereUniqueInput
+  create: Prisma.XOR<Prisma.tagCreateWithoutEmail_trackedInput, Prisma.tagUncheckedCreateWithoutEmail_trackedInput>
+}
+
+export type tagUpsertWithoutEmail_trackedInput = {
+  update: Prisma.XOR<Prisma.tagUpdateWithoutEmail_trackedInput, Prisma.tagUncheckedUpdateWithoutEmail_trackedInput>
+  create: Prisma.XOR<Prisma.tagCreateWithoutEmail_trackedInput, Prisma.tagUncheckedCreateWithoutEmail_trackedInput>
+  where?: Prisma.tagWhereInput
+}
+
+export type tagUpdateToOneWithWhereWithoutEmail_trackedInput = {
+  where?: Prisma.tagWhereInput
+  data: Prisma.XOR<Prisma.tagUpdateWithoutEmail_trackedInput, Prisma.tagUncheckedUpdateWithoutEmail_trackedInput>
+}
+
+export type tagUpdateWithoutEmail_trackedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  color?: Prisma.StringFieldUpdateOperationsInput | string
+  user_tags?: Prisma.user_tagsUpdateManyWithoutTagNestedInput
+}
+
+export type tagUncheckedUpdateWithoutEmail_trackedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  color?: Prisma.StringFieldUpdateOperationsInput | string
+  user_tags?: Prisma.user_tagsUncheckedUpdateManyWithoutTagNestedInput
 }
 
 
@@ -363,10 +436,12 @@ export type tagUncheckedUpdateWithoutUser_tagsInput = {
  */
 
 export type TagCountOutputType = {
+  email_tracked: number
   user_tags: number
 }
 
 export type TagCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  email_tracked?: boolean | TagCountOutputTypeCountEmail_trackedArgs
   user_tags?: boolean | TagCountOutputTypeCountUser_tagsArgs
 }
 
@@ -383,6 +458,13 @@ export type TagCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensio
 /**
  * TagCountOutputType without action
  */
+export type TagCountOutputTypeCountEmail_trackedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.email_trackedWhereInput
+}
+
+/**
+ * TagCountOutputType without action
+ */
 export type TagCountOutputTypeCountUser_tagsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.user_tagsWhereInput
 }
@@ -393,6 +475,7 @@ export type tagSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   name?: boolean
   created_at?: boolean
   color?: boolean
+  email_tracked?: boolean | Prisma.tag$email_trackedArgs<ExtArgs>
   user_tags?: boolean | Prisma.tag$user_tagsArgs<ExtArgs>
   _count?: boolean | Prisma.TagCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["tag"]>
@@ -420,6 +503,7 @@ export type tagSelectScalar = {
 
 export type tagOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "created_at" | "color", ExtArgs["result"]["tag"]>
 export type tagInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  email_tracked?: boolean | Prisma.tag$email_trackedArgs<ExtArgs>
   user_tags?: boolean | Prisma.tag$user_tagsArgs<ExtArgs>
   _count?: boolean | Prisma.TagCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -429,6 +513,7 @@ export type tagIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
 export type $tagPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "tag"
   objects: {
+    email_tracked: Prisma.$email_trackedPayload<ExtArgs>[]
     user_tags: Prisma.$user_tagsPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -830,6 +915,7 @@ readonly fields: tagFieldRefs;
  */
 export interface Prisma__tagClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  email_tracked<T extends Prisma.tag$email_trackedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.tag$email_trackedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$email_trackedPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   user_tags<T extends Prisma.tag$user_tagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.tag$user_tagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$user_tagsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1249,6 +1335,30 @@ export type tagDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    * Limit how many tags to delete.
    */
   limit?: number
+}
+
+/**
+ * tag.email_tracked
+ */
+export type tag$email_trackedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the email_tracked
+   */
+  select?: Prisma.email_trackedSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the email_tracked
+   */
+  omit?: Prisma.email_trackedOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.email_trackedInclude<ExtArgs> | null
+  where?: Prisma.email_trackedWhereInput
+  orderBy?: Prisma.email_trackedOrderByWithRelationInput | Prisma.email_trackedOrderByWithRelationInput[]
+  cursor?: Prisma.email_trackedWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Email_trackedScalarFieldEnum | Prisma.Email_trackedScalarFieldEnum[]
 }
 
 /**

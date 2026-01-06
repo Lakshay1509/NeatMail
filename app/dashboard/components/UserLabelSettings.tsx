@@ -6,43 +6,88 @@ import { useGetUserTags } from "@/features/tags/use-get-user-tags"
 import { CATEGORIES } from "./EmailCategorizationModal";
 import { useEffect, useState } from "react";
 import { addTagstoUser } from "@/features/tags/use-add-tag-user";
+import { useGetUserWatch } from "@/features/user/use-get-watch";
+import { addWatch } from "@/features/watch/use-post-watch";
+import { deleteWatch } from "@/features/watch/use-delete-watch";
 
 
 const UserLabelSettings = () => {
 
-    const {data,isLoading,isError} = useGetUserTags();
-    const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-        const mutation = addTagstoUser();
-
-        useEffect(() => {
-            if (data) {
-                
-                const existingTags = data.data.map((tag) => tag.tag.name); 
-                setSelectedCategories(existingTags);
-            }
-        }, [data]);
-        
-        const toggleCategory = (categoryName: string) => {
-            setSelectedCategories(prev =>
-                prev.includes(categoryName)
-                    ? prev.filter(c => c !== categoryName)
-                    : [...prev, categoryName]
-            )
-        }
-
-        const isValid = selectedCategories.length >= 3;
-    
-        const handleSubmit = async()=>{
-            if (!isValid) return;
-            await mutation.mutateAsync({tags:selectedCategories});
-            
-        }
-	
+	const { data, isLoading, isError } = useGetUserTags();
+	const { data: watchData, isLoading: watchLoading } = useGetUserWatch();
+	const mutation = addTagstoUser();
+	const addWatchMutation = addWatch();
+	const deleteWatchMutation = deleteWatch();
+	const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+	const [watch,setWatch] = useState<boolean>();
 	
 
-  return (
-    <div className="w-full max-w-full">
-        
+	useEffect(() => {
+		if (data) {
+
+			const existingTags = data.data.map((tag) => tag.tag.name);
+			setSelectedCategories(existingTags);
+		}
+
+		if(watchData){
+			setWatch(watchData.data.watch_activated)
+		}
+	}, [data, watchData]);
+
+	const toggleCategory = (categoryName: string) => {
+		setSelectedCategories(prev =>
+			prev.includes(categoryName)
+				? prev.filter(c => c !== categoryName)
+				: [...prev, categoryName]
+		)
+	}
+
+	const isValid = selectedCategories.length >= 3;
+
+	const handleSubmit = async () => {
+		if (!isValid) return;
+		await mutation.mutateAsync({ tags: selectedCategories });
+
+		if(watch){
+			await addWatchMutation.mutateAsync({});
+		}
+
+		if(!watch){
+			await deleteWatchMutation.mutateAsync({});
+		}
+
+	}
+	
+
+
+
+	return (
+		<div className="w-full max-w-full">
+
+			<div className="bg-white mb-8 border-b border-gray-100 pb-8">
+				<div className="flex items-start justify-between">
+					<div>
+						<h2 className="text-lg font-semibold text-gray-900 mb-2">Monitor Inbox</h2>
+						<p className="text-gray-600 text-sm md:text-base max-w-2xl">
+							Automatically watch incoming emails and categorize them based on your selected preferences below. When enabled, new emails will be processed in real-time.
+						</p>
+					</div>
+					<div className="flex flex-col items-end gap-3">
+						<div className="flex items-center gap-2 pt-1">
+							<span className="text-sm font-medium text-gray-700">
+								{watch ? 'Active' : 'Inactive'}
+							</span>
+							<Checkbox
+								checked={watch}
+								onCheckedChange={(checked) => setWatch(!!checked)}
+								className="w-5 h-5 border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+							/>
+						</div>
+						
+					</div>
+				</div>
+			</div>
+
 			<div className="bg-white ">
 				<div className="mb-8">
 					<h2 className="text-lg font-semibold text-gray-900 mb-2">Category Preferences</h2>
@@ -64,7 +109,7 @@ const UserLabelSettings = () => {
 							<div key={category.name} className="grid grid-cols-[auto_1fr] gap-x-6 items-center group hover:bg-gray-50 p-3 rounded-lg transition-colors -mx-3">
 								<div className="flex justify-center w-24">
 									<Checkbox
-										checked={selectedCategories.includes(category.name) }
+										checked={selectedCategories.includes(category.name)}
 										onCheckedChange={() => toggleCategory(category.name)}
 										className="w-5 h-5 border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
 									/>
@@ -84,9 +129,9 @@ const UserLabelSettings = () => {
 				</div>
 
 				<div className="mt-10 pt-6 border-t border-gray-100 flex justify-end">
-					<Button 
-						className="bg-blue-600 hover:bg-blue-700 text-white min-w-[150px] shadow-sm" 
-						onClick={handleSubmit} 
+					<Button
+						className="bg-blue-600 hover:bg-blue-700 text-white min-w-[150px] shadow-sm"
+						onClick={handleSubmit}
 						disabled={mutation.isPending || !isValid}
 					>
 						{mutation.isPending ? 'Saving...' : isValid ? 'Save Preferences' : `Select ${3 - selectedCategories.length} more`}
@@ -94,7 +139,7 @@ const UserLabelSettings = () => {
 				</div>
 			</div>
 		</div>
-  )
+	)
 }
 
 export default UserLabelSettings

@@ -386,7 +386,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   user_tokens: 'user_tokens',
   tag: 'tag',
-  user_tags: 'user_tags'
+  user_tags: 'user_tags',
+  email_tracked: 'email_tracked'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -402,7 +403,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user_tokens" | "tag" | "user_tags"
+    modelProps: "user_tokens" | "tag" | "user_tags" | "email_tracked"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -628,6 +629,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    email_tracked: {
+      payload: Prisma.$email_trackedPayload<ExtArgs>
+      fields: Prisma.email_trackedFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.email_trackedFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_trackedPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.email_trackedFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_trackedPayload>
+        }
+        findFirst: {
+          args: Prisma.email_trackedFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_trackedPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.email_trackedFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_trackedPayload>
+        }
+        findMany: {
+          args: Prisma.email_trackedFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_trackedPayload>[]
+        }
+        create: {
+          args: Prisma.email_trackedCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_trackedPayload>
+        }
+        createMany: {
+          args: Prisma.email_trackedCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.email_trackedCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_trackedPayload>[]
+        }
+        delete: {
+          args: Prisma.email_trackedDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_trackedPayload>
+        }
+        update: {
+          args: Prisma.email_trackedUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_trackedPayload>
+        }
+        deleteMany: {
+          args: Prisma.email_trackedDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.email_trackedUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.email_trackedUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_trackedPayload>[]
+        }
+        upsert: {
+          args: Prisma.email_trackedUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$email_trackedPayload>
+        }
+        aggregate: {
+          args: Prisma.Email_trackedAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateEmail_tracked>
+        }
+        groupBy: {
+          args: Prisma.email_trackedGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Email_trackedGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.email_trackedCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Email_trackedCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -673,7 +748,8 @@ export const User_tokensScalarFieldEnum = {
   gmail_email: 'gmail_email',
   created_at: 'created_at',
   updated_at: 'updated_at',
-  last_history_id: 'last_history_id'
+  last_history_id: 'last_history_id',
+  watch_activated: 'watch_activated'
 } as const
 
 export type User_tokensScalarFieldEnum = (typeof User_tokensScalarFieldEnum)[keyof typeof User_tokensScalarFieldEnum]
@@ -696,6 +772,16 @@ export const User_tagsScalarFieldEnum = {
 } as const
 
 export type User_tagsScalarFieldEnum = (typeof User_tagsScalarFieldEnum)[keyof typeof User_tagsScalarFieldEnum]
+
+
+export const Email_trackedScalarFieldEnum = {
+  user_id: 'user_id',
+  tag_id: 'tag_id',
+  message_id: 'message_id',
+  created_at: 'created_at'
+} as const
+
+export type Email_trackedScalarFieldEnum = (typeof Email_trackedScalarFieldEnum)[keyof typeof Email_trackedScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -753,6 +839,13 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
  * Reference to a field of type 'DateTime[]'
  */
 export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -867,6 +960,7 @@ export type GlobalOmitConfig = {
   user_tokens?: Prisma.user_tokensOmit
   tag?: Prisma.tagOmit
   user_tags?: Prisma.user_tagsOmit
+  email_tracked?: Prisma.email_trackedOmit
 }
 
 /* Types for Logging */

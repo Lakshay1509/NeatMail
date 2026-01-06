@@ -53,7 +53,8 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   user_tokens: 'user_tokens',
   tag: 'tag',
-  user_tags: 'user_tags'
+  user_tags: 'user_tags',
+  email_tracked: 'email_tracked'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -78,7 +79,8 @@ export const User_tokensScalarFieldEnum = {
   gmail_email: 'gmail_email',
   created_at: 'created_at',
   updated_at: 'updated_at',
-  last_history_id: 'last_history_id'
+  last_history_id: 'last_history_id',
+  watch_activated: 'watch_activated'
 } as const
 
 export type User_tokensScalarFieldEnum = (typeof User_tokensScalarFieldEnum)[keyof typeof User_tokensScalarFieldEnum]
@@ -101,6 +103,16 @@ export const User_tagsScalarFieldEnum = {
 } as const
 
 export type User_tagsScalarFieldEnum = (typeof User_tagsScalarFieldEnum)[keyof typeof User_tagsScalarFieldEnum]
+
+
+export const Email_trackedScalarFieldEnum = {
+  user_id: 'user_id',
+  tag_id: 'tag_id',
+  message_id: 'message_id',
+  created_at: 'created_at'
+} as const
+
+export type Email_trackedScalarFieldEnum = (typeof Email_trackedScalarFieldEnum)[keyof typeof Email_trackedScalarFieldEnum]
 
 
 export const SortOrder = {
