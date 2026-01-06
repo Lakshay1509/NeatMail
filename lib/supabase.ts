@@ -107,3 +107,32 @@ export async function getTagsUser(id:string){
     throw error
   }
 }
+
+export async function addMailtoDB(user_id:string,tag_id:string,message_id:string){
+
+  try{
+
+  const data = await db.email_tracked.upsert({
+    where:{message_id:message_id},
+    update:{
+      message_id:message_id
+    },
+    create:{
+      user_id:user_id,
+      tag_id:tag_id,
+      message_id:message_id,
+      created_at:new Date().toISOString(),
+    }
+
+  })
+
+   if(!data){
+      throw new Error(`Failed to add to DB`)
+    }
+  }
+  catch(error){
+    console.error('Error adding to db');
+    throw error
+  }
+
+}

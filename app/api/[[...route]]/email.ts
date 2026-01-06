@@ -1,5 +1,5 @@
-import { applyLabelsToEmails, getRecentEmails } from "@/lib/gmail";
-import { classifyEmail } from "@/lib/openai";
+import { getRecentEmails } from "@/lib/gmail";
+import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { Hono } from "hono";
 
@@ -17,51 +17,66 @@ const app = new Hono()
     return ctx.json({ emails }, 200);
   })
 
-  .get("/classify-email", async (ctx) => {
-    const { userId } = await auth();
+  .get('/thisWeek', async (ctx) => {
+  const { userId } = await auth();
 
-    if (!userId) {
-      return ctx.json({ error: "Unauthorized" }, 401);
-    }
+  if (!userId) {
+    return ctx.json({ error: "Unauthorized" }, 401);
+  }
 
-    const emails = await getRecentEmails(userId, 15);
+  const now = new Date();
 
-    // const classifiedEmails: {
-    //   id: string;
-    //   threadId: string;
-    //   subject: string;
-    //   from: string;
-    //   to: string;
-    //   snippet: string | null | undefined;
-    //   labels: string[];
-    //   isRead: boolean;
-    //   date: Date;
-    //   rawDateHeader: string;
-    //   label: string;
-    // }[] = await Promise.all(
-    //   emails.map(async (email) => {
-    //     const classification = await classifyEmail({
-    //       subject: email.subject,
-    //       from: email.from,
-    //       bodySnippet: email.snippet ?? "", 
-    //     });
-    //     return { ...email, label: classification};
-    //   })
-    // );
+  // Calculate start of week (Monday)
+  const day = now.getDay(); // 0 = Sunday
+  const diffToMonday = day === 0 ? -6 : 1 - day;
 
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() + diffToMonday);
+  startOfWeek.setHours(0, 0, 0, 0);
 
-    // const emailsByLabel = classifiedEmails.reduce((acc, email) => {
-    //   if (!acc[email.label]) acc[email.label] = [];
-    //   acc[email.label].push(email.id);
-    //   return acc;
-    // }, {} as Record<string, string[]>);
-    
-    // for (const [labelName, messageIds] of Object.entries(emailsByLabel)) {
-    //   await applyLabelsToEmails(userId, messageIds, labelName);
-    // }
-
-    // return ctx.json({ emails: classifiedEmails }, 200);
-    
+  // Fetch emails for this week
+  const emails = await db.email_tracked.findMany({
+    where: {
+      user_id: userId,
+      created_at: {
+        gte: startOfWeek,
+        lte: now,
+      },
+    },
+    select: {
+      created_at: true,
+    },
   });
+
+  // Initialize counts
+  const weekCounts: Record<string, number> = {
+    Monday: 0,
+    Tuesday: 0,
+    Wednesday: 0,
+    Thursday: 0,
+    Friday: 0,
+    Saturday: 0,
+    Sunday: 0,
+  };
+
+  const dayMap = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+
+  // Aggregate
+  emails.forEach((email) => {
+    const dayName = dayMap[email.created_at.getDay()];
+    weekCounts[dayName]++;
+  });
+
+  return ctx.json(weekCounts);
+});
+
 
 export default app;

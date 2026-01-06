@@ -2,6 +2,7 @@ import { createGmailDraft } from "@/lib/gmail";
 import { classifyEmail, generateEmailReply } from "@/lib/openai";
 import { isMessageProcessed, markMessageProcessed } from "@/lib/redis";
 import {
+  addMailtoDB,
   getLastHistoryId,
   getTagsUser,
   getUserByEmail,
@@ -118,10 +119,6 @@ const app = new Hono().post("/", async (ctx) => {
       }
 
       const colourofLabel = await labelColor(labelName);
-      
-     
-     
-
     
       const labelsResponse = await gmail.users.labels.list({ userId: "me" });
       let labelId = labelsResponse.data.labels?.find(
@@ -155,8 +152,8 @@ const app = new Hono().post("/", async (ctx) => {
           addLabelIds: [labelId],
         },
       });
-      
 
+      
       if (labelName === "Pending Response") {
        
 
@@ -174,9 +171,14 @@ const app = new Hono().post("/", async (ctx) => {
 
         
       }
+
+      await addMailtoDB(clerkUserId,colourofLabel.id,String(messageId),);
+
+
     }
 
     await updateHistoryId(emailAddress, String(newHistoryId),true);
+    
    
     return ctx.json({ success: true }, 200);
   } catch (error) {

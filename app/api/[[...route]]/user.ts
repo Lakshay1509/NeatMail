@@ -2,22 +2,50 @@ import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { Hono } from "hono";
 
-const app = new Hono().get("/watch", async (ctx) => {
-  const { userId } = await auth();
+const app = new Hono()
+  .get("/watch", async (ctx) => {
+    const { userId } = await auth();
 
-  if (!userId) {
-    return ctx.json({ error: "Unauthorized" }, 401);
-  }
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
 
-  const data = await db.user_tokens.findUnique({
-    where:{clerk_user_id:userId}
+    const data = await db.user_tokens.findUnique({
+      where: { clerk_user_id: userId },
+    });
+
+    if (!data) {
+      return ctx.json({ error: "Error getting watch data" }, 500);
+    }
+
+    return ctx.json({ data }, 200);
   })
 
-  if(!data){
-    return ctx.json({error:"Error getting watch data"},500);
-  }
+  .get("/mailsThisMonth", async (ctx) => {
+    const { userId } = await auth();
 
-  return ctx.json({data},200)
-});
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const now = new Date();
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    const data = await db.email_tracked.count({
+      where: {
+        user_id: userId,
+        created_at: {
+          gte: startOfMonth,
+          lt: startOfNextMonth,
+        },
+      },
+    });
+
+
+    return ctx.json({data},200)
+  });
 
 export default app;
