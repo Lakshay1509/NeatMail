@@ -56,6 +56,8 @@ const app = new Hono().post("/webhook", async (ctx) => {
     if (!data) {
       return ctx.json({ error: "Error creating user" }, 500);
     }
+
+    return ctx.json({ success: true, message: "User created" }, 200);
   }
 
   if (eventType === "user.updated") {
@@ -72,6 +74,8 @@ const app = new Hono().post("/webhook", async (ctx) => {
     if (!data) {
       return ctx.json({ error: "Error updating user" }, 500);
     }
+
+    return ctx.json({ success: true, message: "User updated" }, 200);
   }
 
   if (eventType === "user.deleted") {
@@ -83,7 +87,11 @@ const app = new Hono().post("/webhook", async (ctx) => {
     if (!data) {
       return ctx.json({ error: "Error deleting user" }, 500);
     }
+
+    return ctx.json({ success: true, message: "User deleted" }, 200);
   }
+
+  return ctx.json({ success: true, message: "Webhook received" }, 200);
 })
 
 export default app;
