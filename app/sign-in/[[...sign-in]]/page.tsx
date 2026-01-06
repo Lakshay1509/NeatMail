@@ -14,7 +14,7 @@ export default function SignInPage() {
 
           <div className="flex justify-center">
             
-            <SignIn forceRedirectUrl={process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL}/>
+            <SignIn forceRedirectUrl="/dashboard" withSignUp={true}/>
           </div>
 
           <p className="text-xs text-center text-muted-foreground px-4">
