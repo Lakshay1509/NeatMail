@@ -46,14 +46,21 @@ const UserLabelSettings = () => {
 
 	const handleSubmit = async () => {
 		if (!isValid) return;
-		await mutation.mutateAsync({ tags: selectedCategories });
 
-		if(watch){
-			await addWatchMutation.mutateAsync({});
+		const initialTags = data?.data.map((tag) => tag.tag.name) || [];
+		const hasTagsChanged = JSON.stringify([...selectedCategories].sort()) !== JSON.stringify([...initialTags].sort());
+
+		if (hasTagsChanged) {
+			await mutation.mutateAsync({ tags: selectedCategories });
 		}
 
-		if(!watch){
-			await deleteWatchMutation.mutateAsync({});
+		const initialWatch = watchData?.data.watch_activated;
+		if (watch !== initialWatch) {
+			if (watch) {
+				await addWatchMutation.mutateAsync({});
+			} else {
+				await deleteWatchMutation.mutateAsync({});
+			}
 		}
 
 	}
