@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { addTagstoUser } from "@/features/tags/use-add-tag-user"
 import { addWatch } from "@/features/watch/use-post-watch"
 
-const CATEGORIES = [
+export const CATEGORIES = [
 	{ name: 'Action Needed', color: '#cc3a21', description: 'Emails you need to respond to' },
 	{ name: 'Pending Response', color: '#eaa041', description: "Emails you're expecting a reply to" },
 	{ name: 'Automated alerts', color: '#653e9b', description: 'Automated updates from tools you use' },
@@ -36,7 +36,10 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 		)
 	}
 
+	const isValid = selectedCategories.length >= 3;
+
     const handleSubmit = async()=>{
+		if (!isValid) return;
         await mutation.mutateAsync({tags:selectedCategories});
         onOpenChange(false);
 
@@ -54,7 +57,7 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 				<DialogHeader>
 					
 					<DialogDescription className="text-base mt-2">
-						Fyxer will organize your emails using the categories below to keep you focused on what's important.
+						We will organize your emails using the categories below to keep you focused on what's important. Please select at least 3 categories.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -92,8 +95,8 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 				</div>
 
 				<DialogFooter className="mt-6">
-					<Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg" onClick={handleSubmit} disabled={mutation.isPending}>
-						Update preferences
+					<Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg" onClick={handleSubmit} disabled={mutation.isPending || !isValid}>
+						{isValid ? 'Update preferences' : `Select ${3 - selectedCategories.length} more categories`}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

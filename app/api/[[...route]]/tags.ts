@@ -16,6 +16,13 @@ const app = new Hono()
 
     const data = await db.user_tags.findMany({
       where: { user_id: user?.id },
+      include:{
+        tag:{
+          select:{
+            name:true
+          }
+        }
+      }
     });
 
     return ctx.json({ data }, 200);
@@ -42,6 +49,12 @@ const app = new Hono()
         where:{
             name:{in:values.tags}
 
+        }
+      })
+
+      await db.user_tags.deleteMany({
+        where:{
+          user_id:userId
         }
       })
 
