@@ -3,7 +3,6 @@
 import { useGetUserMailsThisMonth } from "@/features/user/use-get-mail-thisMonth"
 import { useUser } from "@clerk/nextjs"
 import { ArrowUpRight, Download, Mail, RefreshCcw } from "lucide-react"
-import Link from "next/link"
 import { EmailTrendsChart } from "./EmailTrendsChart"
 import { LabelDistribution } from "./LabelDistribution"
 import TrackedEmail from "./TrackedEmail"
