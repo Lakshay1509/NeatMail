@@ -302,10 +302,6 @@ export type TagScalarRelationFilter = {
   isNot?: Prisma.tagWhereInput
 }
 
-export type DateTimeFieldUpdateOperationsInput = {
-  set?: Date | string
-}
-
 export type tagCreateNestedOneWithoutUser_tagsInput = {
   create?: Prisma.XOR<Prisma.tagCreateWithoutUser_tagsInput, Prisma.tagUncheckedCreateWithoutUser_tagsInput>
   connectOrCreate?: Prisma.tagCreateOrConnectWithoutUser_tagsInput

@@ -54,7 +54,8 @@ export const ModelName = {
   user_tokens: 'user_tokens',
   tag: 'tag',
   user_tags: 'user_tags',
-  email_tracked: 'email_tracked'
+  email_tracked: 'email_tracked',
+  drafts: 'drafts'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -74,7 +75,6 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 
 
 export const User_tokensScalarFieldEnum = {
-  id: 'id',
   clerk_user_id: 'clerk_user_id',
   gmail_email: 'gmail_email',
   created_at: 'created_at',
@@ -113,6 +113,16 @@ export const Email_trackedScalarFieldEnum = {
 } as const
 
 export type Email_trackedScalarFieldEnum = (typeof Email_trackedScalarFieldEnum)[keyof typeof Email_trackedScalarFieldEnum]
+
+
+export const DraftsScalarFieldEnum = {
+  user_id: 'user_id',
+  message_id: 'message_id',
+  draft: 'draft',
+  created_at: 'created_at'
+} as const
+
+export type DraftsScalarFieldEnum = (typeof DraftsScalarFieldEnum)[keyof typeof DraftsScalarFieldEnum]
 
 
 export const SortOrder = {

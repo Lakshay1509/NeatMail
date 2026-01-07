@@ -365,6 +365,10 @@ export type user_tagsUncheckedUpdateManyWithoutTagNestedInput = {
   deleteMany?: Prisma.user_tagsScalarWhereInput | Prisma.user_tagsScalarWhereInput[]
 }
 
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
+}
+
 export type user_tagsCreateWithoutUser_tokensInput = {
   created_at?: Date | string | null
   tag: Prisma.tagCreateNestedOneWithoutUser_tagsInput
