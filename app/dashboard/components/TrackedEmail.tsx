@@ -35,9 +35,9 @@ const TrackedEmail = ({limit,dashboard}:Props) => {
 
             <div className="overflow-x-auto">
                 <table className="w-full">
-                    <thead className="bg-gray-50/50">
+                    <thead className="bg-gray-200/50 ">
                         <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                            <th className="px-6 py-4">Recipient</th>
+                            <th className="px-6 py-4">Sender</th>
                             <th className="px-6 py-4">Subject</th>
                             <th className="px-6 py-4">Label</th>
                             <th className="px-6 py-4">Date</th>
