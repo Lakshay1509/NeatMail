@@ -74,7 +74,7 @@ export function EmailTrendsChart() {
               cursor={{ stroke: "#e5e7eb", strokeWidth: 1 }}
             />
             <Area
-              type="natural"
+              type="monotone"
               dataKey="emails"
               stroke="#3b82f6"
               strokeWidth={3}
@@ -87,6 +87,7 @@ export function EmailTrendsChart() {
               tickLine={false}
               tick={{ fill: "#9ca3af", fontSize: 12 }}
               dy={10}
+              padding={{ left: 20, right: 20 }}
             />
           </AreaChart>
         </ResponsiveContainer>

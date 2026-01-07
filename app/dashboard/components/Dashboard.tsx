@@ -38,28 +38,7 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
-                    >
-                        <RefreshCcw className="w-4 h-4" />
-                        Refresh
-                    </button>
-                    <Link
-                        href="https://gmail.com"
-                        target="_blank"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
-                    >
-                        <ArrowUpRight className="w-4 h-4" />
-                        
-                        <p className="">Gmail</p>
-                    </Link>
-                    <button className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
-                        <Download className="w-4 h-4" />
-                        Export
-                    </button>
-                </div>
+                
             </div>
 
             {/* Stats Section */}
