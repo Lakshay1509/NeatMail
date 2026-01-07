@@ -6,6 +6,7 @@ import { ArrowUpRight, Download, Mail, RefreshCcw } from "lucide-react"
 import Link from "next/link"
 import { EmailTrendsChart } from "./EmailTrendsChart"
 import { LabelDistribution } from "./LabelDistribution"
+import TrackedEmail from "./TrackedEmail"
 
 
 const Dashboard = () => {
@@ -18,21 +19,23 @@ const Dashboard = () => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="flex items-center gap-4">
-                    <div className="h-16 w-16 rounded-full p-1 bg-gradient-to-br from-rose-100 to-rose-200 border border-rose-200">
-                        {/* Clerk Image */}
-                        
-                        {user?.imageUrl && (
-                            <img
-                                src={user.imageUrl}
-                                alt={user.fullName || "User"}
-                                className="h-full w-full rounded-full object-cover"
-                            />
-                        )}
-                        
+                    <div className="h-16 w-16 rounded-full bg-gradient-to-br from-rose-100 to-rose-200 border border-rose-200 flex items-center justify-center">
+
+                        <div className="h-14 w-14 rounded-full overflow-hidden bg-white">
+                            {user?.imageUrl && (
+                                <img
+                                    src={user.imageUrl}
+                                    alt={user.fullName || "User"}
+                                    className="h-full w-full object-cover"
+                                />
+                            )}
+                        </div>
+
                     </div>
+
                     <div>
                         <h1 className="text-xl font-bold text-gray-900">
-                            Welcome back, {user?.firstName || 'User'}
+                            Welcome back, {user?.firstName || "User"}
                         </h1>
                         <p className="text-gray-500">
                             Here is your email activity summary.
@@ -40,7 +43,8 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                
+
+
             </div>
 
             {/* Stats Section */}
@@ -78,6 +82,9 @@ const Dashboard = () => {
                     <LabelDistribution />
                 </div>
             </div>
+
+            {/* Recent Mail Section */}
+            <TrackedEmail />
         </div>
     )
 }

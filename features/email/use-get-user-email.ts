@@ -1,12 +1,12 @@
 import {useQuery} from "@tanstack/react-query";
 import {client} from "@/lib/hono"
-// import { useUser } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 
 
 export const useGetUserEmails = ()=>{
-    // const {user} = useUser()
+    const {user} = useUser()
     const query = useQuery({
-        // enabled : !!user,
+        enabled : !!user,
         queryKey: ["user-email"],
         queryFn: async ()=>{
             const response = await client.api.email.fetch.$get();;

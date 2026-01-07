@@ -1,4 +1,4 @@
-import { getRecentEmails } from "@/lib/gmail";
+import { getLabelledMails, getRecentEmails } from "@/lib/gmail";
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { Hono } from "hono";
@@ -12,7 +12,27 @@ const app = new Hono()
       return ctx.json({ error: "Unauthorized" }, 401);
     }
 
-    const emails = await getRecentEmails(userId, 15);
+    const messageId = await db.email_tracked.findMany({
+      where:{user_id:userId},
+      orderBy:{
+        created_at:'desc'
+      },
+      select:{
+        message_id:true
+      },
+      take :5
+    })
+
+    if(!messageId){
+      return ctx.json({error:"Error getting messageId"},500);
+    }
+
+    
+
+   const ids = messageId.map(item => item.message_id);
+
+
+    const emails = await getLabelledMails(userId, ids);
 
     return ctx.json({ emails }, 200);
   })

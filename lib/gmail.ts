@@ -22,6 +22,68 @@ export async function getGmailClient(userId: string) {
   return google.gmail({ version: 'v1', auth: oauth2Client });
 }
 
+async function getLabelMap(userId:string) {
+  const gmail = await getGmailClient(userId);
+  const res = await gmail.users.labels.list({
+    userId: "me",
+    fields: "labels(id,name)",
+  });
+
+  const map = new Map<string, string>();
+
+  res.data.labels?.forEach(label => {
+    map.set(label.id!, label.name!);
+  });
+
+  return map;
+}
+
+
+export async function getLabelledMails(
+  userId: string,
+  messageIds: string[]
+) {
+  const gmail = await getGmailClient(userId);
+
+  
+  const labelMap = await getLabelMap(userId);
+
+ 
+  const messages = await Promise.all(
+    messageIds.map((messageId) =>
+      gmail.users.messages.get({
+        userId: "me",
+        id: messageId,
+        format: "metadata",
+        metadataHeaders: ["From", "Subject"],
+        fields: "id,labelIds,internalDate,payload.headers",
+      })
+    )
+  );
+
+  // 3️⃣ Map label IDs → label names
+  return messages.map((res) => {
+    const headers = res.data.payload?.headers ?? [];
+
+    const getHeader = (name: string) =>
+      headers.find((h) => h.name === name)?.value ?? "";
+
+    const labelNames =
+      res.data.labelIds?.map(id => labelMap.get(id) ?? id) ?? [];
+
+    return {
+      messageId: res.data.id,
+      labels: labelNames, 
+      subject: getHeader("Subject"),
+      from: getHeader("From"),
+      internalDate: res.data.internalDate
+        ? new Date(Number(res.data.internalDate)).toISOString()
+        : null,
+    };
+  });
+}
+
+
 export async function getRecentEmails(userId: string, maxResults = 15) {
   const gmail = await getGmailClient(userId);
 
