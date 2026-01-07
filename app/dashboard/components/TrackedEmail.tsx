@@ -4,8 +4,13 @@ import { useGetUserEmails } from "@/features/email/use-get-user-email"
 
 import { CATEGORIES } from "./EmailCategorizationModal";
 
-const TrackedEmail = () => {
-    const { data, isLoading, isError } = useGetUserEmails();
+interface Props{
+    limit:number,
+    dashboard:boolean
+}
+
+const TrackedEmail = ({limit,dashboard}:Props) => {
+    const { data, isLoading, isError } = useGetUserEmails(limit);
 
     const formatDate = (timestamp: string | null) => {
         if (!timestamp) return "-";
@@ -22,11 +27,11 @@ const TrackedEmail = () => {
     if (isError) return null;
 
     return (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+        <div className={`${dashboard===true ? "rounded-xl border border-gray-100 shadow-sm" : "" }`}>
+            {dashboard && <div className="flex items-center justify-between p-6 border-b border-gray-100">
                 <h3 className="font-bold text-gray-900">Recent Tracked Mail</h3>
-                <button className="text-sm font-medium text-blue-600 hover:text-blue-700">View All</button>
-            </div>
+                {dashboard && <button className="text-sm font-medium text-blue-600 hover:text-blue-700">View All</button>}
+            </div>}
 
             <div className="overflow-x-auto">
                 <table className="w-full">
@@ -40,7 +45,7 @@ const TrackedEmail = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {data?.emails?.slice(0, 5).map((email, idx) => (
+                        {data?.emails?.map((email, idx) => (
                             <tr key={email.messageId || idx} className="hover:bg-gray-50/50 transition-colors group">
                                 <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">
                                     {email.from.replace(/<.*>/, '').trim()}

@@ -83,7 +83,7 @@ const Dashboard = () => {
             </div>
 
             {/* Recent Mail Section */}
-            <TrackedEmail />
+            <TrackedEmail limit={5} dashboard={true}/>
         </div>
     )
 }

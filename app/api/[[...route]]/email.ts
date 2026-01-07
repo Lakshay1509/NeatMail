@@ -1,4 +1,4 @@
-import { getLabelledMails, getRecentEmails } from "@/lib/gmail";
+import { getLabelledMails } from "@/lib/gmail";
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { Hono } from "hono";
@@ -12,6 +12,13 @@ const app = new Hono()
       return ctx.json({ error: "Unauthorized" }, 401);
     }
 
+    const limitQuery = ctx.req.query("limit");
+    const limit = limitQuery ? parseInt(limitQuery) : 5;
+
+    if(limit > 50 || limit< 0){
+      return ctx.json({error:"Limit overflow"},500);
+    }
+
     const messageId = await db.email_tracked.findMany({
       where:{user_id:userId},
       orderBy:{
@@ -20,7 +27,7 @@ const app = new Hono()
       select:{
         message_id:true
       },
-      take :5
+      take :limit
     })
 
     if(!messageId){
