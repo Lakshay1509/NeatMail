@@ -20,6 +20,7 @@ const Dashboard = () => {
                 <div className="flex items-center gap-4">
                     <div className="h-16 w-16 rounded-full p-1 bg-gradient-to-br from-rose-100 to-rose-200 border border-rose-200">
                         {/* Clerk Image */}
+                        
                         {user?.imageUrl && (
                             <img
                                 src={user.imageUrl}
@@ -27,6 +28,7 @@ const Dashboard = () => {
                                 className="h-full w-full rounded-full object-cover"
                             />
                         )}
+                        
                     </div>
                     <div>
                         <h1 className="text-xl font-bold text-gray-900">
