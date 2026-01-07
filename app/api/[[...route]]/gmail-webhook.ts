@@ -161,7 +161,7 @@ const app = new Hono().post("/", async (ctx) => {
         
 
         await createGmailDraft(
-          gmail,
+          clerkUserId,
           emailData.threadId!,
           messageId,
           emailData.subject,

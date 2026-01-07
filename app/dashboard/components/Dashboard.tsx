@@ -17,7 +17,7 @@ const Dashboard = () => {
         <div className="max-w-7xl mx-auto space-y-8">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 flex-1">
                     <div className="h-16 w-16 rounded-full bg-gradient-to-br from-rose-100 to-rose-200 border border-rose-200 flex items-center justify-center">
 
                         <div className="h-14 w-14 rounded-full overflow-hidden bg-white">
@@ -32,7 +32,7 @@ const Dashboard = () => {
 
                     </div>
 
-                    <div>
+                    <div className="flex-1">
                         <h1 className="text-xl font-bold text-gray-900">
                             Welcome back, {user?.firstName || "User"}
                         </h1>
