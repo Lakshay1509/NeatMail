@@ -3,6 +3,7 @@
 import { useGetUserEmails } from "@/features/email/use-get-user-email"
 
 import { CATEGORIES } from "./EmailCategorizationModal";
+import Image from "next/image";
 
 interface Props{
     limit:number,
@@ -10,7 +11,7 @@ interface Props{
 }
 
 const TrackedEmail = ({limit,dashboard}:Props) => {
-    const { data, isLoading, isError } = useGetUserEmails(limit);
+    const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useGetUserEmails(limit);
 
     const formatDate = (timestamp: string | null) => {
         if (!timestamp) return "-";
@@ -19,12 +20,20 @@ const TrackedEmail = ({limit,dashboard}:Props) => {
         return date.toLocaleDateString();
     };
 
-
-
-
+    const emails = data?.pages.flatMap((page) => page.emails) || [];
 
     if (isLoading) return <div className="h-48 bg-gray-50 rounded-xl animate-pulse"></div>
     if (isError) return null;
+
+
+    if(emails.length===0){
+            return (
+                <div className={`flex flex-col justify-center items-center w-full ${dashboard ? "min-h-[40vh]" :  "min-h-[60vh]"}`}>
+                    <Image src='/no-mail.webp' alt="no-mail" width={200} height={200} />
+                    
+                </div>
+            )
+    }
 
     return (
         <div className={`${dashboard===true ? "rounded-xl border border-gray-100 shadow-sm" : "" }`}>
@@ -45,7 +54,7 @@ const TrackedEmail = ({limit,dashboard}:Props) => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {data?.emails?.map((email, idx) => (
+                        {emails.map((email, idx) => (
                             <tr key={email.messageId || idx} className="hover:bg-gray-50/50 transition-colors group">
                                 <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">
                                     {email.from.replace(/<.*>/, '').trim()}
@@ -80,6 +89,19 @@ const TrackedEmail = ({limit,dashboard}:Props) => {
                     </tbody>
                 </table>
             </div>
+            
+            {!dashboard && hasNextPage && (
+                <div className="p-4 flex justify-center border-t border-gray-100">
+                    <button
+                        onClick={() => fetchNextPage()}
+                        disabled={isFetchingNextPage}
+                        className="text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                    >
+                        {isFetchingNextPage ? "Loading..." : "Load More"}
+                    </button>
+                </div>
+            )}
+            
         </div>
     )
 }

@@ -13,35 +13,44 @@ const app = new Hono()
     }
 
     const limitQuery = ctx.req.query("limit");
+    const cursor = ctx.req.query("cursor");
     const limit = limitQuery ? parseInt(limitQuery) : 5;
 
     if(limit > 50 || limit< 0){
       return ctx.json({error:"Limit overflow"},500);
     }
 
-    const messageId = await db.email_tracked.findMany({
+    const messageData = await db.email_tracked.findMany({
       where:{user_id:userId},
       orderBy:{
         created_at:'desc'
       },
       select:{
-        message_id:true
+        message_id:true,
+        
       },
-      take :limit
+      take : limit + 1,
+      cursor: cursor ? { message_id: cursor } : undefined,
     })
 
-    if(!messageId){
+    let nextCursor: string | undefined = undefined;
+    if (messageData.length > limit) {
+        const nextItem = messageData.pop();
+        nextCursor = nextItem?.message_id;
+    }
+
+    if(!messageData){
       return ctx.json({error:"Error getting messageId"},500);
     }
 
     
 
-   const ids = messageId.map(item => item.message_id);
+   const ids = messageData.map(item => item.message_id);
 
 
     const emails = await getLabelledMails(userId, ids);
 
-    return ctx.json({ emails }, 200);
+    return ctx.json({ emails, nextCursor }, 200);
   })
 
   .get("/thisWeek", async (ctx) => {

@@ -3,6 +3,7 @@
 
 
 import { useGetUserDrafts } from "@/features/user/use-get-drafts";
+import Image from "next/image";
 
 
 const DraftEmails = () => {
@@ -21,6 +22,15 @@ const DraftEmails = () => {
 
     if (isLoading) return <div className="h-48 bg-gray-50 rounded-xl animate-pulse"></div>
     if (isError) return null;
+
+    if(data?.data.length===0){
+        return (
+            <div className="flex flex-col justify-center items-center w-full min-h-[60vh]">
+                <Image src='/no-mail.webp' alt="no-mail" width={200} height={200} />
+                
+            </div>
+        )
+    }
 
     return (
         <div >

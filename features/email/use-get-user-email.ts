@@ -1,17 +1,19 @@
-import {useQuery} from "@tanstack/react-query";
+import {useInfiniteQuery} from "@tanstack/react-query";
 import {client} from "@/lib/hono"
 import { useUser } from "@clerk/nextjs";
 
 
 export const useGetUserEmails = (limit?: number)=>{
     const {user} = useUser()
-    const query = useQuery({
+    const query = useInfiniteQuery({
         enabled : !!user,
         queryKey: ["user-email", limit],
-        queryFn: async ()=>{
+        initialPageParam: undefined as string | undefined,
+        queryFn: async ({ pageParam })=>{
             const response = await client.api.email.fetch.$get({
                 query: {
-                    limit: limit ? limit.toString() : undefined
+                    limit: limit ? limit.toString() : undefined,
+                    cursor: pageParam ?? undefined,
                 }
             });
 
@@ -21,6 +23,7 @@ export const useGetUserEmails = (limit?: number)=>{
 
             return data;
         },
+        getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
         retry:1
     });
 
