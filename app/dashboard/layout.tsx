@@ -8,7 +8,9 @@ export default function DashboardLayout({
 }) {
   return (
       <div className="flex w-full">
-        <AppSidebar />
+        <div className="ml-2">
+          <AppSidebar   />
+        </div>
         <main className=" flex-1 overflow-auto">
           <SidebarTrigger className="hidden md:block"/>
           {children}

@@ -75,7 +75,7 @@ const DraftEmails = () => {
                                                     To: <span className="font-medium text-gray-900">{email.receipent}</span> • {formatDate(email.created_at)}
                                                 </DialogDescription>
                                             </DialogHeader>
-                                            <div className="mt-4 p-4 bg-gray-50 rounded-md whitespace-pre-wrap text-gray-800 text-sm leading-relaxed border border-gray-100 hover:underline">
+                                            <div className="mt-4 p-4 bg-gray-50 rounded-md whitespace-pre-wrap text-gray-800 text-sm leading-relaxed border border-gray-100 ">
                                                 {email.draft}
                                             </div>
                                         </DialogContent>

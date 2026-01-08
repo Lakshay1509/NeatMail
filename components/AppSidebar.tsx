@@ -48,7 +48,7 @@ export function AppSidebar() {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild className="h-12">
                     <Link href={item.url}>
-                      <item.icon className="!h-6 !w-6"  />
+                      <item.icon className="!h-5 !w-5"  />
                       <span className="text-base ">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>

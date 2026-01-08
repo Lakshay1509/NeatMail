@@ -11,9 +11,7 @@ const page = () => {
             </p>
         </div>
         <TrackedEmail limit={50} dashboard={false}/>
-        <div className="text-[10px] text-gray-400 px-6">
-          To respect your privacy the results are limited to 50 results only!
-        </div>
+        
     </div>
   )
 }
