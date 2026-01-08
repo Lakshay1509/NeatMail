@@ -862,7 +862,8 @@ export const DraftsScalarFieldEnum = {
   user_id: 'user_id',
   message_id: 'message_id',
   draft: 'draft',
-  created_at: 'created_at'
+  created_at: 'created_at',
+  receipent: 'receipent'
 } as const
 
 export type DraftsScalarFieldEnum = (typeof DraftsScalarFieldEnum)[keyof typeof DraftsScalarFieldEnum]

@@ -2,7 +2,7 @@
 
 import { useGetUserMailsThisMonth } from "@/features/user/use-get-mail-thisMonth"
 import { useUser } from "@clerk/nextjs"
-import { ArrowUpRight, Download, Mail, RefreshCcw } from "lucide-react"
+import { ArrowUpRight, Mail } from "lucide-react"
 import { EmailTrendsChart } from "./EmailTrendsChart"
 import { LabelDistribution } from "./LabelDistribution"
 import TrackedEmail from "./TrackedEmail"
@@ -13,34 +13,31 @@ const Dashboard = () => {
     const { user } = useUser()
     const { data, isLoading, isError } = useGetUserMailsThisMonth();
 
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return { text: "Good Morning", gradient: "from-indigo-900 via-sky-800 to-emerald-800" };
+        if (hour < 18) return { text: "Good Afternoon", gradient: "from-blue-900 via-violet-800 to-fuchsia-800" };
+        return { text: "Good Evening", gradient: "from-slate-900 via-purple-900 to-slate-900" };
+    };
+
+    const greeting = getGreeting();
+
     return (
         <div className="max-w-7xl mx-auto space-y-8">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="flex items-center gap-4 flex-1">
-                    <div className="h-16 w-16 rounded-full bg-gradient-to-br from-rose-100 to-rose-200 border border-rose-200 flex items-center justify-center">
-
-                        <div className="h-14 w-14 rounded-full overflow-hidden bg-white">
-                            {user?.imageUrl && (
-                                <img
-                                    src={user.imageUrl}
-                                    alt={user.fullName || "User"}
-                                    className="h-full w-full object-cover"
-                                />
-                            )}
-                        </div>
-
-                    </div>
+               
+                  
 
                     <div className="flex-1">
-                        <h1 className="text-xl font-bold text-gray-900">
-                            Welcome back, {user?.firstName || "User"}
+                        <h1 className={`text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent ${greeting.gradient}`}>
+                            {greeting.text}, {user?.firstName || "User"}
                         </h1>
                         <p className="text-gray-500">
                             Here is your email activity summary.
                         </p>
                     </div>
-                </div>
+                
 
 
 

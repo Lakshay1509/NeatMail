@@ -29,6 +29,7 @@ export type DraftsMinAggregateOutputType = {
   message_id: string | null
   draft: string | null
   created_at: Date | null
+  receipent: string | null
 }
 
 export type DraftsMaxAggregateOutputType = {
@@ -36,6 +37,7 @@ export type DraftsMaxAggregateOutputType = {
   message_id: string | null
   draft: string | null
   created_at: Date | null
+  receipent: string | null
 }
 
 export type DraftsCountAggregateOutputType = {
@@ -43,6 +45,7 @@ export type DraftsCountAggregateOutputType = {
   message_id: number
   draft: number
   created_at: number
+  receipent: number
   _all: number
 }
 
@@ -52,6 +55,7 @@ export type DraftsMinAggregateInputType = {
   message_id?: true
   draft?: true
   created_at?: true
+  receipent?: true
 }
 
 export type DraftsMaxAggregateInputType = {
@@ -59,6 +63,7 @@ export type DraftsMaxAggregateInputType = {
   message_id?: true
   draft?: true
   created_at?: true
+  receipent?: true
 }
 
 export type DraftsCountAggregateInputType = {
@@ -66,6 +71,7 @@ export type DraftsCountAggregateInputType = {
   message_id?: true
   draft?: true
   created_at?: true
+  receipent?: true
   _all?: true
 }
 
@@ -146,6 +152,7 @@ export type DraftsGroupByOutputType = {
   message_id: string
   draft: string
   created_at: Date
+  receipent: string
   _count: DraftsCountAggregateOutputType | null
   _min: DraftsMinAggregateOutputType | null
   _max: DraftsMaxAggregateOutputType | null
@@ -174,6 +181,7 @@ export type draftsWhereInput = {
   message_id?: Prisma.StringFilter<"drafts"> | string
   draft?: Prisma.StringFilter<"drafts"> | string
   created_at?: Prisma.DateTimeFilter<"drafts"> | Date | string
+  receipent?: Prisma.StringFilter<"drafts"> | string
   email_tracked?: Prisma.XOR<Prisma.Email_trackedScalarRelationFilter, Prisma.email_trackedWhereInput>
   user_tokens?: Prisma.XOR<Prisma.User_tokensScalarRelationFilter, Prisma.user_tokensWhereInput>
 }
@@ -183,6 +191,7 @@ export type draftsOrderByWithRelationInput = {
   message_id?: Prisma.SortOrder
   draft?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
+  receipent?: Prisma.SortOrder
   email_tracked?: Prisma.email_trackedOrderByWithRelationInput
   user_tokens?: Prisma.user_tokensOrderByWithRelationInput
 }
@@ -196,6 +205,7 @@ export type draftsWhereUniqueInput = Prisma.AtLeast<{
   message_id?: Prisma.StringFilter<"drafts"> | string
   draft?: Prisma.StringFilter<"drafts"> | string
   created_at?: Prisma.DateTimeFilter<"drafts"> | Date | string
+  receipent?: Prisma.StringFilter<"drafts"> | string
   email_tracked?: Prisma.XOR<Prisma.Email_trackedScalarRelationFilter, Prisma.email_trackedWhereInput>
   user_tokens?: Prisma.XOR<Prisma.User_tokensScalarRelationFilter, Prisma.user_tokensWhereInput>
 }, "user_id_message_id">
@@ -205,6 +215,7 @@ export type draftsOrderByWithAggregationInput = {
   message_id?: Prisma.SortOrder
   draft?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
+  receipent?: Prisma.SortOrder
   _count?: Prisma.draftsCountOrderByAggregateInput
   _max?: Prisma.draftsMaxOrderByAggregateInput
   _min?: Prisma.draftsMinOrderByAggregateInput
@@ -218,11 +229,13 @@ export type draftsScalarWhereWithAggregatesInput = {
   message_id?: Prisma.StringWithAggregatesFilter<"drafts"> | string
   draft?: Prisma.StringWithAggregatesFilter<"drafts"> | string
   created_at?: Prisma.DateTimeWithAggregatesFilter<"drafts"> | Date | string
+  receipent?: Prisma.StringWithAggregatesFilter<"drafts"> | string
 }
 
 export type draftsCreateInput = {
   draft: string
   created_at?: Date | string
+  receipent: string
   email_tracked?: Prisma.email_trackedCreateNestedOneWithoutDraftsInput
   user_tokens?: Prisma.user_tokensCreateNestedOneWithoutDraftsInput
 }
@@ -232,11 +245,13 @@ export type draftsUncheckedCreateInput = {
   message_id?: string
   draft: string
   created_at?: Date | string
+  receipent: string
 }
 
 export type draftsUpdateInput = {
   draft?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  receipent?: Prisma.StringFieldUpdateOperationsInput | string
   email_tracked?: Prisma.email_trackedUpdateOneRequiredWithoutDraftsNestedInput
   user_tokens?: Prisma.user_tokensUpdateOneRequiredWithoutDraftsNestedInput
 }
@@ -246,6 +261,7 @@ export type draftsUncheckedUpdateInput = {
   message_id?: Prisma.StringFieldUpdateOperationsInput | string
   draft?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  receipent?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type draftsCreateManyInput = {
@@ -253,11 +269,13 @@ export type draftsCreateManyInput = {
   message_id?: string
   draft: string
   created_at?: Date | string
+  receipent: string
 }
 
 export type draftsUpdateManyMutationInput = {
   draft?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  receipent?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type draftsUncheckedUpdateManyInput = {
@@ -265,6 +283,7 @@ export type draftsUncheckedUpdateManyInput = {
   message_id?: Prisma.StringFieldUpdateOperationsInput | string
   draft?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  receipent?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type DraftsListRelationFilter = {
@@ -287,6 +306,7 @@ export type draftsCountOrderByAggregateInput = {
   message_id?: Prisma.SortOrder
   draft?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
+  receipent?: Prisma.SortOrder
 }
 
 export type draftsMaxOrderByAggregateInput = {
@@ -294,6 +314,7 @@ export type draftsMaxOrderByAggregateInput = {
   message_id?: Prisma.SortOrder
   draft?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
+  receipent?: Prisma.SortOrder
 }
 
 export type draftsMinOrderByAggregateInput = {
@@ -301,6 +322,7 @@ export type draftsMinOrderByAggregateInput = {
   message_id?: Prisma.SortOrder
   draft?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
+  receipent?: Prisma.SortOrder
 }
 
 export type draftsCreateNestedManyWithoutUser_tokensInput = {
@@ -390,6 +412,7 @@ export type draftsUncheckedUpdateManyWithoutEmail_trackedNestedInput = {
 export type draftsCreateWithoutUser_tokensInput = {
   draft: string
   created_at?: Date | string
+  receipent: string
   email_tracked?: Prisma.email_trackedCreateNestedOneWithoutDraftsInput
 }
 
@@ -397,6 +420,7 @@ export type draftsUncheckedCreateWithoutUser_tokensInput = {
   message_id?: string
   draft: string
   created_at?: Date | string
+  receipent: string
 }
 
 export type draftsCreateOrConnectWithoutUser_tokensInput = {
@@ -433,11 +457,13 @@ export type draftsScalarWhereInput = {
   message_id?: Prisma.StringFilter<"drafts"> | string
   draft?: Prisma.StringFilter<"drafts"> | string
   created_at?: Prisma.DateTimeFilter<"drafts"> | Date | string
+  receipent?: Prisma.StringFilter<"drafts"> | string
 }
 
 export type draftsCreateWithoutEmail_trackedInput = {
   draft: string
   created_at?: Date | string
+  receipent: string
   user_tokens?: Prisma.user_tokensCreateNestedOneWithoutDraftsInput
 }
 
@@ -445,6 +471,7 @@ export type draftsUncheckedCreateWithoutEmail_trackedInput = {
   user_id?: string
   draft: string
   created_at?: Date | string
+  receipent: string
 }
 
 export type draftsCreateOrConnectWithoutEmail_trackedInput = {
@@ -477,11 +504,13 @@ export type draftsCreateManyUser_tokensInput = {
   message_id?: string
   draft: string
   created_at?: Date | string
+  receipent: string
 }
 
 export type draftsUpdateWithoutUser_tokensInput = {
   draft?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  receipent?: Prisma.StringFieldUpdateOperationsInput | string
   email_tracked?: Prisma.email_trackedUpdateOneRequiredWithoutDraftsNestedInput
 }
 
@@ -489,23 +518,27 @@ export type draftsUncheckedUpdateWithoutUser_tokensInput = {
   message_id?: Prisma.StringFieldUpdateOperationsInput | string
   draft?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  receipent?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type draftsUncheckedUpdateManyWithoutUser_tokensInput = {
   message_id?: Prisma.StringFieldUpdateOperationsInput | string
   draft?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  receipent?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type draftsCreateManyEmail_trackedInput = {
   user_id?: string
   draft: string
   created_at?: Date | string
+  receipent: string
 }
 
 export type draftsUpdateWithoutEmail_trackedInput = {
   draft?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  receipent?: Prisma.StringFieldUpdateOperationsInput | string
   user_tokens?: Prisma.user_tokensUpdateOneRequiredWithoutDraftsNestedInput
 }
 
@@ -513,12 +546,14 @@ export type draftsUncheckedUpdateWithoutEmail_trackedInput = {
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   draft?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  receipent?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type draftsUncheckedUpdateManyWithoutEmail_trackedInput = {
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   draft?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  receipent?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 
@@ -528,6 +563,7 @@ export type draftsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   message_id?: boolean
   draft?: boolean
   created_at?: boolean
+  receipent?: boolean
   email_tracked?: boolean | Prisma.email_trackedDefaultArgs<ExtArgs>
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["drafts"]>
@@ -537,6 +573,7 @@ export type draftsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   message_id?: boolean
   draft?: boolean
   created_at?: boolean
+  receipent?: boolean
   email_tracked?: boolean | Prisma.email_trackedDefaultArgs<ExtArgs>
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["drafts"]>
@@ -546,6 +583,7 @@ export type draftsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   message_id?: boolean
   draft?: boolean
   created_at?: boolean
+  receipent?: boolean
   email_tracked?: boolean | Prisma.email_trackedDefaultArgs<ExtArgs>
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["drafts"]>
@@ -555,9 +593,10 @@ export type draftsSelectScalar = {
   message_id?: boolean
   draft?: boolean
   created_at?: boolean
+  receipent?: boolean
 }
 
-export type draftsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"user_id" | "message_id" | "draft" | "created_at", ExtArgs["result"]["drafts"]>
+export type draftsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"user_id" | "message_id" | "draft" | "created_at" | "receipent", ExtArgs["result"]["drafts"]>
 export type draftsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   email_tracked?: boolean | Prisma.email_trackedDefaultArgs<ExtArgs>
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
@@ -582,6 +621,7 @@ export type $draftsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     message_id: string
     draft: string
     created_at: Date
+    receipent: string
   }, ExtArgs["result"]["drafts"]>
   composites: {}
 }
@@ -1011,6 +1051,7 @@ export interface draftsFieldRefs {
   readonly message_id: Prisma.FieldRef<"drafts", 'String'>
   readonly draft: Prisma.FieldRef<"drafts", 'String'>
   readonly created_at: Prisma.FieldRef<"drafts", 'DateTime'>
+  readonly receipent: Prisma.FieldRef<"drafts", 'String'>
 }
     
 

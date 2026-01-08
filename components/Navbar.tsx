@@ -2,13 +2,17 @@
 
 import { UserButton, useUser } from '@clerk/nextjs'
 import Link from 'next/link'
+import { SidebarTrigger } from './ui/sidebar';
+import { usePathname } from 'next/navigation';
 
 
 const Navbar = () => {
   const { isSignedIn } = useUser();
+  const pathname = usePathname()
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-8 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
+       {pathname === '/dashboard' && <SidebarTrigger className='md:hidden' />}
         <div className="text-xl font-bold text-gray-800">
            MailOrbit
         </div>

@@ -7,12 +7,12 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <main className="w-full ">
-        <SidebarTrigger />
-        {children}
-      </main>
-    </SidebarProvider>
+      <div className="flex w-full">
+        <AppSidebar />
+        <main className=" flex-1 overflow-auto">
+          <SidebarTrigger className="hidden md:block"/>
+          {children}
+        </main>
+      </div>
   )
 }

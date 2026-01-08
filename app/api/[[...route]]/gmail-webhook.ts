@@ -2,6 +2,7 @@ import { createGmailDraft } from "@/lib/gmail";
 import { classifyEmail, generateEmailReply } from "@/lib/openai";
 import { isMessageProcessed, markMessageProcessed } from "@/lib/redis";
 import {
+  addDraftToDB,
   addMailtoDB,
   getLastHistoryId,
   getTagsUser,
@@ -153,11 +154,13 @@ const app = new Hono().post("/", async (ctx) => {
         },
       });
 
+      let draftBody:string=""
+
       
       if (labelName === "Pending Response") {
        
 
-        const draftBody = await generateEmailReply(emailData);
+        draftBody = await generateEmailReply(emailData);
         
 
         await createGmailDraft(
@@ -170,9 +173,16 @@ const app = new Hono().post("/", async (ctx) => {
         );
 
         
+        
       }
 
-      await addMailtoDB(clerkUserId,colourofLabel.id,String(messageId),);
+      await addMailtoDB(clerkUserId,colourofLabel.id,String(messageId));
+
+      if(draftBody.trim().length > 0){
+        addDraftToDB(clerkUserId,String(messageId),draftBody,emailData.from);
+      }
+
+     
 
 
     }
