@@ -4,6 +4,14 @@
 
 import { useGetUserDrafts } from "@/features/user/use-get-drafts";
 import Image from "next/image";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 
 
 const DraftEmails = () => {
@@ -48,10 +56,30 @@ const DraftEmails = () => {
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                         {data?.data?.map((email, idx) => (
-                            <tr key={email.receipent || idx} className="hover:bg-gray-50/50 transition-colors group">
+                            <tr key={idx} className="hover:bg-gray-50/50 transition-colors group">
+
+                                <td className="px-6 py-4 text-sm max-w-xs font-medium text-gray-900 whitespace-nowrap">
+                                    {email.receipent}
+                                </td>
+
                                 
-                                <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                                    {email.draft}
+                                <td className="px-6 py-4 text-sm text-gray-500 max-w-50 truncate">
+                                    <Dialog>
+                                        <DialogTrigger className="w-full text-left truncate hover:text-gray-900 hover:underline decoration-gray-400 underline-offset-4 outline-none">
+                                            {email.draft}
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                            <DialogHeader>
+                                                <DialogTitle>Draft Details</DialogTitle>
+                                                <DialogDescription>
+                                                    To: <span className="font-medium text-gray-900">{email.receipent}</span> • {formatDate(email.created_at)}
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <div className="mt-4 p-4 bg-gray-50 rounded-md whitespace-pre-wrap text-gray-800 text-sm leading-relaxed border border-gray-100 hover:underline">
+                                                {email.draft}
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
                                 </td>
                                 
 
