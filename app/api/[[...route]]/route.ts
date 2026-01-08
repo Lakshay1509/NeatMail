@@ -6,6 +6,7 @@ import watch from './activate-watch'
 import clerk from './clerk'
 import tags from './tags'
 import user from './user'
+import checkout from './checkout'
 
 
 export const runtime = "nodejs";
@@ -20,6 +21,7 @@ const routes = app
     .route('/clerk',clerk)
     .route('/tags',tags)
     .route('/user',user)
+    .route('/checkout',checkout)
 
 
 

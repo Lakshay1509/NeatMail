@@ -19,6 +19,7 @@
         "@upstash/redis": "^1.36.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
+        "dodopayments": "^2.14.1",
         "googleapis": "^169.0.0",
         "hono": "^4.11.3",
         "lucide-react": "^0.562.0",
@@ -630,6 +631,8 @@
     "detect-node-es": ["detect-node-es@1.1.0", "", {}, "sha512-ypdmJU/TbBby2Dxibuv7ZLW3Bs1QEmM7nHjEANfohJLvE0XVujisn1qPJcZxg+qDucsr+bP6fLD1rPS3AhJ7EQ=="],
 
     "doctrine": ["doctrine@2.1.0", "", { "dependencies": { "esutils": "^2.0.2" } }, "sha512-35mSku4ZXK0vfCuHEDAwt55dg2jNajHZ1odvF+8SSr82EsZY4QmXfuWso8oEd8zRhVObSN18aM0CjSdoBX7zIw=="],
+
+    "dodopayments": ["dodopayments@2.14.1", "", { "dependencies": { "standardwebhooks": "^1.0.0" }, "bin": { "dodopayments": "bin/cli" } }, "sha512-Zxi4eDgZHg7Ciq2qMxO6LhgBKTyUPOtRcgfbDjaIMlmBuqQ/AauNDvSUC3G7OIl4BnEZG6iW5iINQBgy3u2x/A=="],
 
     "dotenv": ["dotenv@16.6.1", "", {}, "sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow=="],
 
