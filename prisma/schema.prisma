@@ -10,14 +10,15 @@ datasource db {
 }
 
 model user_tokens {
-  clerk_user_id   String          @id @unique
-  gmail_email     String          @unique
-  created_at      DateTime        @default(now()) @db.Timestamp(6)
-  updated_at      DateTime        @default(now()) @db.Timestamp(6)
+  clerk_user_id   String           @id @unique
+  gmail_email     String           @unique
+  created_at      DateTime         @default(now()) @db.Timestamp(6)
+  updated_at      DateTime         @default(now()) @db.Timestamp(6)
   last_history_id String?
-  watch_activated Boolean         @default(false)
+  watch_activated Boolean          @default(false)
   drafts          drafts[]
   email_tracked   email_tracked[]
+  payment_history PaymentHistory[]
   subscriptions   Subscription[]
   user_tags       user_tags[]
 
@@ -110,18 +111,28 @@ model Subscription {
 }
 
 model PaymentHistory {
-  id                 String        @id @default(uuid())
-  clerkUserId        String        @map("clerk_user_id")
-  subscriptionId     String?       @map("subscription_id")
-  dodoPaymentId      String?       @unique @map("dodo_payment_id")
-  dodoSubscriptionId String?       @map("dodo_subscription_id")
+  id                 String       @id @default(uuid())
+  clerkUserId        String       @map("clerk_user_id")
+  subscriptionId     String?      @map("subscription_id")
+  dodoPaymentId      String?      @unique @map("dodo_payment_id")
+  dodoSubscriptionId String?      @map("dodo_subscription_id")
+  invoiceId          String?      @map("invoice_id")
+  checkoutSessionId  String?      @map("checkout_session_id")
   amount             Int
-  currency           String        @default("USD")
+  settlementAmount   Int?         @map("settlement_amount")
+  currency           String       @default("INR")
   status             String
-  paymentType        String        @map("payment_type")
-  billingDate        DateTime?     @map("billing_date")
-  metadata           Json?         @default("{}")
-  createdAt          DateTime      @default(now()) @map("created_at")
+  paymentType        String       @map("payment_type")
+  paymentMethod      String?      @map("payment_method") 
+  errorCode          String?      @map("error_code")
+  errorMessage       String?      @map("error_message")
+  cardLastFour       String?      @map("card_last_four")
+  cardNetwork        String?      @map("card_network") 
+  cardType           String?      @map("card_type") 
+  billingDate        DateTime?    @map("billing_date")
+  metadata           Json?        @default("{}")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  user_tokens        user_tokens  @relation(fields: [clerkUserId], references: [clerk_user_id], onDelete: NoAction, onUpdate: NoAction)
   subscription       Subscription? @relation(fields: [subscriptionId], references: [id])
 
   @@index([clerkUserId])

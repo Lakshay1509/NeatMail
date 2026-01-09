@@ -2,7 +2,7 @@
 
 import { Hono } from "hono";
 import { Webhook } from "standardwebhooks";
-import { addSubscriptiontoDb } from "@/lib/payement";
+import { addPaymenttoDb, addSubscriptiontoDb } from "@/lib/payement";
 
 const app = new Hono().post("/", async (ctx) => {
   try {
@@ -37,45 +37,34 @@ const app = new Hono().post("/", async (ctx) => {
     }
 
     switch (payload.type) {
-      case "payment.succeeded":
-        console.log("Payment succeeded", payload.data);
-
-        break;
-
-      case "payment.failed":
-        console.log("Payment failed:", payload.data);
-        // Handle failed payment
-        break;
-
-      case "subscription.created":
-        console.log("Subscription created:", payload.data);
+      case "subscription.created": 
         await addSubscriptiontoDb(payload);
-        
-        // Handle new subscription
         break;
 
       case "subscription.cancelled":
-        console.log("Subscription cancelled:", payload.data);
-         await addSubscriptiontoDb(payload);
-        
-        // Handle subscription cancellation
+        await addSubscriptiontoDb(payload);
         break;
 
       case "subscription.updated":
-        console.log("Subscription updated:", payload.data);
         await addSubscriptiontoDb(payload);
-        
-        // Handle subscription update
         break;
       
       case "subscription.active":
-        console.log("Subscription created:", payload.data);
         await addSubscriptiontoDb(payload);
         break;
       
       case "subscription.renewed":
-        console.log("Subscription created:", payload.data);
         await addSubscriptiontoDb(payload);
+        break;
+      
+      case "payment.succeeded":
+        console.log("Payment succeeded", payload.data);
+        await addPaymenttoDb(payload);
+        break;
+
+      case "payment.failed":
+        console.log("Payment failed:", payload.data);
+        await addPaymenttoDb(payload);
         break;
 
       default:

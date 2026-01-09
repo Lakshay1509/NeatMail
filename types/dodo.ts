@@ -49,3 +49,31 @@ export interface Customer {
   name: string;
   phone_number: string | null;
 }
+
+export interface PaymentPayload {
+  business_id: string;
+  data: DodoPaymentData;
+}
+
+
+export interface DodoPaymentData {
+  payment_id: string;
+  subscription_id: string;
+  invoice_id: string;
+  checkout_session_id: string;
+  total_amount: number;
+  settlement_amount: number;
+  currency: string;
+  status: string;
+  payment_method: string;
+  card_last_four: string;
+  card_network: string;
+  card_type: string;
+  error_code: string;
+  error_message: string;
+  customer: Customer;
+  metadata: {
+    clerk_user_id : string
+  };
+  created_at: string;
+}
