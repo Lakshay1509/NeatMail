@@ -30,7 +30,7 @@ export async function addSubscriptiontoDb(
     })
     
   } catch (error) {
-    console.error("Error adding subscription to db");
+    console.error("Error adding subscription to db",error);
     throw error;
   }
 }

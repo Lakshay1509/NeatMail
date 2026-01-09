@@ -48,21 +48,34 @@ const app = new Hono().post("/", async (ctx) => {
         break;
 
       case "subscription.created":
-        await addSubscriptiontoDb(payload.data);
         console.log("Subscription created:", payload.data);
+        await addSubscriptiontoDb(payload.data);
+        
         // Handle new subscription
         break;
 
       case "subscription.cancelled":
-         await addSubscriptiontoDb(payload.data);
         console.log("Subscription cancelled:", payload.data);
+         await addSubscriptiontoDb(payload.data);
+        
         // Handle subscription cancellation
         break;
 
       case "subscription.updated":
-        await addSubscriptiontoDb(payload.data);
         console.log("Subscription updated:", payload.data);
+        await addSubscriptiontoDb(payload.data);
+        
         // Handle subscription update
+        break;
+      
+      case "subscription.active":
+        console.log("Subscription created:", payload.data);
+        await addSubscriptiontoDb(payload.data);
+        break;
+      
+      case "subscription.renewed":
+        console.log("Subscription created:", payload.data);
+        await addSubscriptiontoDb(payload.data);
         break;
 
       default:
