@@ -7,6 +7,8 @@ export async function addSubscriptiontoDb(
   try {
 
     const data = payload.data;
+
+    console.log(data);
     
     await db.subscription.upsert({
         where:{dodoSubscriptionId: data.subscription_id},
