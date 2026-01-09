@@ -55,7 +55,9 @@ export const ModelName = {
   tag: 'tag',
   user_tags: 'user_tags',
   email_tracked: 'email_tracked',
-  drafts: 'drafts'
+  drafts: 'drafts',
+  Subscription: 'Subscription',
+  PaymentHistory: 'PaymentHistory'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -126,12 +128,64 @@ export const DraftsScalarFieldEnum = {
 export type DraftsScalarFieldEnum = (typeof DraftsScalarFieldEnum)[keyof typeof DraftsScalarFieldEnum]
 
 
+export const SubscriptionScalarFieldEnum = {
+  id: 'id',
+  clerkUserId: 'clerkUserId',
+  dodoSubscriptionId: 'dodoSubscriptionId',
+  dodoCustomerId: 'dodoCustomerId',
+  customerEmail: 'customerEmail',
+  customerName: 'customerName',
+  status: 'status',
+  productId: 'productId',
+  currency: 'currency',
+  recurringAmount: 'recurringAmount',
+  quantity: 'quantity',
+  paymentFrequencyInterval: 'paymentFrequencyInterval',
+  paymentFrequencyCount: 'paymentFrequencyCount',
+  nextBillingDate: 'nextBillingDate',
+  previousBillingDate: 'previousBillingDate',
+  cancelAtNextBillingDate: 'cancelAtNextBillingDate',
+  cancelledAt: 'cancelledAt',
+  metadata: 'metadata',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SubscriptionScalarFieldEnum = (typeof SubscriptionScalarFieldEnum)[keyof typeof SubscriptionScalarFieldEnum]
+
+
+export const PaymentHistoryScalarFieldEnum = {
+  id: 'id',
+  clerkUserId: 'clerkUserId',
+  subscriptionId: 'subscriptionId',
+  dodoPaymentId: 'dodoPaymentId',
+  dodoSubscriptionId: 'dodoSubscriptionId',
+  amount: 'amount',
+  currency: 'currency',
+  status: 'status',
+  paymentType: 'paymentType',
+  billingDate: 'billingDate',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+} as const
+
+export type PaymentHistoryScalarFieldEnum = (typeof PaymentHistoryScalarFieldEnum)[keyof typeof PaymentHistoryScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: 'DbNull',
+  JsonNull: 'JsonNull'
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const QueryMode = {
@@ -148,4 +202,13 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: 'DbNull',
+  JsonNull: 'JsonNull',
+  AnyNull: 'AnyNull'
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 

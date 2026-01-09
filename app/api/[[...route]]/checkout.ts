@@ -32,6 +32,9 @@ const app = new Hono().post("/", async (ctx) => {
         email: emailAddress,
         name: name,
       },
+      metadata:{
+        clerk_user_id:userId
+      },
       return_url: process.env.NEXT_PUBLIC_API_URL!,
     });
 

@@ -18,6 +18,7 @@ model user_tokens {
   watch_activated Boolean         @default(false)
   drafts          drafts[]
   email_tracked   email_tracked[]
+  subscriptions   Subscription[]
   user_tags       user_tags[]
 
   @@schema("public")
@@ -75,5 +76,57 @@ model drafts {
   user_tokens   user_tokens   @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
   @@id([user_id, message_id])
+  @@schema("public")
+}
+
+model Subscription {
+  id                       String           @id @default(uuid())
+  clerkUserId              String           @map("clerk_user_id")
+  dodoSubscriptionId       String           @unique @map("dodo_subscription_id")
+  dodoCustomerId           String           @map("dodo_customer_id")
+  customerEmail            String           @map("customer_email")
+  customerName             String?          @map("customer_name")
+  status                   String
+  productId                String           @map("product_id")
+  currency                 String           @default("INR")
+  recurringAmount          Int              @map("recurring_amount")
+  quantity                 Int              @default(1)
+  paymentFrequencyInterval String           @map("payment_frequency_interval")
+  paymentFrequencyCount    Int              @map("payment_frequency_count")
+  nextBillingDate          DateTime?        @map("next_billing_date")
+  previousBillingDate      DateTime?        @map("previous_billing_date")
+  cancelAtNextBillingDate  Boolean          @default(false) @map("cancel_at_next_billing_date")
+  cancelledAt              DateTime?        @map("cancelled_at")
+  metadata                 Json?            @default("{}")
+  createdAt                DateTime         @default(now()) @map("created_at")
+  updatedAt                DateTime         @updatedAt @map("updated_at")
+  payments                 PaymentHistory[]
+  user_tokens              user_tokens      @relation(fields: [clerkUserId], references: [clerk_user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([clerkUserId])
+  @@index([status])
+  @@map("subscriptions")
+  @@schema("public")
+}
+
+model PaymentHistory {
+  id                 String        @id @default(uuid())
+  clerkUserId        String        @map("clerk_user_id")
+  subscriptionId     String?       @map("subscription_id")
+  dodoPaymentId      String?       @unique @map("dodo_payment_id")
+  dodoSubscriptionId String?       @map("dodo_subscription_id")
+  amount             Int
+  currency           String        @default("USD")
+  status             String
+  paymentType        String        @map("payment_type")
+  billingDate        DateTime?     @map("billing_date")
+  metadata           Json?         @default("{}")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  subscription       Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@index([clerkUserId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@map("payment_history")
   @@schema("public")
 }
