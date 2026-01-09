@@ -5,7 +5,7 @@ export async function addSubscriptiontoDb(
   data:SubscriptionPayload
 ) {
   try {
-
+    
     await db.subscription.upsert({
         where:{dodoSubscriptionId: data.data.subscription_id},
         update:{},

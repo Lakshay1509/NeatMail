@@ -54,11 +54,13 @@ const app = new Hono().post("/", async (ctx) => {
         break;
 
       case "subscription.cancelled":
+         await addSubscriptiontoDb(payload.data);
         console.log("Subscription cancelled:", payload.data);
         // Handle subscription cancellation
         break;
 
       case "subscription.updated":
+        await addSubscriptiontoDb(payload.data);
         console.log("Subscription updated:", payload.data);
         // Handle subscription update
         break;
