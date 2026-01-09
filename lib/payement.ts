@@ -12,7 +12,19 @@ export async function addSubscriptiontoDb(
     
     await db.subscription.upsert({
         where:{dodoSubscriptionId: data.subscription_id},
-        update:{},
+        update:{
+            status:data.status,
+            customerEmail:data.customer.email,
+            currency:data.currency,
+            recurringAmount:data.recurring_pre_tax_amount,
+            quantity:data.quantity,
+            paymentFrequencyInterval:data.payment_frequency_interval,
+            paymentFrequencyCount:data.payment_frequency_count,
+            nextBillingDate: new Date(data.next_billing_date),
+            previousBillingDate: new Date(data.previous_billing_date),
+            cancelAtNextBillingDate: data.cancel_at_next_billing_date,
+            metadata:data.metadata || {},
+        },
         create:{
             clerkUserId:data.metadata?.clerk_user_id,
             dodoSubscriptionId:data.subscription_id,
