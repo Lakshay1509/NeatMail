@@ -1,12 +1,14 @@
 import { PaymentPayload, SubscriptionPayload } from "@/types/dodo";
 import { db } from "./prisma";
+import { activateWatch, deactivateWatch } from "./gmail";
 
 export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
   try {
-    return await db.$transaction(async (tx) => {
-      const data = payload.data;
+    const data = payload.data;
 
-      const subscription = await tx.subscription.upsert({
+    // Step 1: Handle database operations in transaction
+    const subscription = await db.$transaction(async (tx) => {
+      const sub = await tx.subscription.upsert({
         where: { dodoSubscriptionId: data.subscription_id },
         update: {
           status: data.status,
@@ -39,21 +41,75 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
           metadata: data.metadata || {},
         },
       });
+
       await tx.paymentHistory.updateMany({
         where: {
           dodoSubscriptionId: data.subscription_id,
-          subscriptionId: null, // Only update unlinked payments
+          subscriptionId: null,
         },
         data: {
-          subscriptionId: subscription.id,
+          subscriptionId: sub.id,
         },
       });
 
-      return subscription;
+      return sub;
     });
+
+    // Step 2: Handle watch operations outside transaction
+    if (data.status === 'active') {
+      await handleWatchActivation(data.subscription_id);
+    }
+
+    if (data.status === 'expired' || data.status === 'cancelled' || data.status==='failed') {
+      await handleWatchDeactivation(data.subscription_id);
+    }
+
+    return subscription;
   } catch (error) {
     console.error("Error adding subscription to db", error);
     throw error;
+  }
+}
+
+async function handleWatchActivation(subscriptionId: string): Promise<void> {
+  try {
+    const response = await activateWatch(subscriptionId);
+    
+    if (response.success && response.userId) {
+      await db.user_tokens.update({
+        where: { clerk_user_id: response.userId },
+        data: {
+          watch_activated: true,
+          last_history_id: response.history_id,
+          updated_at: new Date(),
+        },
+      });
+    }
+  } catch (error) {
+   
+    console.error("Failed to activate Gmail watch:", error);
+    
+  }
+}
+
+async function handleWatchDeactivation(subscriptionId: string): Promise<void> {
+  try {
+    const response = await deactivateWatch(subscriptionId);
+    
+    if (response.success && response.userId) {
+      await db.user_tokens.update({
+        where: { clerk_user_id: response.userId },
+        data: {
+          watch_activated: false,
+          last_history_id: null,
+          updated_at: new Date(),
+        },
+      });
+    }
+  } catch (error) {
+    
+    console.error("Failed to deactivate Gmail watch:", error);
+    
   }
 }
 

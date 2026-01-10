@@ -1,28 +1,30 @@
-import { google } from 'googleapis';
-import { clerkClient } from '@clerk/nextjs/server';
+import { google } from "googleapis";
+import { clerkClient } from "@clerk/nextjs/server";
+import { db } from "./prisma";
+
 
 export async function getGmailClient(userId: string) {
   const client = await clerkClient();
-  
+
   // Get user's Google OAuth token from Clerk
   const externalAccounts = await client.users.getUserOauthAccessToken(
     userId,
-    'google'
+    "google"
   );
-  
+
   const accessToken = externalAccounts.data[0]?.token;
-  
+
   if (!accessToken) {
-    throw new Error('No Google access token found');
+    throw new Error("No Google access token found");
   }
-  
+
   const oauth2Client = new google.auth.OAuth2();
   oauth2Client.setCredentials({ access_token: accessToken });
-  
-  return google.gmail({ version: 'v1', auth: oauth2Client });
+
+  return google.gmail({ version: "v1", auth: oauth2Client });
 }
 
-async function getLabelMap(userId:string) {
+async function getLabelMap(userId: string) {
   const gmail = await getGmailClient(userId);
   const res = await gmail.users.labels.list({
     userId: "me",
@@ -31,24 +33,18 @@ async function getLabelMap(userId:string) {
 
   const map = new Map<string, string>();
 
-  res.data.labels?.forEach(label => {
+  res.data.labels?.forEach((label) => {
     map.set(label.id!, label.name!);
   });
 
   return map;
 }
 
-
-export async function getLabelledMails(
-  userId: string,
-  messageIds: string[]
-) {
+export async function getLabelledMails(userId: string, messageIds: string[]) {
   const gmail = await getGmailClient(userId);
 
-  
   const labelMap = await getLabelMap(userId);
 
- 
   const messages = await Promise.all(
     messageIds.map((messageId) =>
       gmail.users.messages.get({
@@ -69,11 +65,11 @@ export async function getLabelledMails(
       headers.find((h) => h.name === name)?.value ?? "";
 
     const labelNames =
-      res.data.labelIds?.map(id => labelMap.get(id) ?? id) ?? [];
+      res.data.labelIds?.map((id) => labelMap.get(id) ?? id) ?? [];
 
     return {
       messageId: res.data.id,
-      labels: labelNames, 
+      labels: labelNames,
       subject: getHeader("Subject"),
       from: getHeader("From"),
       internalDate: res.data.internalDate
@@ -83,9 +79,8 @@ export async function getLabelledMails(
   });
 }
 
-
 export async function createGmailDraft(
-  userId:string,
+  userId: string,
   threadId: string,
   messageId: string,
   subject: string,
@@ -93,30 +88,30 @@ export async function createGmailDraft(
   draftBody: string
 ) {
   // Create RFC 2822 formatted message
-  const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+  const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString("base64")}?=`;
   const messageParts = [
-    'MIME-Version: 1.0',
+    "MIME-Version: 1.0",
     `To: ${to}`,
     `Subject: Re: ${utf8Subject}`,
     `In-Reply-To: ${messageId}`,
     `References: ${messageId}`,
-    'Content-Type: text/html; charset=utf-8',
-    'Content-Transfer-Encoding: 7bit',
-    '',
+    "Content-Type: text/html; charset=utf-8",
+    "Content-Transfer-Encoding: 7bit",
+    "",
     draftBody,
   ];
 
-  const gmail = await getGmailClient(userId)
-  
-  const message = messageParts.join('\n');
+  const gmail = await getGmailClient(userId);
+
+  const message = messageParts.join("\n");
   const encodedMessage = Buffer.from(message)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 
   const draft = await gmail.users.drafts.create({
-    userId: 'me',
+    userId: "me",
     requestBody: {
       message: {
         raw: encodedMessage,
@@ -126,4 +121,106 @@ export async function createGmailDraft(
   });
 
   return draft.data;
+}
+
+export async function activateWatch(subscription_id: string) {
+  try {
+    const clerk = await clerkClient();
+
+    const data = await db.subscription.findUnique({
+      where:{dodoSubscriptionId:subscription_id},
+      select:{
+        clerkUserId:true
+      }
+    })
+
+    if (!data?.clerkUserId) {
+      throw new Error("Subscription not found or user ID missing");
+    }
+
+  
+  
+    const googleAccount = (
+      await clerk.users.getUserOauthAccessToken(data?.clerkUserId, "google")
+    ).data.find((acc) => acc.token);
+
+    if (!googleAccount?.token) {
+      throw new Error("No valid Google access token found");
+    }
+
+   
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({ access_token: googleAccount.token });
+
+    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+    const response = await gmail.users.watch({
+      userId: "me",
+      requestBody: {
+        labelIds: ["INBOX"],
+        topicName:
+          "projects/mail-service-483207/topics/gmail-push-notifications",
+      },
+    });
+
+    const historyId = response.data.historyId;
+    const expiration = response.data.expiration;
+
+    if (!historyId || !expiration) {
+      throw new Error("Invalid watch response from Gmail");
+    }
+
+   return {
+    success:true,
+    history_id:historyId,
+    userId: data?.clerkUserId
+   };
+
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
+
+export async function deactivateWatch(subscription_id: string) {
+  try {
+    const clerk = await clerkClient();
+
+    const data = await db.subscription.findUnique({
+      where:{dodoSubscriptionId:subscription_id},
+      select:{
+        clerkUserId:true
+      }
+    })
+    if (!data?.clerkUserId) {
+      throw new Error("Subscription not found or user ID missing");
+    }
+
+    const googleAccount = (
+      await clerk.users.getUserOauthAccessToken(data?.clerkUserId, "google")
+    ).data.find(acc => acc.token);
+
+    if (!googleAccount?.token) {
+      throw new Error("No valid Google access token found");
+    }
+
+    
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({ access_token: googleAccount.token });
+
+    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+    
+    await gmail.users.stop({
+      userId: "me",
+    });
+
+    return {
+      success:true,
+      userId: data?.clerkUserId
+    };
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
 }
