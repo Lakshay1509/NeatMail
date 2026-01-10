@@ -82,8 +82,14 @@ const app = new Hono()
     const data = await db.subscription.findFirst({
       where:{clerkUserId:userId,
         status:'active'
+      },
+      select:{
+        cancelAtNextBillingDate:true,
+        nextBillingDate:true
       }
     })
+
+    
 
     if(!data){
       return ctx.json({
@@ -94,8 +100,36 @@ const app = new Hono()
 
     return ctx.json({
       success:true,
-      subscribed:true
+      subscribed:true,
+      next_billing_date:data.nextBillingDate,
+      cancel_at_next_billing_date:data.cancelAtNextBillingDate
     },200)
+
+  })
+
+  .get('/payments',async(ctx)=>{
+
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const data = await db.paymentHistory.findMany({
+      where:{clerkUserId:userId},
+      select:{
+        id:true,
+        status:true,
+        dodoPaymentId:true,
+        paymentMethod:true,
+        amount:true,
+        currency:true,
+        createdAt:true,
+      }
+    })
+
+    return ctx.json({data},200)
+
 
   })
 

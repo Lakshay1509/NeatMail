@@ -62,6 +62,56 @@ const app = new Hono().post("/", async (ctx) => {
   } catch (error) {
     return ctx.json({ error }, 500);
   }
-});
+})
+
+.post('cancelSubscription',async(ctx)=>{
+  try{
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const renewQuery = ctx.req.query("renew");
+
+    const subscription = await db.subscription.findFirst({
+          where:{
+            clerkUserId:userId,
+            status:'active'
+          }
+    })
+
+     if(!subscription){
+          return ctx.json({error:'You do not have an active subscription'},409);
+    }
+
+    const renew =  renewQuery==='true' ? true :false
+
+    const response = await fetch(
+      `${process.env.DODO_WEB_URL!}/subscriptions/${subscription.dodoSubscriptionId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${process.env.DODO_API!}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cancel_at_next_billing_date: renew
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to cancel subscription');
+    }
+
+    const data = await response.json();
+
+    return ctx.json({ success: true, data }, 200);
+
+  }catch(error){
+    return ctx.json({error},500);
+  }
+})
 
 export default app;

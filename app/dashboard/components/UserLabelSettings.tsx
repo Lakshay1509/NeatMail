@@ -80,7 +80,7 @@ const UserLabelSettings = () => {
 							<Checkbox
 								checked={watch}
 								onCheckedChange={(checked) => setWatch(!!checked)}
-								className="w-5 h-5 border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+								className="w-5 h-5 border-gray-300"
 							/>
 						</div>
 						
@@ -111,7 +111,7 @@ const UserLabelSettings = () => {
 									<Checkbox
 										checked={selectedCategories.includes(category.name)}
 										onCheckedChange={() => toggleCategory(category.name)}
-										className="w-5 h-5 border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+										className="w-5 h-5 border-gray-300"
 									/>
 								</div>
 								<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -130,7 +130,7 @@ const UserLabelSettings = () => {
 
 				<div className="mt-10 pt-6 border-t border-gray-100 flex justify-end">
 					<Button
-						className="bg-blue-600 hover:bg-blue-700 text-white min-w-[150px] shadow-sm"
+						className=" text-white min-w-[150px] shadow-sm"
 						onClick={handleSubmit}
 						disabled={mutation.isPending || !isValid}
 					>

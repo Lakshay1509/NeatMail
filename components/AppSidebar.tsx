@@ -1,4 +1,4 @@
-import { Mail, Home, MessageSquareDashed, Settings } from "lucide-react"
+import { Mail, Home, MessageSquareDashed, Settings, Receipt } from "lucide-react"
 
 import {
   Sidebar,
@@ -28,6 +28,11 @@ const items = [
     title: "Drafts",
     url: "/dashboard/drafts",
     icon: MessageSquareDashed,
+  },
+  {
+    title : 'Billing',
+    url : "/dashboard/billing",
+    icon : Receipt
   },
   {
     title: "Settings",
