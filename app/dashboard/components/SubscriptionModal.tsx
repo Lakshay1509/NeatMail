@@ -47,7 +47,8 @@ export const SubscriptionModal = ({
       if (response.ok) {
         window.location.href = data.url;
       } else {
-        setError(data.message || "Something went wrong");
+        
+        setError(data.error || "Something went wrong");
       }
     } catch (err) {
       setError("Network error. Please try again.");

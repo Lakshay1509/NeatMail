@@ -1,3 +1,4 @@
+import { db } from "@/lib/prisma";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import DodoPayments from "dodopayments";
 
@@ -15,6 +16,25 @@ const app = new Hono().post("/", async (ctx) => {
     if (!userId) {
       return ctx.json({ error: "Unauthorized" }, 401);
     }
+
+    const subscription = await db.subscription.findFirst({
+          where:{
+            clerkUserId:userId,
+            status:'active'
+          }
+        })
+
+    const payment = await db.paymentHistory.findFirst({
+      where:{
+        clerkUserId:userId,
+        status:'processing'
+      }
+    })
+    
+    if(subscription || payment){
+          return ctx.json({error:'You have active subscription or a payment in process'},409);
+    }
+
 
     const user = await currentUser();
 
