@@ -65,6 +65,15 @@ const app = new Hono().post("/", async (ctx) => {
         await addSubscriptiontoDb(payload);
         break;
       
+      case "subscription.failed":
+        await addSubscriptiontoDb(payload);
+
+      case "subscription.expired":
+        await addSubscriptiontoDb(payload);
+
+      case "subscription.on_hold":
+        await addSubscriptiontoDb(payload);
+      
       case "payment.succeeded":
         await addPaymenttoDb(payload);
         break;
