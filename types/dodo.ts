@@ -66,11 +66,12 @@ export interface DodoPaymentData {
   currency: string;
   status: string;
   payment_method: string;
-  card_last_four: string;
-  card_network: string;
-  card_type: string;
-  error_code: string;
-  error_message: string;
+  payment_method_type: string,
+  card_last_four: string | null;
+  card_network: string | null;
+  card_type: string | null;
+  error_code: string | null;
+  error_message: string | null;
   customer: Customer;
   metadata: {
     clerk_user_id : string
