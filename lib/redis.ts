@@ -14,3 +14,13 @@ export async function markMessageProcessed(messageId: string) {
   // Store for 24 hours (86400 seconds)
   await redis.setex(`processed:${messageId}`, 86400, 'true');
 }
+
+export async function isDodoWebhookProcessed(webhookId: string): Promise<boolean> {
+  const exists = await redis.exists(`processed:${webhookId}`);
+  return exists === 1;
+}
+
+export async function markDodoWebhookProcessed(webhookId: string) {
+  // Store for 24 hours (86400 seconds)
+  await redis.setex(`processed:${webhookId}`, 86400, 'true');
+}

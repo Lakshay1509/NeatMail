@@ -3,6 +3,7 @@
 import { Hono } from "hono";
 import { Webhook } from "standardwebhooks";
 import { addPaymenttoDb, addSubscriptiontoDb } from "@/lib/payement";
+import { isDodoWebhookProcessed, markDodoWebhookProcessed } from "@/lib/redis";
 
 const app = new Hono().post("/", async (ctx) => {
   try {
@@ -19,6 +20,13 @@ const app = new Hono().post("/", async (ctx) => {
     if (!webhook_id || !webhook_timestamp || !webhook_signature) {
       return new Response("Missing webhook headers", { status: 400 });
     }
+
+    if (await isDodoWebhookProcessed(webhook_id)) {
+            
+        return ctx.json({success:true},200);
+    }
+
+  
 
     const payload = await ctx.req.json();
     const body = JSON.stringify(payload);
@@ -58,20 +66,27 @@ const app = new Hono().post("/", async (ctx) => {
         break;
       
       case "payment.succeeded":
-        console.log("Payment succeeded", payload.data);
+        await addPaymenttoDb(payload);
+        break;
+
+      case "payment.processing":
+        await addPaymenttoDb(payload);
+        break;
+
+
+      case "payment.cancelled":
         await addPaymenttoDb(payload);
         break;
 
       case "payment.failed":
-        console.log("Payment failed:", payload.data);
         await addPaymenttoDb(payload);
         break;
 
       default:
         console.log("Unhandled webhook event:", payload.type);
     }
-
-    return ctx.json({ success: "true" }, 200);
+    await markDodoWebhookProcessed(webhook_id);
+    return ctx.json({ success: true }, 200);
   } catch (error) {
     return ctx.json({ error }, 500);
   }
