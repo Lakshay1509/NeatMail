@@ -1,3 +1,4 @@
+import { db } from "@/lib/prisma";
 import { updateHistoryId } from "@/lib/supabase";
 import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import { google } from "googleapis";
@@ -10,6 +11,17 @@ const app = new Hono().post("/", async (ctx) => {
 
     if (!userId) {
       return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const subscription = await db.subscription.findFirst({
+      where:{
+        clerkUserId:userId,
+        status:'active'
+      }
+    })
+
+    if(!subscription){
+      return ctx.json({error:'No active subscription'},403);
     }
 
     const email = user?.emailAddresses[0].emailAddress;

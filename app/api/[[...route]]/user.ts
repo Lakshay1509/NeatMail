@@ -71,4 +71,32 @@ const app = new Hono()
 
   })
 
+  .get('/subscription',async(ctx)=>{
+
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const data = await db.subscription.findFirst({
+      where:{clerkUserId:userId,
+        status:'active'
+      }
+    })
+
+    if(!data){
+      return ctx.json({
+        success:false,
+        subscribed:false
+      },200);
+    }
+
+    return ctx.json({
+      success:true,
+      subscribed:true
+    },200)
+
+  })
+
 export default app;

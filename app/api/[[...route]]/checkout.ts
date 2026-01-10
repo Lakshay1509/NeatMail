@@ -35,7 +35,7 @@ const app = new Hono().post("/", async (ctx) => {
       metadata:{
         clerk_user_id:userId
       },
-      return_url: process.env.NEXT_PUBLIC_API_URL!,
+     return_url: `${process.env.NEXT_PUBLIC_API_URL!}/dashboard`
     });
 
     return ctx.json({ url: checkout.checkout_url }, 200);
