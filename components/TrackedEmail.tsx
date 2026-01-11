@@ -40,7 +40,7 @@ const TrackedEmail = ({limit,dashboard}:Props) => {
         <div className={`${dashboard===true ? "rounded-xl border border-gray-100 shadow-sm" : "" }`}>
             {dashboard && <div className="flex items-center justify-between p-6 border-b border-gray-100">
                 <h3 className="font-bold text-gray-900">Recent Tracked Mail</h3>
-                {dashboard && <Link className="text-sm font-medium text-blue-600 hover:text-blue-700" href='/dashboard/mails'>View All</Link>}
+                {dashboard && <Link className="text-sm font-medium text-blue-600 hover:text-blue-700" href='/mails'>View All</Link>}
             </div>}
 
             <div className="overflow-x-auto">

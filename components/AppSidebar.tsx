@@ -16,27 +16,27 @@ import Link from "next/link"
 const items = [
   {
     title: "Home",
-    url: "/dashboard",
+    url: "/",
     icon: Home,
   },
   {
     title: "Mails",
-    url: "/dashboard/mails",
+    url: "/mails",
     icon: Mail,
   },
   {
     title: "Drafts",
-    url: "/dashboard/drafts",
+    url: "/drafts",
     icon: MessageSquareDashed,
   },
   {
     title : 'Billing',
-    url : "/dashboard/billing",
+    url : "/billing",
     icon : Receipt
   },
   {
     title: "Settings",
-    url: "/dashboard/settings",
+    url: "/settings",
     icon: Settings,
   },
 ]

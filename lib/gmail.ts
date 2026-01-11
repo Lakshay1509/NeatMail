@@ -4,24 +4,41 @@ import { db } from "./prisma";
 
 
 export async function getGmailClient(userId: string) {
-  const client = await clerkClient();
+  try {
+    const client = await clerkClient();
 
-  // Get user's Google OAuth token from Clerk
-  const externalAccounts = await client.users.getUserOauthAccessToken(
-    userId,
-    "google"
-  );
+    // Get user's Google OAuth token from Clerk
+    const externalAccounts = await client.users.getUserOauthAccessToken(
+      userId,
+      "google"
+    );
 
-  const accessToken = externalAccounts.data[0]?.token;
+    const accessToken = externalAccounts.data[0]?.token;
 
-  if (!accessToken) {
-    throw new Error("No Google access token found");
+    if (!accessToken) {
+      throw new Error("No Google access token found. User needs to reconnect their Google account.");
+    }
+
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({ access_token: accessToken });
+
+    return google.gmail({ version: "v1", auth: oauth2Client });
+  } catch (error: any) {
+    console.error('Failed to get Gmail client:', {
+      userId,
+      error: error.message,
+      code: error.code,
+      status: error.status,
+      clerkTraceId: error.clerkTraceId
+    });
+    
+    // If it's a Clerk API error related to OAuth tokens
+    if (error.code === 'api_response_error' && error.status === 400) {
+      throw new Error("Google OAuth token has expired or is invalid. Please reconnect your Google account in your user profile.");
+    }
+    
+    throw error;
   }
-
-  const oauth2Client = new google.auth.OAuth2();
-  oauth2Client.setCredentials({ access_token: accessToken });
-
-  return google.gmail({ version: "v1", auth: oauth2Client });
 }
 
 async function getLabelMap(userId: string) {

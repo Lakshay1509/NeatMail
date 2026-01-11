@@ -58,7 +58,7 @@ const app = new Hono()
         metadata: {
           clerk_user_id: userId,
         },
-        return_url: `${process.env.NEXT_PUBLIC_API_URL!}/dashboard`,
+        return_url: `${process.env.NEXT_PUBLIC_API_URL!}`,
       });
 
       return ctx.json({ url: checkout.checkout_url }, 200);

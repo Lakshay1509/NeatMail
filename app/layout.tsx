@@ -5,7 +5,7 @@ import "./globals.css";
 import Navbar from "../components/Navbar";
 import { QueryProviders } from "@/providers/QueryProvider";
 import { Toaster } from "sonner";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 
 const geistSans = Geist({
@@ -34,14 +34,17 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-           <SidebarProvider>
-          <QueryProviders>
-            <Toaster richColors theme="light" />
-            
-           
-            <Navbar />
-            {children}
-          </QueryProviders>
+          <SidebarProvider>
+            <QueryProviders>
+              <div className="ml-2">
+                <AppSidebar />
+              </div>
+              <Toaster richColors theme="light" />
+              <SidebarTrigger className="hidden md:block" />
+
+              <Navbar />
+              {children}
+            </QueryProviders>
           </SidebarProvider>
         </body>
       </html>

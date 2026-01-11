@@ -1,4 +1,5 @@
-import UserLabelSettings from "../components/UserLabelSettings"
+import UserLabelSettings from "@/components/UserLabelSettings"
+
 
 
 const page = () => {

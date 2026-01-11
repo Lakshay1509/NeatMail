@@ -1,4 +1,5 @@
-import TrackedEmail from "../components/TrackedEmail"
+import TrackedEmail from "@/components/TrackedEmail"
+
 
 
 const page = () => {

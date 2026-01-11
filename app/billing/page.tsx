@@ -1,5 +1,5 @@
-import Billing from "../components/Billing"
-import Payments from "../components/Payments"
+import Billing from "../../components/Billing"
+import Payments from "../../components/Payments"
 
 
 const page = () => {

@@ -1,4 +1,5 @@
-import DraftEmails from "../components/EmailDrafts"
+import DraftEmails from "@/components/EmailDrafts"
+
 
 
 const page = () => {
