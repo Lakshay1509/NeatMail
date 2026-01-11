@@ -17,7 +17,7 @@ const Dashboard = () => {
         const hour = new Date().getHours();
         if (hour < 12) return { text: "Good Morning", gradient: "from-indigo-900 via-sky-800 to-emerald-800" };
         if (hour < 18) return { text: "Good Afternoon", gradient: "from-blue-900 via-violet-800 to-fuchsia-800" };
-        return { text: "Good Evening", gradient: "from-slate-900 via-purple-900 to-slate-900" };
+        return { text: "Good Evening", gradient: "from-slate-800 via-purple-700 to-slate-800" };
     };
 
     const greeting = getGreeting();

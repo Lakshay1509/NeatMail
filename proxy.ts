@@ -1,6 +1,27 @@
-import { clerkMiddleware } from '@clerk/nextjs/server';
+import { clerkMiddleware,createRouteMatcher } from '@clerk/nextjs/server';
 
-export default clerkMiddleware();
+const isPublicRoute = 
+createRouteMatcher([
+  '/sign-in(.*)'
+])
+
+const isPublicApiRoute=createRouteMatcher([
+  '/api/gmail-webhook/:path*',
+  '/api/clerk/:path*',
+  '/api/dodowebhook/:path*'
+])
+
+export default clerkMiddleware(async(auth,req)=>{
+  
+
+  if(isPublicApiRoute(req) || isPublicRoute(req)){
+    return;
+  }
+
+  await auth.protect();
+
+
+});
 
 export const config = {
   matcher: [
