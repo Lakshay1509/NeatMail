@@ -1,6 +1,7 @@
 "use client";
 
 import { useGetUserPayments } from "@/features/user/use-get-user-payment";
+import { useGetUserInvoice } from "@/features/user/use-get-user-invoice";
 import {
   Table,
   TableBody,
@@ -11,10 +12,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 
 const Payments = () => {
   const { data, isLoading, isError } = useGetUserPayments();
+  const { mutate: downloadInvoice, isPending: isDownloading } = useGetUserInvoice();
 
   if (isLoading) return <div>Loading payments...</div>;
   if (isError) return <div>Error loading payments</div>;
@@ -48,8 +50,17 @@ const Payments = () => {
                   : "N/A"}
               </TableCell>
               <TableCell>
-                <Button variant="ghost" size="icon">
-                  <Download className="h-4 w-4" />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  disabled={isDownloading} 
+                  onClick={() => downloadInvoice(payment.dodoPaymentId ?? '')}
+                >
+                  {isDownloading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
                 </Button>
               </TableCell>
             </TableRow>

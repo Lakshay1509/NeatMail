@@ -7,7 +7,7 @@ const page = () => {
         <div className="px-6">
             <h1 className="text-2xl font-bold tracking-tight">All Tracked Mails</h1>
             <p className="text-muted-foreground">
-                Manage and view all your tracked emails.
+                View all your labelled emails.
             </p>
         </div>
         <TrackedEmail limit={50} dashboard={false}/>

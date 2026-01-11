@@ -7,7 +7,7 @@ const page = () => {
       <div className="px-6">
             <h1 className="text-2xl font-bold tracking-tight">All Drafts</h1>
             <p className="text-muted-foreground">
-                Manage and view all your drafts.
+               View all your drafts.
             </p>
             
         </div>
