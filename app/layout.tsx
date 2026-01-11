@@ -6,7 +6,7 @@ import Navbar from "../components/Navbar";
 import { QueryProviders } from "@/providers/QueryProvider";
 import { Toaster } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
+import { ConditionalSidebar } from "@/components/ConditionalSidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,18 +34,16 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <SidebarProvider>
-            <QueryProviders>
-              <div className="ml-2">
-                <AppSidebar />
-              </div>
-              <Toaster richColors theme="light" />
-              <SidebarTrigger className="hidden md:block" />
-
-              <Navbar />
-              {children}
-            </QueryProviders>
-          </SidebarProvider>
+          <QueryProviders>
+            <SidebarProvider>
+              <ConditionalSidebar />
+              <main className="w-full">
+                <Toaster richColors theme="light" />
+                <Navbar />
+                {children}
+              </main>
+            </SidebarProvider>
+          </QueryProviders>
         </body>
       </html>
     </ClerkProvider>

@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 export default function SignInPage() {
   return (
-    <div className="flex overflow-hidden max-w-full min-h-[85vh]">
+    <div className="flex overflow-hidden max-w-full min-h-[100vh]">
       {/* Left side - Sign in form */}
       <div className="flex-1 flex items-center justify-center mx-auto bg-background">
         <div className="w-full max-w-md space-y-8">
