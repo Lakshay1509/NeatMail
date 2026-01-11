@@ -117,6 +117,7 @@ const app = new Hono()
 
       return ctx.json({ success: true, data }, 200);
     } catch (error) {
+      console.log(error);
       return ctx.json({ error }, 500);
     }
   })
