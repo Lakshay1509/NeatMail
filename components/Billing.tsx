@@ -72,6 +72,7 @@ const Billing = () => {
       }
     } catch (err) {
       setError("Network error. Please try again.");
+      console.log(err)
     } finally {
       setIsLoading(false);
     }
