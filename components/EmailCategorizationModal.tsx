@@ -36,7 +36,7 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 		)
 	}
 
-	const isValid = selectedCategories.length >= 3;
+	const isValid = selectedCategories.length >= 1;
 
     const handleSubmit = async()=>{
 		if (!isValid) return;
@@ -57,7 +57,7 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 				<DialogHeader>
 					
 					<DialogDescription className="text-base mt-2">
-						We will organize your emails using the categories below to keep you focused on what's important. Please select at least 3 categories.
+						We will organize your emails using the categories below to keep you focused on what's important.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -96,7 +96,7 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 
 				<DialogFooter className="mt-6">
 					<Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg" onClick={handleSubmit} disabled={mutation.isPending || !isValid}>
-						{isValid ? 'Update preferences' : `Select ${3 - selectedCategories.length} more categories`}
+						{isValid ? 'Update preferences' : `Select ${1 - selectedCategories.length} more categories`}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

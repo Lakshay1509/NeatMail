@@ -42,7 +42,7 @@ const UserLabelSettings = () => {
 		)
 	}
 
-	const isValid = selectedCategories.length >= 3;
+	const isValid = selectedCategories.length >= 1;
 
 	const handleSubmit = async () => {
 		if (!isValid) return;
@@ -92,7 +92,7 @@ const UserLabelSettings = () => {
 				<div className="mb-8">
 					<h2 className="text-lg font-semibold text-gray-900 mb-2">Category Preferences</h2>
 					<p className="text-gray-600 text-sm md:text-base">
-						We will organize your emails using the categories below to keep you focused on what's important. Please select at least 3 categories.
+						We will organize your emails using the categories below to keep you focused on what's important. 
 					</p>
 				</div>
 
@@ -134,7 +134,7 @@ const UserLabelSettings = () => {
 						onClick={handleSubmit}
 						disabled={mutation.isPending || !isValid}
 					>
-						{mutation.isPending ? 'Saving...' : isValid ? 'Save Preferences' : `Select ${3 - selectedCategories.length} more`}
+						{mutation.isPending ? 'Saving...' : isValid ? 'Save Preferences' : `Select ${1 - selectedCategories.length} more`}
 					</Button>
 				</div>
 			</div>
