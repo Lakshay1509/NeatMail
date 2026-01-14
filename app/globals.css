@@ -14,6 +14,8 @@ body{
 
 @theme inline {
 
+    --font-logo: "Playfair Display", serif;
+
     --radius-sm: calc(var(--radius) - 4px);
 
     --radius-md: calc(var(--radius) - 2px);
@@ -236,8 +238,6 @@ body{
     font-family: 'Inter', system-ui, sans-serif;
   }
   
-  h1, h2, h3, h4, h5, h6, .font-serif {
-    font-family: 'Playfair Display', Georgia, serif;
-  }
+  
 }
 
