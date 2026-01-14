@@ -103,12 +103,10 @@ const CreateLabel = () => {
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select a color" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="max-h-[300px]">
                                     {colors.map((c) => (
                                         <SelectItem key={c.value} value={c.value}>
-                                            
                                                 <div className="w-4 h-4 rounded-full" style={{ backgroundColor: c.value }} />
-                                            
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

@@ -5,14 +5,16 @@ import { useGetUserEmails } from "@/features/email/use-get-user-email"
 import { CATEGORIES } from "./EmailCategorizationModal";
 import Image from "next/image";
 import Link from "next/link";
+import { useGetCustomTags } from "@/features/tags/use-get-custom-tag";
 
-interface Props{
-    limit:number,
-    dashboard:boolean
+interface Props {
+    limit: number,
+    dashboard: boolean
 }
 
-const TrackedEmail = ({limit,dashboard}:Props) => {
+const TrackedEmail = ({ limit, dashboard }: Props) => {
     const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useGetUserEmails(limit);
+    const { data: customData, isLoading: customLoading, isError: customError } = useGetCustomTags();
 
     const formatDate = (timestamp: string | null) => {
         if (!timestamp) return "-";
@@ -23,21 +25,21 @@ const TrackedEmail = ({limit,dashboard}:Props) => {
 
     const emails = data?.pages.flatMap((page) => page.emails) || [];
 
-    if (isLoading) return <div className="h-48 bg-gray-50 rounded-xl animate-pulse"></div>
-    if (isError) return null;
+    if (isLoading || customLoading) return <div className="h-48 bg-gray-50 rounded-xl animate-pulse"></div>
+    if (isError || customError) return null;
 
 
-    if(emails.length===0){
-            return (
-                <div className={`flex flex-col justify-center items-center w-full ${dashboard ? "min-h-[40vh]" :  "min-h-[60vh]"}`}>
-                    <Image src='/no-mail.webp' alt="no-mail" width={200} height={200} />
-                    
-                </div>
-            )
+    if (emails.length === 0) {
+        return (
+            <div className={`flex flex-col justify-center items-center w-full ${dashboard ? "min-h-[40vh]" : "min-h-[60vh]"}`}>
+                <Image src='/no-mail.webp' alt="no-mail" width={200} height={200} />
+
+            </div>
+        )
     }
 
     return (
-        <div className={`${dashboard===true ? "rounded-xl border border-gray-100 shadow-sm" : "" }`}>
+        <div className={`${dashboard === true ? "rounded-xl border border-gray-100 shadow-sm" : ""}`}>
             {dashboard && <div className="flex items-center justify-between p-6 border-b border-gray-100">
                 <h3 className="font-bold text-gray-900">Recent Tracked Mail</h3>
                 {dashboard && <Link className="text-sm font-medium text-gray-600 hover:text-gray-700" href='/mails'>View All</Link>}
@@ -51,7 +53,7 @@ const TrackedEmail = ({limit,dashboard}:Props) => {
                             <th className="px-6 py-4">Subject</th>
                             <th className="px-6 py-4">Label</th>
                             <th className="px-6 py-4">Date</th>
-                            
+
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -66,7 +68,10 @@ const TrackedEmail = ({limit,dashboard}:Props) => {
                                 <td className="px-6 py-4">
                                     <div className="flex flex-wrap gap-1">
                                         {email.labels.map((label, idx) => {
-                                            const category = CATEGORIES.find((c) => c.name === label);
+                                            const category =
+                                                CATEGORIES.find(c => c.name === label) ||
+                                                customData?.data.find(c => c.name === label);
+
                                             if (!category) return null;
                                             return (
                                                 <span
@@ -84,13 +89,13 @@ const TrackedEmail = ({limit,dashboard}:Props) => {
                                 <td className="px-6 py-4 text-sm text-gray-500">
                                     {formatDate(email.internalDate)}
                                 </td>
-                               
+
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
-            
+
             {!dashboard && hasNextPage && (
                 <div className="p-4 flex justify-center border-t border-gray-100">
                     <button
@@ -102,7 +107,7 @@ const TrackedEmail = ({limit,dashboard}:Props) => {
                     </button>
                 </div>
             )}
-            
+
         </div>
     )
 }

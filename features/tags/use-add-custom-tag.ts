@@ -1,5 +1,5 @@
 import { InferRequestType, InferResponseType } from "hono";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client } from "@/lib/hono";
 import { toast } from "sonner";
 
@@ -9,6 +9,7 @@ type RequestType = InferRequestType<
 >['json'];
 
 export const addCustomTags = () => {
+  const query = useQueryClient();
   return useMutation<ResponseType, Error, RequestType>({
     mutationFn: async (json) => {
       const response = await client.api.tags['create-custom']['$post']({
@@ -25,6 +26,7 @@ export const addCustomTags = () => {
     },
 
     onSuccess:()=>{
+        query.invalidateQueries({queryKey:['user-custom-tags']})
         toast.success("Custom label added succesfully")
     },
    

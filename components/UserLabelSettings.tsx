@@ -102,7 +102,7 @@ const UserLabelSettings = () => {
                     <CreateLabel />
 				</div>
 
-				<div className="space-y-6 ">
+				<div className="space-y-6 border-b border-gray-300">
 					<div className="grid grid-cols-[auto_1fr] gap-x-6 items-end pb-2 border-b border-gray-100 text-sm text-gray-500 font-medium">
 						<div className="w-24 text-center leading-tight">
 							Enable
