@@ -11,19 +11,33 @@ import { addWatch } from "@/features/watch/use-post-watch";
 import { deleteWatch } from "@/features/watch/use-delete-watch";
 import CreateLabel from "./CreateLabel";
 import { useGetCustomTags } from "@/features/tags/use-get-custom-tag";
+import { useDeleteTag } from "@/features/tags/use-delete-tags";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { MoreVertical, Trash } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
+
+
 
 
 const UserLabelSettings = () => {
 
 	const { data, isLoading, isError } = useGetUserTags();
-	const {data:customData,isLoading:customLoading,isError:customError} = useGetCustomTags();
+	const { data: customData, isLoading: customLoading, isError: customError } = useGetCustomTags();
 	const { data: watchData, isLoading: watchLoading } = useGetUserWatch();
 	const mutation = addTagstoUser();
 	const addWatchMutation = addWatch();
 	const deleteWatchMutation = deleteWatch();
+	const deleteTagMutation = useDeleteTag();
 	const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-	const [watch,setWatch] = useState<boolean>();
-	
+	const [watch, setWatch] = useState<boolean>();
+	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+	const [id, setId] = useState<string>("");
+
 
 	useEffect(() => {
 		if (data) {
@@ -32,7 +46,7 @@ const UserLabelSettings = () => {
 			setSelectedCategories(existingTags);
 		}
 
-		if(watchData){
+		if (watchData) {
 			setWatch(watchData.data.watch_activated)
 		}
 	}, [data, watchData]);
@@ -51,16 +65,26 @@ const UserLabelSettings = () => {
 		if (!isValid) return;
 		await mutation.mutateAsync({ tags: selectedCategories });
 
-		if(watch){
+		if (watch) {
 			await addWatchMutation.mutateAsync({});
 		}
 
-		if(!watch){
+		if (!watch) {
 			await deleteWatchMutation.mutateAsync({});
 		}
 
 	}
-	
+
+	const handleDeleteClick = async () => {
+
+		await deleteTagMutation.mutateAsync({ id: id })
+	}
+
+	const handleDialogClick = async (id: string) => {
+		setIsDeleteDialogOpen(true);
+		setId(id)
+
+	}
 
 
 
@@ -86,7 +110,7 @@ const UserLabelSettings = () => {
 								className="w-5 h-5 border-gray-300"
 							/>
 						</div>
-						
+
 					</div>
 				</div>
 			</div>
@@ -94,15 +118,15 @@ const UserLabelSettings = () => {
 			<div className="bg-white ">
 				<div className="mb-8 flex flex-row items-center justify-between space-x-2">
 					<div>
-                        <h2 className="text-lg font-semibold text-gray-900 mb-2">Category Preferences</h2>
-                        <p className="text-gray-600 text-sm md:text-base">
-                            We will organize your emails using the categories below to keep you focused on what's important. 
-                        </p>
-                    </div>
-                    <CreateLabel />
+						<h2 className="text-lg font-semibold text-gray-900 mb-2">Category Preferences</h2>
+						<p className="text-gray-600 text-sm md:text-base">
+							We will organize your emails using the categories below to keep you focused on what's important.
+						</p>
+					</div>
+					
 				</div>
 
-				<div className="space-y-6 border-b border-gray-300">
+				<div className="space-y-6 ">
 					<div className="grid grid-cols-[auto_1fr] gap-x-6 items-end pb-2 border-b border-gray-100 text-sm text-gray-500 font-medium">
 						<div className="w-24 text-center leading-tight">
 							Enable
@@ -133,44 +157,115 @@ const UserLabelSettings = () => {
 						))}
 					</div>
 
+
+				</div>
+
+				<div className="relative py-6">
+					<div className="absolute inset-0 flex items-center" aria-hidden="true">
+						<div className="w-full border-t border-gray-200" />
+					</div>
+				</div>
+
+				<div className="mb-8 flex flex-row items-center justify-between space-x-2">
+					<div>
+						<h2 className="text-lg font-semibold text-gray-900 mb-2">Custom Labels</h2>
+						<p className="text-gray-600 text-sm md:text-base">
+							Labels made by you for your personlized workflow!
+						</p>
+					</div>
+					<CreateLabel />
 					
 				</div>
 
 				<div className="space-y-6">
-					
-					<div className="space-y-3">
-						{customData?.data.map((category) => (
-							<div key={category.id} className="grid grid-cols-[auto_1fr] gap-x-6 items-center group hover:bg-gray-50 p-3 rounded-lg transition-colors -mx-3">
-								<div className="flex justify-center w-24">
-									<Checkbox
-										checked={selectedCategories.includes(category.name)}
-										onCheckedChange={() => toggleCategory(category.name)}
-										className="w-5 h-5 border-gray-300"
-									/>
-								</div>
-								<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-									<span
-										className="px-3 py-1 rounded-full text-white text-xs font-semibold uppercase tracking-wide whitespace-nowrap w-fit shadow-sm"
-										style={{ backgroundColor: category.color }}
-									>
-										{category.name}
-									</span>
-								</div>
-							</div>
-						))}
+					<div className="grid grid-cols-[auto_1fr] gap-x-6 items-end pb-2 border-b border-gray-100 text-sm text-gray-500 font-medium">
+						<div className="w-24 text-center leading-tight">
+							Enable
+						</div>
+						<div className="pb-0.5">Category Details</div>
 					</div>
-				</div>
+				
 
-				<div className="mt-10 pt-6 border-t border-gray-100 flex justify-end">
-					<Button
-						className=" text-white min-w-[150px] shadow-sm"
-						onClick={handleSubmit}
-						disabled={mutation.isPending || !isValid}
-					>
-						{mutation.isPending ? 'Saving...' : isValid ? 'Save Preferences' : `Select ${1 - selectedCategories.length} more`}
-					</Button>
+				<div>
+					{customData?.data.map((category) => (
+						<div key={category.id} className="grid grid-cols-[auto_1fr_auto] gap-x-6 items-center group hover:bg-gray-50 p-3 rounded-lg transition-colors -mx-3">
+							<div className="flex justify-center w-24">
+								<Checkbox
+									checked={selectedCategories.includes(category.name)}
+									onCheckedChange={() => toggleCategory(category.name)}
+									className="w-5 h-5 border-gray-300"
+								/>
+							</div>
+							<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+								<span
+									className="px-3 py-1 rounded-full text-white text-xs font-semibold uppercase tracking-wide whitespace-nowrap w-fit shadow-sm"
+									style={{ backgroundColor: category.color }}
+								>
+									{category.name}
+								</span>
+							</div>
+							<div>
+								<DropdownMenu >
+									<DropdownMenuTrigger asChild className="">
+										<Button
+											variant="ghost"
+											size="sm"
+											className="h-8 w-8 p-0"
+										>
+											<MoreVertical className="h-4 w-4" />
+											<span className="sr-only">Open menu</span>
+										</Button>
+									</DropdownMenuTrigger>
+
+									<DropdownMenuContent align="end">
+
+										<DropdownMenuItem
+											onClick={() => { handleDialogClick(category.id) }}
+											className="text-destructive"
+										>
+											<Trash className="mr-2 h-4 w-4" />
+											Delete
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
+							</div>
+						</div>
+					))}
+				</div>
 				</div>
 			</div>
+			
+
+			<div className="mt-10 pt-6 border-t border-gray-100 flex justify-end">
+				<Button
+					className=" text-white min-w-[150px] shadow-sm"
+					onClick={handleSubmit}
+					disabled={mutation.isPending || !isValid}
+				>
+					{mutation.isPending ? 'Saving...' : isValid ? 'Save Preferences' : `Select ${1 - selectedCategories.length} more`}
+				</Button>
+			</div>
+
+
+			<AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+				<AlertDialogContent className="bg-white border border-gray-200 text-gray-900">
+					<AlertDialogHeader>
+						<AlertDialogTitle className="text-gray-900 font-semibold">Are you sure?</AlertDialogTitle>
+						<AlertDialogDescription className="text-gray-600">
+							This will permanently delete your tag. This will not remove from your inbox.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel className="bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200">Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={handleDeleteClick}
+							className="bg-red-500 hover:bg-red-600 text-white"
+						>
+							{deleteTagMutation.isPending ? "Deleting..." : "Delete"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	)
 }

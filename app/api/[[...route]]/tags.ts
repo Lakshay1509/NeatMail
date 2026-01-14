@@ -29,7 +29,7 @@ const app = new Hono()
     return ctx.json({ data }, 200);
   })
 
-  .get('/custom',async(ctx)=>{
+  .get("/custom", async (ctx) => {
     const { userId } = await auth();
     if (!userId) {
       return ctx.json({ error: "Unuathorized" }, 401);
@@ -39,17 +39,15 @@ const app = new Hono()
       where: {
         user_id: userId,
       },
-      select:{
-        name:true,
-        color:true,
-        id:true
-      }
+      select: {
+        name: true,
+        color: true,
+        id: true,
+      },
     });
 
     return ctx.json({ data }, 200);
   })
-
-
 
   .post(
     "/create",
@@ -71,11 +69,10 @@ const app = new Hono()
 
       const tagRecords = await db.tag.findMany({
         where: {
-          
           name: { in: values.tags },
-          
+
           OR: [
-            { user_id: userId }, 
+            { user_id: userId },
             { user_id: null }, // System tags
           ],
         },
@@ -103,15 +100,17 @@ const app = new Hono()
     }
   )
 
-
-  .post('/create-custom',zValidator(
+  .post(
+    "/create-custom",
+    zValidator(
       "json",
       z.object({
         tag: z.string(),
-        color:z.string()
-      })),async(ctx)=>{
-
-        const { userId } = await auth();
+        color: z.string(),
+      })
+    ),
+    async (ctx) => {
+      const { userId } = await auth();
       if (!userId) {
         return ctx.json({ error: "Unuathorized" }, 401);
       }
@@ -121,38 +120,76 @@ const app = new Hono()
       const values = ctx.req.valid("json");
 
       const exist = await db.tag.findFirst({
-        where:{
-          name:values.tag,
-          OR: [
-            { user_id: userId }, 
-            { user_id: null }, 
-          ],
+        where: {
+          name: values.tag,
+          OR: [{ user_id: userId }, { user_id: null }],
+        },
+      });
 
-        }
-      })
+      const colorExist = colors.some((color) => color.value === values.color);
 
-      const colorExist = colors.some(color => color.value === values.color);
-
-      if(exist || !colorExist){
-        return ctx.json({error:"Same name tag exists or color invalid"},500);
+      if (exist || !colorExist) {
+        return ctx.json(
+          { error: "Same name tag exists or color invalid" },
+          500
+        );
       }
 
       const data = await db.tag.create({
-        data:{
-          name:values.tag,
-          user_id:userId,
-          color:values.color
-        }
-      })
+        data: {
+          name: values.tag,
+          user_id: userId,
+          color: values.color,
+        },
+      });
 
-      if(!data){
-        return ctx.json({error:"Error creating tag"},500);
+      if (!data) {
+        return ctx.json({ error: "Error creating tag" }, 500);
       }
 
-      return ctx.json({data},200);
+      return ctx.json({ data }, 200);
+    }
+  )
 
-  })
+  .delete(
+    "/custom",
+    zValidator(
+      "json",
+      z.object({
+        id: z.string(),
+      })
+    ),
+    async (ctx) => {
+      const { userId } = await auth();
+      if (!userId) {
+        return ctx.json({ error: "Unuathorized" }, 401);
+      }
 
+      const values = ctx.req.valid("json");
 
+      const exist = await db.tag.findFirst({
+        where: {
+          id: values.id,
+          user_id: userId,
+        },
+      });
+
+      if (!exist) {
+        return ctx.json({ error: "Error getting data for this tag" }, 500);
+      }
+
+      const data = await db.tag.delete({
+        where: {
+          id: exist.id,
+        },
+      });
+
+      if (!data) {
+        return ctx.json({ error: "Error deleting data for this tag" }, 500);
+      }
+
+      return ctx.json({ data }, 200);
+    }
+  );
 
 export default app;

@@ -15,6 +15,11 @@ export const addTagstoUser = () => {
         json,
       });
 
+      if(!response.ok){
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to add tags");
+      }
+
       return response.json();
     },
     onSuccess: async () => {

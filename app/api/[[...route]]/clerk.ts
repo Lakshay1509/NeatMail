@@ -84,6 +84,10 @@ const app = new Hono().post("/webhook", async (ctx) => {
       where: { clerk_user_id: id },
     });
 
+    //deactivate watch
+    //cancel subscription
+    
+
     if (!data) {
       return ctx.json({ error: "Error deleting user" }, 500);
     }
