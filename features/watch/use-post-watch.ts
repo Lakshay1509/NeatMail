@@ -15,6 +15,11 @@ export const addWatch = () => {
         
       });
 
+      if(!response.ok){
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to add watch");
+      }
+
       return response.json();
     },
    

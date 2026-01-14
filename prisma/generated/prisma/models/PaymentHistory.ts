@@ -42,21 +42,21 @@ export type PaymentHistoryMinAggregateOutputType = {
   subscriptionId: string | null
   dodoPaymentId: string | null
   dodoSubscriptionId: string | null
-  invoiceId: string | null
-  checkoutSessionId: string | null
   amount: number | null
-  settlementAmount: number | null
   currency: string | null
   status: string | null
   paymentType: string | null
-  paymentMethod: string | null
-  errorCode: string | null
-  errorMessage: string | null
+  billingDate: Date | null
+  createdAt: Date | null
   cardLastFour: string | null
   cardNetwork: string | null
   cardType: string | null
-  billingDate: Date | null
-  createdAt: Date | null
+  checkoutSessionId: string | null
+  errorCode: string | null
+  errorMessage: string | null
+  invoiceId: string | null
+  paymentMethod: string | null
+  settlementAmount: number | null
 }
 
 export type PaymentHistoryMaxAggregateOutputType = {
@@ -65,21 +65,21 @@ export type PaymentHistoryMaxAggregateOutputType = {
   subscriptionId: string | null
   dodoPaymentId: string | null
   dodoSubscriptionId: string | null
-  invoiceId: string | null
-  checkoutSessionId: string | null
   amount: number | null
-  settlementAmount: number | null
   currency: string | null
   status: string | null
   paymentType: string | null
-  paymentMethod: string | null
-  errorCode: string | null
-  errorMessage: string | null
+  billingDate: Date | null
+  createdAt: Date | null
   cardLastFour: string | null
   cardNetwork: string | null
   cardType: string | null
-  billingDate: Date | null
-  createdAt: Date | null
+  checkoutSessionId: string | null
+  errorCode: string | null
+  errorMessage: string | null
+  invoiceId: string | null
+  paymentMethod: string | null
+  settlementAmount: number | null
 }
 
 export type PaymentHistoryCountAggregateOutputType = {
@@ -88,22 +88,22 @@ export type PaymentHistoryCountAggregateOutputType = {
   subscriptionId: number
   dodoPaymentId: number
   dodoSubscriptionId: number
-  invoiceId: number
-  checkoutSessionId: number
   amount: number
-  settlementAmount: number
   currency: number
   status: number
   paymentType: number
-  paymentMethod: number
-  errorCode: number
-  errorMessage: number
-  cardLastFour: number
-  cardNetwork: number
-  cardType: number
   billingDate: number
   metadata: number
   createdAt: number
+  cardLastFour: number
+  cardNetwork: number
+  cardType: number
+  checkoutSessionId: number
+  errorCode: number
+  errorMessage: number
+  invoiceId: number
+  paymentMethod: number
+  settlementAmount: number
   _all: number
 }
 
@@ -124,21 +124,21 @@ export type PaymentHistoryMinAggregateInputType = {
   subscriptionId?: true
   dodoPaymentId?: true
   dodoSubscriptionId?: true
-  invoiceId?: true
-  checkoutSessionId?: true
   amount?: true
-  settlementAmount?: true
   currency?: true
   status?: true
   paymentType?: true
-  paymentMethod?: true
-  errorCode?: true
-  errorMessage?: true
+  billingDate?: true
+  createdAt?: true
   cardLastFour?: true
   cardNetwork?: true
   cardType?: true
-  billingDate?: true
-  createdAt?: true
+  checkoutSessionId?: true
+  errorCode?: true
+  errorMessage?: true
+  invoiceId?: true
+  paymentMethod?: true
+  settlementAmount?: true
 }
 
 export type PaymentHistoryMaxAggregateInputType = {
@@ -147,21 +147,21 @@ export type PaymentHistoryMaxAggregateInputType = {
   subscriptionId?: true
   dodoPaymentId?: true
   dodoSubscriptionId?: true
-  invoiceId?: true
-  checkoutSessionId?: true
   amount?: true
-  settlementAmount?: true
   currency?: true
   status?: true
   paymentType?: true
-  paymentMethod?: true
-  errorCode?: true
-  errorMessage?: true
+  billingDate?: true
+  createdAt?: true
   cardLastFour?: true
   cardNetwork?: true
   cardType?: true
-  billingDate?: true
-  createdAt?: true
+  checkoutSessionId?: true
+  errorCode?: true
+  errorMessage?: true
+  invoiceId?: true
+  paymentMethod?: true
+  settlementAmount?: true
 }
 
 export type PaymentHistoryCountAggregateInputType = {
@@ -170,22 +170,22 @@ export type PaymentHistoryCountAggregateInputType = {
   subscriptionId?: true
   dodoPaymentId?: true
   dodoSubscriptionId?: true
-  invoiceId?: true
-  checkoutSessionId?: true
   amount?: true
-  settlementAmount?: true
   currency?: true
   status?: true
   paymentType?: true
-  paymentMethod?: true
-  errorCode?: true
-  errorMessage?: true
-  cardLastFour?: true
-  cardNetwork?: true
-  cardType?: true
   billingDate?: true
   metadata?: true
   createdAt?: true
+  cardLastFour?: true
+  cardNetwork?: true
+  cardType?: true
+  checkoutSessionId?: true
+  errorCode?: true
+  errorMessage?: true
+  invoiceId?: true
+  paymentMethod?: true
+  settlementAmount?: true
   _all?: true
 }
 
@@ -281,22 +281,22 @@ export type PaymentHistoryGroupByOutputType = {
   subscriptionId: string | null
   dodoPaymentId: string | null
   dodoSubscriptionId: string | null
-  invoiceId: string | null
-  checkoutSessionId: string | null
   amount: number
-  settlementAmount: number | null
   currency: string
   status: string
   paymentType: string
-  paymentMethod: string | null
-  errorCode: string | null
-  errorMessage: string | null
-  cardLastFour: string | null
-  cardNetwork: string | null
-  cardType: string | null
   billingDate: Date | null
   metadata: runtime.JsonValue | null
   createdAt: Date
+  cardLastFour: string | null
+  cardNetwork: string | null
+  cardType: string | null
+  checkoutSessionId: string | null
+  errorCode: string | null
+  errorMessage: string | null
+  invoiceId: string | null
+  paymentMethod: string | null
+  settlementAmount: number | null
   _count: PaymentHistoryCountAggregateOutputType | null
   _avg: PaymentHistoryAvgAggregateOutputType | null
   _sum: PaymentHistorySumAggregateOutputType | null
@@ -328,22 +328,22 @@ export type PaymentHistoryWhereInput = {
   subscriptionId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
   dodoPaymentId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
   dodoSubscriptionId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  invoiceId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  checkoutSessionId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
   amount?: Prisma.IntFilter<"PaymentHistory"> | number
-  settlementAmount?: Prisma.IntNullableFilter<"PaymentHistory"> | number | null
   currency?: Prisma.StringFilter<"PaymentHistory"> | string
   status?: Prisma.StringFilter<"PaymentHistory"> | string
   paymentType?: Prisma.StringFilter<"PaymentHistory"> | string
-  paymentMethod?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  errorCode?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  errorMessage?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  cardLastFour?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  cardNetwork?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  cardType?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
   billingDate?: Prisma.DateTimeNullableFilter<"PaymentHistory"> | Date | string | null
   metadata?: Prisma.JsonNullableFilter<"PaymentHistory">
   createdAt?: Prisma.DateTimeFilter<"PaymentHistory"> | Date | string
+  cardLastFour?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  cardNetwork?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  cardType?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  checkoutSessionId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  errorCode?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  errorMessage?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  invoiceId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  paymentMethod?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  settlementAmount?: Prisma.IntNullableFilter<"PaymentHistory"> | number | null
   user_tokens?: Prisma.XOR<Prisma.User_tokensScalarRelationFilter, Prisma.user_tokensWhereInput>
   subscription?: Prisma.XOR<Prisma.SubscriptionNullableScalarRelationFilter, Prisma.SubscriptionWhereInput> | null
 }
@@ -354,22 +354,22 @@ export type PaymentHistoryOrderByWithRelationInput = {
   subscriptionId?: Prisma.SortOrderInput | Prisma.SortOrder
   dodoPaymentId?: Prisma.SortOrderInput | Prisma.SortOrder
   dodoSubscriptionId?: Prisma.SortOrderInput | Prisma.SortOrder
-  invoiceId?: Prisma.SortOrderInput | Prisma.SortOrder
-  checkoutSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
   amount?: Prisma.SortOrder
-  settlementAmount?: Prisma.SortOrderInput | Prisma.SortOrder
   currency?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paymentType?: Prisma.SortOrder
-  paymentMethod?: Prisma.SortOrderInput | Prisma.SortOrder
-  errorCode?: Prisma.SortOrderInput | Prisma.SortOrder
-  errorMessage?: Prisma.SortOrderInput | Prisma.SortOrder
-  cardLastFour?: Prisma.SortOrderInput | Prisma.SortOrder
-  cardNetwork?: Prisma.SortOrderInput | Prisma.SortOrder
-  cardType?: Prisma.SortOrderInput | Prisma.SortOrder
   billingDate?: Prisma.SortOrderInput | Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  cardLastFour?: Prisma.SortOrderInput | Prisma.SortOrder
+  cardNetwork?: Prisma.SortOrderInput | Prisma.SortOrder
+  cardType?: Prisma.SortOrderInput | Prisma.SortOrder
+  checkoutSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
+  errorCode?: Prisma.SortOrderInput | Prisma.SortOrder
+  errorMessage?: Prisma.SortOrderInput | Prisma.SortOrder
+  invoiceId?: Prisma.SortOrderInput | Prisma.SortOrder
+  paymentMethod?: Prisma.SortOrderInput | Prisma.SortOrder
+  settlementAmount?: Prisma.SortOrderInput | Prisma.SortOrder
   user_tokens?: Prisma.user_tokensOrderByWithRelationInput
   subscription?: Prisma.SubscriptionOrderByWithRelationInput
 }
@@ -383,22 +383,22 @@ export type PaymentHistoryWhereUniqueInput = Prisma.AtLeast<{
   clerkUserId?: Prisma.StringFilter<"PaymentHistory"> | string
   subscriptionId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
   dodoSubscriptionId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  invoiceId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  checkoutSessionId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
   amount?: Prisma.IntFilter<"PaymentHistory"> | number
-  settlementAmount?: Prisma.IntNullableFilter<"PaymentHistory"> | number | null
   currency?: Prisma.StringFilter<"PaymentHistory"> | string
   status?: Prisma.StringFilter<"PaymentHistory"> | string
   paymentType?: Prisma.StringFilter<"PaymentHistory"> | string
-  paymentMethod?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  errorCode?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  errorMessage?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  cardLastFour?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  cardNetwork?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  cardType?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
   billingDate?: Prisma.DateTimeNullableFilter<"PaymentHistory"> | Date | string | null
   metadata?: Prisma.JsonNullableFilter<"PaymentHistory">
   createdAt?: Prisma.DateTimeFilter<"PaymentHistory"> | Date | string
+  cardLastFour?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  cardNetwork?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  cardType?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  checkoutSessionId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  errorCode?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  errorMessage?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  invoiceId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  paymentMethod?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  settlementAmount?: Prisma.IntNullableFilter<"PaymentHistory"> | number | null
   user_tokens?: Prisma.XOR<Prisma.User_tokensScalarRelationFilter, Prisma.user_tokensWhereInput>
   subscription?: Prisma.XOR<Prisma.SubscriptionNullableScalarRelationFilter, Prisma.SubscriptionWhereInput> | null
 }, "id" | "dodoPaymentId">
@@ -409,22 +409,22 @@ export type PaymentHistoryOrderByWithAggregationInput = {
   subscriptionId?: Prisma.SortOrderInput | Prisma.SortOrder
   dodoPaymentId?: Prisma.SortOrderInput | Prisma.SortOrder
   dodoSubscriptionId?: Prisma.SortOrderInput | Prisma.SortOrder
-  invoiceId?: Prisma.SortOrderInput | Prisma.SortOrder
-  checkoutSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
   amount?: Prisma.SortOrder
-  settlementAmount?: Prisma.SortOrderInput | Prisma.SortOrder
   currency?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paymentType?: Prisma.SortOrder
-  paymentMethod?: Prisma.SortOrderInput | Prisma.SortOrder
-  errorCode?: Prisma.SortOrderInput | Prisma.SortOrder
-  errorMessage?: Prisma.SortOrderInput | Prisma.SortOrder
-  cardLastFour?: Prisma.SortOrderInput | Prisma.SortOrder
-  cardNetwork?: Prisma.SortOrderInput | Prisma.SortOrder
-  cardType?: Prisma.SortOrderInput | Prisma.SortOrder
   billingDate?: Prisma.SortOrderInput | Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  cardLastFour?: Prisma.SortOrderInput | Prisma.SortOrder
+  cardNetwork?: Prisma.SortOrderInput | Prisma.SortOrder
+  cardType?: Prisma.SortOrderInput | Prisma.SortOrder
+  checkoutSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
+  errorCode?: Prisma.SortOrderInput | Prisma.SortOrder
+  errorMessage?: Prisma.SortOrderInput | Prisma.SortOrder
+  invoiceId?: Prisma.SortOrderInput | Prisma.SortOrder
+  paymentMethod?: Prisma.SortOrderInput | Prisma.SortOrder
+  settlementAmount?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.PaymentHistoryCountOrderByAggregateInput
   _avg?: Prisma.PaymentHistoryAvgOrderByAggregateInput
   _max?: Prisma.PaymentHistoryMaxOrderByAggregateInput
@@ -441,44 +441,44 @@ export type PaymentHistoryScalarWhereWithAggregatesInput = {
   subscriptionId?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
   dodoPaymentId?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
   dodoSubscriptionId?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
-  invoiceId?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
-  checkoutSessionId?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
   amount?: Prisma.IntWithAggregatesFilter<"PaymentHistory"> | number
-  settlementAmount?: Prisma.IntNullableWithAggregatesFilter<"PaymentHistory"> | number | null
   currency?: Prisma.StringWithAggregatesFilter<"PaymentHistory"> | string
   status?: Prisma.StringWithAggregatesFilter<"PaymentHistory"> | string
   paymentType?: Prisma.StringWithAggregatesFilter<"PaymentHistory"> | string
-  paymentMethod?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
-  errorCode?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
-  errorMessage?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
-  cardLastFour?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
-  cardNetwork?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
-  cardType?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
   billingDate?: Prisma.DateTimeNullableWithAggregatesFilter<"PaymentHistory"> | Date | string | null
   metadata?: Prisma.JsonNullableWithAggregatesFilter<"PaymentHistory">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PaymentHistory"> | Date | string
+  cardLastFour?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
+  cardNetwork?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
+  cardType?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
+  checkoutSessionId?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
+  errorCode?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
+  errorMessage?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
+  invoiceId?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
+  paymentMethod?: Prisma.StringNullableWithAggregatesFilter<"PaymentHistory"> | string | null
+  settlementAmount?: Prisma.IntNullableWithAggregatesFilter<"PaymentHistory"> | number | null
 }
 
 export type PaymentHistoryCreateInput = {
   id?: string
   dodoPaymentId?: string | null
   dodoSubscriptionId?: string | null
-  invoiceId?: string | null
-  checkoutSessionId?: string | null
   amount: number
-  settlementAmount?: number | null
   currency?: string
   status: string
   paymentType: string
-  paymentMethod?: string | null
-  errorCode?: string | null
-  errorMessage?: string | null
-  cardLastFour?: string | null
-  cardNetwork?: string | null
-  cardType?: string | null
   billingDate?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  cardLastFour?: string | null
+  cardNetwork?: string | null
+  cardType?: string | null
+  checkoutSessionId?: string | null
+  errorCode?: string | null
+  errorMessage?: string | null
+  invoiceId?: string | null
+  paymentMethod?: string | null
+  settlementAmount?: number | null
   user_tokens: Prisma.user_tokensCreateNestedOneWithoutPayment_historyInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutPaymentsInput
 }
@@ -489,44 +489,44 @@ export type PaymentHistoryUncheckedCreateInput = {
   subscriptionId?: string | null
   dodoPaymentId?: string | null
   dodoSubscriptionId?: string | null
-  invoiceId?: string | null
-  checkoutSessionId?: string | null
   amount: number
-  settlementAmount?: number | null
   currency?: string
   status: string
   paymentType: string
-  paymentMethod?: string | null
-  errorCode?: string | null
-  errorMessage?: string | null
-  cardLastFour?: string | null
-  cardNetwork?: string | null
-  cardType?: string | null
   billingDate?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  cardLastFour?: string | null
+  cardNetwork?: string | null
+  cardType?: string | null
+  checkoutSessionId?: string | null
+  errorCode?: string | null
+  errorMessage?: string | null
+  invoiceId?: string | null
+  paymentMethod?: string | null
+  settlementAmount?: number | null
 }
 
 export type PaymentHistoryUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   dodoPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dodoSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   paymentType?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   user_tokens?: Prisma.user_tokensUpdateOneRequiredWithoutPayment_historyNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutPaymentsNestedInput
 }
@@ -537,22 +537,22 @@ export type PaymentHistoryUncheckedUpdateInput = {
   subscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dodoPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dodoSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   paymentType?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
 }
 
 export type PaymentHistoryCreateManyInput = {
@@ -561,44 +561,44 @@ export type PaymentHistoryCreateManyInput = {
   subscriptionId?: string | null
   dodoPaymentId?: string | null
   dodoSubscriptionId?: string | null
-  invoiceId?: string | null
-  checkoutSessionId?: string | null
   amount: number
-  settlementAmount?: number | null
   currency?: string
   status: string
   paymentType: string
-  paymentMethod?: string | null
-  errorCode?: string | null
-  errorMessage?: string | null
-  cardLastFour?: string | null
-  cardNetwork?: string | null
-  cardType?: string | null
   billingDate?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  cardLastFour?: string | null
+  cardNetwork?: string | null
+  cardType?: string | null
+  checkoutSessionId?: string | null
+  errorCode?: string | null
+  errorMessage?: string | null
+  invoiceId?: string | null
+  paymentMethod?: string | null
+  settlementAmount?: number | null
 }
 
 export type PaymentHistoryUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   dodoPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dodoSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   paymentType?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
 }
 
 export type PaymentHistoryUncheckedUpdateManyInput = {
@@ -607,22 +607,22 @@ export type PaymentHistoryUncheckedUpdateManyInput = {
   subscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dodoPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dodoSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   paymentType?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
 }
 
 export type PaymentHistoryListRelationFilter = {
@@ -641,22 +641,22 @@ export type PaymentHistoryCountOrderByAggregateInput = {
   subscriptionId?: Prisma.SortOrder
   dodoPaymentId?: Prisma.SortOrder
   dodoSubscriptionId?: Prisma.SortOrder
-  invoiceId?: Prisma.SortOrder
-  checkoutSessionId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
-  settlementAmount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paymentType?: Prisma.SortOrder
-  paymentMethod?: Prisma.SortOrder
-  errorCode?: Prisma.SortOrder
-  errorMessage?: Prisma.SortOrder
-  cardLastFour?: Prisma.SortOrder
-  cardNetwork?: Prisma.SortOrder
-  cardType?: Prisma.SortOrder
   billingDate?: Prisma.SortOrder
   metadata?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  cardLastFour?: Prisma.SortOrder
+  cardNetwork?: Prisma.SortOrder
+  cardType?: Prisma.SortOrder
+  checkoutSessionId?: Prisma.SortOrder
+  errorCode?: Prisma.SortOrder
+  errorMessage?: Prisma.SortOrder
+  invoiceId?: Prisma.SortOrder
+  paymentMethod?: Prisma.SortOrder
+  settlementAmount?: Prisma.SortOrder
 }
 
 export type PaymentHistoryAvgOrderByAggregateInput = {
@@ -670,21 +670,21 @@ export type PaymentHistoryMaxOrderByAggregateInput = {
   subscriptionId?: Prisma.SortOrder
   dodoPaymentId?: Prisma.SortOrder
   dodoSubscriptionId?: Prisma.SortOrder
-  invoiceId?: Prisma.SortOrder
-  checkoutSessionId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
-  settlementAmount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paymentType?: Prisma.SortOrder
-  paymentMethod?: Prisma.SortOrder
-  errorCode?: Prisma.SortOrder
-  errorMessage?: Prisma.SortOrder
+  billingDate?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
   cardLastFour?: Prisma.SortOrder
   cardNetwork?: Prisma.SortOrder
   cardType?: Prisma.SortOrder
-  billingDate?: Prisma.SortOrder
-  createdAt?: Prisma.SortOrder
+  checkoutSessionId?: Prisma.SortOrder
+  errorCode?: Prisma.SortOrder
+  errorMessage?: Prisma.SortOrder
+  invoiceId?: Prisma.SortOrder
+  paymentMethod?: Prisma.SortOrder
+  settlementAmount?: Prisma.SortOrder
 }
 
 export type PaymentHistoryMinOrderByAggregateInput = {
@@ -693,21 +693,21 @@ export type PaymentHistoryMinOrderByAggregateInput = {
   subscriptionId?: Prisma.SortOrder
   dodoPaymentId?: Prisma.SortOrder
   dodoSubscriptionId?: Prisma.SortOrder
-  invoiceId?: Prisma.SortOrder
-  checkoutSessionId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
-  settlementAmount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
   status?: Prisma.SortOrder
   paymentType?: Prisma.SortOrder
-  paymentMethod?: Prisma.SortOrder
-  errorCode?: Prisma.SortOrder
-  errorMessage?: Prisma.SortOrder
+  billingDate?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
   cardLastFour?: Prisma.SortOrder
   cardNetwork?: Prisma.SortOrder
   cardType?: Prisma.SortOrder
-  billingDate?: Prisma.SortOrder
-  createdAt?: Prisma.SortOrder
+  checkoutSessionId?: Prisma.SortOrder
+  errorCode?: Prisma.SortOrder
+  errorMessage?: Prisma.SortOrder
+  invoiceId?: Prisma.SortOrder
+  paymentMethod?: Prisma.SortOrder
+  settlementAmount?: Prisma.SortOrder
 }
 
 export type PaymentHistorySumOrderByAggregateInput = {
@@ -811,22 +811,22 @@ export type PaymentHistoryCreateWithoutUser_tokensInput = {
   id?: string
   dodoPaymentId?: string | null
   dodoSubscriptionId?: string | null
-  invoiceId?: string | null
-  checkoutSessionId?: string | null
   amount: number
-  settlementAmount?: number | null
   currency?: string
   status: string
   paymentType: string
-  paymentMethod?: string | null
-  errorCode?: string | null
-  errorMessage?: string | null
-  cardLastFour?: string | null
-  cardNetwork?: string | null
-  cardType?: string | null
   billingDate?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  cardLastFour?: string | null
+  cardNetwork?: string | null
+  cardType?: string | null
+  checkoutSessionId?: string | null
+  errorCode?: string | null
+  errorMessage?: string | null
+  invoiceId?: string | null
+  paymentMethod?: string | null
+  settlementAmount?: number | null
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutPaymentsInput
 }
 
@@ -835,22 +835,22 @@ export type PaymentHistoryUncheckedCreateWithoutUser_tokensInput = {
   subscriptionId?: string | null
   dodoPaymentId?: string | null
   dodoSubscriptionId?: string | null
-  invoiceId?: string | null
-  checkoutSessionId?: string | null
   amount: number
-  settlementAmount?: number | null
   currency?: string
   status: string
   paymentType: string
-  paymentMethod?: string | null
-  errorCode?: string | null
-  errorMessage?: string | null
-  cardLastFour?: string | null
-  cardNetwork?: string | null
-  cardType?: string | null
   billingDate?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  cardLastFour?: string | null
+  cardNetwork?: string | null
+  cardType?: string | null
+  checkoutSessionId?: string | null
+  errorCode?: string | null
+  errorMessage?: string | null
+  invoiceId?: string | null
+  paymentMethod?: string | null
+  settlementAmount?: number | null
 }
 
 export type PaymentHistoryCreateOrConnectWithoutUser_tokensInput = {
@@ -888,44 +888,44 @@ export type PaymentHistoryScalarWhereInput = {
   subscriptionId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
   dodoPaymentId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
   dodoSubscriptionId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  invoiceId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  checkoutSessionId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
   amount?: Prisma.IntFilter<"PaymentHistory"> | number
-  settlementAmount?: Prisma.IntNullableFilter<"PaymentHistory"> | number | null
   currency?: Prisma.StringFilter<"PaymentHistory"> | string
   status?: Prisma.StringFilter<"PaymentHistory"> | string
   paymentType?: Prisma.StringFilter<"PaymentHistory"> | string
-  paymentMethod?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  errorCode?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  errorMessage?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  cardLastFour?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  cardNetwork?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
-  cardType?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
   billingDate?: Prisma.DateTimeNullableFilter<"PaymentHistory"> | Date | string | null
   metadata?: Prisma.JsonNullableFilter<"PaymentHistory">
   createdAt?: Prisma.DateTimeFilter<"PaymentHistory"> | Date | string
+  cardLastFour?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  cardNetwork?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  cardType?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  checkoutSessionId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  errorCode?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  errorMessage?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  invoiceId?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  paymentMethod?: Prisma.StringNullableFilter<"PaymentHistory"> | string | null
+  settlementAmount?: Prisma.IntNullableFilter<"PaymentHistory"> | number | null
 }
 
 export type PaymentHistoryCreateWithoutSubscriptionInput = {
   id?: string
   dodoPaymentId?: string | null
   dodoSubscriptionId?: string | null
-  invoiceId?: string | null
-  checkoutSessionId?: string | null
   amount: number
-  settlementAmount?: number | null
   currency?: string
   status: string
   paymentType: string
-  paymentMethod?: string | null
-  errorCode?: string | null
-  errorMessage?: string | null
-  cardLastFour?: string | null
-  cardNetwork?: string | null
-  cardType?: string | null
   billingDate?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  cardLastFour?: string | null
+  cardNetwork?: string | null
+  cardType?: string | null
+  checkoutSessionId?: string | null
+  errorCode?: string | null
+  errorMessage?: string | null
+  invoiceId?: string | null
+  paymentMethod?: string | null
+  settlementAmount?: number | null
   user_tokens: Prisma.user_tokensCreateNestedOneWithoutPayment_historyInput
 }
 
@@ -934,22 +934,22 @@ export type PaymentHistoryUncheckedCreateWithoutSubscriptionInput = {
   clerkUserId: string
   dodoPaymentId?: string | null
   dodoSubscriptionId?: string | null
-  invoiceId?: string | null
-  checkoutSessionId?: string | null
   amount: number
-  settlementAmount?: number | null
   currency?: string
   status: string
   paymentType: string
-  paymentMethod?: string | null
-  errorCode?: string | null
-  errorMessage?: string | null
-  cardLastFour?: string | null
-  cardNetwork?: string | null
-  cardType?: string | null
   billingDate?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  cardLastFour?: string | null
+  cardNetwork?: string | null
+  cardType?: string | null
+  checkoutSessionId?: string | null
+  errorCode?: string | null
+  errorMessage?: string | null
+  invoiceId?: string | null
+  paymentMethod?: string | null
+  settlementAmount?: number | null
 }
 
 export type PaymentHistoryCreateOrConnectWithoutSubscriptionInput = {
@@ -983,44 +983,44 @@ export type PaymentHistoryCreateManyUser_tokensInput = {
   subscriptionId?: string | null
   dodoPaymentId?: string | null
   dodoSubscriptionId?: string | null
-  invoiceId?: string | null
-  checkoutSessionId?: string | null
   amount: number
-  settlementAmount?: number | null
   currency?: string
   status: string
   paymentType: string
-  paymentMethod?: string | null
-  errorCode?: string | null
-  errorMessage?: string | null
-  cardLastFour?: string | null
-  cardNetwork?: string | null
-  cardType?: string | null
   billingDate?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  cardLastFour?: string | null
+  cardNetwork?: string | null
+  cardType?: string | null
+  checkoutSessionId?: string | null
+  errorCode?: string | null
+  errorMessage?: string | null
+  invoiceId?: string | null
+  paymentMethod?: string | null
+  settlementAmount?: number | null
 }
 
 export type PaymentHistoryUpdateWithoutUser_tokensInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   dodoPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dodoSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   paymentType?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   subscription?: Prisma.SubscriptionUpdateOneWithoutPaymentsNestedInput
 }
 
@@ -1029,22 +1029,22 @@ export type PaymentHistoryUncheckedUpdateWithoutUser_tokensInput = {
   subscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dodoPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dodoSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   paymentType?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
 }
 
 export type PaymentHistoryUncheckedUpdateManyWithoutUser_tokensInput = {
@@ -1052,22 +1052,22 @@ export type PaymentHistoryUncheckedUpdateManyWithoutUser_tokensInput = {
   subscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dodoPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dodoSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   paymentType?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
 }
 
 export type PaymentHistoryCreateManySubscriptionInput = {
@@ -1075,44 +1075,44 @@ export type PaymentHistoryCreateManySubscriptionInput = {
   clerkUserId: string
   dodoPaymentId?: string | null
   dodoSubscriptionId?: string | null
-  invoiceId?: string | null
-  checkoutSessionId?: string | null
   amount: number
-  settlementAmount?: number | null
   currency?: string
   status: string
   paymentType: string
-  paymentMethod?: string | null
-  errorCode?: string | null
-  errorMessage?: string | null
-  cardLastFour?: string | null
-  cardNetwork?: string | null
-  cardType?: string | null
   billingDate?: Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
+  cardLastFour?: string | null
+  cardNetwork?: string | null
+  cardType?: string | null
+  checkoutSessionId?: string | null
+  errorCode?: string | null
+  errorMessage?: string | null
+  invoiceId?: string | null
+  paymentMethod?: string | null
+  settlementAmount?: number | null
 }
 
 export type PaymentHistoryUpdateWithoutSubscriptionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   dodoPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dodoSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   paymentType?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   user_tokens?: Prisma.user_tokensUpdateOneRequiredWithoutPayment_historyNestedInput
 }
 
@@ -1121,22 +1121,22 @@ export type PaymentHistoryUncheckedUpdateWithoutSubscriptionInput = {
   clerkUserId?: Prisma.StringFieldUpdateOperationsInput | string
   dodoPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dodoSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   paymentType?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
 }
 
 export type PaymentHistoryUncheckedUpdateManyWithoutSubscriptionInput = {
@@ -1144,22 +1144,22 @@ export type PaymentHistoryUncheckedUpdateManyWithoutSubscriptionInput = {
   clerkUserId?: Prisma.StringFieldUpdateOperationsInput | string
   dodoPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dodoSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.IntFieldUpdateOperationsInput | number
-  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   paymentType?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   billingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
 }
 
 
@@ -1170,22 +1170,22 @@ export type PaymentHistorySelect<ExtArgs extends runtime.Types.Extensions.Intern
   subscriptionId?: boolean
   dodoPaymentId?: boolean
   dodoSubscriptionId?: boolean
-  invoiceId?: boolean
-  checkoutSessionId?: boolean
   amount?: boolean
-  settlementAmount?: boolean
   currency?: boolean
   status?: boolean
   paymentType?: boolean
-  paymentMethod?: boolean
-  errorCode?: boolean
-  errorMessage?: boolean
-  cardLastFour?: boolean
-  cardNetwork?: boolean
-  cardType?: boolean
   billingDate?: boolean
   metadata?: boolean
   createdAt?: boolean
+  cardLastFour?: boolean
+  cardNetwork?: boolean
+  cardType?: boolean
+  checkoutSessionId?: boolean
+  errorCode?: boolean
+  errorMessage?: boolean
+  invoiceId?: boolean
+  paymentMethod?: boolean
+  settlementAmount?: boolean
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
   subscription?: boolean | Prisma.PaymentHistory$subscriptionArgs<ExtArgs>
 }, ExtArgs["result"]["paymentHistory"]>
@@ -1196,22 +1196,22 @@ export type PaymentHistorySelectCreateManyAndReturn<ExtArgs extends runtime.Type
   subscriptionId?: boolean
   dodoPaymentId?: boolean
   dodoSubscriptionId?: boolean
-  invoiceId?: boolean
-  checkoutSessionId?: boolean
   amount?: boolean
-  settlementAmount?: boolean
   currency?: boolean
   status?: boolean
   paymentType?: boolean
-  paymentMethod?: boolean
-  errorCode?: boolean
-  errorMessage?: boolean
-  cardLastFour?: boolean
-  cardNetwork?: boolean
-  cardType?: boolean
   billingDate?: boolean
   metadata?: boolean
   createdAt?: boolean
+  cardLastFour?: boolean
+  cardNetwork?: boolean
+  cardType?: boolean
+  checkoutSessionId?: boolean
+  errorCode?: boolean
+  errorMessage?: boolean
+  invoiceId?: boolean
+  paymentMethod?: boolean
+  settlementAmount?: boolean
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
   subscription?: boolean | Prisma.PaymentHistory$subscriptionArgs<ExtArgs>
 }, ExtArgs["result"]["paymentHistory"]>
@@ -1222,22 +1222,22 @@ export type PaymentHistorySelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   subscriptionId?: boolean
   dodoPaymentId?: boolean
   dodoSubscriptionId?: boolean
-  invoiceId?: boolean
-  checkoutSessionId?: boolean
   amount?: boolean
-  settlementAmount?: boolean
   currency?: boolean
   status?: boolean
   paymentType?: boolean
-  paymentMethod?: boolean
-  errorCode?: boolean
-  errorMessage?: boolean
-  cardLastFour?: boolean
-  cardNetwork?: boolean
-  cardType?: boolean
   billingDate?: boolean
   metadata?: boolean
   createdAt?: boolean
+  cardLastFour?: boolean
+  cardNetwork?: boolean
+  cardType?: boolean
+  checkoutSessionId?: boolean
+  errorCode?: boolean
+  errorMessage?: boolean
+  invoiceId?: boolean
+  paymentMethod?: boolean
+  settlementAmount?: boolean
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
   subscription?: boolean | Prisma.PaymentHistory$subscriptionArgs<ExtArgs>
 }, ExtArgs["result"]["paymentHistory"]>
@@ -1248,25 +1248,25 @@ export type PaymentHistorySelectScalar = {
   subscriptionId?: boolean
   dodoPaymentId?: boolean
   dodoSubscriptionId?: boolean
-  invoiceId?: boolean
-  checkoutSessionId?: boolean
   amount?: boolean
-  settlementAmount?: boolean
   currency?: boolean
   status?: boolean
   paymentType?: boolean
-  paymentMethod?: boolean
-  errorCode?: boolean
-  errorMessage?: boolean
-  cardLastFour?: boolean
-  cardNetwork?: boolean
-  cardType?: boolean
   billingDate?: boolean
   metadata?: boolean
   createdAt?: boolean
+  cardLastFour?: boolean
+  cardNetwork?: boolean
+  cardType?: boolean
+  checkoutSessionId?: boolean
+  errorCode?: boolean
+  errorMessage?: boolean
+  invoiceId?: boolean
+  paymentMethod?: boolean
+  settlementAmount?: boolean
 }
 
-export type PaymentHistoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clerkUserId" | "subscriptionId" | "dodoPaymentId" | "dodoSubscriptionId" | "invoiceId" | "checkoutSessionId" | "amount" | "settlementAmount" | "currency" | "status" | "paymentType" | "paymentMethod" | "errorCode" | "errorMessage" | "cardLastFour" | "cardNetwork" | "cardType" | "billingDate" | "metadata" | "createdAt", ExtArgs["result"]["paymentHistory"]>
+export type PaymentHistoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clerkUserId" | "subscriptionId" | "dodoPaymentId" | "dodoSubscriptionId" | "amount" | "currency" | "status" | "paymentType" | "billingDate" | "metadata" | "createdAt" | "cardLastFour" | "cardNetwork" | "cardType" | "checkoutSessionId" | "errorCode" | "errorMessage" | "invoiceId" | "paymentMethod" | "settlementAmount", ExtArgs["result"]["paymentHistory"]>
 export type PaymentHistoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
   subscription?: boolean | Prisma.PaymentHistory$subscriptionArgs<ExtArgs>
@@ -1292,22 +1292,22 @@ export type $PaymentHistoryPayload<ExtArgs extends runtime.Types.Extensions.Inte
     subscriptionId: string | null
     dodoPaymentId: string | null
     dodoSubscriptionId: string | null
-    invoiceId: string | null
-    checkoutSessionId: string | null
     amount: number
-    settlementAmount: number | null
     currency: string
     status: string
     paymentType: string
-    paymentMethod: string | null
-    errorCode: string | null
-    errorMessage: string | null
-    cardLastFour: string | null
-    cardNetwork: string | null
-    cardType: string | null
     billingDate: Date | null
     metadata: runtime.JsonValue | null
     createdAt: Date
+    cardLastFour: string | null
+    cardNetwork: string | null
+    cardType: string | null
+    checkoutSessionId: string | null
+    errorCode: string | null
+    errorMessage: string | null
+    invoiceId: string | null
+    paymentMethod: string | null
+    settlementAmount: number | null
   }, ExtArgs["result"]["paymentHistory"]>
   composites: {}
 }
@@ -1738,22 +1738,22 @@ export interface PaymentHistoryFieldRefs {
   readonly subscriptionId: Prisma.FieldRef<"PaymentHistory", 'String'>
   readonly dodoPaymentId: Prisma.FieldRef<"PaymentHistory", 'String'>
   readonly dodoSubscriptionId: Prisma.FieldRef<"PaymentHistory", 'String'>
-  readonly invoiceId: Prisma.FieldRef<"PaymentHistory", 'String'>
-  readonly checkoutSessionId: Prisma.FieldRef<"PaymentHistory", 'String'>
   readonly amount: Prisma.FieldRef<"PaymentHistory", 'Int'>
-  readonly settlementAmount: Prisma.FieldRef<"PaymentHistory", 'Int'>
   readonly currency: Prisma.FieldRef<"PaymentHistory", 'String'>
   readonly status: Prisma.FieldRef<"PaymentHistory", 'String'>
   readonly paymentType: Prisma.FieldRef<"PaymentHistory", 'String'>
-  readonly paymentMethod: Prisma.FieldRef<"PaymentHistory", 'String'>
-  readonly errorCode: Prisma.FieldRef<"PaymentHistory", 'String'>
-  readonly errorMessage: Prisma.FieldRef<"PaymentHistory", 'String'>
-  readonly cardLastFour: Prisma.FieldRef<"PaymentHistory", 'String'>
-  readonly cardNetwork: Prisma.FieldRef<"PaymentHistory", 'String'>
-  readonly cardType: Prisma.FieldRef<"PaymentHistory", 'String'>
   readonly billingDate: Prisma.FieldRef<"PaymentHistory", 'DateTime'>
   readonly metadata: Prisma.FieldRef<"PaymentHistory", 'Json'>
   readonly createdAt: Prisma.FieldRef<"PaymentHistory", 'DateTime'>
+  readonly cardLastFour: Prisma.FieldRef<"PaymentHistory", 'String'>
+  readonly cardNetwork: Prisma.FieldRef<"PaymentHistory", 'String'>
+  readonly cardType: Prisma.FieldRef<"PaymentHistory", 'String'>
+  readonly checkoutSessionId: Prisma.FieldRef<"PaymentHistory", 'String'>
+  readonly errorCode: Prisma.FieldRef<"PaymentHistory", 'String'>
+  readonly errorMessage: Prisma.FieldRef<"PaymentHistory", 'String'>
+  readonly invoiceId: Prisma.FieldRef<"PaymentHistory", 'String'>
+  readonly paymentMethod: Prisma.FieldRef<"PaymentHistory", 'String'>
+  readonly settlementAmount: Prisma.FieldRef<"PaymentHistory", 'Int'>
 }
     
 

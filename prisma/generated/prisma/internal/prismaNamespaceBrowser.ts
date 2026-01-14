@@ -92,7 +92,8 @@ export const TagScalarFieldEnum = {
   id: 'id',
   name: 'name',
   created_at: 'created_at',
-  color: 'color'
+  color: 'color',
+  user_id: 'user_id'
 } as const
 
 export type TagScalarFieldEnum = (typeof TagScalarFieldEnum)[keyof typeof TagScalarFieldEnum]
@@ -160,22 +161,22 @@ export const PaymentHistoryScalarFieldEnum = {
   subscriptionId: 'subscriptionId',
   dodoPaymentId: 'dodoPaymentId',
   dodoSubscriptionId: 'dodoSubscriptionId',
-  invoiceId: 'invoiceId',
-  checkoutSessionId: 'checkoutSessionId',
   amount: 'amount',
-  settlementAmount: 'settlementAmount',
   currency: 'currency',
   status: 'status',
   paymentType: 'paymentType',
-  paymentMethod: 'paymentMethod',
-  errorCode: 'errorCode',
-  errorMessage: 'errorMessage',
+  billingDate: 'billingDate',
+  metadata: 'metadata',
+  createdAt: 'createdAt',
   cardLastFour: 'cardLastFour',
   cardNetwork: 'cardNetwork',
   cardType: 'cardType',
-  billingDate: 'billingDate',
-  metadata: 'metadata',
-  createdAt: 'createdAt'
+  checkoutSessionId: 'checkoutSessionId',
+  errorCode: 'errorCode',
+  errorMessage: 'errorMessage',
+  invoiceId: 'invoiceId',
+  paymentMethod: 'paymentMethod',
+  settlementAmount: 'settlementAmount'
 } as const
 
 export type PaymentHistoryScalarFieldEnum = (typeof PaymentHistoryScalarFieldEnum)[keyof typeof PaymentHistoryScalarFieldEnum]

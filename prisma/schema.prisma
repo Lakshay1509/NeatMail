@@ -1,7 +1,7 @@
 generator client {
   provider        = "prisma-client"
   output          = "./generated/prisma"
-  previewFeatures = ["multiSchema", "views"]
+  previewFeatures = ["views"]
 }
 
 datasource db {
@@ -20,6 +20,7 @@ model user_tokens {
   email_tracked   email_tracked[]
   payment_history PaymentHistory[]
   subscriptions   Subscription[]
+  tag             tag[]
   user_tags       user_tags[]
 
   @@schema("public")
@@ -27,12 +28,15 @@ model user_tokens {
 
 model tag {
   id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name          String          @unique
+  name          String
   created_at    DateTime        @default(now()) @db.Timestamptz(6)
-  color         String          @unique
+  color         String
+  user_id       String?
   email_tracked email_tracked[]
+  user_tokens   user_tokens?    @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
   user_tags     user_tags[]
 
+  @@unique([name, user_id])
   @@schema("public")
 }
 
@@ -111,28 +115,28 @@ model Subscription {
 }
 
 model PaymentHistory {
-  id                 String       @id @default(uuid())
-  clerkUserId        String       @map("clerk_user_id")
-  subscriptionId     String?      @map("subscription_id")
-  dodoPaymentId      String?      @unique @map("dodo_payment_id")
-  dodoSubscriptionId String?      @map("dodo_subscription_id")
-  invoiceId          String?      @map("invoice_id")
-  checkoutSessionId  String?      @map("checkout_session_id")
+  id                 String        @id @default(uuid())
+  clerkUserId        String        @map("clerk_user_id")
+  subscriptionId     String?       @map("subscription_id")
+  dodoPaymentId      String?       @unique @map("dodo_payment_id")
+  dodoSubscriptionId String?       @map("dodo_subscription_id")
   amount             Int
-  settlementAmount   Int?         @map("settlement_amount")
-  currency           String       @default("INR")
+  currency           String        @default("INR")
   status             String
-  paymentType        String       @map("payment_type")
-  paymentMethod      String?      @map("payment_method") 
-  errorCode          String?      @map("error_code")
-  errorMessage       String?      @map("error_message")
-  cardLastFour       String?      @map("card_last_four")
-  cardNetwork        String?      @map("card_network") 
-  cardType           String?      @map("card_type") 
-  billingDate        DateTime?    @map("billing_date")
-  metadata           Json?        @default("{}")
-  createdAt          DateTime     @default(now()) @map("created_at")
-  user_tokens        user_tokens  @relation(fields: [clerkUserId], references: [clerk_user_id], onDelete: NoAction, onUpdate: NoAction)
+  paymentType        String        @map("payment_type")
+  billingDate        DateTime?     @map("billing_date")
+  metadata           Json?         @default("{}")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  cardLastFour       String?       @map("card_last_four")
+  cardNetwork        String?       @map("card_network")
+  cardType           String?       @map("card_type")
+  checkoutSessionId  String?       @map("checkout_session_id")
+  errorCode          String?       @map("error_code")
+  errorMessage       String?       @map("error_message")
+  invoiceId          String?       @map("invoice_id")
+  paymentMethod      String?       @map("payment_method")
+  settlementAmount   Int?          @map("settlement_amount")
+  user_tokens        user_tokens   @relation(fields: [clerkUserId], references: [clerk_user_id], onDelete: NoAction, onUpdate: NoAction)
   subscription       Subscription? @relation(fields: [subscriptionId], references: [id])
 
   @@index([clerkUserId])

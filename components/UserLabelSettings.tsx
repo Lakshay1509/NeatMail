@@ -9,11 +9,14 @@ import { addTagstoUser } from "@/features/tags/use-add-tag-user";
 import { useGetUserWatch } from "@/features/user/use-get-watch";
 import { addWatch } from "@/features/watch/use-post-watch";
 import { deleteWatch } from "@/features/watch/use-delete-watch";
+import CreateLabel from "./CreateLabel";
+import { useGetCustomTags } from "@/features/tags/use-get-custom-tag";
 
 
 const UserLabelSettings = () => {
 
 	const { data, isLoading, isError } = useGetUserTags();
+	const {data:customData,isLoading:customLoading,isError:customError} = useGetCustomTags();
 	const { data: watchData, isLoading: watchLoading } = useGetUserWatch();
 	const mutation = addTagstoUser();
 	const addWatchMutation = addWatch();
@@ -64,7 +67,7 @@ const UserLabelSettings = () => {
 	return (
 		<div className="w-full max-w-full">
 
-			<div className="bg-white mb-8 border-b border-gray-100 pb-8">
+			<div className="bg-white mb-8 border-b border-gray-100">
 				<div className="flex items-start justify-between">
 					<div>
 						<h2 className="text-lg font-semibold text-gray-900 mb-2">Monitor Inbox</h2>
@@ -89,14 +92,17 @@ const UserLabelSettings = () => {
 			</div>
 
 			<div className="bg-white ">
-				<div className="mb-8">
-					<h2 className="text-lg font-semibold text-gray-900 mb-2">Category Preferences</h2>
-					<p className="text-gray-600 text-sm md:text-base">
-						We will organize your emails using the categories below to keep you focused on what's important. 
-					</p>
+				<div className="mb-8 flex flex-row items-center justify-between space-x-2">
+					<div>
+                        <h2 className="text-lg font-semibold text-gray-900 mb-2">Category Preferences</h2>
+                        <p className="text-gray-600 text-sm md:text-base">
+                            We will organize your emails using the categories below to keep you focused on what's important. 
+                        </p>
+                    </div>
+                    <CreateLabel />
 				</div>
 
-				<div className="space-y-6">
+				<div className="space-y-6 ">
 					<div className="grid grid-cols-[auto_1fr] gap-x-6 items-end pb-2 border-b border-gray-100 text-sm text-gray-500 font-medium">
 						<div className="w-24 text-center leading-tight">
 							Enable
@@ -122,6 +128,33 @@ const UserLabelSettings = () => {
 										{category.name}
 									</span>
 									<span className="text-sm text-gray-600 leading-tight">{category.description}</span>
+								</div>
+							</div>
+						))}
+					</div>
+
+					
+				</div>
+
+				<div className="space-y-6">
+					
+					<div className="space-y-3">
+						{customData?.data.map((category) => (
+							<div key={category.id} className="grid grid-cols-[auto_1fr] gap-x-6 items-center group hover:bg-gray-50 p-3 rounded-lg transition-colors -mx-3">
+								<div className="flex justify-center w-24">
+									<Checkbox
+										checked={selectedCategories.includes(category.name)}
+										onCheckedChange={() => toggleCategory(category.name)}
+										className="w-5 h-5 border-gray-300"
+									/>
+								</div>
+								<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+									<span
+										className="px-3 py-1 rounded-full text-white text-xs font-semibold uppercase tracking-wide whitespace-nowrap w-fit shadow-sm"
+										style={{ backgroundColor: category.color }}
+									>
+										{category.name}
+									</span>
 								</div>
 							</div>
 						))}
