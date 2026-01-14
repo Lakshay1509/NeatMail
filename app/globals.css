@@ -1,6 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
 @import "tw-animate-css";
+@import "tailwindcss";
 
 
 @custom-variant dark (&:is(.dark *));
@@ -93,7 +94,6 @@ body{
 
 :root {
 
-    --font-inter: "Inter", sans-serif;
 
     --radius: 0.625rem;
 
@@ -232,7 +232,12 @@ body{
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: var(--font-inter);
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6, .font-serif {
+    font-family: 'Playfair Display', Georgia, serif;
   }
 }
+

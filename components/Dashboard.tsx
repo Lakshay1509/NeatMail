@@ -51,9 +51,9 @@ const Dashboard = () => {
                             Emails labelled this month
                         </p>
                         <div className="flex items-baseline gap-2">
-                            <h2 className="text-3xl font-bold text-gray-900">
+                            <p className="text-3xl font-bold text-gray-900">
                                 {isLoading ? "..." : data?.data || 0}
-                            </h2>
+                            </p>
                         </div>
                     </div>
                     <div className="p-2 bg-blue-50 rounded-lg">

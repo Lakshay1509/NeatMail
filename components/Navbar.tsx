@@ -14,9 +14,9 @@ const Navbar = () => {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-8 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
        <SidebarTrigger className="md:hidden" size='icon-lg'/>
-        <div className="text-xl font-bold text-gray-800">
+        <h1 className="text-2xl font-bold text-gray-800">
            NeatMail
-        </div>
+        </h1>
         
         <div className="flex items-center gap-4">
             {isSignedIn ? (
