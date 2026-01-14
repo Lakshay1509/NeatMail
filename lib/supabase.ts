@@ -62,7 +62,7 @@ export async function updateHistoryId(
 
 export async function labelColor(label: string) {
   try {
-    const data = await db.tag.findUnique({
+    const data = await db.tag.findFirst({
       where: { name: label },
     });
 
