@@ -119,7 +119,7 @@ const app = new Hono().post("/", async (ctx) => {
         continue;
       }
 
-      const colourofLabel = await labelColor(labelName);
+      const colourofLabel = await labelColor(labelName,clerkUserId);
     
       const labelsResponse = await gmail.users.labels.list({ userId: "me" });
       let labelId = labelsResponse.data.labels?.find(

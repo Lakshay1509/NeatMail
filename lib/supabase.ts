@@ -60,10 +60,13 @@ export async function updateHistoryId(
   }
 }
 
-export async function labelColor(label: string) {
+export async function labelColor(label: string, userId: string) {
   try {
     const data = await db.tag.findFirst({
-      where: { name: label },
+      where: {
+        name: label,
+        OR: [{ user_id: userId }, { user_id: null }],
+      },
     });
 
     if (!data) {
@@ -135,7 +138,7 @@ export async function addDraftToDB(
   user_id: string,
   message_id: string,
   draft: string,
-  recipent:string
+  recipent: string
 ) {
   try {
     const data = await db.drafts.upsert({
@@ -153,7 +156,7 @@ export async function addDraftToDB(
         user_id: user_id,
         message_id: message_id,
         draft: draft,
-        receipent:recipent,
+        receipent: recipent,
         created_at: new Date().toISOString(),
       },
     });

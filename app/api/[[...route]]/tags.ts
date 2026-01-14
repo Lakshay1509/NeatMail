@@ -120,7 +120,7 @@ const app = new Hono()
 
       const values = ctx.req.valid("json");
 
-      const exist = await db.tag.findMany({
+      const exist = await db.tag.findFirst({
         where:{
           name:values.tag,
           OR: [
@@ -131,9 +131,9 @@ const app = new Hono()
         }
       })
 
-       const colorExist = colors.some(color => color.value === values.color);
+      const colorExist = colors.some(color => color.value === values.color);
 
-      if(exist.length >0 || !colorExist){
+      if(exist || !colorExist){
         return ctx.json({error:"Same name tag exists or color invalid"},500);
       }
 
