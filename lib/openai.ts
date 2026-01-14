@@ -35,8 +35,9 @@ Analyze the provided email metadata (Subject, From, Snippet) and assign exactly 
 Guidelines:
 1. **Primary Intent**: Determine the main purpose of the email. Match it to the category that best fits this purpose.
 2. **Specificity**: If multiple categories seem valid, choose the one that is most specific to the content.
-3. **No Match**: If the email is vague, generic, or does not clearly fit any of the provided categories, return an empty string "".
-4. **Strict Adherence**: Do NOT create new categories. You must use the EXACT names provided in the list.
+3: **Confidence**: Make sure you are more than 95% confident in the category you choose else return "".
+4. **No Match**: If the email is vague, generic, or does not clearly fit any of the provided categories, return an empty string "".
+5. **Strict Adherence**: Do NOT create new categories. You must use the EXACT names provided in the list.
 
 Output Format:
 Return a valid JSON object with a single key "category".
