@@ -29,9 +29,12 @@ export default function SignInPage() {
 
       {/* Right side - App branding */}
       <div className="hidden md:flex flex-1 bg-gray-50 items-center justify-center p-8 md:rounded-l-xl">
-        <div className="text-center p-4">
+        <div className="text-center p-4 space-y-6 flex flex-col">
           <p className="text-6xl  font-semibold font-logo text-foreground select-none">
             NeatMail
+          </p>
+          <p className="text-xl  font-semibold font-logo text-foreground select-none">
+            Your inbox deserves better!
           </p>
         </div>
       </div>
