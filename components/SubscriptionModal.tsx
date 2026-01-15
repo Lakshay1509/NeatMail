@@ -114,34 +114,65 @@ export const SubscriptionModal = ({
           ))}
         </div>
 
-        <div className="mt-6 flex items-center justify-between gap-4">
-          <button
-            onClick={handleAction}
-            className="text-sm font-medium text-muted-foreground underline-offset-4 hover:underline hover:text-foreground transition-colors disabled:opacity-50 disabled:pointer-events-none"
-            disabled={isLoading}
-          >
-            Go to Billings Page
-          </button>
-          <div className="flex flex-col items-end gap-1">
-            {error && (
-              <span className="text-xs font-medium text-destructive">
-                {error}
-              </span>
-            )}
-            <Button onClick={handlebilling} disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  Join Now <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
+        <div className="mt-6 w-full space-y-4">
+
+  {error && (
+    <span className="block text-center text-xs font-medium text-destructive">
+      {error}
+    </span>
+  )}
+
+  {/* Primary CTA */}
+  <Button
+    onClick={handlebilling}
+    disabled={isLoading}
+    className="w-full"
+  >
+    {isLoading ? (
+      <>
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Processing...
+      </>
+    ) : (
+      <>
+        Join Now <ArrowRight className="ml-2 h-4 w-4" />
+      </>
+    )}
+  </Button>
+
+  {/* OR Divider */}
+  <div className="relative flex items-center justify-center">
+    <div className="absolute inset-0 flex items-center">
+      <div className="w-full border-t border-muted" />
+    </div>
+    <span className="relative bg-background px-3 text-xs text-muted-foreground">
+      OR
+    </span>
+  </div>
+
+  {/* Secondary CTA */}
+  <Button
+    onClick={handlebilling}
+    disabled={isLoading}
+    variant="outline"
+    className="w-full text-muted-foreground border-muted hover:bg-muted/40"
+  >
+    {isLoading ? (
+      <>
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Processing...
+      </>
+    ) : (
+      <>
+        Join for 7 days (cancel anytime)
+        <ArrowRight className="ml-2 h-4 w-4" />
+      </>
+    )}
+  </Button>
+
+</div>
+
+        
       </DialogContent>
     </Dialog>
   );

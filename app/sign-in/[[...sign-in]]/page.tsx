@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 export default function SignInPage() {
   return (
-    <div className="flex overflow-hidden max-w-full min-h-[100vh]">
+    <div className="flex overflow-hidden max-w-full h-screen">
       {/* Left side - Sign in form */}
       <div className="flex-1 flex items-center justify-center mx-auto bg-background">
         <div className="w-full max-w-md space-y-8">
@@ -19,28 +19,20 @@ export default function SignInPage() {
 
           <p className="text-xs text-center text-muted-foreground px-4">
             By signing up, you agree with our{" "}
-            <Link href="/terms-and-conditions" className="underline underline-offset-4 hover:text-primary">
-              Terms and Conditions
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy-policy" className="underline underline-offset-4 hover:text-primary">
+          
+            <a href="https://www.neatmail.tech/privacy" className="underline underline-offset-4 hover:text-primary">
               Privacy Policy
-            </Link>.
+            </a>.
           </p>
         </div>
       </div>
 
       {/* Right side - App branding */}
-      <div className="hidden md:flex flex-1 bg-[#F8F4FF] items-center justify-center p-8 md:rounded-l-xl">
+      <div className="hidden md:flex flex-1 bg-gray-50 items-center justify-center p-8 md:rounded-l-xl">
         <div className="text-center p-4">
-          {/* <Image
-            src="/logo.avif"
-            alt="Safe or Not"
-            width={250}
-            height={80}
-            className="max-w-full h-auto"
-            unoptimized
-          /> */}
+          <p className="text-6xl  font-semibold font-logo text-foreground select-none">
+            NeatMail
+          </p>
         </div>
       </div>
     </div>

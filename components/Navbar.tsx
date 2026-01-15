@@ -3,7 +3,7 @@
 import { UserButton, useUser } from '@clerk/nextjs'
 import Link from 'next/link'
 import { SidebarTrigger } from './ui/sidebar';
-import { usePathname } from 'next/navigation';
+
 
 
 
@@ -14,7 +14,7 @@ const Navbar = () => {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-8 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
        <SidebarTrigger className="md:hidden" size='icon-lg'/>
-        <h1 className="text-2xl font-bold text-gray-800 font-logo">
+        <h1 className="text-2xl font-bold text-gray-800 font-logo select-none">
            NeatMail
         </h1>
         
@@ -24,7 +24,7 @@ const Navbar = () => {
             ) : (
                 <Link 
                     href="/sign-in"
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-blue-700 transition-colors"
                 >
                     Login
                 </Link>
