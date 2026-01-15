@@ -1,9 +1,10 @@
 import { db } from "@/lib/prisma";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import z from "zod/v3";
 import { colors } from "@/lib/colors";
+import { google } from "googleapis";
 
 const app = new Hono()
 
@@ -78,19 +79,20 @@ const app = new Hono()
         },
       });
 
-      await db.user_tags.deleteMany({
-        where: {
-          user_id: userId,
-        },
-      });
-
-      const response = await db.user_tags.createMany({
-        data: tagRecords.map((tag) => ({
-          user_id: userId,
-          tag_id: tag.id,
-        })),
-        skipDuplicates: true,
-      });
+      const response = await db.$transaction([
+        db.user_tags.deleteMany({
+          where: {
+            user_id: userId,
+          },
+        }),
+        db.user_tags.createMany({
+          data: tagRecords.map((tag) => ({
+            user_id: userId,
+            tag_id: tag.id,
+          })),
+          skipDuplicates: true,
+        }),
+      ]);
 
       if (!response) {
         return ctx.json({ error: "Error creating tags" }, 500);
@@ -160,35 +162,69 @@ const app = new Hono()
       })
     ),
     async (ctx) => {
-      const { userId } = await auth();
-      if (!userId) {
-        return ctx.json({ error: "Unuathorized" }, 401);
+      try {
+        const { userId } = await auth();
+        if (!userId) {
+          return ctx.json({ error: "Unuathorized" }, 401);
+        }
+        const clerk = await clerkClient();
+
+        const values = ctx.req.valid("json");
+
+        const exist = await db.tag.findFirst({
+          where: {
+            id: values.id,
+            user_id: userId,
+          },
+        });
+
+        if (!exist) {
+          return ctx.json({ error: "Error getting data for this tag" }, 500);
+        }
+
+        const googleAccount = (
+          await clerk.users.getUserOauthAccessToken(userId, "google")
+        ).data.find((acc) => acc.token);
+
+        if (!googleAccount?.token) {
+          throw new Error("No valid Google access token found");
+        }
+
+        const oauth2Client = new google.auth.OAuth2();
+        oauth2Client.setCredentials({ access_token: googleAccount.token });
+
+        const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+        const { data } = await gmail.users.labels.list({
+          userId: "me",
+          fields: "labels(id,name)", // Only fetch what you need
+        });
+
+        const gmailLabel = data.labels?.find(
+          (label) => label.name === exist.name
+        );
+
+        if (gmailLabel && gmailLabel.id) {
+          await gmail.users.labels.delete({
+            userId: "me",
+            id: gmailLabel.id,
+          });
+        }
+
+        const response = await db.tag.delete({
+          where: {
+            id: exist.id,
+          },
+        });
+
+        if (!response) {
+          return ctx.json({ error: "Error deleting data for this tag" }, 500);
+        }
+
+        return ctx.json({ response }, 200);
+      } catch (error) {
+        return ctx.json({ error }, 500);
       }
-
-      const values = ctx.req.valid("json");
-
-      const exist = await db.tag.findFirst({
-        where: {
-          id: values.id,
-          user_id: userId,
-        },
-      });
-
-      if (!exist) {
-        return ctx.json({ error: "Error getting data for this tag" }, 500);
-      }
-
-      const data = await db.tag.delete({
-        where: {
-          id: exist.id,
-        },
-      });
-
-      if (!data) {
-        return ctx.json({ error: "Error deleting data for this tag" }, 500);
-      }
-
-      return ctx.json({ data }, 200);
     }
   );
 

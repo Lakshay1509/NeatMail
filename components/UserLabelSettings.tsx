@@ -252,7 +252,7 @@ const UserLabelSettings = () => {
 					<AlertDialogHeader>
 						<AlertDialogTitle className="text-gray-900 font-semibold">Are you sure?</AlertDialogTitle>
 						<AlertDialogDescription className="text-gray-600">
-							This will permanently delete your tag. This will not remove from your inbox.
+							This will permanently delete your tag and from your inbox also!
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>

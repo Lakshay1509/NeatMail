@@ -27,7 +27,7 @@ export const addCustomTags = () => {
 
     onSuccess:()=>{
         query.invalidateQueries({queryKey:['user-custom-tags']})
-        toast.success("Custom label added succesfully")
+        toast.success("Custom label added succesfully, enable it and save the preference!")
     },
    
     onError: (error) => {
