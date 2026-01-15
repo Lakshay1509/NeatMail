@@ -33,6 +33,7 @@ const TrackedEmail = ({ limit, dashboard }: Props) => {
         return (
             <div className={`flex flex-col justify-center items-center w-full ${dashboard ? "min-h-[40vh]" : "min-h-[60vh]"}`}>
                 <Image src='/no-mail.webp' alt="no-mail" width={200} height={200} />
+                <p className="mt-4 text-gray-700">NeatMail will watch for new mails!</p>
 
             </div>
         )
