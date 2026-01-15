@@ -1,5 +1,6 @@
 //https://gmail-classifier-nine.vercel.app/api/clerk/webhook
 
+import { deactivateWatch } from "@/lib/gmail";
 import { db } from "@/lib/prisma";
 import { WebhookEvent } from "@clerk/nextjs/server";
 import { Hono } from "hono";
@@ -79,21 +80,67 @@ const app = new Hono().post("/webhook", async (ctx) => {
   }
 
   if (eventType === "user.deleted") {
-    const { id } = evt.data;
-    const data = await db.user_tokens.delete({
-      where: { clerk_user_id: id },
-    });
+  const { id: clerkUserId } = evt.data;
 
-    //deactivate watch
-    //cancel subscription
-    
+  // 1. Find active subscription (optional)
+  const subscription = await db.subscription.findFirst({
+    where: {
+      clerkUserId,
+      status: "active",
+    },
+  });
 
-    if (!data) {
-      return ctx.json({ error: "Error deleting user" }, 500);
+  // 2. Deactivate watch + cancel subscription (ONLY if subscription exists)
+  if (subscription) {
+    try {
+      // Deactivate Gmail / Google watch
+      await deactivateWatch(subscription.id);
+
+      // Cancel Dodo subscription
+      const response = await fetch(
+        `${process.env.DODO_WEB_URL!}/subscriptions/${subscription.dodoSubscriptionId}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${process.env.DODO_API!}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            cancel_at_next_billing_date: true,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to cancel Dodo subscription");
+      }
+    } catch (err) {
+      console.error("Subscription cleanup failed:", err);
+      // continue — user deletion should not be blocked
     }
-
-    return ctx.json({ success: true, message: "User deleted" }, 200);
   }
+
+  // 3. DB Transaction (always runs)
+  await db.$transaction(async (tx) => {
+    // Delete user 
+    await tx.user_tokens.delete({
+      where: {
+        clerk_user_id: clerkUserId,
+      },
+    });
+  });
+
+  return ctx.json(
+    {
+      success: true,
+      message: subscription
+        ? "User deleted and subscription cancelled"
+        : "User deleted (no active subscription)",
+    },
+    200
+  );
+}
+
 
   return ctx.json({ success: true, message: "Webhook received" }, 200);
 })
