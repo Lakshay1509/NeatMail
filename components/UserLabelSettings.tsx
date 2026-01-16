@@ -30,7 +30,7 @@ const UserLabelSettings = () => {
 	const { data, isLoading, isError } = useGetUserTags();
 	const { data: customData, isLoading: customLoading, isError: customError } = useGetCustomTags();
 	const { data: watchData, isLoading: watchLoading } = useGetUserWatch();
-	const {data:subData} = useGetUserSubscribed();
+	const { data: subData } = useGetUserSubscribed();
 
 	const mutation = addTagstoUser();
 	const addWatchMutation = addWatch();
@@ -68,12 +68,15 @@ const UserLabelSettings = () => {
 		if (!isValid) return;
 		await mutation.mutateAsync({ tags: selectedCategories });
 
-		if (watch) {
-			await addWatchMutation.mutateAsync({});
-		}
+		if (subData?.subscribed === true) {
 
-		if (!watch) {
-			await deleteWatchMutation.mutateAsync({});
+			if (watch) {
+				await addWatchMutation.mutateAsync({});
+			}
+
+			if (!watch) {
+				await deleteWatchMutation.mutateAsync({});
+			}
 		}
 
 	}
@@ -108,7 +111,7 @@ const UserLabelSettings = () => {
 								{watch ? 'Active' : 'Inactive'}
 							</span>
 							<Checkbox
-								disabled={subData?.subscribed===false}
+								disabled={subData?.subscribed === false}
 								checked={watch}
 								onCheckedChange={(checked) => setWatch(!!checked)}
 								className="w-5 h-5 border-gray-300"
@@ -127,7 +130,7 @@ const UserLabelSettings = () => {
 							We will organize your emails using the categories below to keep you focused on what's important.
 						</p>
 					</div>
-					
+
 				</div>
 
 				<div className="space-y-6 ">
@@ -178,7 +181,7 @@ const UserLabelSettings = () => {
 						</p>
 					</div>
 					<CreateLabel />
-					
+
 				</div>
 
 				<div className="space-y-6">
@@ -188,57 +191,57 @@ const UserLabelSettings = () => {
 						</div>
 						<div className="pb-0.5">Category Details</div>
 					</div>
-				
 
-				<div>
-					{customData?.data.map((category) => (
-						<div key={category.id} className="grid grid-cols-[auto_1fr_auto] gap-x-6 items-center group hover:bg-gray-50 p-3 rounded-lg transition-colors -mx-3">
-							<div className="flex justify-center w-24">
-								<Checkbox
-									checked={selectedCategories.includes(category.name)}
-									onCheckedChange={() => toggleCategory(category.name)}
-									className="w-5 h-5 border-gray-300"
-								/>
-							</div>
-							<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-								<span
-									className="px-3 py-1 rounded-full text-white text-xs font-semibold tracking-wide whitespace-nowrap w-fit shadow-sm"
-									style={{ backgroundColor: category.color }}
-								>
-									{category.name}
-								</span>
-							</div>
-							<div>
-								<DropdownMenu >
-									<DropdownMenuTrigger asChild className="">
-										<Button
-											variant="ghost"
-											size="sm"
-											className="h-8 w-8 p-0"
-										>
-											<MoreVertical className="h-4 w-4" />
-											<span className="sr-only">Open menu</span>
-										</Button>
-									</DropdownMenuTrigger>
 
-									<DropdownMenuContent align="end">
+					<div>
+						{customData?.data.map((category) => (
+							<div key={category.id} className="grid grid-cols-[auto_1fr_auto] gap-x-6 items-center group hover:bg-gray-50 p-3 rounded-lg transition-colors -mx-3">
+								<div className="flex justify-center w-24">
+									<Checkbox
+										checked={selectedCategories.includes(category.name)}
+										onCheckedChange={() => toggleCategory(category.name)}
+										className="w-5 h-5 border-gray-300"
+									/>
+								</div>
+								<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+									<span
+										className="px-3 py-1 rounded-full text-white text-xs font-semibold tracking-wide whitespace-nowrap w-fit shadow-sm"
+										style={{ backgroundColor: category.color }}
+									>
+										{category.name}
+									</span>
+								</div>
+								<div>
+									<DropdownMenu >
+										<DropdownMenuTrigger asChild className="">
+											<Button
+												variant="ghost"
+												size="sm"
+												className="h-8 w-8 p-0"
+											>
+												<MoreVertical className="h-4 w-4" />
+												<span className="sr-only">Open menu</span>
+											</Button>
+										</DropdownMenuTrigger>
 
-										<DropdownMenuItem
-											onClick={() => { handleDialogClick(category.id) }}
-											className="text-destructive"
-										>
-											<Trash className="mr-2 h-4 w-4" />
-											Delete
-										</DropdownMenuItem>
-									</DropdownMenuContent>
-								</DropdownMenu>
+										<DropdownMenuContent align="end">
+
+											<DropdownMenuItem
+												onClick={() => { handleDialogClick(category.id) }}
+												className="text-destructive"
+											>
+												<Trash className="mr-2 h-4 w-4" />
+												Delete
+											</DropdownMenuItem>
+										</DropdownMenuContent>
+									</DropdownMenu>
+								</div>
 							</div>
-						</div>
-					))}
-				</div>
+						))}
+					</div>
 				</div>
 			</div>
-			
+
 
 			<div className="mt-10 pt-6 border-t border-gray-100 flex justify-end">
 				<Button

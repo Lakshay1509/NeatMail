@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { addTagstoUser } from "@/features/tags/use-add-tag-user"
 import { addWatch } from "@/features/watch/use-post-watch"
+import OnboardingSuccessDialog from "@/components/OnboardComplete"
 
 export const CATEGORIES = [
 	{ name: 'Action Needed', color: '#cc3a21', description: 'Emails you need to respond to' },
@@ -26,6 +27,8 @@ interface EmailCategorizationModalProps {
 export function EmailCategorizationModal({ open, onOpenChange }: EmailCategorizationModalProps) {
 	
 	const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+	
+	const [showSuccessDialog, setShowSuccessDialog] = useState<boolean>(false);
     const mutation = addTagstoUser();
 	const watchMutation = addWatch();
 	const toggleCategory = (categoryName: string) => {
@@ -44,17 +47,21 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
         onOpenChange(false);
 
 		await watchMutation.mutateAsync({});
+
+		const isSuccess = mutation.isSuccess===true && watchMutation.isSuccess===true;
 		
+		setShowSuccessDialog(isSuccess);
     }
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent
-				className="sm:max-w-3xl max-h-[90vh] overflow-y-auto [&>button]:hidden"
-				onInteractOutside={(e) => e.preventDefault()}
-				onEscapeKeyDown={(e) => e.preventDefault()}
-			>
-				<DialogHeader>
+		<>
+			<Dialog open={open} onOpenChange={onOpenChange}>
+				<DialogContent
+					className="sm:max-w-3xl max-h-[90vh] overflow-y-auto [&>button]:hidden"
+					onInteractOutside={(e) => e.preventDefault()}
+					onEscapeKeyDown={(e) => e.preventDefault()}
+				>
+					<DialogHeader>
 					
 					<DialogDescription className="text-base mt-2">
 						We will organize your emails using the categories below to keep you focused on what's important. You can later add more
@@ -101,5 +108,11 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>
+
+		<OnboardingSuccessDialog 
+			isOpen={showSuccessDialog} 
+			onClose={() => setShowSuccessDialog(false)} 
+		/>
+		</>
 	)
 }
