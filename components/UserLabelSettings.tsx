@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { MoreVertical, Trash } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
+import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
 
 
 
@@ -29,6 +30,8 @@ const UserLabelSettings = () => {
 	const { data, isLoading, isError } = useGetUserTags();
 	const { data: customData, isLoading: customLoading, isError: customError } = useGetCustomTags();
 	const { data: watchData, isLoading: watchLoading } = useGetUserWatch();
+	const {data:subData} = useGetUserSubscribed();
+
 	const mutation = addTagstoUser();
 	const addWatchMutation = addWatch();
 	const deleteWatchMutation = deleteWatch();
@@ -105,6 +108,7 @@ const UserLabelSettings = () => {
 								{watch ? 'Active' : 'Inactive'}
 							</span>
 							<Checkbox
+								disabled={subData?.subscribed===false}
 								checked={watch}
 								onCheckedChange={(checked) => setWatch(!!checked)}
 								className="w-5 h-5 border-gray-300"
@@ -198,7 +202,7 @@ const UserLabelSettings = () => {
 							</div>
 							<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
 								<span
-									className="px-3 py-1 rounded-full text-white text-xs font-semibold uppercase tracking-wide whitespace-nowrap w-fit shadow-sm"
+									className="px-3 py-1 rounded-full text-white text-xs font-semibold tracking-wide whitespace-nowrap w-fit shadow-sm"
 									style={{ backgroundColor: category.color }}
 								>
 									{category.name}
