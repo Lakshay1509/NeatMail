@@ -53,7 +53,7 @@ Snippet: ${email.bodySnippet}`,
   ];
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5-nano-2025-08-07",
+    model: "gpt-4o-mini",
     messages,
     response_format: { type: "json_object" },
     max_completion_tokens: 20, // ✅ FIX
