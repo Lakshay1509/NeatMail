@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { addTagstoUser } from "@/features/tags/use-add-tag-user"
 import { addWatch } from "@/features/watch/use-post-watch"
 import OnboardingSuccessDialog from "@/components/OnboardComplete"
+import { toast } from "sonner"
 
 export const CATEGORIES = [
 	{ name: 'Action Needed', color: '#cc3a21', description: 'Emails you need to respond to' },
@@ -43,15 +44,20 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 
     const handleSubmit = async()=>{
 		if (!isValid) return;
-        await mutation.mutateAsync({tags:selectedCategories});
-        onOpenChange(false);
-
-		await watchMutation.mutateAsync({});
-
-		const isSuccess = mutation.isSuccess===true && watchMutation.isSuccess===true;
 		
-		setShowSuccessDialog(isSuccess);
-    }
+		try {
+			await mutation.mutateAsync({tags:selectedCategories});
+			await watchMutation.mutateAsync({});
+			
+			onOpenChange(false);
+			setShowSuccessDialog(true);
+		} catch (error) {
+			// Handle error if needed
+			onOpenChange(false);
+			toast.error('Failed to complete onboarding please go to settings')
+			console.error('Failed to complete onboarding:', error);
+		}
+	}
 
 	return (
 		<>
@@ -64,7 +70,7 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 					<DialogHeader>
 					
 					<DialogDescription className="text-base mt-2">
-						We will organize your emails using the categories below to keep you focused on what's important. You can later add more
+						We will organize your emails using the categories below to keep you focused on what's important. You can later add more in the settings.
 					</DialogDescription>
 				</DialogHeader>
 
