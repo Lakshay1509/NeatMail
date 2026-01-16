@@ -90,7 +90,7 @@ const app = new Hono().post("/webhook", async (ctx) => {
     },
   });
 
-  console.log(subscription);
+  
 
   // 2. Deactivate watch + cancel subscription (ONLY if subscription exists)
   if (subscription) {
