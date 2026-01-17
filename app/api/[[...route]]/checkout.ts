@@ -5,9 +5,12 @@ import DodoPayments from "dodopayments";
 import { Hono } from "hono";
 
 const dodopayments = new DodoPayments({
-  environment: "test_mode",
+  environment: process.env.NODE_ENV === 'production'
+    ? 'live_mode'
+    : 'test_mode',
   bearerToken: process.env.DODO_API!,
 });
+
 
 const app = new Hono()
   .post("/", async (ctx) => {
