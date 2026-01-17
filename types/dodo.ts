@@ -66,7 +66,7 @@ export interface DodoPaymentData {
   currency: string;
   status: string;
   payment_method: string;
-  payment_method_type: string,
+  payment_method_type: string | null,
   card_last_four: string | null;
   card_network: string | null;
   card_type: string | null;
