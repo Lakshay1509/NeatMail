@@ -24,7 +24,9 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
           metadata: data.metadata || {},
         },
         create: {
-          clerkUserId: data.metadata?.clerk_user_id,
+          user_tokens: {
+            connect: { clerk_user_id: data.metadata?.clerk_user_id },
+          },
           dodoSubscriptionId: data.subscription_id,
           dodoCustomerId: data.customer.customer_id,
           customerEmail: data.customer.email,
@@ -180,8 +182,12 @@ export async function addPaymenttoDb(
             metadata: data.metadata,
           },
           create: {
-            clerkUserId: data.metadata?.clerk_user_id,
-            subscriptionId: subscriptionData.id,
+            user_tokens: {
+              connect: { clerk_user_id: data.metadata?.clerk_user_id },
+            },
+            subscription: {
+              connect: { id: subscriptionData.id },
+            },
             dodoPaymentId: data.payment_id,
             dodoSubscriptionId: data.subscription_id,
             invoiceId: data.invoice_id,
