@@ -4,13 +4,15 @@ import DodoPayments from "dodopayments";
 
 import { Hono } from "hono";
 
-const dodopayments = new DodoPayments({
-  environment: process.env.NODE_ENV === 'production'
-    ? 'live_mode'
-    : 'test_mode',
-  bearerToken: process.env.DODO_API!,
-});
 
+const getDodoPayments = () => {
+  return new DodoPayments({
+    environment: process.env.NODE_ENV === 'production'
+      ? 'live_mode'
+      : 'test_mode',
+    bearerToken: process.env.DODO_API!,
+  });
+};
 
 const app = new Hono()
   .post("/", async (ctx) => {
@@ -47,6 +49,8 @@ const app = new Hono()
       const name = user?.fullName ?? "";
       const emailAddress = user?.emailAddresses[0]?.emailAddress ?? "";
 
+      const dodopayments = getDodoPayments();
+      
       const checkout = await dodopayments.checkoutSessions.create({
         product_cart: [
           {
@@ -154,9 +158,9 @@ const app = new Hono()
         );
       }
 
-      // Add console logs to debug
       console.log("Fetching invoice for payment_id:", payment_id);
       
+      const dodopayments = getDodoPayments();
       const payment = await dodopayments.invoices.payments.retrieve(payment_id);
 
       console.log("Payment response type:", typeof payment);
@@ -166,7 +170,6 @@ const app = new Hono()
         return ctx.json({ error: "Error getting invoice" }, 500);
       }
 
-      // Check if payment has the expected data
       const buffer = Buffer.from(await payment.arrayBuffer());
       console.log("Buffer length:", buffer.length);
 
