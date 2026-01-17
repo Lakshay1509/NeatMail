@@ -126,46 +126,62 @@ const app = new Hono()
   })
 
   .get("/invoice/:id", async (ctx) => {
-    const { userId } = await auth();
+    try {
+      const { userId } = await auth();
 
-    if (!userId) {
-      return ctx.json({ error: "Unauthorized" }, 401);
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const payment_id = ctx.req.param("id");
+
+      if (!payment_id) {
+        return ctx.json({ error: "No payment id in the params" }, 400);
+      }
+
+      const invoice_data = await db.paymentHistory.findUnique({
+        where: { dodoPaymentId: payment_id },
+      });
+
+      if (!invoice_data) {
+        return ctx.json({ error: "No invoice data" }, 500);
+      }
+
+      if (invoice_data.clerkUserId !== userId) {
+        return ctx.json(
+          { error: "Unauthorized user for the given invoice" },
+          401
+        );
+      }
+
+      // Add console logs to debug
+      console.log("Fetching invoice for payment_id:", payment_id);
+      
+      const payment = await dodopayments.invoices.payments.retrieve(payment_id);
+
+      console.log("Payment response type:", typeof payment);
+      console.log("Payment response:", payment);
+
+      if (!payment) {
+        return ctx.json({ error: "Error getting invoice" }, 500);
+      }
+
+      // Check if payment has the expected data
+      const buffer = Buffer.from(await payment.arrayBuffer());
+      console.log("Buffer length:", buffer.length);
+
+      return new Response(buffer, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `attachment; filename="invoice-${payment_id}.pdf"`,
+          "Content-Length": buffer.length.toString(),
+        },
+      });
+    } catch (error) {
+      console.error("Invoice download error:", error);
+      return ctx.json({ error: "Failed to download invoice" }, 500);
     }
-
-    const payment_id = ctx.req.param("id");
-
-    if (!payment_id) {
-      return ctx.json({ error: "No payment id in the params" }, 400);
-    }
-
-    const invoice_data = await db.paymentHistory.findUnique({
-      where: { dodoPaymentId: payment_id },
-    });
-
-    if (!invoice_data) {
-      return ctx.json({ error: "No invoice data" }, 500);
-    }
-
-    if (invoice_data.clerkUserId !== userId) {
-      return ctx.json(
-        { error: "Unauthorized user for the given invoice" },
-        401
-      );
-    }
-
-    const payment = await dodopayments.invoices.payments.retrieve(payment_id);
-
-    if(!payment){
-      return ctx.json({error : "Error getting invoice"},500);
-    }
-
-    // Assuming payment is a Response object from the SDK that contains the PDF data
-    const buffer = await payment.arrayBuffer();
-
-    return ctx.body(buffer, 200, {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="invoice-${payment_id}.pdf"`,
-    });
   });
 
 export default app;
