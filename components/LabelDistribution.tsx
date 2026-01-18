@@ -5,7 +5,7 @@ import { useGetUserTagsWeek } from "@/features/email/use-get-user-tagsThisWeek";
 export function LabelDistribution() {
   const { data: tags, isLoading } = useGetUserTagsWeek();
 
-  console.log(tags)
+
 
   if (isLoading) {
     return (
