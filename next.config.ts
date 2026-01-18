@@ -24,6 +24,7 @@ const nextConfig: NextConfig = {
       *.cloudflareinsights.com
       *.clerk.dev
       *.clerk.com
+      *.neatmail.tech
       *.dodopayments.com
       blob:;
 
@@ -49,6 +50,7 @@ const nextConfig: NextConfig = {
       *.supabase.co
       *.clerk.dev
       *.clerk.com
+      *.neatmail.tech
       *.dodopayments.com
       *.dodo.com
       https:;
