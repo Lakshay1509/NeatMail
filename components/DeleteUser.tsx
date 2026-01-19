@@ -5,6 +5,8 @@ import { useDeleteUser } from "@/features/user/use-post-delete";
 import { Button } from "./ui/button";
 import { useState } from "react";
 import { Input } from "./ui/input";
+import { deleteWatch } from "@/features/watch/use-delete-watch";
+import { toast } from "sonner";
 
 const DeleteUser = () => {
   const { data, isLoading, isError } = useGetUserDeleteStatus();
@@ -14,6 +16,7 @@ const DeleteUser = () => {
   const isDeleted = data?.data.deleted_flag ?? false;
   const status = isDeleted ? 'cancel' : 'request';
   const mutation = useDeleteUser(status);
+  const deleteWatchmutation = deleteWatch();
 
   const handleClick = async () => {
     if (status === 'request') {
@@ -25,9 +28,15 @@ const DeleteUser = () => {
 
   const handleConfirmDelete = async () => {
     if (confirmText === "Delete Account") {
-      await mutation.mutateAsync();
-      setShowConfirm(false);
-      setConfirmText("");
+      try {
+        await mutation.mutateAsync();
+        await deleteWatchmutation.mutateAsync({});
+        toast.success('NeatMail will not watch for incoming mails');
+        setShowConfirm(false);
+        setConfirmText("");
+      } catch (error) {
+        console.error("Failed to delete:", error);
+      }
     }
   };
 
