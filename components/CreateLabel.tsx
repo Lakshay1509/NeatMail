@@ -44,7 +44,10 @@ const formSchema = z.object({
   .string()
   .min(1, "Name is required")
   .refine(
-    (val) => !RESERVED_KEYWORDS.has(val.trim().toLowerCase()),
+    (val) => {
+      const normalized = val.trim().toLowerCase();
+      return !RESERVED_KEYWORDS.has(normalized);
+    },
     {
       message: "This name is reserved",
     }
