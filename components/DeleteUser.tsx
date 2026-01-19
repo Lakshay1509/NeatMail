@@ -29,7 +29,10 @@ const DeleteUser = () => {
   const handleConfirmDelete = async () => {
     if (confirmText === "Delete Account") {
       try {
+        const delay = (ms: number) =>
+        new Promise(resolve => setTimeout(resolve, ms));
         await mutation.mutateAsync();
+        await delay(3000)
         await deleteWatchmutation.mutateAsync({});
         toast.success('NeatMail will not watch for incoming mails');
         setShowConfirm(false);
