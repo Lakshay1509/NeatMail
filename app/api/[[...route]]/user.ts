@@ -128,28 +128,26 @@ const app = new Hono()
     return ctx.json({ data }, 200);
   })
 
-  .get('/deleteStatus',async(ctx)=>{
-
-     const { userId } = await auth();
+  .get("/deleteStatus", async (ctx) => {
+    const { userId } = await auth();
 
     if (!userId) {
       return ctx.json({ error: "Unauthorized" }, 401);
     }
 
     const data = await db.user_tokens.findUnique({
-      where:{clerk_user_id:userId},
-      select:{
-        delete_at:true,
-        deleted_flag:true
-      }
-    })
+      where: { clerk_user_id: userId },
+      select: {
+        delete_at: true,
+        deleted_flag: true,
+      },
+    });
 
-    if(!data){
-      return ctx.json({error:"Error getting data"},500);
+    if (!data) {
+      return ctx.json({ error: "Error getting data" }, 500);
     }
 
-    return ctx.json({data},200);
-
+    return ctx.json({ data }, 200);
   })
 
   .put("/delete/:status", async (ctx) => {
@@ -179,20 +177,23 @@ const app = new Hono()
       if (subscription) {
         // Try to deactivate Gmail watch (may fail if user already deleted in Clerk)
         try {
-          await deactivateWatch(subscription.dodoSubscriptionId);
-          await db.user_tokens.update({
-            where:{
-              clerk_user_id:userId
-            },
-            data:{
-              watch_activated:false,
-              last_history_id:null,
-              updated_at : new Date().toISOString()
-            }
-          })
+          const response = await deactivateWatch(
+            subscription.dodoSubscriptionId,
+          );
+          if (response.success === true && response.userId) {
+            await db.user_tokens.update({
+              where: {
+                clerk_user_id: userId,
+              },
+              data: {
+                watch_activated: false,
+                last_history_id: null,
+                updated_at: new Date().toISOString(),
+              },
+            });
+          }
         } catch (err) {
-          return ctx.json({error:"Gmail watch deactivation failed"},500);
-          
+          return ctx.json({ error: "Gmail watch deactivation failed" }, 500);
         }
 
         // Cancel Dodo subscription
@@ -210,8 +211,6 @@ const app = new Hono()
               }),
             },
           );
-
-         
 
           if (!response.ok) {
             throw new Error("Failed to cancel Dodo subscription");
