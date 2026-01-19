@@ -29,14 +29,14 @@ import { colors } from "@/lib/colors"
 
 
 const RESERVED_KEYWORDS = new Set([
-  "Action Needed",
-  "Pending Response",
-  "Automated alerts",
-  "Event update",
-  "Discussion",
-  "Read only",
-  "Resolved",
-  "Marketing"
+  "action needed",
+  "pending response",
+  "automated alerts",
+  "event update",
+  "discussion",
+  "read only",
+  "resolved",
+  "marketing"
 ]);
 
 const formSchema = z.object({
