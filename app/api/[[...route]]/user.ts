@@ -181,8 +181,9 @@ const app = new Hono()
             subscription.dodoSubscriptionId,
           );
           console.log(response)
-          if (response.success === true && response.userId) {
-            await db.user_tokens.update({
+          if (response.success === true) {
+            console.log("calling db to update watch")
+            const data = await db.user_tokens.update({
               where: {
                 clerk_user_id: userId,
               },
@@ -192,6 +193,7 @@ const app = new Hono()
                 updated_at: new Date().toISOString(),
               },
             });
+            console.log({data});
           }
         } catch (err) {
           return ctx.json({ error: "Gmail watch deactivation failed" }, 500);
