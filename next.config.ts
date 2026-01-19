@@ -24,6 +24,7 @@ const nextConfig: NextConfig = {
       *.cloudflareinsights.com
       *.clerk.dev
       *.clerk.com
+      *.clerk.accounts.dev
       *.neatmail.tech
       *.dodopayments.com
       blob:;

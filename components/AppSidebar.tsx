@@ -1,4 +1,4 @@
-import { Mail, Home, MessageSquareDashed, Settings, Receipt } from "lucide-react"
+import { Mail, Home, MessageSquareDashed, Settings, Receipt, AlertCircle } from "lucide-react"
 
 import {
   Sidebar,
@@ -9,6 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
 } from "@/components/ui/sidebar"
 import Link from "next/link"
 
@@ -43,8 +44,8 @@ const items = [
 
 export function AppSidebar() {
   return (
-    <Sidebar className="mt-16">
-      <SidebarContent>
+    <Sidebar >
+      <SidebarContent className="lg:mt-16">
         <SidebarGroup>
           <SidebarGroupLabel></SidebarGroupLabel>
           <SidebarGroupContent>
@@ -63,6 +64,18 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild className="h-12 text-red-600 hover:text-red-700">
+              <Link href="/danger">
+                <AlertCircle className="!h-4 !w-4" />
+                <span className="text-sm">Danger zone</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   )
 }

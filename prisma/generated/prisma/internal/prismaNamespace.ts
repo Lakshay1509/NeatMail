@@ -973,7 +973,9 @@ export const User_tokensScalarFieldEnum = {
   created_at: 'created_at',
   updated_at: 'updated_at',
   last_history_id: 'last_history_id',
-  watch_activated: 'watch_activated'
+  watch_activated: 'watch_activated',
+  deleted_flag: 'deleted_flag',
+  delete_at: 'delete_at'
 } as const
 
 export type User_tokensScalarFieldEnum = (typeof User_tokensScalarFieldEnum)[keyof typeof User_tokensScalarFieldEnum]
