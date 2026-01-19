@@ -180,6 +180,7 @@ const app = new Hono()
           const response = await deactivateWatch(
             subscription.dodoSubscriptionId,
           );
+          console.log(response)
           if (response.success === true && response.userId) {
             await db.user_tokens.update({
               where: {
