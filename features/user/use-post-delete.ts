@@ -23,7 +23,15 @@ export const useDeleteUser = (status: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({queryKey:["user-delete-status"]});
-      toast.success("User flagged for deletion");
+      queryClient.invalidateQueries({queryKey:["user-subscription"]});
+      queryClient.invalidateQueries({queryKey:["user-watch"]});
+      if(status==='request'){
+        toast.success("User flagged for deletion");
+      }
+      if(status==='cancel'){
+        toast.success("Deletion request cancelled, reactivate preferences and billing!")
+      }
+      
     },
     onError: () => {
       toast.error("Failed to delete user");

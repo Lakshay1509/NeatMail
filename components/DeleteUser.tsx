@@ -41,7 +41,7 @@ const DeleteUser = () => {
   if (isError) return <div>Error loading delete status</div>;
 
   return (
-    <div className="flex justify-between items-center p-4 border rounded-lg bg-red-50 border-red-200">
+    <div className="flex justify-between items-center space-x-2 p-4 border rounded-lg bg-red-50 border-red-200">
       <div className="flex flex-col">
         <h3 className="text-lg font-semibold text-red-700">Delete Account</h3>
         <p className="text-sm text-red-600">

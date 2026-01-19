@@ -180,6 +180,16 @@ const app = new Hono()
         // Try to deactivate Gmail watch (may fail if user already deleted in Clerk)
         try {
           await deactivateWatch(subscription.dodoSubscriptionId);
+          await db.user_tokens.update({
+            where:{
+              clerk_user_id:userId
+            },
+            data:{
+              watch_activated:false,
+              last_history_id:null,
+              updated_at : new Date().toISOString()
+            }
+          })
         } catch (err) {
           return ctx.json({error:"Gmail watch deactivation failed"},500);
           
