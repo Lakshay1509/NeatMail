@@ -28,9 +28,27 @@ import { Plus } from "lucide-react"
 import { colors } from "@/lib/colors"
 
 
+const RESERVED_KEYWORDS = new Set([
+  "Action Needed",
+  "Pending Response",
+  "Automated alerts",
+  "Event update",
+  "Discussion",
+  "Read only",
+  "Resolved",
+  "Marketing"
+]);
 
 const formSchema = z.object({
-    name: z.string().min(1, "Name is required"),
+    name: z
+  .string()
+  .min(1, "Name is required")
+  .refine(
+    (val) => !RESERVED_KEYWORDS.has(val.trim().toLowerCase()),
+    {
+      message: "This name is reserved",
+    }
+  ),
     color: z.string().min(1, "Color is required"),
 })
 
