@@ -10,13 +10,15 @@ export async function getGmailClient(userId: string) {
     // Get user's Google OAuth token from Clerk
     const externalAccounts = await client.users.getUserOauthAccessToken(
       userId,
-      "google"
+      "google",
     );
 
     const accessToken = externalAccounts.data[0]?.token;
 
     if (!accessToken) {
-      throw new Error("No Google access token found. User needs to reconnect their Google account.");
+      throw new Error(
+        "No Google access token found. User needs to reconnect their Google account.",
+      );
     }
 
     const oauth2Client = new google.auth.OAuth2();
@@ -24,19 +26,21 @@ export async function getGmailClient(userId: string) {
 
     return google.gmail({ version: "v1", auth: oauth2Client });
   } catch (error: any) {
-    console.error('Failed to get Gmail client:', {
+    console.error("Failed to get Gmail client:", {
       userId,
       error: error.message,
       code: error.code,
       status: error.status,
-      clerkTraceId: error.clerkTraceId
+      clerkTraceId: error.clerkTraceId,
     });
-    
+
     // If it's a Clerk API error related to OAuth tokens
-    if (error.code === 'api_response_error' && error.status === 400) {
-      throw new Error("Google OAuth token has expired or is invalid. Please reconnect your Google account in your user profile.");
+    if (error.code === "api_response_error" && error.status === 400) {
+      throw new Error(
+        "Google OAuth token has expired or is invalid. Please reconnect your Google account in your user profile.",
+      );
     }
-    
+
     throw error;
   }
 }
@@ -70,8 +74,8 @@ export async function getLabelledMails(userId: string, messageIds: string[]) {
         format: "metadata",
         metadataHeaders: ["From", "Subject"],
         fields: "id,labelIds,internalDate,payload.headers",
-      })
-    )
+      }),
+    ),
   );
 
   // 3️⃣ Map label IDs → label names
@@ -102,7 +106,7 @@ export async function createGmailDraft(
   messageId: string,
   subject: string,
   to: string,
-  draftBody: string
+  draftBody: string,
 ) {
   // Create RFC 2822 formatted message
   const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString("base64")}?=`;
@@ -145,30 +149,25 @@ export async function activateWatch(subscription_id: string) {
     const clerk = await clerkClient();
 
     const data = await db.subscription.findUnique({
-      where:{dodoSubscriptionId:subscription_id},
-      select:{
-        clerkUserId:true
-      }
-    })
+      where: { dodoSubscriptionId: subscription_id },
+      select: {
+        clerkUserId: true,
+      },
+    });
 
     if (!data?.clerkUserId) {
       throw new Error("Subscription not found or user ID missing");
     }
 
-  
-  
-    const googleAccount = (
-      await clerk.users.getUserOauthAccessToken(data?.clerkUserId, "google")
-    ).data.find((acc) => acc.token);
+    const tokenResponse = await clerk.users.getUserOauthAccessToken(
+      data.clerkUserId,
+      "google",
+    );
 
-    if (!googleAccount?.token) {
-      throw new Error("No valid Google access token found");
-    }
+    const accessToken = tokenResponse.data[0]?.token;
 
-   
     const oauth2Client = new google.auth.OAuth2();
-    oauth2Client.setCredentials({ access_token: googleAccount.token });
-
+    oauth2Client.setCredentials({ access_token: accessToken });
     const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
     const response = await gmail.users.watch({
@@ -187,12 +186,13 @@ export async function activateWatch(subscription_id: string) {
       throw new Error("Invalid watch response from Gmail");
     }
 
-   return {
-    success:true,
-    history_id:historyId,
-    userId: data?.clerkUserId
-   };
+    console.log('Watch activated');
 
+    return {
+      success: true,
+      history_id: historyId,
+      userId: data?.clerkUserId,
+    };
   } catch (error) {
     console.error(error);
     throw error;
@@ -204,37 +204,36 @@ export async function deactivateWatch(subscription_id: string) {
     const clerk = await clerkClient();
 
     const data = await db.subscription.findUnique({
-      where:{dodoSubscriptionId:subscription_id},
-      select:{
-        clerkUserId:true
-      }
-    })
+      where: { dodoSubscriptionId: subscription_id },
+      select: {
+        clerkUserId: true,
+        customerEmail: true,
+      },
+    });
     if (!data?.clerkUserId) {
       throw new Error("Subscription not found or user ID missing");
     }
 
-    const googleAccount = (
-      await clerk.users.getUserOauthAccessToken(data?.clerkUserId, "google")
-    ).data.find(acc => acc.token);
+    const tokenResponse = await clerk.users.getUserOauthAccessToken(
+      data.clerkUserId,
+      "google",
+    );
 
-    if (!googleAccount?.token) {
-      throw new Error("No valid Google access token found");
-    }
+    const accessToken = tokenResponse.data[0]?.token;
 
-    
     const oauth2Client = new google.auth.OAuth2();
-    oauth2Client.setCredentials({ access_token: googleAccount.token });
-
+    oauth2Client.setCredentials({ access_token: accessToken });
     const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
-    
     await gmail.users.stop({
       userId: "me",
     });
 
+    console.log("✅ Watch deactivated");
+
     return {
-      success:true,
-      userId: data?.clerkUserId
+      success: true,
+      userId: data?.clerkUserId,
     };
   } catch (error) {
     console.error(error);

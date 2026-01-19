@@ -99,11 +99,11 @@ const app = new Hono().post("/", async (ctx) => {
     
     await updateHistoryId(email, null, false);
 
-    console.log("✅ Watch deactivated");
-
+    
     if (!response) {
       return ctx.json({ error: "Error stopping watch" }, 500);
     }
+    console.log("✅ Watch deactivated");
 
     return ctx.json(
       { success: true},

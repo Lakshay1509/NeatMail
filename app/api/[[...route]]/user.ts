@@ -217,7 +217,7 @@ const app = new Hono()
         data: {
           watch_activated:false,
           last_history_id:null,
-          updated_at: new Date().toISOString(),
+          updated_at: new Date(),
           deleted_flag: true,
           delete_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000),
         },
