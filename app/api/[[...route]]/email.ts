@@ -50,17 +50,17 @@ const app = new Hono()
 
     const emails = await getLabelledMails(userId, ids);
 
-    const foundMessageIds = new Set(emails.map(e => e.messageId));
-  const deletedIds = ids.filter(id => !foundMessageIds.has(id));
+  //   const foundMessageIds = new Set(emails.map(e => e.messageId));
+  // const deletedIds = ids.filter(id => !foundMessageIds.has(id));
   
-  if (deletedIds.length > 0) {
-    await db.email_tracked.deleteMany({
-      where: {
-        message_id: { in: deletedIds },
-        user_id: userId
-      }
-    });
-  }
+  // if (deletedIds.length > 0) {
+  //   await db.email_tracked.deleteMany({
+  //     where: {
+  //       message_id: { in: deletedIds },
+  //       user_id: userId
+  //     }
+  //   });
+  // }
 
 
     return ctx.json({ emails, nextCursor }, 200);
