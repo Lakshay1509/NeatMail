@@ -1,6 +1,6 @@
 import { deactivateWatch } from "@/lib/gmail";
 import { db } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { Hono } from "hono";
 
 const app = new Hono()
@@ -149,6 +149,65 @@ const app = new Hono()
 
     return ctx.json({ data }, 200);
   })
+  .get("/scopes", async (ctx) => {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    try {
+      const client = await clerkClient();
+
+      const tokenResponse = await client.users.getUserOauthAccessToken(
+        userId,
+        "google",
+      );
+
+      const googleAccount = tokenResponse.data[0];
+
+      if (!googleAccount) {
+        return ctx.json(
+          {
+            hasAllScopes: false,
+            scopes: [],
+            missingScopes: [
+              "https://www.googleapis.com/auth/gmail.compose",
+              "https://www.googleapis.com/auth/gmail.labels",
+              "https://www.googleapis.com/auth/gmail.modify",
+              "https://www.googleapis.com/auth/gmail.readonly",
+            ],
+          },
+          200,
+        );
+      }
+
+      const requiredScopes = [
+        "https://www.googleapis.com/auth/gmail.compose",
+        "https://www.googleapis.com/auth/gmail.labels",
+        "https://www.googleapis.com/auth/gmail.modify",
+        "https://www.googleapis.com/auth/gmail.readonly",
+      ];
+
+      // scopes is already an array, no need to split
+      const grantedScopes = googleAccount.scopes || [];
+      const missingScopes = requiredScopes.filter(
+        (scope) => !grantedScopes.includes(scope),
+      );
+
+      return ctx.json(
+        {
+          hasAllScopes: missingScopes.length === 0,
+          scopes: grantedScopes,
+          missingScopes,
+        },
+        200,
+      );
+    } catch (error) {
+      console.error("Error fetching scopes:", error);
+      return ctx.json({ error: "Failed to fetch scopes" }, 500);
+    }
+  })
 
   .put("/delete/:status", async (ctx) => {
     const { userId } = await auth();
@@ -175,7 +234,6 @@ const app = new Hono()
 
       // 2. Deactivate watch + cancel subscription (ONLY if subscription exists)
       if (subscription) {
-
         // Cancel Dodo subscription
         try {
           const response = await fetch(
