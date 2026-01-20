@@ -67,37 +67,48 @@ export async function getLabelledMails(userId: string, messageIds: string[]) {
   const labelMap = await getLabelMap(userId);
 
   const messages = await Promise.all(
-    messageIds.map((messageId) =>
-      gmail.users.messages.get({
-        userId: "me",
-        id: messageId,
-        format: "metadata",
-        metadataHeaders: ["From", "Subject"],
-        fields: "id,labelIds,internalDate,payload.headers",
-      }),
-    ),
+    messageIds.map(async (messageId) => {
+      try {
+        return await gmail.users.messages.get({
+          userId: "me",
+          id: messageId,
+          format: "metadata",
+          metadataHeaders: ["From", "Subject"],
+          fields: "id,labelIds,internalDate,payload.headers",
+        });
+      } catch (error: any) {
+        // Handle deleted messages or 404 errors
+        if (error.code === 404 || error.status === 404) {
+          console.warn(`Message ${messageId} not found (deleted)`);
+          return null;
+        }
+        throw error;
+      }
+    }),
   );
 
-  // 3️⃣ Map label IDs → label names
-  return messages.map((res) => {
-    const headers = res.data.payload?.headers ?? [];
+  // Filter out null results (deleted messages)
+  return messages
+    .filter((res) => res !== null)
+    .map((res) => {
+      const headers = res!.data.payload?.headers ?? [];
 
-    const getHeader = (name: string) =>
-      headers.find((h) => h.name === name)?.value ?? "";
+      const getHeader = (name: string) =>
+        headers.find((h) => h.name === name)?.value ?? "";
 
-    const labelNames =
-      res.data.labelIds?.map((id) => labelMap.get(id) ?? id) ?? [];
+      const labelNames =
+        res!.data.labelIds?.map((id) => labelMap.get(id) ?? id) ?? [];
 
-    return {
-      messageId: res.data.id,
-      labels: labelNames,
-      subject: getHeader("Subject"),
-      from: getHeader("From"),
-      internalDate: res.data.internalDate
-        ? new Date(Number(res.data.internalDate)).toISOString()
-        : null,
-    };
-  });
+      return {
+        messageId: res!.data.id,
+        labels: labelNames,
+        subject: getHeader("Subject"),
+        from: getHeader("From"),
+        internalDate: res!.data.internalDate
+          ? new Date(Number(res!.data.internalDate)).toISOString()
+          : null,
+      };
+    });
 }
 
 export async function createGmailDraft(
