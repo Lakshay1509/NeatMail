@@ -186,7 +186,7 @@ export async function activateWatch(subscription_id: string) {
       requestBody: {
         labelIds: ["INBOX"],
         topicName:
-          "projects/mail-service-483207/topics/gmail-push-notifications",
+          process.env.GMAIL_WEBHOOK_TOPIC,
       },
     });
 

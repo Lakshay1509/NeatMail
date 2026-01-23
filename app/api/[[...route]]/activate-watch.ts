@@ -41,7 +41,7 @@ const app = new Hono().post("/", async (ctx) => {
 
     const watchRequest = {
       labelIds: ["INBOX"],
-      topicName: 'projects/mail-service-483207/topics/gmail-push-notifications',
+      topicName: process.env.GMAIL_WEBHOOK_TOPIC,
     };
 
     const response = await gmail.users.watch({
