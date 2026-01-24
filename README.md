@@ -81,7 +81,7 @@ NeatMail watches your inbox 24/7 and:
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/neatmail.git
+git clone https://github.com/Lakshay1509/NeatMail.git
 cd neatmail
 ```
 
