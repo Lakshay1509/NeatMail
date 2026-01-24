@@ -61,7 +61,7 @@ const TrackedEmail = ({ limit, dashboard }: Props) => {
                         {emails.map((email, idx) => (
                             <tr key={email.messageId || idx} className="hover:bg-gray-50/50 transition-colors group">
                                 <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">
-                                    {email.from.replace(/<.*>/, '').trim()}
+                                   {(email.from.split("<")[0] || email.from).trim()}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
                                     {email.subject}
