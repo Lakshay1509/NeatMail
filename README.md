@@ -330,8 +330,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📧 Support
 
 - **Website**: [neatmail.tech](https://www.neatmail.tech)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/neatmail/issues)
-- **Email**: support@neatmail.tech
+- **Issues**: [GitHub Issues](https://github.com/Lakshay1509/NeatMail/issues)
+- **Email**:  help.neatmail@gmail.com
 
 ---
 
