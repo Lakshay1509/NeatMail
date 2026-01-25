@@ -13,7 +13,7 @@ model user_tokens {
   clerk_user_id   String           @id @unique
   gmail_email     String           @unique
   created_at      DateTime         @default(now()) @db.Timestamp(6)
-  updated_at      DateTime         @default(now()) @db.Timestamp(6)
+  updated_at      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
   last_history_id String?
   watch_activated Boolean          @default(false)
   deleted_flag    Boolean          @default(false)
@@ -105,8 +105,8 @@ model Subscription {
   cancelAtNextBillingDate  Boolean          @default(false) @map("cancel_at_next_billing_date")
   cancelledAt              DateTime?        @map("cancelled_at")
   metadata                 Json?            @default("{}")
-  createdAt                DateTime         @default(now()) @map("created_at")
-  updatedAt                DateTime         @updatedAt @map("updated_at")
+  createdAt                DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
   payments                 PaymentHistory[]
   user_tokens              user_tokens      @relation(fields: [clerkUserId], references: [clerk_user_id], onDelete: Cascade)
 
@@ -128,7 +128,7 @@ model PaymentHistory {
   paymentType        String        @map("payment_type")
   billingDate        DateTime?     @map("billing_date")
   metadata           Json?         @default("{}")
-  createdAt          DateTime      @default(now()) @map("created_at")
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   cardLastFour       String?       @map("card_last_four")
   cardNetwork        String?       @map("card_network")
   cardType           String?       @map("card_type")
