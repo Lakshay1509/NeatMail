@@ -53,7 +53,7 @@ const Payments = () => {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  disabled={isDownloading} 
+                  disabled={isDownloading || payment.invoiceId===null} 
                   onClick={() => downloadInvoice(payment.dodoPaymentId ?? '')}
                 >
                   {isDownloading ? (

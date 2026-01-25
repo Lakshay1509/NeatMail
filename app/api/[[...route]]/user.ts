@@ -77,7 +77,7 @@ const app = new Hono()
     }
 
     const data = await db.subscription.findFirst({
-      where: { clerkUserId: userId, },
+      where: { clerkUserId: userId,status:'active' },
       select: {
         cancelAtNextBillingDate: true,
         nextBillingDate: true,
@@ -98,7 +98,7 @@ const app = new Hono()
     return ctx.json(
       {
         success: true,
-        subscribed: data.status==='active' ? true : false,
+        subscribed: true,
         status : data.status,
         next_billing_date: data.nextBillingDate,
         cancel_at_next_billing_date: data.cancelAtNextBillingDate,
@@ -124,6 +124,7 @@ const app = new Hono()
         amount: true,
         currency: true,
         createdAt: true,
+        invoiceId:true
       },
     });
 
