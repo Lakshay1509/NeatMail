@@ -146,6 +146,7 @@ const UserLabelSettings = () => {
 							<div key={category.name} className="grid grid-cols-[auto_1fr] gap-x-6 items-center group hover:bg-gray-50 p-3 rounded-lg transition-colors -mx-3">
 								<div className="flex justify-center w-24">
 									<Checkbox
+										disabled={subData?.subscribed === false}
 										checked={selectedCategories.includes(category.name)}
 										onCheckedChange={() => toggleCategory(category.name)}
 										className="w-5 h-5 border-gray-300"
@@ -198,6 +199,7 @@ const UserLabelSettings = () => {
 							<div key={category.id} className="grid grid-cols-[auto_1fr_auto] gap-x-6 items-center group hover:bg-gray-50 p-3 rounded-lg transition-colors -mx-3">
 								<div className="flex justify-center w-24">
 									<Checkbox
+										disabled={subData?.subscribed === false}
 										checked={selectedCategories.includes(category.name)}
 										onCheckedChange={() => toggleCategory(category.name)}
 										className="w-5 h-5 border-gray-300"
@@ -247,7 +249,7 @@ const UserLabelSettings = () => {
 				<Button
 					className=" text-white min-w-[150px] shadow-sm"
 					onClick={handleSubmit}
-					disabled={mutation.isPending || !isValid}
+					disabled={mutation.isPending || !isValid || subData?.subscribed===false}
 				>
 					{mutation.isPending ? 'Saving...' : isValid ? 'Save Preferences' : `Select ${1 - selectedCategories.length} more`}
 				</Button>
