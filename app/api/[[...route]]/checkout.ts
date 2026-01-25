@@ -28,6 +28,9 @@ const app = new Hono()
         where: {
           clerkUserId: userId,
         },
+        orderBy:{
+          updatedAt:'desc'
+        }
       });
 
       // Check for processing payment
