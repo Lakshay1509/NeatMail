@@ -4,12 +4,10 @@ import DodoPayments from "dodopayments";
 
 import { Hono } from "hono";
 
-
 const getDodoPayments = () => {
   return new DodoPayments({
-    environment: process.env.NODE_ENV === 'production'
-      ? 'live_mode'
-      : 'test_mode',
+    environment:
+      process.env.NODE_ENV === "production" ? "live_mode" : "test_mode",
     bearerToken: process.env.DODO_API!,
   });
 };
@@ -28,9 +26,9 @@ const app = new Hono()
         where: {
           clerkUserId: userId,
         },
-        orderBy:{
-          updatedAt:'desc'
-        }
+        orderBy: {
+          updatedAt: "desc",
+        },
       });
 
       // Check for processing payment
@@ -42,10 +40,14 @@ const app = new Hono()
       });
 
       // Block if active, pending, or payment processing
-      if (subscription?.status === 'active' || subscription?.status === 'pending' || payment) {
+      if (
+        subscription?.status === "active" ||
+        subscription?.status === "pending" ||
+        payment
+      ) {
         return ctx.json(
           { error: "You have an active subscription or a payment in process" },
-          409
+          409,
         );
       }
 
@@ -55,17 +57,17 @@ const app = new Hono()
       const dodopayments = getDodoPayments();
 
       // Handle on_hold status - update payment method
-      if (subscription?.status === 'on_hold') {
+      if (subscription?.status === "on_hold") {
         const response = await dodopayments.subscriptions.updatePaymentMethod(
           subscription.dodoSubscriptionId,
           {
-            type: 'new',
-            return_url: `${process.env.NEXT_PUBLIC_API_URL!}`
-          }
+            type: "new",
+            return_url: `${process.env.NEXT_PUBLIC_API_URL!}`,
+          },
         );
 
         if (response.payment_id) {
-          console.log('Charge created:', response.payment_id);
+          console.log("Charge created:", response.payment_id);
           return ctx.json({ url: response.payment_link }, 200);
         }
       }
@@ -74,11 +76,12 @@ const app = new Hono()
       const trialTaken = await db.paymentHistory.findFirst({
         where: {
           clerkUserId: userId,
-          OR: [
-            { amount: 0, status: 'succeeded' },
-            { status: 'succeeded' }
-          ]
-        }
+          amount: 0,
+          status: "succeeded",
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
       });
 
       // Create new checkout session
@@ -89,8 +92,8 @@ const app = new Hono()
             quantity: 1,
           },
         ],
-        subscription_data: { 
-          trial_period_days: trialTaken ? 0 : 7 
+        subscription_data: {
+          trial_period_days: trialTaken ? 0 : 7,
         },
         customer: {
           email: emailAddress,
@@ -129,8 +132,11 @@ const app = new Hono()
 
       if (!subscription) {
         return ctx.json(
-          { error: "You do not have an active or on-hold subscription to cancel" },
-          409
+          {
+            error:
+              "You do not have an active or on-hold subscription to cancel",
+          },
+          409,
         );
       }
 
@@ -147,7 +153,7 @@ const app = new Hono()
           body: JSON.stringify({
             cancel_at_next_billing_date: renew,
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -188,12 +194,12 @@ const app = new Hono()
       if (invoice_data.clerkUserId !== userId) {
         return ctx.json(
           { error: "Unauthorized user for the given invoice" },
-          401
+          401,
         );
       }
 
       console.log("Fetching invoice for payment_id:", payment_id);
-      
+
       const dodopayments = getDodoPayments();
       const payment = await dodopayments.invoices.payments.retrieve(payment_id);
 
