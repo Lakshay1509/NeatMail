@@ -121,6 +121,12 @@ const Billing = () => {
                     }
                   )}
                 </p>
+                {data.status && (
+                  <p className="mt-1">
+                    <span className="font-medium">Status:</span>{" "}
+                    <span className="capitalize">{data.status}</span>
+                  </p>
+                )}
                 {data.cancel_at_next_billing_date ? (
                   <p className="text-amber-600 font-medium mt-2">
                     ⚠️ Subscription will not renew
@@ -138,6 +144,7 @@ const Billing = () => {
         {error && (
           <span className="text-xs font-medium text-destructive">{error}</span>
         )}
+        <div className="flex flex-col space-y-2">
 
         {data?.subscribed === true && data.cancel_at_next_billing_date === false && (
           <Button
@@ -148,6 +155,7 @@ const Billing = () => {
             Cancel subscription
           </Button>
         )}
+
         {data?.subscribed === true && data.cancel_at_next_billing_date === true && (
           <Button
             className="w-full md:w-auto px-4 py-2 text-sm font-medium text-white rounded-md  transaction-colors"
@@ -158,6 +166,8 @@ const Billing = () => {
           </Button>
         )}
 
+        
+
         {data?.subscribed === false && (
           <Button
             className="w-full md:w-auto px-4 py-2 text-sm font-medium text-white bg-zinc-900 rounded-md hover:bg-zinc-800 transaction-colors"
@@ -167,6 +177,18 @@ const Billing = () => {
             Join now
           </Button>
         )}
+
+        {data?.success===true && data?.status === 'on_hold' && (
+          <Button
+            className="w-full md:w-auto px-4 py-2 text-sm font-medium transaction-colors underline"
+            variant='ghost'
+            onClick={() => { handleCancel('true') }}
+            disabled={isLoading}
+          >
+            Cancel subscription
+          </Button>
+        )}
+        </div>
       </div>
     </div>
   );
