@@ -13,10 +13,35 @@ import {
 import { clerkClient } from "@clerk/nextjs/server";
 import { google } from "googleapis";
 import { Hono } from "hono";
+import { OAuth2Client } from 'google-auth-library';
+
+
+const authClient = new OAuth2Client();
 
 
 const app = new Hono().post("/", async (ctx) => {
   try {
+
+
+    const authHeader = ctx.req.header('Authorization');
+
+    if(!authHeader){
+      return ctx.json({error:'Error missing authorization header'},401);
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    const ticket = await authClient.verifyIdToken({
+      idToken:token,
+      audience: 'https://dashboard.neatmail.tech/api/gmail-webhook'
+    })
+
+    const payload = ticket.getPayload();
+
+    if(payload?.email!==process.env.GMAIL_SERVICE_ACCOUNT){
+      return ctx.json({error:'Invalid service account'},401);
+    }
+
     const body = await ctx.req.json();
     const message = body.message;
 
