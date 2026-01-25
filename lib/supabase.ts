@@ -37,7 +37,7 @@ export async function getLastHistoryId(email: string) {
 export async function updateHistoryId(
   email: string | undefined,
   historyId: string | undefined | null,
-  activated: boolean
+  activated: boolean,
 ) {
   try {
     const data = await db.user_tokens.update({
@@ -109,7 +109,7 @@ export async function getTagsUser(id: string) {
 export async function addMailtoDB(
   user_id: string,
   tag_id: string,
-  message_id: string
+  message_id: string,
 ) {
   try {
     const data = await db.email_tracked.upsert({
@@ -138,7 +138,7 @@ export async function addDraftToDB(
   user_id: string,
   message_id: string,
   draft: string,
-  recipent: string
+  recipent: string,
 ) {
   try {
     const data = await db.drafts.upsert({
@@ -166,6 +166,38 @@ export async function addDraftToDB(
     }
   } catch (error) {
     console.error("Error adding draft to db");
+    throw error;
+  }
+}
+
+export async function getUserSubscribed(userId: string) {
+  try {
+    const data = await db.subscription.findFirst({
+      where: { clerkUserId: userId },
+      select: {
+        cancelAtNextBillingDate: true,
+        nextBillingDate: true,
+        status: true,
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+
+    if (!data) {
+      return {
+        success: false,
+        subscribed: false,
+      };
+    }
+
+    return {
+      success: true,
+      subscribed: data.status === "active" ? true :false,
+      status: data.status,
+      next_billing_date: data.nextBillingDate,
+      cancel_at_next_billing_date: data.cancelAtNextBillingDate,
+    };
+  } catch (error) {
+    console.error("Erro getting subscribed data");
     throw error;
   }
 }

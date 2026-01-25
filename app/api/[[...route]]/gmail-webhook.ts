@@ -7,6 +7,7 @@ import {
   getLastHistoryId,
   getTagsUser,
   getUserByEmail,
+  getUserSubscribed,
   labelColor,
   updateHistoryId,
 } from "@/lib/supabase";
@@ -56,10 +57,17 @@ const app = new Hono().post("/", async (ctx) => {
     const { emailAddress, historyId: newHistoryId } = notification;
 
     const user = await getUserByEmail(emailAddress);
+    
 
     if (!user) {
       console.log("No user found");
       return ctx.json({ success: true }, 200);
+    }
+
+    const subscribed = await getUserSubscribed(user.clerk_user_id);
+
+    if(subscribed.subscribed===false){
+      return ctx.json({error:"user not subscribed"},200);
     }
 
     const clerkUserId = user.clerk_user_id;
