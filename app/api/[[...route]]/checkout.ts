@@ -23,13 +23,14 @@ const app = new Hono()
         return ctx.json({ error: "Unauthorized" }, 401);
       }
 
+      // Check for existing subscription with various statuses
       const subscription = await db.subscription.findFirst({
         where: {
           clerkUserId: userId,
-          status: "active",
         },
       });
 
+      // Check for processing payment
       const payment = await db.paymentHistory.findFirst({
         where: {
           clerkUserId: userId,
@@ -37,20 +38,47 @@ const app = new Hono()
         },
       });
 
-      if (subscription || payment) {
+      // Block if active, pending, or payment processing
+      if (subscription?.status === 'active' || subscription?.status === 'pending' || payment) {
         return ctx.json(
-          { error: "You have active subscription or a payment in process" },
+          { error: "You have an active subscription or a payment in process" },
           409
         );
       }
 
       const user = await currentUser();
-
       const name = user?.fullName ?? "";
       const emailAddress = user?.emailAddresses[0]?.emailAddress ?? "";
-
       const dodopayments = getDodoPayments();
-      
+
+      // Handle on_hold status - update payment method
+      if (subscription?.status === 'on_hold') {
+        const response = await dodopayments.subscriptions.updatePaymentMethod(
+          subscription.dodoSubscriptionId,
+          {
+            type: 'new',
+            return_url: `${process.env.NEXT_PUBLIC_API_URL!}`
+          }
+        );
+
+        if (response.payment_id) {
+          console.log('Charge created:', response.payment_id);
+          return ctx.json({ url: response.payment_link }, 200);
+        }
+      }
+
+      // Check if trial was already taken (any successful payment with 0 amount OR any subscription created)
+      const trialTaken = await db.paymentHistory.findFirst({
+        where: {
+          clerkUserId: userId,
+          OR: [
+            { amount: 0, status: 'succeeded' },
+            { status: 'succeeded' }
+          ]
+        }
+      });
+
+      // Create new checkout session
       const checkout = await dodopayments.checkoutSessions.create({
         product_cart: [
           {
@@ -58,6 +86,9 @@ const app = new Hono()
             quantity: 1,
           },
         ],
+        subscription_data: { 
+          trial_period_days: trialTaken ? 0 : 7 
+        },
         customer: {
           email: emailAddress,
           name: name,
@@ -70,7 +101,8 @@ const app = new Hono()
 
       return ctx.json({ url: checkout.checkout_url }, 200);
     } catch (error) {
-      return ctx.json({ error }, 500);
+      console.error("Checkout error:", error);
+      return ctx.json({ error: "Failed to create checkout session" }, 500);
     }
   })
 
@@ -84,16 +116,17 @@ const app = new Hono()
 
       const renewQuery = ctx.req.query("renew");
 
+      // Allow cancellation for both active and on_hold subscriptions
       const subscription = await db.subscription.findFirst({
         where: {
           clerkUserId: userId,
-          status: "active",
+          status: { in: ["active", "on_hold"] },
         },
       });
 
       if (!subscription) {
         return ctx.json(
-          { error: "You do not have an active subscription" },
+          { error: "You do not have an active or on-hold subscription to cancel" },
           409
         );
       }
@@ -101,9 +134,7 @@ const app = new Hono()
       const renew = renewQuery === "true" ? true : false;
 
       const response = await fetch(
-        `${process.env.DODO_WEB_URL!}/subscriptions/${
-          subscription.dodoSubscriptionId
-        }`,
+        `${process.env.DODO_WEB_URL!}/subscriptions/${subscription.dodoSubscriptionId}`,
         {
           method: "PATCH",
           headers: {
@@ -124,8 +155,8 @@ const app = new Hono()
 
       return ctx.json({ success: true, data }, 200);
     } catch (error) {
-      console.log(error);
-      return ctx.json({ error }, 500);
+      console.error("Cancel subscription error:", error);
+      return ctx.json({ error: "Failed to cancel subscription" }, 500);
     }
   })
 
