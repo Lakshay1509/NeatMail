@@ -62,7 +62,7 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
       await handleWatchActivation(data.subscription_id);
     }
 
-    if (data.status === 'expired' || data.status === 'cancelled' || data.status==='failed') {
+    if (data.status === 'expired' || data.status === 'cancelled' || data.status==='failed' || data.status==='on_hold' || data.status==='pending') {
       await handleWatchDeactivation(data.subscription_id);
     }
 
