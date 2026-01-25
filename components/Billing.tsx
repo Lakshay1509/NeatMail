@@ -144,7 +144,7 @@ const Billing = () => {
         {error && (
           <span className="text-xs font-medium text-destructive">{error}</span>
         )}
-        <div className="flex flex-col space-y-2">
+        <div className="flex flex-col space-y-2 w-full md:w-auto">
 
         {data?.subscribed === true && data.cancel_at_next_billing_date === false && (
           <Button
