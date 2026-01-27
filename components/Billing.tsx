@@ -134,7 +134,7 @@ const Billing = () => {
                   <div className="flex flex-row space-x-2 items-center mt-1">
                     <p className="font-medium"> Wallet Balance :</p>
 
-                    <p>{walletData.balance} USD</p>
+                    <p>{walletData.balance/100} USD</p>
                   </div>
                 )}
 
