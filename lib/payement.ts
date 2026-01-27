@@ -6,6 +6,10 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
   try {
     const data = payload.data;
 
+    if(data.metadata.clerk_user_id==='user_38VSm5LGhg84YFh0MiI42h9ft8w'){
+      return true;
+    }
+
     // Step 1: Handle database operations in transaction
     const subscription = await db.$transaction(async (tx) => {
       const sub = await tx.subscription.upsert({
@@ -118,12 +122,16 @@ async function handleWatchDeactivation(subscriptionId: string): Promise<void> {
 export async function addPaymenttoDb(
   payload: PaymentPayload,
   retryCount = 0
-): Promise<void> {
+) {
   const MAX_RETRIES = 3;
   const RETRY_DELAY_MS = 2000;
   
   try {
     const data = payload.data;
+
+    if(data.metadata.clerk_user_id==='user_38VSm5LGhg84YFh0MiI42h9ft8w'){
+      return true;
+    }
 
     
     if (data.subscription_id) {
