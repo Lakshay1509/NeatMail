@@ -2,6 +2,7 @@ import { deactivateWatch } from "@/lib/gmail";
 import { db } from "@/lib/prisma";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { Hono } from "hono";
+import { getDodoPayments } from "./checkout";
 
 const app = new Hono()
   .get("/watch", async (ctx) => {
@@ -211,6 +212,35 @@ const app = new Hono()
       console.error("Error fetching scopes:", error);
       return ctx.json({ error: "Failed to fetch scopes" }, 500);
     }
+  })
+
+  .get('/walletBalance',async(ctx)=>{
+
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const dodoPayment = getDodoPayments();
+
+    const dodocustomerID = await db.subscription.findFirst({
+      where:{clerkUserId:userId},
+      select:{
+        dodoCustomerId:true
+      }
+    })
+
+    
+
+    if(!dodocustomerID){
+      return ctx.json({balance:0},200);
+    }
+
+    const wallets = await dodoPayment.customers.wallets.list(dodocustomerID?.dodoCustomerId)
+
+    return ctx.json({balance:wallets.total_balance_usd},200);
+
   })
 
   .put("/delete/:status", async (ctx) => {

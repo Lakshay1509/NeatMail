@@ -70,7 +70,7 @@ export function AppSidebar() {
             <SidebarMenuButton asChild className="h-12 text-red-600 hover:text-red-700">
               <Link href="/danger">
                 <AlertCircle className="!h-4 !w-4" />
-                <span className="text-sm">Danger zone</span>
+                <span className="text-sm">Delete Account</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

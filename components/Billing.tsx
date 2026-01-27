@@ -2,12 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
-import { AlertTriangle, Check } from "lucide-react";
+import { useGetUserWallet } from "@/features/user/use-get-wallet";
+import { AlertTriangle, Check, Wallet } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 const Billing = () => {
   const { data, isLoading: dataLoading, isError } = useGetUserSubscribed();
+  const { data: walletData, isLoading: walletLoading } = useGetUserWallet();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -127,6 +129,15 @@ const Billing = () => {
                     <span className="capitalize">{data.status}</span>
                   </p>
                 )}
+
+                {walletData?.balance !== undefined && (
+                  <div className="flex flex-row space-x-2 items-center mt-1">
+                    <p className="font-medium"> Wallet Balance :</p>
+
+                    <p>{walletData.balance} USD</p>
+                  </div>
+                )}
+
                 {data.cancel_at_next_billing_date ? (
                   <p className="text-amber-600 font-medium mt-2">
                     ⚠️ Subscription will not renew
@@ -146,48 +157,48 @@ const Billing = () => {
         )}
         <div className="flex flex-col space-y-2 w-full md:w-auto">
 
-        {data?.subscribed === true && data.cancel_at_next_billing_date === false && (
-          <Button
-            className="w-full md:w-auto px-4 py-2 text-sm font-medium text-white bg-red-700 rounded-md hover:bg-red-800 transaction-colors"
-            onClick={() => { handleCancel('true') }}
-            disabled={isLoading}
-          >
-            Cancel subscription
-          </Button>
-        )}
+          {data?.subscribed === true && data.cancel_at_next_billing_date === false && (
+            <Button
+              className="w-full md:w-auto px-4 py-2 text-sm font-medium text-white bg-red-700 rounded-md hover:bg-red-800 transaction-colors"
+              onClick={() => { handleCancel('true') }}
+              disabled={isLoading}
+            >
+              Cancel subscription
+            </Button>
+          )}
 
-        {data?.subscribed === true && data.cancel_at_next_billing_date === true && (
-          <Button
-            className="w-full md:w-auto px-4 py-2 text-sm font-medium text-white rounded-md  transaction-colors"
-            onClick={() => { handleCancel('false') }}
-            disabled={isLoading}
-          >
-            Renew subscription
-          </Button>
-        )}
+          {data?.subscribed === true && data.cancel_at_next_billing_date === true && (
+            <Button
+              className="w-full md:w-auto px-4 py-2 text-sm font-medium text-white rounded-md  transaction-colors"
+              onClick={() => { handleCancel('false') }}
+              disabled={isLoading}
+            >
+              Renew subscription
+            </Button>
+          )}
 
-        
 
-        {data?.subscribed === false && (
-          <Button
-            className="w-full md:w-auto px-4 py-2 text-sm font-medium text-white bg-zinc-900 rounded-md hover:bg-zinc-800 transaction-colors"
-            onClick={handlebilling}
-            disabled={isLoading}
-          >
-            Join now
-          </Button>
-        )}
 
-        {data?.success===true && data?.status === 'on_hold' && (
-          <Button
-            className="w-full md:w-auto px-4 py-2 text-sm font-medium transaction-colors underline"
-            variant='ghost'
-            onClick={() => { handleCancel('true') }}
-            disabled={isLoading}
-          >
-            Cancel subscription
-          </Button>
-        )}
+          {data?.subscribed === false && (
+            <Button
+              className="w-full md:w-auto px-4 py-2 text-sm font-medium text-white bg-zinc-900 rounded-md hover:bg-zinc-800 transaction-colors"
+              onClick={handlebilling}
+              disabled={isLoading}
+            >
+              Join now
+            </Button>
+          )}
+
+          {data?.success === true && data?.status === 'on_hold' && (
+            <Button
+              className="w-full md:w-auto px-4 py-2 text-sm font-medium transaction-colors underline"
+              variant='ghost'
+              onClick={() => { handleCancel('true') }}
+              disabled={isLoading}
+            >
+              Cancel subscription
+            </Button>
+          )}
         </div>
       </div>
     </div>

@@ -4,7 +4,7 @@ import DodoPayments from "dodopayments";
 
 import { Hono } from "hono";
 
-const getDodoPayments = () => {
+export const getDodoPayments = () => {
   return new DodoPayments({
     environment:
       process.env.NODE_ENV === "production" ? "live_mode" : "test_mode",
