@@ -15,7 +15,6 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { google } from "googleapis";
 import { Hono } from "hono";
 import { OAuth2Client } from 'google-auth-library';
-import { threadId } from "worker_threads";
 
 
 const authClient = new OAuth2Client();
@@ -145,9 +144,9 @@ const app = new Hono().post("/", async (ctx) => {
       };
 
       // mark thread as processed for 24 hours to prevent duplication tags
-      // if(await isThreadProcessed(String(threadId))){
-      //   continue;
-      // }
+      if(await isThreadProcessed(String(emailData.threadId))){
+        continue;
+      }
 
       const tagsOfUser = await getTagsUser(clerkUserId);
      
@@ -215,16 +214,13 @@ const app = new Hono().post("/", async (ctx) => {
         
       }
 
-      // await markThreadProcessed(String(threadId));
+      await markThreadProcessed(String(emailData.threadId));
 
       await addMailtoDB(clerkUserId,colourofLabel.id,String(messageId));
 
       if(draftBody.trim().length > 0){
         addDraftToDB(clerkUserId,String(messageId),draftBody,emailData.from);
       }
-
-     
-
 
     }
 
