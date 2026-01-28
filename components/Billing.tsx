@@ -110,8 +110,16 @@ const Billing = () => {
               </p>
             )}
 
+            {walletData?.balance !== undefined && (
+              <div className="flex flex-row space-x-2 items-center mt-2 text-sm text-zinc-600">
+                <p className="font-medium"> Wallet Balance :</p>
+
+                <p>{walletData.balance / 100} USD</p>
+              </div>
+            )}
+
             {data?.subscribed === true && data.next_billing_date && (
-              <div className="mt-2 text-sm text-zinc-600">
+              <div className="mt-1 text-sm text-zinc-600">
                 <p>
                   <span className="font-medium">Next billing date:</span>{" "}
                   {new Date(data.next_billing_date).toLocaleDateString(
@@ -128,14 +136,6 @@ const Billing = () => {
                     <span className="font-medium">Status:</span>{" "}
                     <span className="capitalize">{data.status}</span>
                   </p>
-                )}
-
-                {walletData?.balance !== undefined && (
-                  <div className="flex flex-row space-x-2 items-center mt-1">
-                    <p className="font-medium"> Wallet Balance :</p>
-
-                    <p>{walletData.balance/100} USD</p>
-                  </div>
                 )}
 
                 {data.cancel_at_next_billing_date ? (

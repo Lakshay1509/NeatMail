@@ -1,6 +1,6 @@
 import { createGmailDraft } from "@/lib/gmail";
 import { classifyEmail, generateEmailReply } from "@/lib/openai";
-import { isMessageProcessed, markMessageProcessed } from "@/lib/redis";
+import { isMessageProcessed, isThreadProcessed, markMessageProcessed, markThreadProcessed } from "@/lib/redis";
 import {
   addDraftToDB,
   addMailtoDB,
@@ -15,6 +15,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { google } from "googleapis";
 import { Hono } from "hono";
 import { OAuth2Client } from 'google-auth-library';
+import { threadId } from "worker_threads";
 
 
 const authClient = new OAuth2Client();
@@ -143,6 +144,11 @@ const app = new Hono().post("/", async (ctx) => {
         bodySnippet: email.data.snippet || "",
       };
 
+      // mark thread as processed for 24 hours to prevent duplication tags
+      if(await isThreadProcessed(String(threadId))){
+        continue;
+      }
+
       const tagsOfUser = await getTagsUser(clerkUserId);
      
       const labelName = await classifyEmail(emailData,tagsOfUser);
@@ -208,6 +214,8 @@ const app = new Hono().post("/", async (ctx) => {
         
         
       }
+
+      await markThreadProcessed(String(threadId));
 
       await addMailtoDB(clerkUserId,colourofLabel.id,String(messageId));
 
