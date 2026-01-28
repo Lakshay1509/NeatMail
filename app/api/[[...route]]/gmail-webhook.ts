@@ -143,10 +143,10 @@ const app = new Hono().post("/", async (ctx) => {
         bodySnippet: email.data.snippet || "",
       };
 
-      // mark thread as processed for 24 hours to prevent duplication tags
-      if(await isThreadProcessed(String(emailData.threadId))){
-        continue;
-      }
+      // if thread as processed for 24 hours to prevent duplication tags
+      // if(await isThreadProcessed(String(emailData.threadId))){
+      //   continue;
+      // }
 
       const tagsOfUser = await getTagsUser(clerkUserId);
      
@@ -214,7 +214,7 @@ const app = new Hono().post("/", async (ctx) => {
         
       }
 
-      await markThreadProcessed(String(emailData.threadId));
+      // await markThreadProcessed(String(emailData.threadId));
 
       await addMailtoDB(clerkUserId,colourofLabel.id,String(messageId));
 
