@@ -31,19 +31,19 @@ const DraftEmails = () => {
     if (isLoading) return <div className="h-48 bg-gray-50 rounded-xl animate-pulse"></div>
     if (isError) return null;
 
-    if(data?.data.length===0){
+    if (data?.data.length === 0) {
         return (
             <div className="flex flex-col justify-center items-center w-full min-h-[60vh]">
                 <Image src='/no-mail.webp' alt="no-mail" width={200} height={200} />
                 <p className="mt-4 text-gray-700">No Drafts created yet!</p>
-                
+
             </div>
         )
     }
 
     return (
         <div >
-           
+
 
             <div className="overflow-x-auto">
                 <table className="w-full">
@@ -52,7 +52,7 @@ const DraftEmails = () => {
                             <th className="px-6 py-4">Recipient</th>
                             <th className="px-6 py-4">Draft</th>
                             <th className="px-6 py-4">Date</th>
-                            
+
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -60,10 +60,13 @@ const DraftEmails = () => {
                             <tr key={idx} className="hover:bg-gray-50/50 transition-colors group">
 
                                 <td className="px-6 py-4 text-sm max-w-xs font-medium text-gray-900 whitespace-nowrap">
-                                    {email.receipent}
+                                    {email.receipent.length > 15
+                                        ? `${email.receipent.slice(0, 15)}...`
+                                        : email.receipent}
                                 </td>
 
-                                
+
+
                                 <td className="px-6 py-4 text-sm text-gray-500 max-w-50 truncate">
                                     <Dialog>
                                         <DialogTrigger className="w-full text-left truncate hover:text-gray-900 hover:underline decoration-gray-400 underline-offset-4 outline-none">
@@ -82,12 +85,12 @@ const DraftEmails = () => {
                                         </DialogContent>
                                     </Dialog>
                                 </td>
-                                
+
 
                                 <td className="px-6 py-4 text-sm text-gray-500">
                                     {formatDate(email.created_at)}
                                 </td>
-                               
+
                             </tr>
                         ))}
                     </tbody>
