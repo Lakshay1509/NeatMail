@@ -1,5 +1,5 @@
 import { InferRequestType, InferResponseType } from "hono";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client } from "@/lib/hono";
 import { toast } from "sonner";
 
@@ -9,6 +9,7 @@ type RequestType = InferRequestType<
 >["json"];
 
 export const addTagstoUser = () => {
+  const query = useQueryClient();
   return useMutation<ResponseType, Error, RequestType>({
     mutationFn: async (json) => {
       const response = await client.api.tags.create["$post"]({
@@ -25,6 +26,11 @@ export const addTagstoUser = () => {
     onSuccess: async () => {
 
         console.log('created')
+      query.invalidateQueries({queryKey:['user-custom-tags']})
+      query.invalidateQueries({queryKey:['user-tags']})
+       query.invalidateQueries({queryKey:['user-subscription']})
+       query.invalidateQueries({queryKey:['user-watch']})
+
       toast.success("Preferencs created successfully");
     },
     onError: (error) => {
