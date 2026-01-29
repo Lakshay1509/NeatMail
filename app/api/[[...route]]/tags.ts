@@ -123,7 +123,7 @@ const app = new Hono()
 
       const exist = await db.tag.findFirst({
         where: {
-          name: values.tag,
+          name: values.tag.trim(),
           OR: [{ user_id: userId }, { user_id: null }],
         },
       });
