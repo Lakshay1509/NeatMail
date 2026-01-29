@@ -1,5 +1,5 @@
 import { InferRequestType, InferResponseType } from "hono";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client } from "@/lib/hono";
 import { toast } from "sonner";
 
@@ -9,6 +9,7 @@ type RequestType = InferRequestType<
 >;
 
 export const addWatch = () => {
+  const query = useQueryClient();
   return useMutation<ResponseType, Error, RequestType>({
     mutationFn: async () => {
       const response = await client.api['activate-watch']['$post']({
@@ -21,6 +22,11 @@ export const addWatch = () => {
       }
 
       return response.json();
+    },
+
+    onSuccess:()=>{
+      query.invalidateQueries({queryKey:['user-watch']})
+
     },
    
     onError: (error) => {

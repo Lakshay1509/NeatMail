@@ -1,5 +1,5 @@
 import { InferRequestType, InferResponseType } from "hono";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client } from "@/lib/hono";
 import { toast } from "sonner";
 
@@ -9,6 +9,7 @@ type RequestType = InferRequestType<
 >;
 
 export const deleteWatch = () => {
+  const query = useQueryClient();
   return useMutation<ResponseType, Error, RequestType>({
     mutationFn: async () => {
       const response = await client.api['activate-watch']['deactivate']['$post']({
@@ -16,6 +17,10 @@ export const deleteWatch = () => {
       });
 
       return response.json();
+    },
+    onSuccess:()=>{
+      query.invalidateQueries({queryKey:['user-watch']})
+
     },
 
    
