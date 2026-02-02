@@ -1,0 +1,20 @@
+# Node/Next
+node_modules
+.next
+# VCS and metadata
+.git
+.gitignore
+Dockerfile
+.dockerignore
+# Env and logs
+.env*
+npm-debug.log
+yarn-error.log
+pnpm-lock.yaml
+# OS/editor
+.DS_Store
+.vscode
+.idea
+# Tests and artifacts
+coverage
+dist
