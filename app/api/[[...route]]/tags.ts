@@ -5,6 +5,8 @@ import { zValidator } from "@hono/zod-validator";
 import z from "zod/v3";
 import { colors } from "@/lib/colors";
 import { google } from "googleapis";
+import { getGmailClient } from "@/lib/gmail";
+import { getTagsUser } from "@/lib/supabase";
 
 const app = new Hono()
 
@@ -50,13 +52,67 @@ const app = new Hono()
     return ctx.json({ data }, 200);
   })
 
+  .get("/fromGmail", async (ctx) => {
+    const { userId } = await auth();
+    if (!userId) {
+      return ctx.json({ error: "Unuathorized" }, 401);
+    }
+    const gmail = await getGmailClient(userId);
+
+    const EXCLUDED_LABELS = new Set([
+      "[Imap]/Drafts",
+      "Unsubscribed Emails",
+      "Conversation History",
+    ]);
+
+    const labelsResponse = await gmail.users.labels.list({ userId: "me" });
+
+    const filteredLabels = (labelsResponse.data.labels || [])
+      .filter((label) => label.type === "user")
+      .filter((label) => !EXCLUDED_LABELS.has(label.name!))
+      .map((label) => ({
+        id: label.id,
+        name: label.name,
+        color:label.color
+      }));
+
+    const labelsInDb = await db.tag.findMany({
+      where: {
+        OR: [
+          { user_id: userId },
+          { user_id: null }, 
+        ],
+      },
+      select: {
+        name: true,
+      },
+    });
+
+
+    const dbTagNameSet = new Set(
+      labelsInDb.map((l) => l.name.toLowerCase().trim()),
+    );
+
+    const gmailUserLabels = filteredLabels;
+
+    const labelsNotInDb = gmailUserLabels
+      .map((label) => ({
+        id: label.id,
+        name: label.name,
+        color:label.color
+      }))
+      .filter((label) => !dbTagNameSet.has(label.name!.toLowerCase().trim()));
+
+    return ctx.json({ labelsNotInDb }, 200);
+  })
+
   .post(
     "/create",
     zValidator(
       "json",
       z.object({
         tags: z.array(z.string()).min(1).max(30),
-      })
+      }),
     ),
     async (ctx) => {
       const { userId } = await auth();
@@ -99,7 +155,7 @@ const app = new Hono()
       }
 
       return ctx.json({ response }, 200);
-    }
+    },
   )
 
   .post(
@@ -109,7 +165,7 @@ const app = new Hono()
       z.object({
         tag: z.string(),
         color: z.string(),
-      })
+      }),
     ),
     async (ctx) => {
       const { userId } = await auth();
@@ -133,13 +189,13 @@ const app = new Hono()
       if (exist || !colorExist) {
         return ctx.json(
           { error: "Same name tag exists or color invalid" },
-          500
+          500,
         );
       }
 
       const data = await db.tag.create({
         data: {
-          name: values.tag,
+          name: values.tag.trim(),
           user_id: userId,
           color: values.color,
         },
@@ -150,7 +206,7 @@ const app = new Hono()
       }
 
       return ctx.json({ data }, 200);
-    }
+    },
   )
 
   .delete(
@@ -159,7 +215,7 @@ const app = new Hono()
       "json",
       z.object({
         id: z.string(),
-      })
+      }),
     ),
     async (ctx) => {
       try {
@@ -201,7 +257,7 @@ const app = new Hono()
         });
 
         const gmailLabel = data.labels?.find(
-          (label) => label.name === exist.name
+          (label) => label.name === exist.name,
         );
 
         if (gmailLabel && gmailLabel.id) {
@@ -225,7 +281,7 @@ const app = new Hono()
       } catch (error) {
         return ctx.json({ error }, 500);
       }
-    }
+    },
   );
 
 export default app;
