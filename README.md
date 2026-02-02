@@ -300,7 +300,7 @@ npx prisma migrate deploy
 3. **Run Container**
    Run the container passing the environment variables:
    ```bash
-   podman run -p 8080:8080 --env-file .env.build neatmail
+   podman run -p 8080:8080 --env-file .env.local neatmail
 
 <!-- ## 📂 Project Structure
 
