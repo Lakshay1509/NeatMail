@@ -107,7 +107,7 @@ const app = new Hono()
   })
 
   .post(
-    "/create",
+    "/addTagtoUser",
     zValidator(
       "json",
       z.object({
