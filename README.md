@@ -116,6 +116,9 @@ OPENAI_API_KEY=
 # Gmail Webhook
 GMAIL_WEBHOOK_TOPIC=projects/your-project/topics/gmail-notifications
 
+#Gmail service account
+GMAIL_SERVICE_ACCOUNT=
+
 # Redis
 UPSTASH_REDIS_URL=
 UPSTASH_REDIS_TOKEN=
@@ -133,16 +136,12 @@ NODE_ENV=development
 
 4. **Set up the database**
 ```bash
-npx prisma generate
-npx prisma db push
+bunx prisma generate
+bunx prisma db push
 ```
 
-5. **Seed default tags** (optional)
-```bash
-npx prisma db seed
-```
 
-6. **Run the development server**
+5. **Run the development server**
 ```bash
 bun run dev
 ```
@@ -273,6 +272,35 @@ npx prisma migrate deploy
 4. Add webhook secret to environment variables
 
 ---
+
+### Docker Support
+
+1. **Configure Environment**
+   Fill in the `.env.build` file with your credentials (ensure no empty lines or comments):
+   ```env
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
+   NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+   NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+   NEXT_PUBLIC_API_URL=http://localhost:8080
+   DATABASE_URL=...
+   DIRECT_URL=...
+   UPSTASH_REDIS_URL=...
+   UPSTASH_REDIS_TOKEN=...
+   OPENAI_API_KEY=...
+   ```
+
+2. **Build Image**
+   Build the container image using `podman` (or docker), passing the variables as build arguments:
+   ```bash
+   podman build \
+     $(sed 's/^/--build-arg /' .env.build) \
+     -t neatmail .
+   ```
+
+3. **Run Container**
+   Run the container passing the environment variables:
+   ```bash
+   podman run -p 8080:8080 --env-file .env.build neatmail
 
 <!-- ## 📂 Project Structure
 

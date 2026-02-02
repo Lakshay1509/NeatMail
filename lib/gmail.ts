@@ -79,7 +79,7 @@ export async function getLabelledMails(userId: string, messageIds: string[]) {
       } catch (error: any) {
         // Handle deleted messages or 404 errors
         if (error.code === 404 || error.status === 404) {
-          console.warn(`Message ${messageId} not found (deleted)`);
+          
           return null;
         }
         throw error;
