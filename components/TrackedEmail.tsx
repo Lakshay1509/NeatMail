@@ -74,7 +74,7 @@ const TrackedEmail = ({ limit, dashboard }: Props) => {
                         <h3 className="text-lg font-bold text-gray-900 tracking-tight">Recent Tracked Mail</h3>
                         <Link className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors" href='/mails'>View All</Link>
                     </div>
-                    <p className="text-sm text-gray-500">Your latest emails automatically categorized for you.</p>
+                    
                 </div>
             )}
 
