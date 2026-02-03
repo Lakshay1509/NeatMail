@@ -78,7 +78,7 @@ const TrackedEmail = ({ limit, dashboard }: Props) => {
                 </div>
             )}
 
-            <div className="flex flex-col divide-y divide-gray-100/50">
+            <div className="flex flex-col divide-y divide-gray-300/50">
                  {/* Desktop Header */}
                  <div className="hidden md:grid grid-cols-[200px_1fr_100px] gap-3 px-6 py-3 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
                     <div>Sender</div>
