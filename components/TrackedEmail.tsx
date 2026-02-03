@@ -69,9 +69,9 @@ const TrackedEmail = ({ limit, dashboard }: Props) => {
     return (
         <div className={`w-full ${dashboard ? "bg-white rounded-xl border border-gray-100 shadow-sm" : ""}`}>
             {dashboard && (
-                 <div className="flex flex-col gap-1 p-4 border-b border-gray-100">
+                 <div className="flex flex-col gap-1 px-4 py-6 border-b border-gray-100">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-gray-900 tracking-tight">Recent Tracked Mail</h3>
+                        <h3 className="text-lg font-bold text-gray-900 tracking-tight">Recent Mails</h3>
                         <Link className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors" href='/mails'>View All</Link>
                     </div>
                     
