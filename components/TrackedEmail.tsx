@@ -69,15 +69,18 @@ const TrackedEmail = ({ limit, dashboard }: Props) => {
     return (
         <div className={`w-full ${dashboard ? "bg-white rounded-xl border border-gray-100 shadow-sm" : ""}`}>
             {dashboard && (
-                <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                    <h3 className="font-bold text-gray-900">Recent Tracked Mail</h3>
-                    {dashboard && <Link className="text-sm font-medium text-blue-600 hover:text-blue-700" href='/mails'>View All</Link>}
+                 <div className="flex flex-col gap-1 p-6 border-b border-gray-100">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-gray-900 tracking-tight">Recent Tracked Mail</h3>
+                        <Link className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors" href='/mails'>View All</Link>
+                    </div>
+                    <p className="text-sm text-gray-500">Your latest emails automatically categorized for you.</p>
                 </div>
             )}
 
-            <div className="flex flex-col divide-y divide-gray-100">
+            <div className="flex flex-col divide-y divide-gray-100/50">
                  {/* Desktop Header */}
-                 <div className="hidden md:grid grid-cols-[200px_1fr_100px] gap-3 px-4 py-3 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                 <div className="hidden md:grid grid-cols-[200px_1fr_100px] gap-3 px-6 py-3 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
                     <div>Sender</div>
                     <div>Subject</div>
                     <div className="text-right">Date</div>
@@ -86,17 +89,17 @@ const TrackedEmail = ({ limit, dashboard }: Props) => {
                 {emails.map((email, idx) => (
                     <div 
                         key={email.messageId || idx} 
-                        className="group relative flex flex-col md:grid md:grid-cols-[200px_1fr_100px] md:items-center gap-3 p-4 md:px-4 md:py-3 hover:bg-gray-50/80 hover:shadow-sm transition-all duration-200 cursor-default"
+                        className="group relative flex flex-col md:grid md:grid-cols-[200px_1fr_100px] md:items-center gap-3 p-4 md:px-6 md:py-4 hover:bg-gray-50/80 hover:shadow-sm transition-all duration-200 cursor-default"
                     >
                         
 
                         {/* Sender */}
                         <div className="flex items-center justify-between md:block min-w-0">
-                            <span className="text-sm font-semibold text-gray-900 truncate block">
+                            <span className="text-base md:text-sm font-bold text-gray-900 truncate block">
                                 {getSenderName(email.from)}
                             </span>
                             {/* Mobile Date */}
-                            <span className="md:hidden text-xs text-gray-500 whitespace-nowrap">
+                            <span className="md:hidden text-xs text-gray-400 font-medium whitespace-nowrap">
                                 {formatDate(email.internalDate)}
                             </span>
                         </div>

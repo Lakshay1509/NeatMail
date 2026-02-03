@@ -1,6 +1,5 @@
 import TrackedEmail from "@/components/TrackedEmail"
-
-
+import { Separator } from "@/components/ui/separator"
 
 const page = () => {
   return (
@@ -11,6 +10,7 @@ const page = () => {
                 View all your labelled emails.
             </p>
         </div>
+        <Separator className="my-4" />
         <TrackedEmail limit={50} dashboard={false}/>
         
     </div>
