@@ -95,7 +95,7 @@ const TrackedEmail = ({ limit, dashboard }: Props) => {
 
                         {/* Sender */}
                         <div className="flex items-center justify-between md:block min-w-0">
-                            <span className="text-base md:text-sm font-bold text-gray-900 truncate block">
+                            <span className="text-base md:text-sm font-semibold text-gray-900 truncate block">
                                 {getSenderName(email.from)}
                             </span>
                             {/* Mobile Date */}
