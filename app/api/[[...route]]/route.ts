@@ -8,6 +8,7 @@ import tags from './tags'
 import user from './user'
 import checkout from './checkout'
 import dodowebhook from './dodo-webhook'
+import cron from './cron'
 
 
 export const runtime = "nodejs";
@@ -24,6 +25,7 @@ const routes = app
     .route('/user',user)
     .route('/checkout',checkout)
     .route('/dodowebhook',dodowebhook)
+    .route('/cron',cron)
 
 
 
