@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
       *.clerk.dev
       *.clerk.com
       *.clerk.accounts.dev
-      *.neatmail.tech
+      *.neatmail.app
       *.dodopayments.com
       blob:;
 
@@ -52,7 +52,7 @@ const nextConfig: NextConfig = {
       *.supabase.co
       *.clerk.dev
       *.clerk.com
-      *.neatmail.tech
+      *.neatmail.app
       *.dodopayments.com
       *.dodo.com
       https:;
