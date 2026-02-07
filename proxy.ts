@@ -8,7 +8,8 @@ createRouteMatcher([
 const isPublicApiRoute=createRouteMatcher([
   '/api/gmail-webhook/:path*',
   '/api/clerk/:path*',
-  '/api/dodowebhook/:path*'
+  '/api/dodowebhook/:path*',
+  '/api/cron/:path*'
 ])
 
 export default clerkMiddleware(async(auth,req)=>{
