@@ -2,6 +2,7 @@ import { Hono } from "hono";
 
 import { db } from "@/lib/prisma";
 import { clerkClient } from "@clerk/nextjs/server";
+import { activateWatch } from "@/lib/gmail";
 
 const app = new Hono().get("/delete-user", async (ctx) => {
   const authHeader = ctx.req.header("x-authorization");
@@ -74,6 +75,63 @@ const app = new Hono().get("/delete-user", async (ctx) => {
       500
     );
   } 
+})
+  .get("/renew-watch", async (ctx) => {
+  const authHeader = ctx.req.header("x-authorization");
+  const expectedToken = `Bearer ${process.env.CRON_SECRET}`;
+
+  if (authHeader !== expectedToken) {
+    return ctx.json({ error: "Unauthorized" }, 401);
+  }
+
+  try {
+    const activeSubscriptions = await db.subscription.findMany({
+      where: { status: "active" },
+    });
+
+    const results = {
+      total: activeSubscriptions.length,
+      successful: 0,
+      failed: 0,
+      errors: [] as string[],
+    };
+
+    for (const sub of activeSubscriptions) {
+      try {
+        await activateWatch(sub.dodoSubscriptionId);
+        results.successful++;
+        console.log(`✅ Watch renewed for: ${sub.customerEmail}`);
+      } catch (error) {
+        results.failed++;
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        results.errors.push(
+          `Failed to renew watch for ${sub.customerEmail}: ${errorMessage}`
+        );
+        console.error(
+          `❌ Watch renewal failed for ${sub.customerEmail}:`,
+          error
+        );
+      }
+    }
+
+    return ctx.json({
+      message: "Watch renewal completed",
+      timestamp: new Date().toISOString(),
+      ...results,
+    });
+  } catch (error) {
+    console.error("Watch renewal cron job error:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : String(error);
+    return ctx.json(
+      {
+        error: "Internal server error",
+        details: errorMessage,
+      },
+      500
+    );
+  }
 });
 
 export default app;
