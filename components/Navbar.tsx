@@ -19,7 +19,7 @@ const Navbar = () => {
     <>
     <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-8 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
         <div className="flex items-center">
-         {isSignedIn && !signInPage && <SidebarTrigger className="md:hidden" size='icon-lg'/>}
+         {isSignedIn && !signInPage && <SidebarTrigger size='icon-lg'/>}
        </div>
         <h1 className="text-2xl font-bold text-gray-800 font-logo select-none">
           NeatMail
