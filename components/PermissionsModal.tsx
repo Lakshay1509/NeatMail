@@ -28,8 +28,8 @@ export function PermissionsModal({
 
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={open} onOpenChange={onOpenChange} >
+      <DialogContent className="sm:max-w-[500px] [&>button]:hidden">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-yellow-100 p-3">

@@ -29,7 +29,15 @@ const DraftEmails = () => {
 
 
     if (isLoading) return <div className="h-48 bg-gray-50 rounded-xl animate-pulse"></div>
-    if (isError) return null;
+    if (isError) {
+        return (
+        <div className="flex flex-col justify-center items-center w-full min-h-[60vh]">
+            <Image src='/error.webp' alt="error" width={200} height={200} />
+            <p className="mt-4 text-gray-700">Error getting your drafts</p>
+
+        </div>
+        )
+    }
 
     if (data?.data.length === 0) {
         return (
@@ -44,16 +52,16 @@ const DraftEmails = () => {
     return (
         <div className=''>
             <div className="flex flex-col divide-y divide-gray-100/50">
-                 {/* Desktop Header */}
-                 <div className="hidden md:grid grid-cols-[200px_1fr_100px] gap-3 px-6 py-3 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                {/* Desktop Header */}
+                <div className="hidden md:grid grid-cols-[200px_1fr_100px] gap-3 px-6 py-3 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
                     <div>Recipient</div>
                     <div>Draft Preview</div>
                     <div className="text-right">Date</div>
                 </div>
 
                 {data?.data?.map((email, idx) => (
-                    <div 
-                        key={idx} 
+                    <div
+                        key={idx}
                         className="group relative flex flex-col md:grid md:grid-cols-[200px_1fr_100px] md:items-center gap-3 p-4 md:px-6 md:py-4 hover:bg-gray-50/80 hover:shadow-sm transition-all duration-200 cursor-default"
                     >
                         {/* Recipient */}

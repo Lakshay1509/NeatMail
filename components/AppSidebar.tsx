@@ -10,6 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import Link from "next/link"
 
@@ -43,6 +44,14 @@ const items = [
 ]
 
 export function AppSidebar() {
+  const { isMobile, setOpenMobile } = useSidebar()
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }
+
   return (
     <Sidebar >
       <SidebarContent className="lg:mt-16">
@@ -53,7 +62,7 @@ export function AppSidebar() {
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild className="h-12">
-                    <Link href={item.url}>
+                    <Link href={item.url} onClick={handleLinkClick}>
                       <item.icon className="!h-5 !w-5"  />
                       <span className="text-base ">{item.title}</span>
                     </Link>
@@ -68,7 +77,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="h-12 text-red-600 hover:text-red-700">
-              <Link href="/danger">
+              <Link href="/danger" onClick={handleLinkClick}>
                 <AlertCircle className="!h-4 !w-4" />
                 <span className="text-sm">Delete Account</span>
               </Link>

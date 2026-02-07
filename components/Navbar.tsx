@@ -13,11 +13,14 @@ const Navbar = () => {
   
   const isSubscribed = data?.subscribed===false;
   const showUnsubscribedMessage = isSignedIn && isSubscribed && !isLoading && !pathname.includes('/sign-in');
+  const signInPage = pathname.includes('/sign-in');
 
   return (
     <>
     <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-8 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
-       <SidebarTrigger className="md:hidden" size='icon-lg'/>
+        <div className="flex items-center">
+         {isSignedIn && !signInPage && <SidebarTrigger className="md:hidden" size='icon-lg'/>}
+       </div>
         <h1 className="text-2xl font-bold text-gray-800 font-logo select-none">
           NeatMail
         </h1>
@@ -26,9 +29,9 @@ const Navbar = () => {
           {isSignedIn ? (
             <UserButton afterSignOutUrl="/"/>
           ) : (
-            <Link 
+            !signInPage && <Link 
               href="/sign-in"
-              className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-700 transition-colors"
             >
               Login
             </Link>
