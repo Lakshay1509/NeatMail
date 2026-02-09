@@ -13,6 +13,7 @@ export const CATEGORIES = [
 	{ name: 'Action Needed', color: '#cc3a21', description: 'Emails you need to respond to' },
 	{ name: 'Pending Response', color: '#eaa041', description: "Emails you're expecting a reply to" },
 	{ name: 'Automated alerts', color: '#653e9b', description: 'Automated updates from tools you use' },
+	{name : 'Finance', color :'#3c78d8' , description : 'Finance or Payments related mails'},
 	{ name: 'Event update', color: '#285bac', description: 'Calendar updates from Zoom, Google Meet, etc' },
 	{ name: 'Discussion', color: '#0b804b', description: 'Team chats in tools like Google Docs or Microsoft Office' },
 	{ name: 'Read only', color: '#666666', description: "Emails that don't require your response, but are important" },
