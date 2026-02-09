@@ -28,12 +28,15 @@ export async function classifyEmail(email: {
 ALLOWED CATEGORIES (case-sensitive, exact match required):
 - ${tagNames}
 
-CLASSIFICATION RULES (apply in order):
-1. Match keywords in Subject/From/Body to category names
-2. If Subject contains a category name → return that category
-3. If From domain suggests a category → return that category
-4. If Body snippet clearly indicates purpose → return matching category
-5. If NO clear match (confidence < 95%) → return empty string
+CLASSIFICATION RULES (apply in order, highest priority first):
+1. FINANCE/PAYMENT: If email contains transactions, payments, UPI, bank alerts, invoices, money (₹/$) → use "Finance" if available, else use "Automated alerts" as fallback
+2. DOMAIN-SPECIFIC: Match sender domain to category (bank → Finance/Automated alerts, calendar → Event update)
+3. SEMANTIC CONTEXT: Analyze PURPOSE, not keywords
+   - Financial transactions → Finance (or Automated alerts if Finance unavailable)
+   - Calendar invites → Event update
+   - Marketing → Marketing
+4. KEYWORD MATCHING: Use for unclear cases
+5. CONFIDENCE: If < 85% confidence → return empty string
 
 OUTPUT FORMAT (strict):
 {"category": "exact_category_name"}
@@ -41,14 +44,17 @@ OR
 {"category": ""}
 
 EXAMPLES:
-Input: Subject="Meeting Tomorrow", Categories=["Meetings","Personal"]
-Output: {"category": "Meetings"}
+Input: Subject="You have done a UPI txn", From="HDFC Bank", Body="Rs.110.00 has been debited"
+Output: {"category": "Finance"}
 
-Input: Subject="Your invoice #1234", Categories=["Billing","Work"]
-Output: {"category": "Billing"}
+Input: Subject="Server CPU usage at 90%", From="monitoring@company.com"
+Output: {"category": "Automated alerts"}
 
-Input: Subject="Hi there", Categories=["Work","Personal"]
-Output: {"category": ""}`,
+Input: Subject="Meeting Tomorrow", From="calendar@zoom.us"
+Output: {"category": "Event update"}
+
+Input: Subject="Your monthly invoice", Body="Payment of $99 is due"
+Output: {"category": "Finance"}`,
     },
     {
       role: "user" as const,
