@@ -83,7 +83,12 @@ const app = new Hono()
 
     try {
       const activeSubscriptions = await db.subscription.findMany({
-        where: { status: "active" },
+        where: {
+          status: "active",
+          user_tokens: {
+            deleted_flag: false,
+          },
+        },
       });
 
       const results = {
