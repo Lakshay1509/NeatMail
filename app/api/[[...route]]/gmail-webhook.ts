@@ -202,7 +202,7 @@ const app = new Hono().post("/", async (ctx) => {
       if (labelName === "Pending Response") {
         draftBody = await generateEmailReply(emailData);
 
-        if (draftBody.trim.length > 0) {
+        if (draftBody.trim().length > 0) {
           await createGmailDraft(
             clerkUserId,
             emailData.threadId!,
