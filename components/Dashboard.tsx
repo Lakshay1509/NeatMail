@@ -30,7 +30,7 @@ const Dashboard = () => {
                   
 
                     <div className="flex-1">
-                        <h1 className={`text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent ${greeting.gradient}`}>
+                        <h1 className={`text-2xl font-bold  bg-gradient-to-r bg-clip-text text-transparent ${greeting.gradient}`}>
                             {greeting.text}, {user?.firstName || "User"}
                         </h1>
                         <p className="text-gray-500">
