@@ -3,7 +3,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client } from "@/lib/hono";
 import { toast } from "sonner";
 
-type ResponseType = InferResponseType<(typeof client.api.tags.addTagtoUser)["$post"]>;
+type ResponseType = InferResponseType<
+  (typeof client.api.tags.addTagtoUser)["$post"]
+>;
 type RequestType = InferRequestType<
   (typeof client.api.tags.addTagtoUser)["$post"]
 >["json"];
@@ -16,7 +18,7 @@ export const addTagstoUser = () => {
         json,
       });
 
-      if(!response.ok){
+      if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to add tags");
       }
@@ -24,12 +26,8 @@ export const addTagstoUser = () => {
       return response.json();
     },
     onSuccess: async () => {
-
-        console.log('created')
-      query.invalidateQueries({queryKey:['user-custom-tags']})
-      query.invalidateQueries({queryKey:['user-tags']})
-       query.invalidateQueries({queryKey:['user-subscription']})
-       query.invalidateQueries({queryKey:['user-watch']})
+      query.invalidateQueries({ queryKey: ["user-custom-tags"] });
+      query.invalidateQueries({ queryKey: ["user-tags"] });
 
       toast.success("Preferencs created successfully");
     },

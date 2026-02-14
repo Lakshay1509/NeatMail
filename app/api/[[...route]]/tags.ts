@@ -73,21 +73,17 @@ const app = new Hono()
       .map((label) => ({
         id: label.id,
         name: label.name,
-        color:label.color
+        color: label.color,
       }));
 
     const labelsInDb = await db.tag.findMany({
       where: {
-        OR: [
-          { user_id: userId },
-          { user_id: null }, 
-        ],
+        OR: [{ user_id: userId }, { user_id: null }],
       },
       select: {
         name: true,
       },
     });
-
 
     const dbTagNameSet = new Set(
       labelsInDb.map((l) => l.name.toLowerCase().trim()),
@@ -99,7 +95,7 @@ const app = new Hono()
       .map((label) => ({
         id: label.id,
         name: label.name,
-        color:label.color
+        color: label.color,
       }))
       .filter((label) => !dbTagNameSet.has(label.name!.toLowerCase().trim()));
 
@@ -193,15 +189,26 @@ const app = new Hono()
         );
       }
 
-      const data = await db.tag.create({
-        data: {
-          name: values.tag.trim(),
-          user_id: userId,
-          color: values.color,
-        },
+      const [data, addTagToUser] = await db.$transaction(async (tx) => {
+        const tag = await tx.tag.create({
+          data: {
+            name: values.tag.trim(),
+            user_id: userId,
+            color: values.color,
+          },
+        });
+
+        const addTagToUser = await tx.user_tags.create({
+          data: {
+            user_id: userId,
+            tag_id: tag.id,
+          },
+        });
+
+        return [tag, addTagToUser];
       });
 
-      if (!data) {
+      if (!data || !addTagToUser) {
         return ctx.json({ error: "Error creating tag" }, 500);
       }
 
