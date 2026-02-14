@@ -130,6 +130,9 @@ DODO_PRODUCT_ID=
 DODO_WEB_URL=
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
+#Cron Secret
+CRON_SECRET=
+
 # App Configuration
 NODE_ENV=development
 ```
