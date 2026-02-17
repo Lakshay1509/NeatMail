@@ -27,7 +27,9 @@ const authClient = new OAuth2Client();
 // Test users for the new classification model
 const MODEL_TEST_USERS:string[] = [
 
-  "user_38NbAtb7Fk5Vmm0QIdSs5l0bMV5"
+  "user_38NbAtb7Fk5Vmm0QIdSs5l0bMV5",
+  "user_38OIS4VC2YhAJZJlJ0vzkY0dBFm",
+  "user_38OV7Wute3LN46bJMD3TL2CuthV"
   
 ];
 
