@@ -157,7 +157,7 @@ const app = new Hono().post("/", async (ctx) => {
       // Check if Gmail already classified this as Promotions
       let labelName: string;
       const hasMarketingTag = tagsOfUser.some(
-        (tag: any) => tag.name === "Marketing"
+        (tag: any) => tag.tag.name === "Marketing"
       );
       
       if (email.data.labelIds?.includes("CATEGORY_PROMOTIONS") && hasMarketingTag) {
@@ -172,7 +172,7 @@ const app = new Hono().post("/", async (ctx) => {
             subject: emailData.subject,
             sender: emailData.from,
             body: emailData.bodySnippet,
-            labels: tagsOfUser.map((tag: any) => tag.name),
+            labels: tagsOfUser.map((tag: any) => tag.tag.name),
           });
           labelName = modelResult.label;
         } else {
