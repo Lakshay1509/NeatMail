@@ -1,5 +1,6 @@
 import { createGmailDraft } from "@/lib/gmail";
-import { classifyEmail, generateEmailReply } from "@/lib/openai";
+import { classifyEmail as classifyEmailOpenAI, generateEmailReply } from "@/lib/openai";
+import { classifyEmail as classifyEmailModel } from "@/lib/model";
 import {
   isMessageProcessed,
   isThreadProcessed,
@@ -22,6 +23,13 @@ import { Hono } from "hono";
 import { OAuth2Client } from "google-auth-library";
 
 const authClient = new OAuth2Client();
+
+// Test users for the new classification model
+const MODEL_TEST_USERS:string[] = [
+
+  "user_38NbAtb7Fk5Vmm0QIdSs5l0bMV5"
+  
+];
 
 const app = new Hono().post("/", async (ctx) => {
   try {
@@ -155,7 +163,21 @@ const app = new Hono().post("/", async (ctx) => {
       if (email.data.labelIds?.includes("CATEGORY_PROMOTIONS") && hasMarketingTag) {
         labelName = "Marketing";
       } else {
-        labelName = await classifyEmail(emailData, tagsOfUser);
+        // Use model API for test users, OpenAI for others
+        const useModelAPI = MODEL_TEST_USERS.includes(clerkUserId);
+        
+        if (useModelAPI) {
+          const modelResult = await classifyEmailModel({
+            user_id: clerkUserId,
+            subject: emailData.subject,
+            sender: emailData.from,
+            body: emailData.bodySnippet,
+            labels: tagsOfUser.map((tag: any) => tag.name),
+          });
+          labelName = modelResult.label;
+        } else {
+          labelName = await classifyEmailOpenAI(emailData, tagsOfUser);
+        }
       }
 
       if (labelName === "") {
