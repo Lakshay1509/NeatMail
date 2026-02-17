@@ -50,11 +50,16 @@ export async function classifyEmail(
       throw new Error('labels array cannot be empty');
     }
 
+    console.log("Request called to function");
+    console.log(request);
+
     
     const labelMap = new Map<string, string>();
     request.labels.forEach(label => {
       labelMap.set(label.toLowerCase(), label);
     });
+
+    console.log("Calling model");
 
     
     const response = await apiClient.post<ClassifyResponse>(
@@ -64,6 +69,10 @@ export async function classifyEmail(
         labels: request.labels.map(label => label.toLowerCase()),
       },
     );
+
+    console.log("model called");
+    console.log(response)
+    
 
     
     const originalLabel = labelMap.get(response.data.label.toLowerCase()) || response.data.label;
