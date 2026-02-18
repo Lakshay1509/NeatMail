@@ -1,4 +1,4 @@
-import { PaymentPayload, SubscriptionPayload } from "@/types/dodo";
+import { PaymentPayload, RefundPayload, SubscriptionPayload } from "@/types/dodo";
 import { db } from "./prisma";
 import { activateWatch, deactivateWatch } from "./gmail";
 
@@ -214,5 +214,55 @@ export async function addPaymenttoDb(
   } catch (error) {
     console.error("Error adding payment to db", error);
     throw error;
+  }
+}
+
+
+export async function addRefundtoDb (
+  payload: RefundPayload
+){
+  try{
+
+    const data = payload.data;
+
+    const payment = await db.paymentHistory.findUnique({
+      where:{dodoPaymentId:data.payment_id}
+    })
+
+    if (!payment) {
+      throw new Error(`Payment not found for payment_id: ${data.payment_id}`);
+    }
+
+    await db.$transaction(async(tx)=>{
+      await tx.refund.upsert({
+        where:{dodoRefundId:data.refund_id},
+        update:{
+          amount:data.amount,
+          currency:data.currency,
+          status:data.status,
+          reason:data.reason,
+          isPartial:data.is_partial,
+        },
+        create:{
+          user_tokens:{
+            connect:{clerk_user_id:data.metadata.clerk_user_id}
+          },
+          payment:{
+            connect:{id:payment.id}
+          },
+          dodoRefundId:data.refund_id,
+          dodoPaymentId:data.payment_id,
+          amount:data.amount,
+          currency:data.currency,
+          status:data.status,
+          reason:data.reason,
+          isPartial:data.is_partial,
+
+        }
+      })
+    })
+  }catch(error){
+    console.error("Error adding refund to db",error);
+    throw error
   }
 }

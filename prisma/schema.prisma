@@ -21,6 +21,7 @@ model user_tokens {
   drafts          drafts[]
   email_tracked   email_tracked[]
   payment_history PaymentHistory[]
+  refunds         Refund[]
   subscriptions   Subscription[]
   tag             tag[]
   user_tags       user_tags[]
@@ -95,7 +96,7 @@ model Subscription {
   customerName             String?          @map("customer_name")
   status                   String
   productId                String           @map("product_id")
-  currency                 String           @default("INR")
+  currency                 String           @default("USD")
   recurringAmount          Int              @map("recurring_amount")
   quantity                 Int              @default(1)
   paymentFrequencyInterval String           @map("payment_frequency_interval")
@@ -123,7 +124,7 @@ model PaymentHistory {
   dodoPaymentId      String?       @unique @map("dodo_payment_id")
   dodoSubscriptionId String?       @map("dodo_subscription_id")
   amount             Int
-  currency           String        @default("INR")
+  currency           String        @default("USD")
   status             String
   paymentType        String        @map("payment_type")
   billingDate        DateTime?     @map("billing_date")
@@ -140,10 +141,35 @@ model PaymentHistory {
   settlementAmount   Int?          @map("settlement_amount")
   user_tokens        user_tokens   @relation(fields: [clerkUserId], references: [clerk_user_id], onDelete: Cascade)
   subscription       Subscription? @relation(fields: [subscriptionId], references: [id])
+  refunds            Refund[]
 
   @@index([clerkUserId])
   @@index([subscriptionId])
   @@index([status])
   @@map("payment_history")
+  @@schema("public")
+}
+
+
+model Refund {
+  id             String          @id @default(uuid())
+  clerkUserId    String          @map("clerk_user_id")
+  paymentId      String          @map("payment_id")
+  dodoRefundId   String          @unique @map("dodo_refund_id")
+  dodoPaymentId  String          @map("dodo_payment_id")
+  amount         Int
+  currency       String          @default("USD")
+  status         String
+  reason         String?
+  isPartial      Boolean         @map("is_partial")
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user_tokens    user_tokens     @relation(fields: [clerkUserId], references: [clerk_user_id], onDelete: Cascade)
+  payment        PaymentHistory? @relation(fields: [paymentId], references: [id])
+
+  @@index([clerkUserId])
+  @@index([paymentId])
+  @@index([status])
+  @@map("refunds")
   @@schema("public")
 }

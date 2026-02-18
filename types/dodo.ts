@@ -78,3 +78,29 @@ export interface DodoPaymentData {
   };
   created_at: string;
 }
+
+export interface RefundPayload{
+  business_id: string;
+  data: DodoRefundData;
+}
+
+export interface DodoRefundData{
+  amount : number,
+  business_id: string,
+  created_at: string,
+  currency: string,
+  customer: Customer
+  is_partial:boolean,
+  payload_type:string,
+  payment_id:string,
+  reason:string,
+  refund_id:string,
+  status:string
+   metadata: {
+    clerk_user_id : string
+  };
+
+}
+
+
+

@@ -57,7 +57,8 @@ export const ModelName = {
   email_tracked: 'email_tracked',
   drafts: 'drafts',
   Subscription: 'Subscription',
-  PaymentHistory: 'PaymentHistory'
+  PaymentHistory: 'PaymentHistory',
+  Refund: 'Refund'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -182,6 +183,24 @@ export const PaymentHistoryScalarFieldEnum = {
 } as const
 
 export type PaymentHistoryScalarFieldEnum = (typeof PaymentHistoryScalarFieldEnum)[keyof typeof PaymentHistoryScalarFieldEnum]
+
+
+export const RefundScalarFieldEnum = {
+  id: 'id',
+  clerkUserId: 'clerkUserId',
+  paymentId: 'paymentId',
+  dodoRefundId: 'dodoRefundId',
+  dodoPaymentId: 'dodoPaymentId',
+  amount: 'amount',
+  currency: 'currency',
+  status: 'status',
+  reason: 'reason',
+  isPartial: 'isPartial',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RefundScalarFieldEnum = (typeof RefundScalarFieldEnum)[keyof typeof RefundScalarFieldEnum]
 
 
 export const SortOrder = {

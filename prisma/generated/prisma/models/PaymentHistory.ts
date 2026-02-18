@@ -346,6 +346,7 @@ export type PaymentHistoryWhereInput = {
   settlementAmount?: Prisma.IntNullableFilter<"PaymentHistory"> | number | null
   user_tokens?: Prisma.XOR<Prisma.User_tokensScalarRelationFilter, Prisma.user_tokensWhereInput>
   subscription?: Prisma.XOR<Prisma.SubscriptionNullableScalarRelationFilter, Prisma.SubscriptionWhereInput> | null
+  refunds?: Prisma.RefundListRelationFilter
 }
 
 export type PaymentHistoryOrderByWithRelationInput = {
@@ -372,6 +373,7 @@ export type PaymentHistoryOrderByWithRelationInput = {
   settlementAmount?: Prisma.SortOrderInput | Prisma.SortOrder
   user_tokens?: Prisma.user_tokensOrderByWithRelationInput
   subscription?: Prisma.SubscriptionOrderByWithRelationInput
+  refunds?: Prisma.RefundOrderByRelationAggregateInput
 }
 
 export type PaymentHistoryWhereUniqueInput = Prisma.AtLeast<{
@@ -401,6 +403,7 @@ export type PaymentHistoryWhereUniqueInput = Prisma.AtLeast<{
   settlementAmount?: Prisma.IntNullableFilter<"PaymentHistory"> | number | null
   user_tokens?: Prisma.XOR<Prisma.User_tokensScalarRelationFilter, Prisma.user_tokensWhereInput>
   subscription?: Prisma.XOR<Prisma.SubscriptionNullableScalarRelationFilter, Prisma.SubscriptionWhereInput> | null
+  refunds?: Prisma.RefundListRelationFilter
 }, "id" | "dodoPaymentId">
 
 export type PaymentHistoryOrderByWithAggregationInput = {
@@ -481,6 +484,7 @@ export type PaymentHistoryCreateInput = {
   settlementAmount?: number | null
   user_tokens: Prisma.user_tokensCreateNestedOneWithoutPayment_historyInput
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutPaymentsInput
+  refunds?: Prisma.RefundCreateNestedManyWithoutPaymentInput
 }
 
 export type PaymentHistoryUncheckedCreateInput = {
@@ -505,6 +509,7 @@ export type PaymentHistoryUncheckedCreateInput = {
   invoiceId?: string | null
   paymentMethod?: string | null
   settlementAmount?: number | null
+  refunds?: Prisma.RefundUncheckedCreateNestedManyWithoutPaymentInput
 }
 
 export type PaymentHistoryUpdateInput = {
@@ -529,6 +534,7 @@ export type PaymentHistoryUpdateInput = {
   settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   user_tokens?: Prisma.user_tokensUpdateOneRequiredWithoutPayment_historyNestedInput
   subscription?: Prisma.SubscriptionUpdateOneWithoutPaymentsNestedInput
+  refunds?: Prisma.RefundUpdateManyWithoutPaymentNestedInput
 }
 
 export type PaymentHistoryUncheckedUpdateInput = {
@@ -553,6 +559,7 @@ export type PaymentHistoryUncheckedUpdateInput = {
   invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  refunds?: Prisma.RefundUncheckedUpdateManyWithoutPaymentNestedInput
 }
 
 export type PaymentHistoryCreateManyInput = {
@@ -715,6 +722,11 @@ export type PaymentHistorySumOrderByAggregateInput = {
   settlementAmount?: Prisma.SortOrder
 }
 
+export type PaymentHistoryNullableScalarRelationFilter = {
+  is?: Prisma.PaymentHistoryWhereInput | null
+  isNot?: Prisma.PaymentHistoryWhereInput | null
+}
+
 export type PaymentHistoryCreateNestedManyWithoutUser_tokensInput = {
   create?: Prisma.XOR<Prisma.PaymentHistoryCreateWithoutUser_tokensInput, Prisma.PaymentHistoryUncheckedCreateWithoutUser_tokensInput> | Prisma.PaymentHistoryCreateWithoutUser_tokensInput[] | Prisma.PaymentHistoryUncheckedCreateWithoutUser_tokensInput[]
   connectOrCreate?: Prisma.PaymentHistoryCreateOrConnectWithoutUser_tokensInput | Prisma.PaymentHistoryCreateOrConnectWithoutUser_tokensInput[]
@@ -807,6 +819,22 @@ export type NullableIntFieldUpdateOperationsInput = {
   divide?: number
 }
 
+export type PaymentHistoryCreateNestedOneWithoutRefundsInput = {
+  create?: Prisma.XOR<Prisma.PaymentHistoryCreateWithoutRefundsInput, Prisma.PaymentHistoryUncheckedCreateWithoutRefundsInput>
+  connectOrCreate?: Prisma.PaymentHistoryCreateOrConnectWithoutRefundsInput
+  connect?: Prisma.PaymentHistoryWhereUniqueInput
+}
+
+export type PaymentHistoryUpdateOneWithoutRefundsNestedInput = {
+  create?: Prisma.XOR<Prisma.PaymentHistoryCreateWithoutRefundsInput, Prisma.PaymentHistoryUncheckedCreateWithoutRefundsInput>
+  connectOrCreate?: Prisma.PaymentHistoryCreateOrConnectWithoutRefundsInput
+  upsert?: Prisma.PaymentHistoryUpsertWithoutRefundsInput
+  disconnect?: Prisma.PaymentHistoryWhereInput | boolean
+  delete?: Prisma.PaymentHistoryWhereInput | boolean
+  connect?: Prisma.PaymentHistoryWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PaymentHistoryUpdateToOneWithWhereWithoutRefundsInput, Prisma.PaymentHistoryUpdateWithoutRefundsInput>, Prisma.PaymentHistoryUncheckedUpdateWithoutRefundsInput>
+}
+
 export type PaymentHistoryCreateWithoutUser_tokensInput = {
   id?: string
   dodoPaymentId?: string | null
@@ -828,6 +856,7 @@ export type PaymentHistoryCreateWithoutUser_tokensInput = {
   paymentMethod?: string | null
   settlementAmount?: number | null
   subscription?: Prisma.SubscriptionCreateNestedOneWithoutPaymentsInput
+  refunds?: Prisma.RefundCreateNestedManyWithoutPaymentInput
 }
 
 export type PaymentHistoryUncheckedCreateWithoutUser_tokensInput = {
@@ -851,6 +880,7 @@ export type PaymentHistoryUncheckedCreateWithoutUser_tokensInput = {
   invoiceId?: string | null
   paymentMethod?: string | null
   settlementAmount?: number | null
+  refunds?: Prisma.RefundUncheckedCreateNestedManyWithoutPaymentInput
 }
 
 export type PaymentHistoryCreateOrConnectWithoutUser_tokensInput = {
@@ -927,6 +957,7 @@ export type PaymentHistoryCreateWithoutSubscriptionInput = {
   paymentMethod?: string | null
   settlementAmount?: number | null
   user_tokens: Prisma.user_tokensCreateNestedOneWithoutPayment_historyInput
+  refunds?: Prisma.RefundCreateNestedManyWithoutPaymentInput
 }
 
 export type PaymentHistoryUncheckedCreateWithoutSubscriptionInput = {
@@ -950,6 +981,7 @@ export type PaymentHistoryUncheckedCreateWithoutSubscriptionInput = {
   invoiceId?: string | null
   paymentMethod?: string | null
   settlementAmount?: number | null
+  refunds?: Prisma.RefundUncheckedCreateNestedManyWithoutPaymentInput
 }
 
 export type PaymentHistoryCreateOrConnectWithoutSubscriptionInput = {
@@ -976,6 +1008,118 @@ export type PaymentHistoryUpdateWithWhereUniqueWithoutSubscriptionInput = {
 export type PaymentHistoryUpdateManyWithWhereWithoutSubscriptionInput = {
   where: Prisma.PaymentHistoryScalarWhereInput
   data: Prisma.XOR<Prisma.PaymentHistoryUpdateManyMutationInput, Prisma.PaymentHistoryUncheckedUpdateManyWithoutSubscriptionInput>
+}
+
+export type PaymentHistoryCreateWithoutRefundsInput = {
+  id?: string
+  dodoPaymentId?: string | null
+  dodoSubscriptionId?: string | null
+  amount: number
+  currency?: string
+  status: string
+  paymentType: string
+  billingDate?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  cardLastFour?: string | null
+  cardNetwork?: string | null
+  cardType?: string | null
+  checkoutSessionId?: string | null
+  errorCode?: string | null
+  errorMessage?: string | null
+  invoiceId?: string | null
+  paymentMethod?: string | null
+  settlementAmount?: number | null
+  user_tokens: Prisma.user_tokensCreateNestedOneWithoutPayment_historyInput
+  subscription?: Prisma.SubscriptionCreateNestedOneWithoutPaymentsInput
+}
+
+export type PaymentHistoryUncheckedCreateWithoutRefundsInput = {
+  id?: string
+  clerkUserId: string
+  subscriptionId?: string | null
+  dodoPaymentId?: string | null
+  dodoSubscriptionId?: string | null
+  amount: number
+  currency?: string
+  status: string
+  paymentType: string
+  billingDate?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  cardLastFour?: string | null
+  cardNetwork?: string | null
+  cardType?: string | null
+  checkoutSessionId?: string | null
+  errorCode?: string | null
+  errorMessage?: string | null
+  invoiceId?: string | null
+  paymentMethod?: string | null
+  settlementAmount?: number | null
+}
+
+export type PaymentHistoryCreateOrConnectWithoutRefundsInput = {
+  where: Prisma.PaymentHistoryWhereUniqueInput
+  create: Prisma.XOR<Prisma.PaymentHistoryCreateWithoutRefundsInput, Prisma.PaymentHistoryUncheckedCreateWithoutRefundsInput>
+}
+
+export type PaymentHistoryUpsertWithoutRefundsInput = {
+  update: Prisma.XOR<Prisma.PaymentHistoryUpdateWithoutRefundsInput, Prisma.PaymentHistoryUncheckedUpdateWithoutRefundsInput>
+  create: Prisma.XOR<Prisma.PaymentHistoryCreateWithoutRefundsInput, Prisma.PaymentHistoryUncheckedCreateWithoutRefundsInput>
+  where?: Prisma.PaymentHistoryWhereInput
+}
+
+export type PaymentHistoryUpdateToOneWithWhereWithoutRefundsInput = {
+  where?: Prisma.PaymentHistoryWhereInput
+  data: Prisma.XOR<Prisma.PaymentHistoryUpdateWithoutRefundsInput, Prisma.PaymentHistoryUncheckedUpdateWithoutRefundsInput>
+}
+
+export type PaymentHistoryUpdateWithoutRefundsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  dodoPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dodoSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amount?: Prisma.IntFieldUpdateOperationsInput | number
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentType?: Prisma.StringFieldUpdateOperationsInput | string
+  billingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  user_tokens?: Prisma.user_tokensUpdateOneRequiredWithoutPayment_historyNestedInput
+  subscription?: Prisma.SubscriptionUpdateOneWithoutPaymentsNestedInput
+}
+
+export type PaymentHistoryUncheckedUpdateWithoutRefundsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  clerkUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dodoPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dodoSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amount?: Prisma.IntFieldUpdateOperationsInput | number
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  paymentType?: Prisma.StringFieldUpdateOperationsInput | string
+  billingDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  cardLastFour?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardNetwork?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cardType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
 }
 
 export type PaymentHistoryCreateManyUser_tokensInput = {
@@ -1022,6 +1166,7 @@ export type PaymentHistoryUpdateWithoutUser_tokensInput = {
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   subscription?: Prisma.SubscriptionUpdateOneWithoutPaymentsNestedInput
+  refunds?: Prisma.RefundUpdateManyWithoutPaymentNestedInput
 }
 
 export type PaymentHistoryUncheckedUpdateWithoutUser_tokensInput = {
@@ -1045,6 +1190,7 @@ export type PaymentHistoryUncheckedUpdateWithoutUser_tokensInput = {
   invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  refunds?: Prisma.RefundUncheckedUpdateManyWithoutPaymentNestedInput
 }
 
 export type PaymentHistoryUncheckedUpdateManyWithoutUser_tokensInput = {
@@ -1114,6 +1260,7 @@ export type PaymentHistoryUpdateWithoutSubscriptionInput = {
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   user_tokens?: Prisma.user_tokensUpdateOneRequiredWithoutPayment_historyNestedInput
+  refunds?: Prisma.RefundUpdateManyWithoutPaymentNestedInput
 }
 
 export type PaymentHistoryUncheckedUpdateWithoutSubscriptionInput = {
@@ -1137,6 +1284,7 @@ export type PaymentHistoryUncheckedUpdateWithoutSubscriptionInput = {
   invoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   paymentMethod?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   settlementAmount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  refunds?: Prisma.RefundUncheckedUpdateManyWithoutPaymentNestedInput
 }
 
 export type PaymentHistoryUncheckedUpdateManyWithoutSubscriptionInput = {
@@ -1163,6 +1311,35 @@ export type PaymentHistoryUncheckedUpdateManyWithoutSubscriptionInput = {
 }
 
 
+/**
+ * Count Type PaymentHistoryCountOutputType
+ */
+
+export type PaymentHistoryCountOutputType = {
+  refunds: number
+}
+
+export type PaymentHistoryCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  refunds?: boolean | PaymentHistoryCountOutputTypeCountRefundsArgs
+}
+
+/**
+ * PaymentHistoryCountOutputType without action
+ */
+export type PaymentHistoryCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PaymentHistoryCountOutputType
+   */
+  select?: Prisma.PaymentHistoryCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * PaymentHistoryCountOutputType without action
+ */
+export type PaymentHistoryCountOutputTypeCountRefundsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RefundWhereInput
+}
+
 
 export type PaymentHistorySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1188,6 +1365,8 @@ export type PaymentHistorySelect<ExtArgs extends runtime.Types.Extensions.Intern
   settlementAmount?: boolean
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
   subscription?: boolean | Prisma.PaymentHistory$subscriptionArgs<ExtArgs>
+  refunds?: boolean | Prisma.PaymentHistory$refundsArgs<ExtArgs>
+  _count?: boolean | Prisma.PaymentHistoryCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["paymentHistory"]>
 
 export type PaymentHistorySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1270,6 +1449,8 @@ export type PaymentHistoryOmit<ExtArgs extends runtime.Types.Extensions.Internal
 export type PaymentHistoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
   subscription?: boolean | Prisma.PaymentHistory$subscriptionArgs<ExtArgs>
+  refunds?: boolean | Prisma.PaymentHistory$refundsArgs<ExtArgs>
+  _count?: boolean | Prisma.PaymentHistoryCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type PaymentHistoryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
@@ -1285,6 +1466,7 @@ export type $PaymentHistoryPayload<ExtArgs extends runtime.Types.Extensions.Inte
   objects: {
     user_tokens: Prisma.$user_tokensPayload<ExtArgs>
     subscription: Prisma.$SubscriptionPayload<ExtArgs> | null
+    refunds: Prisma.$RefundPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1704,6 +1886,7 @@ export interface Prisma__PaymentHistoryClient<T, Null = never, ExtArgs extends r
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user_tokens<T extends Prisma.user_tokensDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user_tokensDefaultArgs<ExtArgs>>): Prisma.Prisma__user_tokensClient<runtime.Types.Result.GetResult<Prisma.$user_tokensPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   subscription<T extends Prisma.PaymentHistory$subscriptionArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PaymentHistory$subscriptionArgs<ExtArgs>>): Prisma.Prisma__SubscriptionClient<runtime.Types.Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  refunds<T extends Prisma.PaymentHistory$refundsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PaymentHistory$refundsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RefundPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2166,6 +2349,30 @@ export type PaymentHistory$subscriptionArgs<ExtArgs extends runtime.Types.Extens
    */
   include?: Prisma.SubscriptionInclude<ExtArgs> | null
   where?: Prisma.SubscriptionWhereInput
+}
+
+/**
+ * PaymentHistory.refunds
+ */
+export type PaymentHistory$refundsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Refund
+   */
+  select?: Prisma.RefundSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Refund
+   */
+  omit?: Prisma.RefundOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RefundInclude<ExtArgs> | null
+  where?: Prisma.RefundWhereInput
+  orderBy?: Prisma.RefundOrderByWithRelationInput | Prisma.RefundOrderByWithRelationInput[]
+  cursor?: Prisma.RefundWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.RefundScalarFieldEnum | Prisma.RefundScalarFieldEnum[]
 }
 
 /**

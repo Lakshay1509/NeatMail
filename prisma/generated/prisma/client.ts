@@ -74,3 +74,8 @@ export type Subscription = Prisma.SubscriptionModel
  * 
  */
 export type PaymentHistory = Prisma.PaymentHistoryModel
+/**
+ * Model Refund
+ * 
+ */
+export type Refund = Prisma.RefundModel

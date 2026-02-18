@@ -1,8 +1,8 @@
-//https://gmail-classifier-nine.vercel.app/api/dodowebhook
+
 
 import { Hono } from "hono";
 import { Webhook } from "standardwebhooks";
-import { addPaymenttoDb, addSubscriptiontoDb } from "@/lib/payement";
+import { addPaymenttoDb, addRefundtoDb, addSubscriptiontoDb } from "@/lib/payement";
 import { isDodoWebhookProcessed, markDodoWebhookProcessed } from "@/lib/redis";
 
 const app = new Hono().post("/", async (ctx) => {
@@ -92,6 +92,14 @@ const app = new Hono().post("/", async (ctx) => {
 
       case "payment.failed":
         await addPaymenttoDb(payload);
+        break;
+
+      case "refund.failed":
+        await addRefundtoDb(payload);
+        break;
+      
+      case "refund.succeeded":
+        await addRefundtoDb(payload);
         break;
 
       default:
