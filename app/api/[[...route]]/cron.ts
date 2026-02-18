@@ -149,6 +149,8 @@ const app = new Hono()
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+      console.log(`[refund] Querying payments older than: ${sevenDaysAgo.toISOString()}`);
+
       const payments = await db.paymentHistory.findMany({
         where: {
           status: "succeeded",
@@ -168,6 +170,8 @@ const app = new Hono()
           subscription: true,
         },
       });
+
+      console.log(`[refund] Found ${payments.length} payment(s) eligible for refund`);
 
       if (payments.length === 0) {
         return ctx.json({ message: "No payments to refund" }, 200);
@@ -189,12 +193,21 @@ const app = new Hono()
           (payment.subscription?.recurringAmount ?? 0) / 100;
         const refundAmount = paidAmount - subscriptionPrice;
 
+        console.log(
+          `[refund] Processing payment ${payment.dodoPaymentId} | clerkUserId=${payment.clerkUserId} | paidAmount=${paidAmount} | subscriptionPrice=${subscriptionPrice} | refundAmount=${refundAmount}`,
+        );
+
         if (!(paidAmount > 0 && refundAmount > 0 && payment.dodoPaymentId)) {
+          console.log(
+            `[refund] ⏭️ Skipping payment ${payment.dodoPaymentId} — condition not met (paidAmount=${paidAmount}, refundAmount=${refundAmount}, dodoPaymentId=${payment.dodoPaymentId})`,
+          );
           results.skipped++;
           continue;
         }
 
         try {
+          console.log(`[refund] Creating refund for payment ${payment.dodoPaymentId} | amount=${refundAmount} | productId=${payment.subscription?.productId}`);
+
           await dodopayments.refunds.create({
             payment_id: payment.dodoPaymentId,
             items: [
@@ -209,12 +222,19 @@ const app = new Hono()
             reason: "automated refund",
           });
 
-          
+          console.log(`[refund] ✅ Refund created for payment ${payment.dodoPaymentId}`);
+
+          console.log(`[refund] Listing wallets for dodoCustomerId=${payment.subscription?.dodoCustomerId}`);
+
           const wallets = await dodopayments.customers.wallets.list(
             payment.subscription?.dodoCustomerId ?? "",
           );
 
+          console.log(`[refund] Wallet total_balance_usd=${wallets.total_balance_usd} | required refundAmount=${refundAmount}`);
+
           if (wallets.total_balance_usd >= refundAmount) {
+            console.log(`[refund] Debiting wallet for clerkUserId=${payment.clerkUserId} | amount=${refundAmount}`);
+
             await dodopayments.customers.wallets.ledgerEntries.create(
               payment.clerkUserId,
               {
@@ -222,6 +242,12 @@ const app = new Hono()
                 currency: "USD",
                 entry_type: "debit",
               },
+            );
+
+            console.log(`[refund] ✅ Wallet debited for clerkUserId=${payment.clerkUserId}`);
+          } else {
+            console.warn(
+              `[refund] ⚠️ Insufficient wallet balance for clerkUserId=${payment.clerkUserId} | balance=${wallets.total_balance_usd} < refundAmount=${refundAmount} — skipping debit`,
             );
           }
 
@@ -233,8 +259,11 @@ const app = new Hono()
           results.errors.push(
             `Failed to refund payment ${payment.dodoPaymentId}: ${errorMessage}`,
           );
+          console.error(`[refund] ❌ Error processing payment ${payment.dodoPaymentId}:`, error);
         }
       }
+
+      console.log(`[refund] Done | total=${results.total} successful=${results.successful} failed=${results.failed} skipped=${results.skipped}`);
 
       return ctx.json({
         message: "Refund processing completed",
@@ -242,7 +271,7 @@ const app = new Hono()
         ...results,
       });
     } catch (error) {
-      console.error("Refund cron job error:", error);
+      console.error("[refund] ❌ Unexpected cron job error:", error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       return ctx.json(
