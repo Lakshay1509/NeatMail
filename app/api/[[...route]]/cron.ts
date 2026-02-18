@@ -188,13 +188,16 @@ const app = new Hono()
       };
 
       for (const payment of payments) {
-        const paidAmount = (payment?.settlementAmount ?? 0) / 100;
-        const subscriptionPrice =
-          (payment.subscription?.recurringAmount ?? 0) / 100;
+        const paidAmount = payment?.settlementAmount ?? 0;
+        const subscriptionPrice = payment.subscription?.recurringAmount ?? 0;
         const refundAmount = paidAmount - subscriptionPrice;
 
+        const paidAmountDisplay = paidAmount / 100;
+        const subscriptionPriceDisplay = subscriptionPrice / 100;
+        const refundAmountDisplay = refundAmount / 100;
+
         console.log(
-          `[refund] Processing payment ${payment.dodoPaymentId} | clerkUserId=${payment.clerkUserId} | paidAmount=${paidAmount} | subscriptionPrice=${subscriptionPrice} | refundAmount=${refundAmount}`,
+          `[refund] Processing payment ${payment.dodoPaymentId} | clerkUserId=${payment.clerkUserId} | paidAmount=${paidAmountDisplay} | subscriptionPrice=${subscriptionPriceDisplay} | refundAmount=${refundAmountDisplay} | refundAmountRaw(cents)=${refundAmount}`,
         );
 
         if (!(paidAmount > 0 && refundAmount > 0 && payment.dodoPaymentId)) {
@@ -206,14 +209,14 @@ const app = new Hono()
         }
 
         try {
-          console.log(`[refund] Creating refund for payment ${payment.dodoPaymentId} | amount=${refundAmount} | productId=${payment.subscription?.productId}`);
+          console.log(`[refund] Creating refund for payment ${payment.dodoPaymentId} | amount(cents)=${refundAmount} | productId=${payment.subscription?.productId}`);
 
           await dodopayments.refunds.create({
             payment_id: payment.dodoPaymentId,
             items: [
               {
                 item_id: payment.subscription?.productId ?? "",
-                amount: refundAmount,
+                amount: refundAmount, // integer cents, no division
               },
             ],
             metadata: {
@@ -230,15 +233,15 @@ const app = new Hono()
             payment.subscription?.dodoCustomerId ?? "",
           );
 
-          console.log(`[refund] Wallet total_balance_usd=${wallets.total_balance_usd} | required refundAmount=${refundAmount}`);
+          console.log(`[refund] Wallet total_balance_usd=${wallets.total_balance_usd} | required refundAmount=${refundAmountDisplay}`);
 
-          if (wallets.total_balance_usd >= refundAmount) {
-            console.log(`[refund] Debiting wallet for clerkUserId=${payment.clerkUserId} | amount=${refundAmount}`);
+          if (wallets.total_balance_usd >= refundAmountDisplay) {
+            console.log(`[refund] Debiting wallet for clerkUserId=${payment.clerkUserId} | amount(cents)=${refundAmount}`);
 
             await dodopayments.customers.wallets.ledgerEntries.create(
               payment.clerkUserId,
               {
-                amount: refundAmount,
+                amount: refundAmount, // integer cents (int64), not divided
                 currency: "USD",
                 entry_type: "debit",
               },
@@ -247,7 +250,7 @@ const app = new Hono()
             console.log(`[refund] ✅ Wallet debited for clerkUserId=${payment.clerkUserId}`);
           } else {
             console.warn(
-              `[refund] ⚠️ Insufficient wallet balance for clerkUserId=${payment.clerkUserId} | balance=${wallets.total_balance_usd} < refundAmount=${refundAmount} — skipping debit`,
+              `[refund] ⚠️ Insufficient wallet balance for clerkUserId=${payment.clerkUserId} | balance=${wallets.total_balance_usd} < refundAmount=${refundAmountDisplay} — skipping debit`,
             );
           }
 
