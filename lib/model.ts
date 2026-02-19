@@ -6,7 +6,8 @@ export interface ClassifyRequest {
   subject: string;
   sender: string;
   body: string;
-  labels: string[];       
+  labels: string[];  
+  use_llm:boolean     
 }
 
 

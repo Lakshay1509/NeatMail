@@ -177,6 +177,7 @@ const app = new Hono().post("/", async (ctx) => {
             sender: emailData.from,
             body: emailData.bodySnippet,
             labels: tagsOfUser.map((tag: any) => tag.tag.name),
+            use_llm:user.use_external_ai_processing
           });
           labelName = modelResult.label;
         } else {
