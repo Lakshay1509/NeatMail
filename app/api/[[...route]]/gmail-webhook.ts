@@ -29,7 +29,8 @@ const MODEL_TEST_USERS:string[] = [
 
   "user_38NbAtb7Fk5Vmm0QIdSs5l0bMV5",
   "user_38OIS4VC2YhAJZJlJ0vzkY0dBFm",
-  "user_38OV7Wute3LN46bJMD3TL2CuthV"
+  "user_38OV7Wute3LN46bJMD3TL2CuthV",
+  "user_38VwbHZlwUy4Bn7mJXYYwhHFaKq"
   
 ];
 

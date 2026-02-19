@@ -50,7 +50,6 @@ export async function classifyEmail(
       throw new Error('labels array cannot be empty');
     }
 
-    console.log("Request called to function");
     console.log(request);
 
     
@@ -59,7 +58,6 @@ export async function classifyEmail(
       labelMap.set(label.toLowerCase(), label);
     });
 
-    console.log("Calling model");
 
     
     const response = await apiClient.post<ClassifyResponse>(
@@ -70,8 +68,7 @@ export async function classifyEmail(
       },
     );
 
-    console.log("model called");
-    console.log(response)
+    console.log('Model repsonse', '',response.data)
     
 
     
