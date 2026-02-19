@@ -22,6 +22,10 @@ import { MoreVertical, Trash } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
 import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
 import AddDropdown from "./AddDropdown";
+import { Slider } from "./ui/slider";
+import CategorySlider from "./Slider";
+import { useGetUserPrivacy } from "@/features/user/use-get-user-privacy";
+import { useUpdatePrivacy } from "@/features/user/use-put-privacy";
 
 
 
@@ -32,15 +36,18 @@ const UserLabelSettings = () => {
 	const { data: customData, isLoading: customLoading, isError: customError } = useGetCustomTags();
 	const { data: watchData, isLoading: watchLoading } = useGetUserWatch();
 	const { data: subData } = useGetUserSubscribed();
+	const { data: privacyData } = useGetUserPrivacy();
 
 	const mutation = addTagstoUser();
 	const addWatchMutation = addWatch();
 	const deleteWatchMutation = deleteWatch();
 	const deleteTagMutation = useDeleteTag();
+	const updatePrivacyMutation = useUpdatePrivacy();
 	const [selectedCategories, setSelectedCategories] = useState<string[]>([])
 	const [watch, setWatch] = useState<boolean>();
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 	const [id, setId] = useState<string>("");
+	const [privacy, setPrivacy] = useState<boolean>(false);
 
 
 	useEffect(() => {
@@ -53,7 +60,11 @@ const UserLabelSettings = () => {
 		if (watchData) {
 			setWatch(watchData.data.watch_activated)
 		}
-	}, [data, watchData]);
+
+		if (privacyData) {
+			setPrivacy(privacyData.data.use_external_ai_processing)
+		}
+	}, [data, watchData, privacyData]);
 
 	const toggleCategory = (categoryName: string) => {
 		setSelectedCategories(prev =>
@@ -71,14 +82,20 @@ const UserLabelSettings = () => {
 
 		if (subData?.subscribed === true) {
 
-			if (watch) {
+			if (watch && watch!==watchData?.data.watch_activated) {
 				await addWatchMutation.mutateAsync({});
 			}
 
-			if (!watch) {
+			if (!watch && watch!==watchData?.data.watch_activated) {
 				await deleteWatchMutation.mutateAsync({});
 			}
 		}
+		if (privacy !== privacyData?.data.use_external_ai_processing) {
+
+			updatePrivacyMutation.mutateAsync({ enabled: privacy })
+
+		}
+
 
 	}
 
@@ -182,7 +199,7 @@ const UserLabelSettings = () => {
 							Labels made by you for your personlized workflow!
 						</p>
 					</div>
-					<AddDropdown/>
+					<AddDropdown />
 
 				</div>
 
@@ -245,12 +262,47 @@ const UserLabelSettings = () => {
 				</div>
 			</div>
 
+			<div className="relative py-6">
+				<div className="absolute inset-0 flex items-center" aria-hidden="true">
+					<div className="w-full border-t border-gray-200" />
+				</div>
+			</div>
+
+			<div className="flex items-start justify-between">
+				<div>
+					<h2 className="text-lg font-semibold text-gray-900 mb-2">Privacy Settings </h2>
+					<p className="text-gray-600 text-sm md:text-base max-w-2xl">
+						Enable advanced AI processing to improve email classification accuracy using secure, encrypted third-party services, we recommend keeping this on for best results if you have custom labels, and no sensitive email data is stored during processing.
+
+					</p>
+				</div>
+				<div className="flex flex-col items-end gap-3">
+					<div className="flex items-center gap-2 pt-1">
+						<span className="text-sm font-medium text-gray-700">
+							{privacy ? 'Active' : 'Inactive'}
+						</span>
+						<Checkbox
+
+							checked={privacy}
+							onCheckedChange={(checked) => setPrivacy(!!checked)}
+							className="w-5 h-5 border-gray-300"
+						/>
+					</div>
+
+				</div>
+
+
+
+			</div>
+
+
+
 
 			<div className="mt-10 pt-6 border-t border-gray-100 flex justify-end">
 				<Button
 					className=" text-white min-w-[150px] shadow-sm"
 					onClick={handleSubmit}
-					disabled={mutation.isPending || !isValid || subData?.subscribed===false}
+					disabled={mutation.isPending || !isValid || subData?.subscribed === false}
 				>
 					{mutation.isPending ? 'Saving...' : isValid ? 'Save Preferences' : `Select ${1 - selectedCategories.length} more`}
 				</Button>

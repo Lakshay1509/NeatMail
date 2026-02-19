@@ -3,6 +3,8 @@ import { db } from "@/lib/prisma";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { Hono } from "hono";
 import { getDodoPayments } from "./checkout";
+import { zValidator } from "@hono/zod-validator";
+import z, { boolean } from "zod";
 
 const app = new Hono()
   .get("/watch", async (ctx) => {
@@ -14,6 +16,9 @@ const app = new Hono()
 
     const data = await db.user_tokens.findUnique({
       where: { clerk_user_id: userId },
+      select:{
+        watch_activated:true
+      }
     });
 
     if (!data) {
@@ -240,6 +245,60 @@ const app = new Hono()
     const wallets = await dodoPayment.customers.wallets.list(dodocustomerID?.dodoCustomerId)
 
     return ctx.json({balance:wallets.total_balance_usd},200);
+
+  })
+
+  .get('/privacy',async(ctx)=>{
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const data = await db.user_tokens.findUnique({
+      where:{clerk_user_id:userId},
+      select:{
+        use_external_ai_processing:true
+      }
+    })
+
+    if(!data){
+      return ctx.json({error:"Error getting privacy data"},500);
+    }
+
+    return ctx.json({data},200);
+
+  })
+
+  .put('/privacy',zValidator(
+      "json",
+      z.object({
+        enabled:z.boolean()
+      }),
+    ),async(ctx)=>{
+
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const values = ctx.req.valid("json");
+
+    const data = await db.user_tokens.update({
+      where:{clerk_user_id:userId},
+      data:{
+        use_external_ai_processing:values.enabled
+      }
+    })
+
+    if(!data){
+      return ctx.json({error:"Error updating privacy data"},500);
+    }
+
+    return ctx.json({data},200);
+
+
 
   })
 

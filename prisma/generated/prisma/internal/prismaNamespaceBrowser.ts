@@ -84,6 +84,7 @@ export const User_tokensScalarFieldEnum = {
   updated_at: 'updated_at',
   last_history_id: 'last_history_id',
   watch_activated: 'watch_activated',
+  use_external_ai_processing: 'use_external_ai_processing',
   deleted_flag: 'deleted_flag',
   delete_at: 'delete_at'
 } as const

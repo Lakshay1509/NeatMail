@@ -16,6 +16,8 @@ model user_tokens {
   updated_at      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
   last_history_id String?
   watch_activated Boolean          @default(false)
+  use_external_ai_processing Boolean @default(true)
+
   deleted_flag    Boolean          @default(false)
   delete_at       DateTime?
   drafts          drafts[]
