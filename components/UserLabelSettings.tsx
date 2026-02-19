@@ -9,7 +9,6 @@ import { addTagstoUser } from "@/features/tags/use-add-tag-user";
 import { useGetUserWatch } from "@/features/user/use-get-watch";
 import { addWatch } from "@/features/watch/use-post-watch";
 import { deleteWatch } from "@/features/watch/use-delete-watch";
-import CreateLabel from "./CreateLabel";
 import { useGetCustomTags } from "@/features/tags/use-get-custom-tag";
 import { useDeleteTag } from "@/features/tags/use-delete-tags";
 import {
@@ -22,8 +21,6 @@ import { MoreVertical, Trash } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
 import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
 import AddDropdown from "./AddDropdown";
-import { Slider } from "./ui/slider";
-import CategorySlider from "./Slider";
 import { useGetUserPrivacy } from "@/features/user/use-get-user-privacy";
 import { useUpdatePrivacy } from "@/features/user/use-put-privacy";
 
