@@ -33,7 +33,7 @@ export default function AddDropdown() {
 
         {/* Create Label Component */}
         <DropdownMenuItem
-          onSelect={(e) => e.preventDefault()} // prevents dropdown auto-close
+          
           className="gap-2"
         >
          
