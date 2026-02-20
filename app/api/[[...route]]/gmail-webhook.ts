@@ -1,5 +1,8 @@
 import { createGmailDraft } from "@/lib/gmail";
-import { classifyEmail as classifyEmailOpenAI, generateEmailReply } from "@/lib/openai";
+import {
+  classifyEmail as classifyEmailOpenAI,
+  generateEmailReply,
+} from "@/lib/openai";
 import { classifyEmail as classifyEmailModel } from "@/lib/model";
 import {
   isMessageProcessed,
@@ -25,15 +28,15 @@ import { OAuth2Client } from "google-auth-library";
 const authClient = new OAuth2Client();
 
 // Test users for the new classification model
-const MODEL_TEST_USERS:string[] = [
+// const MODEL_TEST_USERS:string[] = [
 
-  "user_38NbAtb7Fk5Vmm0QIdSs5l0bMV5",
-  "user_38OIS4VC2YhAJZJlJ0vzkY0dBFm",
-  "user_38OV7Wute3LN46bJMD3TL2CuthV",
-  "user_38VwbHZlwUy4Bn7mJXYYwhHFaKq",
-  "user_38un7jxuKLAJ1NDnRxpUcRxEro5"
-  
-];
+//   "user_38NbAtb7Fk5Vmm0QIdSs5l0bMV5",
+//   "user_38OIS4VC2YhAJZJlJ0vzkY0dBFm",
+//   "user_38OV7Wute3LN46bJMD3TL2CuthV",
+//   "user_38VwbHZlwUy4Bn7mJXYYwhHFaKq",
+//   "user_38un7jxuKLAJ1NDnRxpUcRxEro5"
+
+// ];
 
 const app = new Hono().post("/", async (ctx) => {
   try {
@@ -161,28 +164,27 @@ const app = new Hono().post("/", async (ctx) => {
       // Check if Gmail already classified this as Promotions
       let labelName: string;
       const hasMarketingTag = tagsOfUser.some(
-        (tag: any) => tag.tag.name === "Marketing"
+        (tag: any) => tag.tag.name === "Marketing",
       );
-      
-      if (email.data.labelIds?.includes("CATEGORY_PROMOTIONS") && hasMarketingTag) {
+
+      if (
+        email.data.labelIds?.includes("CATEGORY_PROMOTIONS") &&
+        hasMarketingTag
+      ) {
         labelName = "Marketing";
       } else {
         // Use model API for test users, OpenAI for others
-        const useModelAPI = MODEL_TEST_USERS.includes(clerkUserId);
-        
-        if (useModelAPI) {
-          const modelResult = await classifyEmailModel({
-            user_id: clerkUserId,
-            subject: emailData.subject,
-            sender: emailData.from,
-            body: emailData.bodySnippet,
-            labels: tagsOfUser.map((tag: any) => tag.tag.name),
-            use_llm:user.use_external_ai_processing
-          });
-          labelName = modelResult.label;
-        } else {
-          labelName = await classifyEmailOpenAI(emailData, tagsOfUser);
-        }
+        // const useModelAPI = MODEL_TEST_USERS.includes(clerkUserId);
+
+        const modelResult = await classifyEmailModel({
+          user_id: clerkUserId,
+          subject: emailData.subject,
+          sender: emailData.from,
+          body: emailData.bodySnippet,
+          labels: tagsOfUser.map((tag: any) => tag.tag.name),
+          use_llm: user.use_external_ai_processing,
+        });
+        labelName = modelResult.label;
       }
 
       if (labelName === "") {
