@@ -40,7 +40,7 @@ const LabelsNotInGmail = () => {
         selectedNames.forEach((name) => {
             const label = data?.labelsNotInDb.find(l => l.name === name);
             const color = label?.color?.backgroundColor || '#000000';
-            mutation.mutateAsync({ tag: name, color: color })
+            mutation.mutateAsync({ tag: name, color: color,description:'' })
         })
 
         setOpen(false)
