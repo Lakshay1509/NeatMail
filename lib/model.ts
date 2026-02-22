@@ -68,7 +68,6 @@ export async function classifyEmail(
       throw new Error("labels array cannot be empty");
     }
 
-    console.log(request);
 
     const labelMap = new Map<string, string>();
     request.labels.forEach((label) => {
