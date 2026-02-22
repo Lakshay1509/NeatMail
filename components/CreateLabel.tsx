@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select"
 import { Plus } from "lucide-react"
 import { colors } from "@/lib/colors"
+import { Textarea } from "./ui/textarea"
 
 
 const RESERVED_KEYWORDS = new Set([
@@ -54,6 +55,7 @@ const formSchema = z.object({
     }
   ),
     color: z.string().min(1, "Color is required"),
+    description:z.string().min(10,"More than 10 words required").max(500,"Less than 500 words required")
 })
 
 const CreateLabel = () => {
@@ -70,7 +72,7 @@ const CreateLabel = () => {
     const mutation = addCustomTags();
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
-        await mutation.mutateAsync({ tag: values.name, color: values.color });
+        await mutation.mutateAsync({ tag: values.name, color: values.color, description:values.description});
         setOpen(false);
         form.reset();
     }
@@ -110,6 +112,23 @@ const CreateLabel = () => {
                         )}
                     />
                     {form.formState.errors.name && <span className="text-xs text-red-500">{form.formState.errors.name.message}</span>}
+                </div>
+                <Label htmlFor="description" className="text-right">
+                Description
+                </Label>
+                <div className="col-span-3">
+                    <Controller
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                            <Textarea
+                                id="description"
+                                placeholder="What is this for ?"
+                                {...field}
+                            />
+                        )}
+                    />
+                    {form.formState.errors.description && <span className="text-xs text-red-500">{form.formState.errors.description.message}</span>}
                 </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">

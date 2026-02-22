@@ -15,7 +15,8 @@ const isPublicApiRoute = createRouteMatcher([
   '/api/gmail-webhook/:path*',
   '/api/clerk/:path*',
   '/api/dodowebhook/:path*',
-  '/api/cron/:path*'
+  '/api/cron/:path*',
+  '/api/inngest/:path*'
 ]);
 
 const isGmailWebhook = createRouteMatcher([

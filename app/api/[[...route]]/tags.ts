@@ -7,6 +7,8 @@ import { colors } from "@/lib/colors";
 import { google } from "googleapis";
 import { getGmailClient } from "@/lib/gmail";
 import { getTagsUser } from "@/lib/supabase";
+import { addUserLabel, deleteUserLabel } from "@/lib/model";
+import { inngest } from "@/lib/inngest";
 
 const app = new Hono()
 
@@ -161,6 +163,7 @@ const app = new Hono()
       z.object({
         tag: z.string(),
         color: z.string(),
+        description: z.string(),
       }),
     ),
     async (ctx) => {
@@ -168,8 +171,6 @@ const app = new Hono()
       if (!userId) {
         return ctx.json({ error: "Unuathorized" }, 401);
       }
-
-      //use txn
 
       const values = ctx.req.valid("json");
 
@@ -212,6 +213,17 @@ const app = new Hono()
         return ctx.json({ error: "Error creating tag" }, 500);
       }
 
+      // Fire and forget — runs in background, user gets instant response
+      await inngest.send({
+        name: "tag/label.add",
+        data: {
+          user_id: userId,
+          tag_id: data.id,
+          label_name: values.tag.trim().toLowerCase(),
+          description: values.description,
+        },
+      });
+
       return ctx.json({ data }, 200);
     },
   )
@@ -245,22 +257,11 @@ const app = new Hono()
           return ctx.json({ error: "Error getting data for this tag" }, 500);
         }
 
-        const googleAccount = (
-          await clerk.users.getUserOauthAccessToken(userId, "google")
-        ).data.find((acc) => acc.token);
-
-        if (!googleAccount?.token) {
-          throw new Error("No valid Google access token found");
-        }
-
-        const oauth2Client = new google.auth.OAuth2();
-        oauth2Client.setCredentials({ access_token: googleAccount.token });
-
-        const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+        const gmail = await getGmailClient(userId)
 
         const { data } = await gmail.users.labels.list({
           userId: "me",
-          fields: "labels(id,name)", // Only fetch what you need
+          fields: "labels(id,name)", 
         });
 
         const gmailLabel = data.labels?.find(
@@ -279,6 +280,12 @@ const app = new Hono()
             id: exist.id,
           },
         });
+
+        //todo revert when failed
+        await deleteUserLabel({
+          user_id:userId,
+          label_name:exist.name.toLowerCase()
+        })
 
         if (!response) {
           return ctx.json({ error: "Error deleting data for this tag" }, 500);
