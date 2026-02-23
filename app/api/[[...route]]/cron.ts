@@ -4,6 +4,7 @@ import { db } from "@/lib/prisma";
 import { clerkClient } from "@clerk/nextjs/server";
 import { activateWatch } from "@/lib/gmail";
 import { getDodoPayments } from "./checkout";
+import { updateHistoryId } from "@/lib/supabase";
 
 const app = new Hono()
   .get("/delete-user", async (ctx) => {
@@ -101,7 +102,11 @@ const app = new Hono()
 
       for (const sub of activeSubscriptions) {
         try {
-          await activateWatch(sub.dodoSubscriptionId);
+          const response = await activateWatch(sub.dodoSubscriptionId);
+
+          await updateHistoryId(sub.customerEmail,response.history_id,true)
+
+
           results.successful++;
           console.log(`✅ Watch renewed for: ${sub.customerEmail}`);
         } catch (error) {
