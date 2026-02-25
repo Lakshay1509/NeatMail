@@ -8,7 +8,8 @@
     <a href="#features">Features</a> •
     <a href="#getting-started">Getting Started</a> •
     <a href="#deployment">Deployment</a> •
-    <a href="#tech-stack">Tech Stack</a>
+    <a href="#tech-stack">Tech Stack</a> •
+    <a href="https://github.com/Lakshay1509/neatmail_model">In-House Model</a>
   </p>
 
   ![License](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -220,6 +221,7 @@ graph LR
 ### AI & Integrations
 - **Email Classification**: OpenAI 6.15.0 (GPT-4 Mini)
 - **Draft Generation**: OpenAI 6.15.0 (GPT-4 Mini)
+- **In-House Model**: [neatmail_model](https://github.com/Lakshay1509/neatmail_model) — our proprietary classification model built and maintained in-house (still under work)
 - **Email API**: Google APIs 169.0.0 (Gmail API)
 - **Webhooks**: Google Cloud Pub/Sub
 
