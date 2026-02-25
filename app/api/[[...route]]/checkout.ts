@@ -107,7 +107,7 @@ const app = new Hono()
           },
         ],
         subscription_data: {
-          trial_period_days: trialTaken ? 0 : 7,
+          trial_period_days: trialTaken ? 0 : 14,
         },
         customer: {
           email: emailAddress,
