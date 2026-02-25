@@ -47,7 +47,7 @@ const TrackedEmail = ({ limit, dashboard }: Props) => {
 
     const emails = data?.pages.flatMap((page) => page.emails) || [];
 
-    if (isLoading || customLoading) return (
+    if (isLoading || customLoading||subscribedLoading) return (
         <div className="space-y-2 p-4">
             {[...Array(5)].map((_, i) => (
                 <div key={i} className="h-16 bg-gray-50 rounded-xl animate-pulse"></div>
@@ -66,12 +66,12 @@ const TrackedEmail = ({ limit, dashboard }: Props) => {
     }
 
     if(subscribedData?.subscribed!==true && emails.length===0){
-        <div className={`flex flex-col justify-center items-center w-full ${dashboard ? "min-h-[40vh]" : "min-h-[60vh]"}`}>
+        return (
+            <div className={`flex flex-col justify-center items-center w-full ${dashboard ? "min-h-[40vh]" : "min-h-[60vh]"}`}>
                 <Image src='/no-sub.webp' alt="error" width={200} height={200} />
                 <p className="mt-4 text-gray-700">You are not subscribed!</p>
-
             </div>
-
+        );
     }
 
 

@@ -17,7 +17,7 @@ import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
 
 const DraftEmails = () => {
     const { data, isLoading, isError } = useGetUserDrafts();
-    const {data:subscribedData,isLoading:subscribedLoading} = useGetUserSubscribed();
+    const { data: subscribedData, isLoading: subscribedLoading } = useGetUserSubscribed();
 
     const formatDate = (timestamp: string | null) => {
         if (!timestamp) return "-";
@@ -33,22 +33,23 @@ const DraftEmails = () => {
     if (isLoading || subscribedLoading) return <div className="h-48 bg-gray-50 rounded-xl animate-pulse"></div>
     if (isError) {
         return (
-        <div className="flex flex-col justify-center items-center w-full min-h-[60vh]">
-            <Image src='/error.webp' alt="error" width={200} height={200} />
-            <p className="mt-4 text-gray-700">Error getting your drafts</p>
+            <div className="flex flex-col justify-center items-center w-full min-h-[60vh]">
+                <Image src='/error.webp' alt="error" width={200} height={200} />
+                <p className="mt-4 text-gray-700">Error getting your drafts</p>
 
-        </div>
+            </div>
         )
     }
 
-    if(subscribedData?.subscribed!==true && data?.data.length===0){
-           <div className="flex flex-col justify-center items-center w-full min-h-[60vh]">
-                    <Image src='/no-sub.webp' alt="error" width={200} height={200} />
-                    <p className="mt-4 text-gray-700">You are not subscribed!</p>
-    
-                </div>
-    
-        }
+    if (subscribedData?.subscribed !== true && data?.data.length === 0) {
+        return (
+            <div className="flex flex-col justify-center items-center w-full min-h-[60vh]">
+                <Image src='/no-sub.webp' alt="error" width={200} height={200} />
+                <p className="mt-4 text-gray-700">You are not subscribed!</p>
+
+            </div>
+        )
+    }
 
     if (data?.data.length === 0) {
         return (
