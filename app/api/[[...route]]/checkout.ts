@@ -88,8 +88,15 @@ const app = new Hono()
       const country = ctx.req.header("x-vercel-ip-country") ?? "";
       const productId =
         country === "IN"
-          ? process.env.DODO_PRODUCT_ID_INDIA!
-          : process.env.DODO_PRODUCT_ID_GLOBAL!;
+          ? process.env.DODO_PRODUCT_ID_INDIA
+          : process.env.DODO_PRODUCT_ID_GLOBAL;
+
+      if (!productId) {
+        console.error(
+          `Missing product ID env var for country "${country}": expected ${country === "IN" ? "DODO_PRODUCT_ID_INDIA" : "DODO_PRODUCT_ID_GLOBAL"}`,
+        );
+        return ctx.json({ error: "Payment configuration error" }, 500);
+      }
 
       // Create new checkout session
       const checkout = await dodopayments.checkoutSessions.create({
