@@ -14,6 +14,8 @@ export type UserTag = ({
   tag_id: string;
 });
 
+// This function is being deprecated 
+
 export async function classifyEmail(email: {
   subject: string;
   from: string;
