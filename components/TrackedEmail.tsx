@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useGetCustomTags } from "@/features/tags/use-get-custom-tag";
 import { Star } from "lucide-react";
+import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
 
 interface Props {
     limit: number,
@@ -16,6 +17,7 @@ interface Props {
 const TrackedEmail = ({ limit, dashboard }: Props) => {
     const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } = useGetUserEmails(limit);
     const { data: customData, isLoading: customLoading, isError: customError } = useGetCustomTags();
+    const {data:subscribedData,isLoading:subscribedLoading} = useGetUserSubscribed();
 
     const formatDate = (timestamp: string | null) => {
         if (!timestamp) return "-";
@@ -61,6 +63,15 @@ const TrackedEmail = ({ limit, dashboard }: Props) => {
 
             </div>
         )
+    }
+
+    if(subscribedData?.subscribed!==true && emails.length===0){
+        <div className={`flex flex-col justify-center items-center w-full ${dashboard ? "min-h-[40vh]" : "min-h-[60vh]"}`}>
+                <Image src='/no-sub.webp' alt="error" width={200} height={200} />
+                <p className="mt-4 text-gray-700">You are not subscribed!</p>
+
+            </div>
+
     }
 
 
