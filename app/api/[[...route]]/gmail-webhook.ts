@@ -10,6 +10,7 @@ import {
   markMessageProcessed,
   markThreadProcessed,
   unmarkMessageProcessed,
+  unmarkThreadProcessed,
 } from "@/lib/redis";
 import {
   addDraftToDB,
@@ -41,6 +42,7 @@ const authClient = new OAuth2Client();
 
 const app = new Hono().post("/", async (ctx) => {
   let currentMessageId: string | null = null;
+  let currentThreadId: string | null = null;
 
   try {
     const authHeader = ctx.req.header("Authorization");
@@ -158,9 +160,12 @@ const app = new Hono().post("/", async (ctx) => {
         bodySnippet: email.data.snippet || "",
       };
 
+      currentThreadId = String(emailData.threadId);
+
       // if thread as processed for 24 hours to prevent duplication tags
       if (await isThreadProcessed(String(emailData.threadId))) {
         currentMessageId = null;
+        currentThreadId = null;
         continue;
       }
 
@@ -257,6 +262,7 @@ const app = new Hono().post("/", async (ctx) => {
       }
 
       currentMessageId = null;
+      currentThreadId = null;
     }
 
     await updateHistoryId(emailAddress, String(newHistoryId), true);
@@ -266,6 +272,9 @@ const app = new Hono().post("/", async (ctx) => {
     console.error("❌ Error processing webhook:", error);
     if (currentMessageId) {
       await unmarkMessageProcessed(currentMessageId);
+    }
+    if (currentThreadId) {
+      await unmarkThreadProcessed(currentThreadId);
     }
     
     return ctx.json(

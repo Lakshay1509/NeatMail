@@ -29,6 +29,10 @@ export async function markThreadProcessed(threadId: string) {
   await redis.setex(`processed:thread:${threadId}`, 86400, 'true');
 }
 
+export async function unmarkThreadProcessed(threadId: string) {
+  await redis.del(`processed:thread:${threadId}`);
+}
+
 
 export async function isDodoWebhookProcessed(webhookId: string): Promise<boolean> {
   const exists = await redis.exists(`processed:dodo:${webhookId}`);
