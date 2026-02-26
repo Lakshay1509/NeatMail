@@ -257,10 +257,10 @@ const app = new Hono().post("/", async (ctx) => {
     return ctx.json({ success: true }, 200);
   } catch (error) {
     console.error("❌ Error processing webhook:", error);
-    // Return 200 to prevent Pub/Sub retries
+    
     return ctx.json(
-      { success: true, error: "Processing failed but acknowledged" },
-      200,
+      { success: false, error: "Processing failed of webhook" },
+      500,
     );
   }
 });
