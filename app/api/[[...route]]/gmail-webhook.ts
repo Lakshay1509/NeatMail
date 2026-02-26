@@ -9,6 +9,7 @@ import {
   isThreadProcessed,
   markMessageProcessed,
   markThreadProcessed,
+  unmarkMessageProcessed,
 } from "@/lib/redis";
 import {
   addDraftToDB,
@@ -39,6 +40,8 @@ const authClient = new OAuth2Client();
 // ];
 
 const app = new Hono().post("/", async (ctx) => {
+  let currentMessageId: string | null = null;
+
   try {
     const authHeader = ctx.req.header("Authorization");
 
@@ -136,6 +139,7 @@ const app = new Hono().post("/", async (ctx) => {
 
       // Mark as processed immediately to prevent race conditions
       await markMessageProcessed(messageId);
+      currentMessageId = messageId;
 
       const email = await gmail.users.messages.get({
         userId: "me",
@@ -156,6 +160,7 @@ const app = new Hono().post("/", async (ctx) => {
 
       // if thread as processed for 24 hours to prevent duplication tags
       if (await isThreadProcessed(String(emailData.threadId))) {
+        currentMessageId = null;
         continue;
       }
 
@@ -250,6 +255,8 @@ const app = new Hono().post("/", async (ctx) => {
       if (draftBody.trim().length > 0) {
         addDraftToDB(clerkUserId, String(messageId), draftBody, emailData.from);
       }
+
+      currentMessageId = null;
     }
 
     await updateHistoryId(emailAddress, String(newHistoryId), true);
@@ -257,6 +264,9 @@ const app = new Hono().post("/", async (ctx) => {
     return ctx.json({ success: true }, 200);
   } catch (error) {
     console.error("❌ Error processing webhook:", error);
+    if (currentMessageId) {
+      await unmarkMessageProcessed(currentMessageId);
+    }
     
     return ctx.json(
       { success: false, error: "Processing failed of webhook" },

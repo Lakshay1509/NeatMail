@@ -15,6 +15,10 @@ export async function markMessageProcessed(messageId: string) {
   await redis.setex(`processed:msg:${messageId}`, 86400, 'true');
 }
 
+export async function unmarkMessageProcessed(messageId: string) {
+  await redis.del(`processed:msg:${messageId}`);
+}
+
 export async function isThreadProcessed(threadId: string): Promise<boolean> {
   const exists = await redis.exists(`processed:thread:${threadId}`);
   return exists === 1;
