@@ -193,7 +193,7 @@ const UserLabelSettings = () => {
 							Labels made by you for your personlized workflow!
 						</p>
 					</div>
-					<CreateLabel/>
+					<CreateLabel enabled={subData?.subscribed ? !subData.subscribed : true}/>
 
 				</div>
 

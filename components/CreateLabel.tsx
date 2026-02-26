@@ -29,6 +29,10 @@ import { colors } from "@/lib/colors"
 import { Textarea } from "./ui/textarea"
 
 
+interface CreateLabelInterface{
+    enabled:boolean
+}
+
 const RESERVED_KEYWORDS = new Set([
   "action needed",
   "pending response",
@@ -37,13 +41,15 @@ const RESERVED_KEYWORDS = new Set([
   "discussion",
   "read only",
   "resolved",
-  "marketing"
+  "marketing",
+  "finance"
 ]);
 
 const formSchema = z.object({
     name: z
   .string()
   .min(1, "Name is required")
+  .max(50,"Less than 50 words")
   .transform((val) => val.trim())
   .refine(
     (val) => {
@@ -55,10 +61,10 @@ const formSchema = z.object({
     }
   ),
     color: z.string().min(1, "Color is required"),
-    description:z.string().min(10,"More than 10 words required").max(500,"Less than 500 words required")
+    description:z.string().min(10,"More than 10 words required").max(100,"Less than 100 words required")
 })
 
-const CreateLabel = () => {
+const CreateLabel = ({enabled}:CreateLabelInterface) => {
     const [open, setOpen] = useState(false)
     
     const form = useForm<z.infer<typeof formSchema>>({
@@ -80,7 +86,7 @@ const CreateLabel = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" >
+        <Button variant="outline" size="sm" disabled={enabled}>
             <Plus className="h-4 w-4" />
             Add 
         </Button>
