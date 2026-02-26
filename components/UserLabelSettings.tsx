@@ -217,9 +217,9 @@ const UserLabelSettings = () => {
 										className="w-5 h-5 border-gray-300"
 									/>
 								</div>
-								<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+								<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 min-w-0">
 									<span
-										className="px-3 py-1 rounded-full text-white text-xs font-semibold tracking-wide whitespace-nowrap w-fit shadow-sm"
+										className="px-3 py-1 rounded-full text-white text-xs font-semibold tracking-wide w-fit shadow-sm max-w-full overflow-hidden text-ellipsis whitespace-nowrap"
 										style={{ backgroundColor: category.color }}
 									>
 										{category.name}
