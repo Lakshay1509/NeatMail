@@ -101,11 +101,8 @@ const CreateLabel = ({enabled}:CreateLabelInterface) => {
         
         <form onSubmit={form.handleSubmit(onSubmit)}>
             <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                Name
-                </Label>
-                <div className="col-span-3">
+                <div className="grid gap-2">
+                    <Label htmlFor="name">Name</Label>
                     <Controller
                         control={form.control}
                         name="name"
@@ -119,10 +116,9 @@ const CreateLabel = ({enabled}:CreateLabelInterface) => {
                     />
                     {form.formState.errors.name && <span className="text-xs text-red-500">{form.formState.errors.name.message}</span>}
                 </div>
-                <Label htmlFor="description" className="text-right">
-                Description
-                </Label>
-                <div className="col-span-3">
+                
+                <div className="grid gap-2">
+                    <Label htmlFor="description">Description</Label>
                     <Controller
                         control={form.control}
                         name="description"
@@ -136,12 +132,9 @@ const CreateLabel = ({enabled}:CreateLabelInterface) => {
                     />
                     {form.formState.errors.description && <span className="text-xs text-red-500">{form.formState.errors.description.message}</span>}
                 </div>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="color" className="text-right">
-                Color
-                </Label>
-                <div className="col-span-3">
+            
+                <div className="grid gap-2">
+                    <Label htmlFor="color">Color</Label>
                     <Controller
                         control={form.control}
                         name="color"
@@ -153,7 +146,10 @@ const CreateLabel = ({enabled}:CreateLabelInterface) => {
                                 <SelectContent className="max-h-[300px]">
                                     {colors.map((c) => (
                                         <SelectItem key={c.value} value={c.value}>
-                                                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: c.value }} />
+                                            <div className="flex items-center justify-center gap-2">
+                                                <div className="w-4 h-4 rounded-full border border-gray-200" style={{ backgroundColor: c.value }} />
+                                                
+                                            </div>
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -163,11 +159,11 @@ const CreateLabel = ({enabled}:CreateLabelInterface) => {
                     {form.formState.errors.color && <span className="text-xs text-red-500">{form.formState.errors.color.message}</span>}
                 </div>
             </div>
-            </div>
+            
             <DialogFooter>
-            <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? "Creating..." : "Create Label"}
-            </Button>
+                <Button type="submit" className="w-full sm:w-auto" disabled={mutation.isPending}>
+                    {mutation.isPending ? "Creating..." : "Create Label"}
+                </Button>
             </DialogFooter>
         </form>
       </DialogContent>
