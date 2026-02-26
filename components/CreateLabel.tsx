@@ -86,7 +86,7 @@ const CreateLabel = ({enabled}:CreateLabelInterface) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" disabled={enabled}>
+        <Button variant="outline" size="sm" disabled={!enabled}>
             <Plus className="h-4 w-4" />
             Add 
         </Button>
