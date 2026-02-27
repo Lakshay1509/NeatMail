@@ -143,6 +143,7 @@ INNGEST_SIGNING_KEY=
 
 #Classification URL
 CLASSIFICATION_API_URL=
+CLASSIFICATION_API_BEARER_TOKEN=
 
 # App Configuration
 NODE_ENV=development
@@ -174,7 +175,7 @@ graph LR
     A[Gmail] -->|Push Notification| B[Google Pub/Sub]
     B -->|Webhook| C[NeatMail API]
     C -->|Fetch Email| A
-    C -->|Classify| D[OpenAI GPT-4]
+    C -->|Classify| D[Classification Model]
     D -->|Label Name| C
     C -->|Apply Label| A
     C -->|Generate Draft| D
@@ -219,7 +220,6 @@ graph LR
 - **Webhooks**: Svix 1.84.1
 
 ### AI & Integrations
-- **Email Classification**: OpenAI 6.15.0 (GPT-4 Mini)
 - **Draft Generation**: OpenAI 6.15.0 (GPT-4 Mini)
 - **In-House Model**: [neatmail_model](https://github.com/Lakshay1509/neatmail_model) — our proprietary classification model built and maintained in-house (still under work)
 - **Email API**: Google APIs 169.0.0 (Gmail API)

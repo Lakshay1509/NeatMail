@@ -47,11 +47,19 @@ export interface ApiErrorResponse {
   error?: string;
 }
 
+const classificationApiAuthorization =
+  process.env.CLASSIFICATION_API_BEARER_TOKEN
+    ? `Bearer ${process.env.CLASSIFICATION_API_BEARER_TOKEN}`
+    : undefined;
+
 const API_CONFIG = {
   baseURL: process.env.CLASSIFICATION_API_URL,
   timeout: 120000,
   headers: {
     "Content-Type": "application/json",
+    ...(classificationApiAuthorization
+      ? { Authorization: classificationApiAuthorization }
+      : {}),
   },
 };
 
