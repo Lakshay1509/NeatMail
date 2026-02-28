@@ -58,7 +58,8 @@ export const ModelName = {
   drafts: 'drafts',
   Subscription: 'Subscription',
   PaymentHistory: 'PaymentHistory',
-  Refund: 'Refund'
+  Refund: 'Refund',
+  draft_preference: 'draft_preference'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -84,9 +85,9 @@ export const User_tokensScalarFieldEnum = {
   updated_at: 'updated_at',
   last_history_id: 'last_history_id',
   watch_activated: 'watch_activated',
-  use_external_ai_processing: 'use_external_ai_processing',
+  delete_at: 'delete_at',
   deleted_flag: 'deleted_flag',
-  delete_at: 'delete_at'
+  use_external_ai_processing: 'use_external_ai_processing'
 } as const
 
 export type User_tokensScalarFieldEnum = (typeof User_tokensScalarFieldEnum)[keyof typeof User_tokensScalarFieldEnum]
@@ -189,7 +190,6 @@ export type PaymentHistoryScalarFieldEnum = (typeof PaymentHistoryScalarFieldEnu
 export const RefundScalarFieldEnum = {
   id: 'id',
   clerkUserId: 'clerkUserId',
-  paymentId: 'paymentId',
   dodoRefundId: 'dodoRefundId',
   dodoPaymentId: 'dodoPaymentId',
   amount: 'amount',
@@ -198,10 +198,25 @@ export const RefundScalarFieldEnum = {
   reason: 'reason',
   isPartial: 'isPartial',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  paymentId: 'paymentId'
 } as const
 
 export type RefundScalarFieldEnum = (typeof RefundScalarFieldEnum)[keyof typeof RefundScalarFieldEnum]
+
+
+export const Draft_preferenceScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  draftPrompt: 'draftPrompt',
+  signature: 'signature',
+  fontSize: 'fontSize',
+  fontColor: 'fontColor',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type Draft_preferenceScalarFieldEnum = (typeof Draft_preferenceScalarFieldEnum)[keyof typeof Draft_preferenceScalarFieldEnum]
 
 
 export const SortOrder = {

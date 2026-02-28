@@ -31,9 +31,9 @@ export type User_tokensMinAggregateOutputType = {
   updated_at: Date | null
   last_history_id: string | null
   watch_activated: boolean | null
-  use_external_ai_processing: boolean | null
-  deleted_flag: boolean | null
   delete_at: Date | null
+  deleted_flag: boolean | null
+  use_external_ai_processing: boolean | null
 }
 
 export type User_tokensMaxAggregateOutputType = {
@@ -43,9 +43,9 @@ export type User_tokensMaxAggregateOutputType = {
   updated_at: Date | null
   last_history_id: string | null
   watch_activated: boolean | null
-  use_external_ai_processing: boolean | null
-  deleted_flag: boolean | null
   delete_at: Date | null
+  deleted_flag: boolean | null
+  use_external_ai_processing: boolean | null
 }
 
 export type User_tokensCountAggregateOutputType = {
@@ -55,9 +55,9 @@ export type User_tokensCountAggregateOutputType = {
   updated_at: number
   last_history_id: number
   watch_activated: number
-  use_external_ai_processing: number
-  deleted_flag: number
   delete_at: number
+  deleted_flag: number
+  use_external_ai_processing: number
   _all: number
 }
 
@@ -69,9 +69,9 @@ export type User_tokensMinAggregateInputType = {
   updated_at?: true
   last_history_id?: true
   watch_activated?: true
-  use_external_ai_processing?: true
-  deleted_flag?: true
   delete_at?: true
+  deleted_flag?: true
+  use_external_ai_processing?: true
 }
 
 export type User_tokensMaxAggregateInputType = {
@@ -81,9 +81,9 @@ export type User_tokensMaxAggregateInputType = {
   updated_at?: true
   last_history_id?: true
   watch_activated?: true
-  use_external_ai_processing?: true
-  deleted_flag?: true
   delete_at?: true
+  deleted_flag?: true
+  use_external_ai_processing?: true
 }
 
 export type User_tokensCountAggregateInputType = {
@@ -93,9 +93,9 @@ export type User_tokensCountAggregateInputType = {
   updated_at?: true
   last_history_id?: true
   watch_activated?: true
-  use_external_ai_processing?: true
-  deleted_flag?: true
   delete_at?: true
+  deleted_flag?: true
+  use_external_ai_processing?: true
   _all?: true
 }
 
@@ -178,9 +178,9 @@ export type User_tokensGroupByOutputType = {
   updated_at: Date
   last_history_id: string | null
   watch_activated: boolean
-  use_external_ai_processing: boolean
-  deleted_flag: boolean
   delete_at: Date | null
+  deleted_flag: boolean
+  use_external_ai_processing: boolean
   _count: User_tokensCountAggregateOutputType | null
   _min: User_tokensMinAggregateOutputType | null
   _max: User_tokensMaxAggregateOutputType | null
@@ -211,9 +211,10 @@ export type user_tokensWhereInput = {
   updated_at?: Prisma.DateTimeFilter<"user_tokens"> | Date | string
   last_history_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
   watch_activated?: Prisma.BoolFilter<"user_tokens"> | boolean
-  use_external_ai_processing?: Prisma.BoolFilter<"user_tokens"> | boolean
-  deleted_flag?: Prisma.BoolFilter<"user_tokens"> | boolean
   delete_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
+  deleted_flag?: Prisma.BoolFilter<"user_tokens"> | boolean
+  use_external_ai_processing?: Prisma.BoolFilter<"user_tokens"> | boolean
+  draft_preference?: Prisma.XOR<Prisma.Draft_preferenceNullableScalarRelationFilter, Prisma.draft_preferenceWhereInput> | null
   drafts?: Prisma.DraftsListRelationFilter
   email_tracked?: Prisma.Email_trackedListRelationFilter
   payment_history?: Prisma.PaymentHistoryListRelationFilter
@@ -230,9 +231,10 @@ export type user_tokensOrderByWithRelationInput = {
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrderInput | Prisma.SortOrder
   watch_activated?: Prisma.SortOrder
-  use_external_ai_processing?: Prisma.SortOrder
-  deleted_flag?: Prisma.SortOrder
   delete_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  deleted_flag?: Prisma.SortOrder
+  use_external_ai_processing?: Prisma.SortOrder
+  draft_preference?: Prisma.draft_preferenceOrderByWithRelationInput
   drafts?: Prisma.draftsOrderByRelationAggregateInput
   email_tracked?: Prisma.email_trackedOrderByRelationAggregateInput
   payment_history?: Prisma.PaymentHistoryOrderByRelationAggregateInput
@@ -252,9 +254,10 @@ export type user_tokensWhereUniqueInput = Prisma.AtLeast<{
   updated_at?: Prisma.DateTimeFilter<"user_tokens"> | Date | string
   last_history_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
   watch_activated?: Prisma.BoolFilter<"user_tokens"> | boolean
-  use_external_ai_processing?: Prisma.BoolFilter<"user_tokens"> | boolean
-  deleted_flag?: Prisma.BoolFilter<"user_tokens"> | boolean
   delete_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
+  deleted_flag?: Prisma.BoolFilter<"user_tokens"> | boolean
+  use_external_ai_processing?: Prisma.BoolFilter<"user_tokens"> | boolean
+  draft_preference?: Prisma.XOR<Prisma.Draft_preferenceNullableScalarRelationFilter, Prisma.draft_preferenceWhereInput> | null
   drafts?: Prisma.DraftsListRelationFilter
   email_tracked?: Prisma.Email_trackedListRelationFilter
   payment_history?: Prisma.PaymentHistoryListRelationFilter
@@ -271,9 +274,9 @@ export type user_tokensOrderByWithAggregationInput = {
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrderInput | Prisma.SortOrder
   watch_activated?: Prisma.SortOrder
-  use_external_ai_processing?: Prisma.SortOrder
-  deleted_flag?: Prisma.SortOrder
   delete_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  deleted_flag?: Prisma.SortOrder
+  use_external_ai_processing?: Prisma.SortOrder
   _count?: Prisma.user_tokensCountOrderByAggregateInput
   _max?: Prisma.user_tokensMaxOrderByAggregateInput
   _min?: Prisma.user_tokensMinOrderByAggregateInput
@@ -289,9 +292,9 @@ export type user_tokensScalarWhereWithAggregatesInput = {
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"user_tokens"> | Date | string
   last_history_id?: Prisma.StringNullableWithAggregatesFilter<"user_tokens"> | string | null
   watch_activated?: Prisma.BoolWithAggregatesFilter<"user_tokens"> | boolean
-  use_external_ai_processing?: Prisma.BoolWithAggregatesFilter<"user_tokens"> | boolean
-  deleted_flag?: Prisma.BoolWithAggregatesFilter<"user_tokens"> | boolean
   delete_at?: Prisma.DateTimeNullableWithAggregatesFilter<"user_tokens"> | Date | string | null
+  deleted_flag?: Prisma.BoolWithAggregatesFilter<"user_tokens"> | boolean
+  use_external_ai_processing?: Prisma.BoolWithAggregatesFilter<"user_tokens"> | boolean
 }
 
 export type user_tokensCreateInput = {
@@ -301,9 +304,10 @@ export type user_tokensCreateInput = {
   updated_at?: Date | string
   last_history_id?: string | null
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   drafts?: Prisma.draftsCreateNestedManyWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
@@ -320,9 +324,10 @@ export type user_tokensUncheckedCreateInput = {
   updated_at?: Date | string
   last_history_id?: string | null
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   drafts?: Prisma.draftsUncheckedCreateNestedManyWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -339,9 +344,10 @@ export type user_tokensUpdateInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   drafts?: Prisma.draftsUpdateManyWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
@@ -358,9 +364,10 @@ export type user_tokensUncheckedUpdateInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   drafts?: Prisma.draftsUncheckedUpdateManyWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -377,9 +384,9 @@ export type user_tokensCreateManyInput = {
   updated_at?: Date | string
   last_history_id?: string | null
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
 }
 
 export type user_tokensUpdateManyMutationInput = {
@@ -389,9 +396,9 @@ export type user_tokensUpdateManyMutationInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type user_tokensUncheckedUpdateManyInput = {
@@ -401,9 +408,9 @@ export type user_tokensUncheckedUpdateManyInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type user_tokensCountOrderByAggregateInput = {
@@ -413,9 +420,9 @@ export type user_tokensCountOrderByAggregateInput = {
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrder
   watch_activated?: Prisma.SortOrder
-  use_external_ai_processing?: Prisma.SortOrder
-  deleted_flag?: Prisma.SortOrder
   delete_at?: Prisma.SortOrder
+  deleted_flag?: Prisma.SortOrder
+  use_external_ai_processing?: Prisma.SortOrder
 }
 
 export type user_tokensMaxOrderByAggregateInput = {
@@ -425,9 +432,9 @@ export type user_tokensMaxOrderByAggregateInput = {
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrder
   watch_activated?: Prisma.SortOrder
-  use_external_ai_processing?: Prisma.SortOrder
-  deleted_flag?: Prisma.SortOrder
   delete_at?: Prisma.SortOrder
+  deleted_flag?: Prisma.SortOrder
+  use_external_ai_processing?: Prisma.SortOrder
 }
 
 export type user_tokensMinOrderByAggregateInput = {
@@ -437,9 +444,9 @@ export type user_tokensMinOrderByAggregateInput = {
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrder
   watch_activated?: Prisma.SortOrder
-  use_external_ai_processing?: Prisma.SortOrder
-  deleted_flag?: Prisma.SortOrder
   delete_at?: Prisma.SortOrder
+  deleted_flag?: Prisma.SortOrder
+  use_external_ai_processing?: Prisma.SortOrder
 }
 
 export type User_tokensNullableScalarRelationFilter = {
@@ -572,6 +579,20 @@ export type user_tokensUpdateOneRequiredWithoutRefundsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.user_tokensUpdateToOneWithWhereWithoutRefundsInput, Prisma.user_tokensUpdateWithoutRefundsInput>, Prisma.user_tokensUncheckedUpdateWithoutRefundsInput>
 }
 
+export type user_tokensCreateNestedOneWithoutDraft_preferenceInput = {
+  create?: Prisma.XOR<Prisma.user_tokensCreateWithoutDraft_preferenceInput, Prisma.user_tokensUncheckedCreateWithoutDraft_preferenceInput>
+  connectOrCreate?: Prisma.user_tokensCreateOrConnectWithoutDraft_preferenceInput
+  connect?: Prisma.user_tokensWhereUniqueInput
+}
+
+export type user_tokensUpdateOneRequiredWithoutDraft_preferenceNestedInput = {
+  create?: Prisma.XOR<Prisma.user_tokensCreateWithoutDraft_preferenceInput, Prisma.user_tokensUncheckedCreateWithoutDraft_preferenceInput>
+  connectOrCreate?: Prisma.user_tokensCreateOrConnectWithoutDraft_preferenceInput
+  upsert?: Prisma.user_tokensUpsertWithoutDraft_preferenceInput
+  connect?: Prisma.user_tokensWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.user_tokensUpdateToOneWithWhereWithoutDraft_preferenceInput, Prisma.user_tokensUpdateWithoutDraft_preferenceInput>, Prisma.user_tokensUncheckedUpdateWithoutDraft_preferenceInput>
+}
+
 export type user_tokensCreateWithoutTagInput = {
   clerk_user_id: string
   gmail_email: string
@@ -579,9 +600,10 @@ export type user_tokensCreateWithoutTagInput = {
   updated_at?: Date | string
   last_history_id?: string | null
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   drafts?: Prisma.draftsCreateNestedManyWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
@@ -597,9 +619,10 @@ export type user_tokensUncheckedCreateWithoutTagInput = {
   updated_at?: Date | string
   last_history_id?: string | null
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   drafts?: Prisma.draftsUncheckedCreateNestedManyWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -631,9 +654,10 @@ export type user_tokensUpdateWithoutTagInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   drafts?: Prisma.draftsUpdateManyWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
@@ -649,9 +673,10 @@ export type user_tokensUncheckedUpdateWithoutTagInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   drafts?: Prisma.draftsUncheckedUpdateManyWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -667,9 +692,10 @@ export type user_tokensCreateWithoutUser_tagsInput = {
   updated_at?: Date | string
   last_history_id?: string | null
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   drafts?: Prisma.draftsCreateNestedManyWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
@@ -685,9 +711,10 @@ export type user_tokensUncheckedCreateWithoutUser_tagsInput = {
   updated_at?: Date | string
   last_history_id?: string | null
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   drafts?: Prisma.draftsUncheckedCreateNestedManyWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -719,9 +746,10 @@ export type user_tokensUpdateWithoutUser_tagsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   drafts?: Prisma.draftsUpdateManyWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
@@ -737,9 +765,10 @@ export type user_tokensUncheckedUpdateWithoutUser_tagsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   drafts?: Prisma.draftsUncheckedUpdateManyWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -755,9 +784,10 @@ export type user_tokensCreateWithoutEmail_trackedInput = {
   updated_at?: Date | string
   last_history_id?: string | null
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   drafts?: Prisma.draftsCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
   refunds?: Prisma.RefundCreateNestedManyWithoutUser_tokensInput
@@ -773,9 +803,10 @@ export type user_tokensUncheckedCreateWithoutEmail_trackedInput = {
   updated_at?: Date | string
   last_history_id?: string | null
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   drafts?: Prisma.draftsUncheckedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
   refunds?: Prisma.RefundUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -807,9 +838,10 @@ export type user_tokensUpdateWithoutEmail_trackedInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   drafts?: Prisma.draftsUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
   refunds?: Prisma.RefundUpdateManyWithoutUser_tokensNestedInput
@@ -825,9 +857,10 @@ export type user_tokensUncheckedUpdateWithoutEmail_trackedInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   drafts?: Prisma.draftsUncheckedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
   refunds?: Prisma.RefundUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -843,9 +876,10 @@ export type user_tokensCreateWithoutDraftsInput = {
   updated_at?: Date | string
   last_history_id?: string | null
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
   refunds?: Prisma.RefundCreateNestedManyWithoutUser_tokensInput
@@ -861,9 +895,10 @@ export type user_tokensUncheckedCreateWithoutDraftsInput = {
   updated_at?: Date | string
   last_history_id?: string | null
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
   refunds?: Prisma.RefundUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -895,9 +930,10 @@ export type user_tokensUpdateWithoutDraftsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
   refunds?: Prisma.RefundUpdateManyWithoutUser_tokensNestedInput
@@ -913,9 +949,10 @@ export type user_tokensUncheckedUpdateWithoutDraftsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
   refunds?: Prisma.RefundUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -931,9 +968,10 @@ export type user_tokensCreateWithoutSubscriptionsInput = {
   updated_at?: Date | string
   last_history_id?: string | null
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   drafts?: Prisma.draftsCreateNestedManyWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
@@ -949,9 +987,10 @@ export type user_tokensUncheckedCreateWithoutSubscriptionsInput = {
   updated_at?: Date | string
   last_history_id?: string | null
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   drafts?: Prisma.draftsUncheckedCreateNestedManyWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -983,9 +1022,10 @@ export type user_tokensUpdateWithoutSubscriptionsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   drafts?: Prisma.draftsUpdateManyWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
@@ -1001,9 +1041,10 @@ export type user_tokensUncheckedUpdateWithoutSubscriptionsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   drafts?: Prisma.draftsUncheckedUpdateManyWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -1019,9 +1060,10 @@ export type user_tokensCreateWithoutPayment_historyInput = {
   updated_at?: Date | string
   last_history_id?: string | null
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   drafts?: Prisma.draftsCreateNestedManyWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
   refunds?: Prisma.RefundCreateNestedManyWithoutUser_tokensInput
@@ -1037,9 +1079,10 @@ export type user_tokensUncheckedCreateWithoutPayment_historyInput = {
   updated_at?: Date | string
   last_history_id?: string | null
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   drafts?: Prisma.draftsUncheckedCreateNestedManyWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
   refunds?: Prisma.RefundUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -1071,9 +1114,10 @@ export type user_tokensUpdateWithoutPayment_historyInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   drafts?: Prisma.draftsUpdateManyWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
   refunds?: Prisma.RefundUpdateManyWithoutUser_tokensNestedInput
@@ -1089,9 +1133,10 @@ export type user_tokensUncheckedUpdateWithoutPayment_historyInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   drafts?: Prisma.draftsUncheckedUpdateManyWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
   refunds?: Prisma.RefundUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -1107,9 +1152,10 @@ export type user_tokensCreateWithoutRefundsInput = {
   updated_at?: Date | string
   last_history_id?: string | null
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   drafts?: Prisma.draftsCreateNestedManyWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
@@ -1125,9 +1171,10 @@ export type user_tokensUncheckedCreateWithoutRefundsInput = {
   updated_at?: Date | string
   last_history_id?: string | null
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   drafts?: Prisma.draftsUncheckedCreateNestedManyWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -1159,9 +1206,10 @@ export type user_tokensUpdateWithoutRefundsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   drafts?: Prisma.draftsUpdateManyWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
@@ -1177,12 +1225,105 @@ export type user_tokensUncheckedUpdateWithoutRefundsInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   drafts?: Prisma.draftsUncheckedUpdateManyWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
+  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUser_tokensNestedInput
+  tag?: Prisma.tagUncheckedUpdateManyWithoutUser_tokensNestedInput
+  user_tags?: Prisma.user_tagsUncheckedUpdateManyWithoutUser_tokensNestedInput
+}
+
+export type user_tokensCreateWithoutDraft_preferenceInput = {
+  clerk_user_id: string
+  gmail_email: string
+  created_at?: Date | string
+  updated_at?: Date | string
+  last_history_id?: string | null
+  watch_activated?: boolean
+  delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  drafts?: Prisma.draftsCreateNestedManyWithoutUser_tokensInput
+  email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
+  payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
+  refunds?: Prisma.RefundCreateNestedManyWithoutUser_tokensInput
+  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUser_tokensInput
+  tag?: Prisma.tagCreateNestedManyWithoutUser_tokensInput
+  user_tags?: Prisma.user_tagsCreateNestedManyWithoutUser_tokensInput
+}
+
+export type user_tokensUncheckedCreateWithoutDraft_preferenceInput = {
+  clerk_user_id: string
+  gmail_email: string
+  created_at?: Date | string
+  updated_at?: Date | string
+  last_history_id?: string | null
+  watch_activated?: boolean
+  delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  drafts?: Prisma.draftsUncheckedCreateNestedManyWithoutUser_tokensInput
+  email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
+  payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
+  refunds?: Prisma.RefundUncheckedCreateNestedManyWithoutUser_tokensInput
+  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUser_tokensInput
+  tag?: Prisma.tagUncheckedCreateNestedManyWithoutUser_tokensInput
+  user_tags?: Prisma.user_tagsUncheckedCreateNestedManyWithoutUser_tokensInput
+}
+
+export type user_tokensCreateOrConnectWithoutDraft_preferenceInput = {
+  where: Prisma.user_tokensWhereUniqueInput
+  create: Prisma.XOR<Prisma.user_tokensCreateWithoutDraft_preferenceInput, Prisma.user_tokensUncheckedCreateWithoutDraft_preferenceInput>
+}
+
+export type user_tokensUpsertWithoutDraft_preferenceInput = {
+  update: Prisma.XOR<Prisma.user_tokensUpdateWithoutDraft_preferenceInput, Prisma.user_tokensUncheckedUpdateWithoutDraft_preferenceInput>
+  create: Prisma.XOR<Prisma.user_tokensCreateWithoutDraft_preferenceInput, Prisma.user_tokensUncheckedCreateWithoutDraft_preferenceInput>
+  where?: Prisma.user_tokensWhereInput
+}
+
+export type user_tokensUpdateToOneWithWhereWithoutDraft_preferenceInput = {
+  where?: Prisma.user_tokensWhereInput
+  data: Prisma.XOR<Prisma.user_tokensUpdateWithoutDraft_preferenceInput, Prisma.user_tokensUncheckedUpdateWithoutDraft_preferenceInput>
+}
+
+export type user_tokensUpdateWithoutDraft_preferenceInput = {
+  clerk_user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  gmail_email?: Prisma.StringFieldUpdateOperationsInput | string
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  drafts?: Prisma.draftsUpdateManyWithoutUser_tokensNestedInput
+  email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
+  payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
+  refunds?: Prisma.RefundUpdateManyWithoutUser_tokensNestedInput
+  subscriptions?: Prisma.SubscriptionUpdateManyWithoutUser_tokensNestedInput
+  tag?: Prisma.tagUpdateManyWithoutUser_tokensNestedInput
+  user_tags?: Prisma.user_tagsUpdateManyWithoutUser_tokensNestedInput
+}
+
+export type user_tokensUncheckedUpdateWithoutDraft_preferenceInput = {
+  clerk_user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  gmail_email?: Prisma.StringFieldUpdateOperationsInput | string
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  drafts?: Prisma.draftsUncheckedUpdateManyWithoutUser_tokensNestedInput
+  email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
+  payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
+  refunds?: Prisma.RefundUncheckedUpdateManyWithoutUser_tokensNestedInput
   subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUser_tokensNestedInput
   tag?: Prisma.tagUncheckedUpdateManyWithoutUser_tokensNestedInput
   user_tags?: Prisma.user_tagsUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -1280,9 +1421,10 @@ export type user_tokensSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   updated_at?: boolean
   last_history_id?: boolean
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: boolean
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  draft_preference?: boolean | Prisma.user_tokens$draft_preferenceArgs<ExtArgs>
   drafts?: boolean | Prisma.user_tokens$draftsArgs<ExtArgs>
   email_tracked?: boolean | Prisma.user_tokens$email_trackedArgs<ExtArgs>
   payment_history?: boolean | Prisma.user_tokens$payment_historyArgs<ExtArgs>
@@ -1300,9 +1442,9 @@ export type user_tokensSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   updated_at?: boolean
   last_history_id?: boolean
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: boolean
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
 }, ExtArgs["result"]["user_tokens"]>
 
 export type user_tokensSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1312,9 +1454,9 @@ export type user_tokensSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   updated_at?: boolean
   last_history_id?: boolean
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: boolean
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
 }, ExtArgs["result"]["user_tokens"]>
 
 export type user_tokensSelectScalar = {
@@ -1324,13 +1466,14 @@ export type user_tokensSelectScalar = {
   updated_at?: boolean
   last_history_id?: boolean
   watch_activated?: boolean
-  use_external_ai_processing?: boolean
-  deleted_flag?: boolean
   delete_at?: boolean
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
 }
 
-export type user_tokensOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"clerk_user_id" | "gmail_email" | "created_at" | "updated_at" | "last_history_id" | "watch_activated" | "use_external_ai_processing" | "deleted_flag" | "delete_at", ExtArgs["result"]["user_tokens"]>
+export type user_tokensOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"clerk_user_id" | "gmail_email" | "created_at" | "updated_at" | "last_history_id" | "watch_activated" | "delete_at" | "deleted_flag" | "use_external_ai_processing", ExtArgs["result"]["user_tokens"]>
 export type user_tokensInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  draft_preference?: boolean | Prisma.user_tokens$draft_preferenceArgs<ExtArgs>
   drafts?: boolean | Prisma.user_tokens$draftsArgs<ExtArgs>
   email_tracked?: boolean | Prisma.user_tokens$email_trackedArgs<ExtArgs>
   payment_history?: boolean | Prisma.user_tokens$payment_historyArgs<ExtArgs>
@@ -1346,6 +1489,7 @@ export type user_tokensIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.
 export type $user_tokensPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "user_tokens"
   objects: {
+    draft_preference: Prisma.$draft_preferencePayload<ExtArgs> | null
     drafts: Prisma.$draftsPayload<ExtArgs>[]
     email_tracked: Prisma.$email_trackedPayload<ExtArgs>[]
     payment_history: Prisma.$PaymentHistoryPayload<ExtArgs>[]
@@ -1361,9 +1505,9 @@ export type $user_tokensPayload<ExtArgs extends runtime.Types.Extensions.Interna
     updated_at: Date
     last_history_id: string | null
     watch_activated: boolean
-    use_external_ai_processing: boolean
-    deleted_flag: boolean
     delete_at: Date | null
+    deleted_flag: boolean
+    use_external_ai_processing: boolean
   }, ExtArgs["result"]["user_tokens"]>
   composites: {}
 }
@@ -1758,6 +1902,7 @@ readonly fields: user_tokensFieldRefs;
  */
 export interface Prisma__user_tokensClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  draft_preference<T extends Prisma.user_tokens$draft_preferenceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user_tokens$draft_preferenceArgs<ExtArgs>>): Prisma.Prisma__draft_preferenceClient<runtime.Types.Result.GetResult<Prisma.$draft_preferencePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   drafts<T extends Prisma.user_tokens$draftsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user_tokens$draftsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$draftsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   email_tracked<T extends Prisma.user_tokens$email_trackedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user_tokens$email_trackedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$email_trackedPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   payment_history<T extends Prisma.user_tokens$payment_historyArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user_tokens$payment_historyArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PaymentHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -1800,9 +1945,9 @@ export interface user_tokensFieldRefs {
   readonly updated_at: Prisma.FieldRef<"user_tokens", 'DateTime'>
   readonly last_history_id: Prisma.FieldRef<"user_tokens", 'String'>
   readonly watch_activated: Prisma.FieldRef<"user_tokens", 'Boolean'>
-  readonly use_external_ai_processing: Prisma.FieldRef<"user_tokens", 'Boolean'>
-  readonly deleted_flag: Prisma.FieldRef<"user_tokens", 'Boolean'>
   readonly delete_at: Prisma.FieldRef<"user_tokens", 'DateTime'>
+  readonly deleted_flag: Prisma.FieldRef<"user_tokens", 'Boolean'>
+  readonly use_external_ai_processing: Prisma.FieldRef<"user_tokens", 'Boolean'>
 }
     
 
@@ -2188,6 +2333,25 @@ export type user_tokensDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.I
    * Limit how many user_tokens to delete.
    */
   limit?: number
+}
+
+/**
+ * user_tokens.draft_preference
+ */
+export type user_tokens$draft_preferenceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the draft_preference
+   */
+  select?: Prisma.draft_preferenceSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the draft_preference
+   */
+  omit?: Prisma.draft_preferenceOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.draft_preferenceInclude<ExtArgs> | null
+  where?: Prisma.draft_preferenceWhereInput
 }
 
 /**

@@ -9,6 +9,7 @@ import user from './user'
 import checkout from './checkout'
 import dodowebhook from './dodo-webhook'
 import cron from './cron'
+import draftPreference from './draft-preference'
 
 
 export const runtime = "nodejs";
@@ -26,6 +27,7 @@ const routes = app
     .route('/checkout',checkout)
     .route('/dodowebhook',dodowebhook)
     .route('/cron',cron)
+    .route('/draft-preference',draftPreference)
 
 
 

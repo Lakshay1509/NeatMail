@@ -10,23 +10,23 @@ datasource db {
 }
 
 model user_tokens {
-  clerk_user_id   String           @id @unique
-  gmail_email     String           @unique
-  created_at      DateTime         @default(now()) @db.Timestamp(6)
-  updated_at      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
-  last_history_id String?
-  watch_activated Boolean          @default(false)
-  use_external_ai_processing Boolean @default(true)
-
-  deleted_flag    Boolean          @default(false)
-  delete_at       DateTime?
-  drafts          drafts[]
-  email_tracked   email_tracked[]
-  payment_history PaymentHistory[]
-  refunds         Refund[]
-  subscriptions   Subscription[]
-  tag             tag[]
-  user_tags       user_tags[]
+  clerk_user_id              String            @id @unique
+  gmail_email                String            @unique
+  created_at                 DateTime          @default(now()) @db.Timestamp(6)
+  updated_at                 DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  last_history_id            String?
+  watch_activated            Boolean           @default(false)
+  delete_at                  DateTime?
+  deleted_flag               Boolean           @default(false)
+  use_external_ai_processing Boolean           @default(true)
+  draft_preference           draft_preference?
+  drafts                     drafts[]
+  email_tracked              email_tracked[]
+  payment_history            PaymentHistory[]
+  refunds                    Refund[]
+  subscriptions              Subscription[]
+  tag                        tag[]
+  user_tags                  user_tags[]
 
   @@schema("public")
 }
@@ -152,26 +152,40 @@ model PaymentHistory {
   @@schema("public")
 }
 
-
 model Refund {
-  id             String          @id @default(uuid())
-  clerkUserId    String          @map("clerk_user_id")
-  paymentId      String          @map("payment_id")
-  dodoRefundId   String          @unique @map("dodo_refund_id")
-  dodoPaymentId  String          @map("dodo_payment_id")
-  amount         Int
-  currency       String          @default("USD")
-  status         String
-  reason         String?
-  isPartial      Boolean         @map("is_partial")
-  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
-  user_tokens    user_tokens     @relation(fields: [clerkUserId], references: [clerk_user_id], onDelete: Cascade)
-  payment        PaymentHistory? @relation(fields: [paymentId], references: [id])
+  id            String         @id @default(uuid())
+  clerkUserId   String         @map("clerk_user_id")
+  dodoRefundId  String         @unique @map("dodo_refund_id")
+  dodoPaymentId String         @map("dodo_payment_id")
+  amount        Int
+  currency      String         @default("USD")
+  status        String
+  reason        String?
+  isPartial     Boolean        @map("is_partial")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  paymentId     String         @map("payment_id")
+  user_tokens   user_tokens    @relation(fields: [clerkUserId], references: [clerk_user_id], onDelete: Cascade)
+  payment       PaymentHistory @relation(fields: [paymentId], references: [id])
 
   @@index([clerkUserId])
   @@index([paymentId])
   @@index([status])
   @@map("refunds")
+  @@schema("public")
+}
+
+
+model draft_preference {
+  id          String      @id @default(uuid())
+  user_id     String      @unique
+  draftPrompt String?
+  signature   String?
+  fontSize    Int         @default(14) @db.SmallInt
+  fontColor   String      @default("#000000")
+  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+
   @@schema("public")
 }

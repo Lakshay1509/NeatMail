@@ -37,7 +37,6 @@ export type RefundSumAggregateOutputType = {
 export type RefundMinAggregateOutputType = {
   id: string | null
   clerkUserId: string | null
-  paymentId: string | null
   dodoRefundId: string | null
   dodoPaymentId: string | null
   amount: number | null
@@ -47,12 +46,12 @@ export type RefundMinAggregateOutputType = {
   isPartial: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
+  paymentId: string | null
 }
 
 export type RefundMaxAggregateOutputType = {
   id: string | null
   clerkUserId: string | null
-  paymentId: string | null
   dodoRefundId: string | null
   dodoPaymentId: string | null
   amount: number | null
@@ -62,12 +61,12 @@ export type RefundMaxAggregateOutputType = {
   isPartial: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
+  paymentId: string | null
 }
 
 export type RefundCountAggregateOutputType = {
   id: number
   clerkUserId: number
-  paymentId: number
   dodoRefundId: number
   dodoPaymentId: number
   amount: number
@@ -77,6 +76,7 @@ export type RefundCountAggregateOutputType = {
   isPartial: number
   createdAt: number
   updatedAt: number
+  paymentId: number
   _all: number
 }
 
@@ -92,7 +92,6 @@ export type RefundSumAggregateInputType = {
 export type RefundMinAggregateInputType = {
   id?: true
   clerkUserId?: true
-  paymentId?: true
   dodoRefundId?: true
   dodoPaymentId?: true
   amount?: true
@@ -102,12 +101,12 @@ export type RefundMinAggregateInputType = {
   isPartial?: true
   createdAt?: true
   updatedAt?: true
+  paymentId?: true
 }
 
 export type RefundMaxAggregateInputType = {
   id?: true
   clerkUserId?: true
-  paymentId?: true
   dodoRefundId?: true
   dodoPaymentId?: true
   amount?: true
@@ -117,12 +116,12 @@ export type RefundMaxAggregateInputType = {
   isPartial?: true
   createdAt?: true
   updatedAt?: true
+  paymentId?: true
 }
 
 export type RefundCountAggregateInputType = {
   id?: true
   clerkUserId?: true
-  paymentId?: true
   dodoRefundId?: true
   dodoPaymentId?: true
   amount?: true
@@ -132,6 +131,7 @@ export type RefundCountAggregateInputType = {
   isPartial?: true
   createdAt?: true
   updatedAt?: true
+  paymentId?: true
   _all?: true
 }
 
@@ -224,7 +224,6 @@ export type RefundGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalA
 export type RefundGroupByOutputType = {
   id: string
   clerkUserId: string
-  paymentId: string
   dodoRefundId: string
   dodoPaymentId: string
   amount: number
@@ -234,6 +233,7 @@ export type RefundGroupByOutputType = {
   isPartial: boolean
   createdAt: Date
   updatedAt: Date
+  paymentId: string
   _count: RefundCountAggregateOutputType | null
   _avg: RefundAvgAggregateOutputType | null
   _sum: RefundSumAggregateOutputType | null
@@ -262,7 +262,6 @@ export type RefundWhereInput = {
   NOT?: Prisma.RefundWhereInput | Prisma.RefundWhereInput[]
   id?: Prisma.StringFilter<"Refund"> | string
   clerkUserId?: Prisma.StringFilter<"Refund"> | string
-  paymentId?: Prisma.StringFilter<"Refund"> | string
   dodoRefundId?: Prisma.StringFilter<"Refund"> | string
   dodoPaymentId?: Prisma.StringFilter<"Refund"> | string
   amount?: Prisma.IntFilter<"Refund"> | number
@@ -272,14 +271,14 @@ export type RefundWhereInput = {
   isPartial?: Prisma.BoolFilter<"Refund"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Refund"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Refund"> | Date | string
+  paymentId?: Prisma.StringFilter<"Refund"> | string
   user_tokens?: Prisma.XOR<Prisma.User_tokensScalarRelationFilter, Prisma.user_tokensWhereInput>
-  payment?: Prisma.XOR<Prisma.PaymentHistoryNullableScalarRelationFilter, Prisma.PaymentHistoryWhereInput> | null
+  payment?: Prisma.XOR<Prisma.PaymentHistoryScalarRelationFilter, Prisma.PaymentHistoryWhereInput>
 }
 
 export type RefundOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   clerkUserId?: Prisma.SortOrder
-  paymentId?: Prisma.SortOrder
   dodoRefundId?: Prisma.SortOrder
   dodoPaymentId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
@@ -289,6 +288,7 @@ export type RefundOrderByWithRelationInput = {
   isPartial?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  paymentId?: Prisma.SortOrder
   user_tokens?: Prisma.user_tokensOrderByWithRelationInput
   payment?: Prisma.PaymentHistoryOrderByWithRelationInput
 }
@@ -300,7 +300,6 @@ export type RefundWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.RefundWhereInput[]
   NOT?: Prisma.RefundWhereInput | Prisma.RefundWhereInput[]
   clerkUserId?: Prisma.StringFilter<"Refund"> | string
-  paymentId?: Prisma.StringFilter<"Refund"> | string
   dodoPaymentId?: Prisma.StringFilter<"Refund"> | string
   amount?: Prisma.IntFilter<"Refund"> | number
   currency?: Prisma.StringFilter<"Refund"> | string
@@ -309,14 +308,14 @@ export type RefundWhereUniqueInput = Prisma.AtLeast<{
   isPartial?: Prisma.BoolFilter<"Refund"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Refund"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Refund"> | Date | string
+  paymentId?: Prisma.StringFilter<"Refund"> | string
   user_tokens?: Prisma.XOR<Prisma.User_tokensScalarRelationFilter, Prisma.user_tokensWhereInput>
-  payment?: Prisma.XOR<Prisma.PaymentHistoryNullableScalarRelationFilter, Prisma.PaymentHistoryWhereInput> | null
+  payment?: Prisma.XOR<Prisma.PaymentHistoryScalarRelationFilter, Prisma.PaymentHistoryWhereInput>
 }, "id" | "dodoRefundId">
 
 export type RefundOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   clerkUserId?: Prisma.SortOrder
-  paymentId?: Prisma.SortOrder
   dodoRefundId?: Prisma.SortOrder
   dodoPaymentId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
@@ -326,6 +325,7 @@ export type RefundOrderByWithAggregationInput = {
   isPartial?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  paymentId?: Prisma.SortOrder
   _count?: Prisma.RefundCountOrderByAggregateInput
   _avg?: Prisma.RefundAvgOrderByAggregateInput
   _max?: Prisma.RefundMaxOrderByAggregateInput
@@ -339,7 +339,6 @@ export type RefundScalarWhereWithAggregatesInput = {
   NOT?: Prisma.RefundScalarWhereWithAggregatesInput | Prisma.RefundScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Refund"> | string
   clerkUserId?: Prisma.StringWithAggregatesFilter<"Refund"> | string
-  paymentId?: Prisma.StringWithAggregatesFilter<"Refund"> | string
   dodoRefundId?: Prisma.StringWithAggregatesFilter<"Refund"> | string
   dodoPaymentId?: Prisma.StringWithAggregatesFilter<"Refund"> | string
   amount?: Prisma.IntWithAggregatesFilter<"Refund"> | number
@@ -349,6 +348,7 @@ export type RefundScalarWhereWithAggregatesInput = {
   isPartial?: Prisma.BoolWithAggregatesFilter<"Refund"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Refund"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Refund"> | Date | string
+  paymentId?: Prisma.StringWithAggregatesFilter<"Refund"> | string
 }
 
 export type RefundCreateInput = {
@@ -363,13 +363,12 @@ export type RefundCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   user_tokens: Prisma.user_tokensCreateNestedOneWithoutRefundsInput
-  payment?: Prisma.PaymentHistoryCreateNestedOneWithoutRefundsInput
+  payment: Prisma.PaymentHistoryCreateNestedOneWithoutRefundsInput
 }
 
 export type RefundUncheckedCreateInput = {
   id?: string
   clerkUserId: string
-  paymentId: string
   dodoRefundId: string
   dodoPaymentId: string
   amount: number
@@ -379,6 +378,7 @@ export type RefundUncheckedCreateInput = {
   isPartial: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  paymentId: string
 }
 
 export type RefundUpdateInput = {
@@ -393,13 +393,12 @@ export type RefundUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user_tokens?: Prisma.user_tokensUpdateOneRequiredWithoutRefundsNestedInput
-  payment?: Prisma.PaymentHistoryUpdateOneWithoutRefundsNestedInput
+  payment?: Prisma.PaymentHistoryUpdateOneRequiredWithoutRefundsNestedInput
 }
 
 export type RefundUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   clerkUserId?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentId?: Prisma.StringFieldUpdateOperationsInput | string
   dodoRefundId?: Prisma.StringFieldUpdateOperationsInput | string
   dodoPaymentId?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -409,12 +408,12 @@ export type RefundUncheckedUpdateInput = {
   isPartial?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  paymentId?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type RefundCreateManyInput = {
   id?: string
   clerkUserId: string
-  paymentId: string
   dodoRefundId: string
   dodoPaymentId: string
   amount: number
@@ -424,6 +423,7 @@ export type RefundCreateManyInput = {
   isPartial: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  paymentId: string
 }
 
 export type RefundUpdateManyMutationInput = {
@@ -442,7 +442,6 @@ export type RefundUpdateManyMutationInput = {
 export type RefundUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   clerkUserId?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentId?: Prisma.StringFieldUpdateOperationsInput | string
   dodoRefundId?: Prisma.StringFieldUpdateOperationsInput | string
   dodoPaymentId?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -452,6 +451,7 @@ export type RefundUncheckedUpdateManyInput = {
   isPartial?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  paymentId?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type RefundListRelationFilter = {
@@ -467,7 +467,6 @@ export type RefundOrderByRelationAggregateInput = {
 export type RefundCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   clerkUserId?: Prisma.SortOrder
-  paymentId?: Prisma.SortOrder
   dodoRefundId?: Prisma.SortOrder
   dodoPaymentId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
@@ -477,6 +476,7 @@ export type RefundCountOrderByAggregateInput = {
   isPartial?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  paymentId?: Prisma.SortOrder
 }
 
 export type RefundAvgOrderByAggregateInput = {
@@ -486,7 +486,6 @@ export type RefundAvgOrderByAggregateInput = {
 export type RefundMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   clerkUserId?: Prisma.SortOrder
-  paymentId?: Prisma.SortOrder
   dodoRefundId?: Prisma.SortOrder
   dodoPaymentId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
@@ -496,12 +495,12 @@ export type RefundMaxOrderByAggregateInput = {
   isPartial?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  paymentId?: Prisma.SortOrder
 }
 
 export type RefundMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   clerkUserId?: Prisma.SortOrder
-  paymentId?: Prisma.SortOrder
   dodoRefundId?: Prisma.SortOrder
   dodoPaymentId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
@@ -511,6 +510,7 @@ export type RefundMinOrderByAggregateInput = {
   isPartial?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  paymentId?: Prisma.SortOrder
 }
 
 export type RefundSumOrderByAggregateInput = {
@@ -612,12 +612,11 @@ export type RefundCreateWithoutUser_tokensInput = {
   isPartial: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
-  payment?: Prisma.PaymentHistoryCreateNestedOneWithoutRefundsInput
+  payment: Prisma.PaymentHistoryCreateNestedOneWithoutRefundsInput
 }
 
 export type RefundUncheckedCreateWithoutUser_tokensInput = {
   id?: string
-  paymentId: string
   dodoRefundId: string
   dodoPaymentId: string
   amount: number
@@ -627,6 +626,7 @@ export type RefundUncheckedCreateWithoutUser_tokensInput = {
   isPartial: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  paymentId: string
 }
 
 export type RefundCreateOrConnectWithoutUser_tokensInput = {
@@ -661,7 +661,6 @@ export type RefundScalarWhereInput = {
   NOT?: Prisma.RefundScalarWhereInput | Prisma.RefundScalarWhereInput[]
   id?: Prisma.StringFilter<"Refund"> | string
   clerkUserId?: Prisma.StringFilter<"Refund"> | string
-  paymentId?: Prisma.StringFilter<"Refund"> | string
   dodoRefundId?: Prisma.StringFilter<"Refund"> | string
   dodoPaymentId?: Prisma.StringFilter<"Refund"> | string
   amount?: Prisma.IntFilter<"Refund"> | number
@@ -671,6 +670,7 @@ export type RefundScalarWhereInput = {
   isPartial?: Prisma.BoolFilter<"Refund"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Refund"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Refund"> | Date | string
+  paymentId?: Prisma.StringFilter<"Refund"> | string
 }
 
 export type RefundCreateWithoutPaymentInput = {
@@ -729,7 +729,6 @@ export type RefundUpdateManyWithWhereWithoutPaymentInput = {
 
 export type RefundCreateManyUser_tokensInput = {
   id?: string
-  paymentId: string
   dodoRefundId: string
   dodoPaymentId: string
   amount: number
@@ -739,6 +738,7 @@ export type RefundCreateManyUser_tokensInput = {
   isPartial: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  paymentId: string
 }
 
 export type RefundUpdateWithoutUser_tokensInput = {
@@ -752,12 +752,11 @@ export type RefundUpdateWithoutUser_tokensInput = {
   isPartial?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  payment?: Prisma.PaymentHistoryUpdateOneWithoutRefundsNestedInput
+  payment?: Prisma.PaymentHistoryUpdateOneRequiredWithoutRefundsNestedInput
 }
 
 export type RefundUncheckedUpdateWithoutUser_tokensInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentId?: Prisma.StringFieldUpdateOperationsInput | string
   dodoRefundId?: Prisma.StringFieldUpdateOperationsInput | string
   dodoPaymentId?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -767,11 +766,11 @@ export type RefundUncheckedUpdateWithoutUser_tokensInput = {
   isPartial?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  paymentId?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type RefundUncheckedUpdateManyWithoutUser_tokensInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  paymentId?: Prisma.StringFieldUpdateOperationsInput | string
   dodoRefundId?: Prisma.StringFieldUpdateOperationsInput | string
   dodoPaymentId?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -781,6 +780,7 @@ export type RefundUncheckedUpdateManyWithoutUser_tokensInput = {
   isPartial?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  paymentId?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type RefundCreateManyPaymentInput = {
@@ -844,7 +844,6 @@ export type RefundUncheckedUpdateManyWithoutPaymentInput = {
 export type RefundSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   clerkUserId?: boolean
-  paymentId?: boolean
   dodoRefundId?: boolean
   dodoPaymentId?: boolean
   amount?: boolean
@@ -854,14 +853,14 @@ export type RefundSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   isPartial?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  paymentId?: boolean
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
-  payment?: boolean | Prisma.Refund$paymentArgs<ExtArgs>
+  payment?: boolean | Prisma.PaymentHistoryDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["refund"]>
 
 export type RefundSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   clerkUserId?: boolean
-  paymentId?: boolean
   dodoRefundId?: boolean
   dodoPaymentId?: boolean
   amount?: boolean
@@ -871,14 +870,14 @@ export type RefundSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   isPartial?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  paymentId?: boolean
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
-  payment?: boolean | Prisma.Refund$paymentArgs<ExtArgs>
+  payment?: boolean | Prisma.PaymentHistoryDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["refund"]>
 
 export type RefundSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   clerkUserId?: boolean
-  paymentId?: boolean
   dodoRefundId?: boolean
   dodoPaymentId?: boolean
   amount?: boolean
@@ -888,14 +887,14 @@ export type RefundSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   isPartial?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  paymentId?: boolean
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
-  payment?: boolean | Prisma.Refund$paymentArgs<ExtArgs>
+  payment?: boolean | Prisma.PaymentHistoryDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["refund"]>
 
 export type RefundSelectScalar = {
   id?: boolean
   clerkUserId?: boolean
-  paymentId?: boolean
   dodoRefundId?: boolean
   dodoPaymentId?: boolean
   amount?: boolean
@@ -905,32 +904,32 @@ export type RefundSelectScalar = {
   isPartial?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  paymentId?: boolean
 }
 
-export type RefundOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clerkUserId" | "paymentId" | "dodoRefundId" | "dodoPaymentId" | "amount" | "currency" | "status" | "reason" | "isPartial" | "createdAt" | "updatedAt", ExtArgs["result"]["refund"]>
+export type RefundOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clerkUserId" | "dodoRefundId" | "dodoPaymentId" | "amount" | "currency" | "status" | "reason" | "isPartial" | "createdAt" | "updatedAt" | "paymentId", ExtArgs["result"]["refund"]>
 export type RefundInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
-  payment?: boolean | Prisma.Refund$paymentArgs<ExtArgs>
+  payment?: boolean | Prisma.PaymentHistoryDefaultArgs<ExtArgs>
 }
 export type RefundIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
-  payment?: boolean | Prisma.Refund$paymentArgs<ExtArgs>
+  payment?: boolean | Prisma.PaymentHistoryDefaultArgs<ExtArgs>
 }
 export type RefundIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
-  payment?: boolean | Prisma.Refund$paymentArgs<ExtArgs>
+  payment?: boolean | Prisma.PaymentHistoryDefaultArgs<ExtArgs>
 }
 
 export type $RefundPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Refund"
   objects: {
     user_tokens: Prisma.$user_tokensPayload<ExtArgs>
-    payment: Prisma.$PaymentHistoryPayload<ExtArgs> | null
+    payment: Prisma.$PaymentHistoryPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     clerkUserId: string
-    paymentId: string
     dodoRefundId: string
     dodoPaymentId: string
     amount: number
@@ -940,6 +939,7 @@ export type $RefundPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     isPartial: boolean
     createdAt: Date
     updatedAt: Date
+    paymentId: string
   }, ExtArgs["result"]["refund"]>
   composites: {}
 }
@@ -1335,7 +1335,7 @@ readonly fields: RefundFieldRefs;
 export interface Prisma__RefundClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user_tokens<T extends Prisma.user_tokensDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user_tokensDefaultArgs<ExtArgs>>): Prisma.Prisma__user_tokensClient<runtime.Types.Result.GetResult<Prisma.$user_tokensPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  payment<T extends Prisma.Refund$paymentArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Refund$paymentArgs<ExtArgs>>): Prisma.Prisma__PaymentHistoryClient<runtime.Types.Result.GetResult<Prisma.$PaymentHistoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  payment<T extends Prisma.PaymentHistoryDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PaymentHistoryDefaultArgs<ExtArgs>>): Prisma.Prisma__PaymentHistoryClient<runtime.Types.Result.GetResult<Prisma.$PaymentHistoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1367,7 +1367,6 @@ export interface Prisma__RefundClient<T, Null = never, ExtArgs extends runtime.T
 export interface RefundFieldRefs {
   readonly id: Prisma.FieldRef<"Refund", 'String'>
   readonly clerkUserId: Prisma.FieldRef<"Refund", 'String'>
-  readonly paymentId: Prisma.FieldRef<"Refund", 'String'>
   readonly dodoRefundId: Prisma.FieldRef<"Refund", 'String'>
   readonly dodoPaymentId: Prisma.FieldRef<"Refund", 'String'>
   readonly amount: Prisma.FieldRef<"Refund", 'Int'>
@@ -1377,6 +1376,7 @@ export interface RefundFieldRefs {
   readonly isPartial: Prisma.FieldRef<"Refund", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"Refund", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Refund", 'DateTime'>
+  readonly paymentId: Prisma.FieldRef<"Refund", 'String'>
 }
     
 
@@ -1770,25 +1770,6 @@ export type RefundDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Limit how many Refunds to delete.
    */
   limit?: number
-}
-
-/**
- * Refund.payment
- */
-export type Refund$paymentArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the PaymentHistory
-   */
-  select?: Prisma.PaymentHistorySelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the PaymentHistory
-   */
-  omit?: Prisma.PaymentHistoryOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.PaymentHistoryInclude<ExtArgs> | null
-  where?: Prisma.PaymentHistoryWhereInput
 }
 
 /**

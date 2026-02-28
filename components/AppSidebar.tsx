@@ -53,6 +53,11 @@ const settingsSubItems = [
     url: "/settings/privacy",
     icon: ShieldCheck,
   },
+  {
+    title: 'Draft Preference',
+    url :"/settings/draft-preference",
+    icon : MessageSquareDashed
+  }
 ]
 
 export function AppSidebar() {

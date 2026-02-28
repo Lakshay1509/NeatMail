@@ -57,3 +57,8 @@ export type PaymentHistory = Prisma.PaymentHistoryModel
  * 
  */
 export type Refund = Prisma.RefundModel
+/**
+ * Model draft_preference
+ * 
+ */
+export type draft_preference = Prisma.draft_preferenceModel

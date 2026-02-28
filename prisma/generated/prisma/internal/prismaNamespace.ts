@@ -391,7 +391,8 @@ export const ModelName = {
   drafts: 'drafts',
   Subscription: 'Subscription',
   PaymentHistory: 'PaymentHistory',
-  Refund: 'Refund'
+  Refund: 'Refund',
+  draft_preference: 'draft_preference'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -407,7 +408,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user_tokens" | "tag" | "user_tags" | "email_tracked" | "drafts" | "subscription" | "paymentHistory" | "refund"
+    modelProps: "user_tokens" | "tag" | "user_tags" | "email_tracked" | "drafts" | "subscription" | "paymentHistory" | "refund" | "draft_preference"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1003,6 +1004,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    draft_preference: {
+      payload: Prisma.$draft_preferencePayload<ExtArgs>
+      fields: Prisma.draft_preferenceFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.draft_preferenceFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$draft_preferencePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.draft_preferenceFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$draft_preferencePayload>
+        }
+        findFirst: {
+          args: Prisma.draft_preferenceFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$draft_preferencePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.draft_preferenceFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$draft_preferencePayload>
+        }
+        findMany: {
+          args: Prisma.draft_preferenceFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$draft_preferencePayload>[]
+        }
+        create: {
+          args: Prisma.draft_preferenceCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$draft_preferencePayload>
+        }
+        createMany: {
+          args: Prisma.draft_preferenceCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.draft_preferenceCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$draft_preferencePayload>[]
+        }
+        delete: {
+          args: Prisma.draft_preferenceDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$draft_preferencePayload>
+        }
+        update: {
+          args: Prisma.draft_preferenceUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$draft_preferencePayload>
+        }
+        deleteMany: {
+          args: Prisma.draft_preferenceDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.draft_preferenceUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.draft_preferenceUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$draft_preferencePayload>[]
+        }
+        upsert: {
+          args: Prisma.draft_preferenceUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$draft_preferencePayload>
+        }
+        aggregate: {
+          args: Prisma.Draft_preferenceAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDraft_preference>
+        }
+        groupBy: {
+          args: Prisma.draft_preferenceGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Draft_preferenceGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.draft_preferenceCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Draft_preferenceCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1049,9 +1124,9 @@ export const User_tokensScalarFieldEnum = {
   updated_at: 'updated_at',
   last_history_id: 'last_history_id',
   watch_activated: 'watch_activated',
-  use_external_ai_processing: 'use_external_ai_processing',
+  delete_at: 'delete_at',
   deleted_flag: 'deleted_flag',
-  delete_at: 'delete_at'
+  use_external_ai_processing: 'use_external_ai_processing'
 } as const
 
 export type User_tokensScalarFieldEnum = (typeof User_tokensScalarFieldEnum)[keyof typeof User_tokensScalarFieldEnum]
@@ -1154,7 +1229,6 @@ export type PaymentHistoryScalarFieldEnum = (typeof PaymentHistoryScalarFieldEnu
 export const RefundScalarFieldEnum = {
   id: 'id',
   clerkUserId: 'clerkUserId',
-  paymentId: 'paymentId',
   dodoRefundId: 'dodoRefundId',
   dodoPaymentId: 'dodoPaymentId',
   amount: 'amount',
@@ -1163,10 +1237,25 @@ export const RefundScalarFieldEnum = {
   reason: 'reason',
   isPartial: 'isPartial',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  paymentId: 'paymentId'
 } as const
 
 export type RefundScalarFieldEnum = (typeof RefundScalarFieldEnum)[keyof typeof RefundScalarFieldEnum]
+
+
+export const Draft_preferenceScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  draftPrompt: 'draftPrompt',
+  signature: 'signature',
+  fontSize: 'fontSize',
+  fontColor: 'fontColor',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type Draft_preferenceScalarFieldEnum = (typeof Draft_preferenceScalarFieldEnum)[keyof typeof Draft_preferenceScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1395,6 +1484,7 @@ export type GlobalOmitConfig = {
   subscription?: Prisma.SubscriptionOmit
   paymentHistory?: Prisma.PaymentHistoryOmit
   refund?: Prisma.RefundOmit
+  draft_preference?: Prisma.draft_preferenceOmit
 }
 
 /* Types for Logging */

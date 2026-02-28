@@ -722,9 +722,9 @@ export type PaymentHistorySumOrderByAggregateInput = {
   settlementAmount?: Prisma.SortOrder
 }
 
-export type PaymentHistoryNullableScalarRelationFilter = {
-  is?: Prisma.PaymentHistoryWhereInput | null
-  isNot?: Prisma.PaymentHistoryWhereInput | null
+export type PaymentHistoryScalarRelationFilter = {
+  is?: Prisma.PaymentHistoryWhereInput
+  isNot?: Prisma.PaymentHistoryWhereInput
 }
 
 export type PaymentHistoryCreateNestedManyWithoutUser_tokensInput = {
@@ -825,12 +825,10 @@ export type PaymentHistoryCreateNestedOneWithoutRefundsInput = {
   connect?: Prisma.PaymentHistoryWhereUniqueInput
 }
 
-export type PaymentHistoryUpdateOneWithoutRefundsNestedInput = {
+export type PaymentHistoryUpdateOneRequiredWithoutRefundsNestedInput = {
   create?: Prisma.XOR<Prisma.PaymentHistoryCreateWithoutRefundsInput, Prisma.PaymentHistoryUncheckedCreateWithoutRefundsInput>
   connectOrCreate?: Prisma.PaymentHistoryCreateOrConnectWithoutRefundsInput
   upsert?: Prisma.PaymentHistoryUpsertWithoutRefundsInput
-  disconnect?: Prisma.PaymentHistoryWhereInput | boolean
-  delete?: Prisma.PaymentHistoryWhereInput | boolean
   connect?: Prisma.PaymentHistoryWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.PaymentHistoryUpdateToOneWithWhereWithoutRefundsInput, Prisma.PaymentHistoryUpdateWithoutRefundsInput>, Prisma.PaymentHistoryUncheckedUpdateWithoutRefundsInput>
 }
