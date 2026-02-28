@@ -191,13 +191,46 @@ export async function getUserSubscribed(userId: string) {
 
     return {
       success: true,
-      subscribed: data.status === "active" ? true :false,
+      subscribed: data.status === "active" ? true : false,
       status: data.status,
       next_billing_date: data.nextBillingDate,
       cancel_at_next_billing_date: data.cancelAtNextBillingDate,
     };
   } catch (error) {
     console.error("Erro getting subscribed data");
+    throw error;
+  }
+}
+
+export async function useGetUserDraftPreference(userId: string) {
+  try {
+    const data = await db.draft_preference.findUnique({
+      where: { user_id: userId },
+      select: {
+        draftPrompt: true,
+        fontColor: true,
+        fontSize: true,
+        signature: true,
+      },
+    });
+
+    if (!data) {
+      return {
+        draftPrompt: null,
+        fontColor: "#000000",
+        fontSize: 14,
+        signature: null,
+      };
+    }
+
+    return {
+      draftPrompt: data.draftPrompt,
+      fontColor: data.fontColor,
+      fontSize: data.fontSize,
+      signature: data.signature,
+    };
+  } catch (error) {
+    console.error("Error getting draft prefernces ");
     throw error;
   }
 }

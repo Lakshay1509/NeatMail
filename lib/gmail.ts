@@ -118,7 +118,21 @@ export async function createGmailDraft(
   subject: string,
   to: string,
   draftBody: string,
+  fontColor: string,
+  fontSize: number,
+  signature: string | null,
 ) {
+  // Apply font styling and signature, converting newlines to <br> for HTML
+  const formattedBody = draftBody.replace(/\n/g, "<br>");
+  const formattedSignature = signature ? signature.replace(/\n/g, "<br>") : "";
+  
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; font-size: ${fontSize || 14}px; color: ${fontColor || '#000000'};">
+      ${formattedBody}
+      ${formattedSignature ? `<br><br>--<br>${formattedSignature}` : ""}
+    </div>
+  `.trim();
+
   // Create RFC 2822 formatted message
   const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString("base64")}?=`;
   const messageParts = [
@@ -130,7 +144,7 @@ export async function createGmailDraft(
     "Content-Type: text/html; charset=utf-8",
     "Content-Transfer-Encoding: 7bit",
     "",
-    draftBody,
+    htmlContent,
   ];
 
   const gmail = await getGmailClient(userId);

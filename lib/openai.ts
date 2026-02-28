@@ -93,11 +93,16 @@ Available categories:
 
 
 
+
 export async function generateEmailReply(emailData: {
   subject: string;
   from: string;
   bodySnippet: string;
-}) {
+}, draftPrompt: string | null,
+user_name: string | null) {
+  const customInstructions = draftPrompt ? `\n- Follow these custom instructions from the user: "${draftPrompt}"` : "";
+  const userNameInstruction = user_name ? `\n- The user's name is ${user_name}. Keep this in mind and reply on their behalf.` : "";
+
   const prompt = `You are an email reply generator. Follow these rules strictly:
 
 STEP 1: DETECTION
@@ -112,10 +117,10 @@ STEP 2: REPLY GENERATION (only if Step 1 is false)
 Requirements:
 - Acknowledge the sender's message
 - Address the main point/question
-- Keep under 100 words
 - Use professional tone
 - Do NOT include: subject line, greetings like "Dear", signatures
-- Start directly with response
+- Do NOT use markdown formatting (like **bold** or *italics*), output plain text only
+- Start directly with response ${customInstructions}, ${userNameInstruction}
 
 INPUT EMAIL:
 From: ${emailData.from}

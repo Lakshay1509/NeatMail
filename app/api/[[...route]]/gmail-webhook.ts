@@ -21,6 +21,7 @@ import {
   getUserSubscribed,
   labelColor,
   updateHistoryId,
+  useGetUserDraftPreference,
 } from "@/lib/supabase";
 import { clerkClient } from "@clerk/nextjs/server";
 import { google } from "googleapis";
@@ -29,16 +30,6 @@ import { OAuth2Client } from "google-auth-library";
 
 const authClient = new OAuth2Client();
 
-// Test users for the new classification model
-// const MODEL_TEST_USERS:string[] = [
-
-//   "user_38NbAtb7Fk5Vmm0QIdSs5l0bMV5",
-//   "user_38OIS4VC2YhAJZJlJ0vzkY0dBFm",
-//   "user_38OV7Wute3LN46bJMD3TL2CuthV",
-//   "user_38VwbHZlwUy4Bn7mJXYYwhHFaKq",
-//   "user_38un7jxuKLAJ1NDnRxpUcRxEro5"
-
-// ];
 
 const app = new Hono().post("/", async (ctx) => {
   let currentMessageId: string | null = null;
@@ -93,6 +84,7 @@ const app = new Hono().post("/", async (ctx) => {
     const clerkUserId = user.clerk_user_id;
 
     const client = await clerkClient();
+    const clerkUser = await client.users.getUser(clerkUserId);
 
     const tokenResponse = await client.users.getUserOauthAccessToken(
       clerkUserId,
@@ -244,7 +236,8 @@ const app = new Hono().post("/", async (ctx) => {
       let draftBody: string = "";
 
       if (labelName === "Pending Response") {
-        draftBody = await generateEmailReply(emailData);
+        const draft_preference = await useGetUserDraftPreference(user.clerk_user_id)
+        draftBody = await generateEmailReply(emailData,draft_preference.draftPrompt,clerkUser.fullName);
 
         if (draftBody.trim().length > 0) {
           await createGmailDraft(
@@ -254,6 +247,10 @@ const app = new Hono().post("/", async (ctx) => {
             emailData.subject,
             emailData.from,
             draftBody,
+            draft_preference.fontColor,
+            draft_preference.fontSize,
+            draft_preference.signature,
+
           );
         }
       }
