@@ -1247,6 +1247,7 @@ export type RefundScalarFieldEnum = (typeof RefundScalarFieldEnum)[keyof typeof 
 export const Draft_preferenceScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
+  enabled: 'enabled',
   draftPrompt: 'draftPrompt',
   signature: 'signature',
   fontSize: 'fontSize',

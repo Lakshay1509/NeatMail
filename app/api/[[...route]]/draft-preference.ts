@@ -16,6 +16,7 @@ const app = new Hono()
     const data = await db.draft_preference.findUnique({
       where: { user_id: userId },
       select: {
+        enabled:true,
         draftPrompt: true,
         fontColor: true,
         fontSize: true,
@@ -27,6 +28,7 @@ const app = new Hono()
       return ctx.json(
         {
           data: {
+            enabled:true,
             draftPrompt: null,
             fontColor: "#000000",
             fontSize: 14,
@@ -45,6 +47,7 @@ const app = new Hono()
     zValidator(
       "json",
       z.object({
+        enabled:z.boolean(),
         draftPrompt: z.string().max(1000).optional(),
         fontColor: z.string(),
         fontSize: z.number().min(8).max(72),
@@ -63,6 +66,7 @@ const app = new Hono()
       const data = await db.draft_preference.upsert({
         where: { user_id: userId },
         update: {
+          enabled:values.enabled,
           draftPrompt: values.draftPrompt,
           fontColor: values.fontColor,
           fontSize: values.fontSize,
@@ -72,6 +76,7 @@ const app = new Hono()
           user_tokens: {
             connect: { clerk_user_id: userId },
           },
+          enabled:values.enabled,
           draftPrompt: values.draftPrompt,
           fontColor: values.fontColor,
           fontSize: values.fontSize,

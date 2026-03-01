@@ -179,6 +179,7 @@ model Refund {
 model draft_preference {
   id          String      @id @default(uuid())
   user_id     String      @unique
+  enabled     Boolean     @default(true)
   draftPrompt String?
   signature   String?
   fontSize    Int         @default(14) @db.SmallInt

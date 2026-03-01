@@ -15,6 +15,8 @@ import { Label } from "./ui/label"
 import { Button } from "./ui/button"
 import { HelpCircle } from "lucide-react"
 import { useAddUserDraftPrefernce } from "@/features/draftPreference/use-add-user-draftPreference"
+import { Checkbox } from "./ui/checkbox"
+import { useGetUserSubscribed } from "@/features/user/use-get-subscribed"
 
 // const FONT_OPTIONS = [
 //   { value: "default", label: "Gmail/Outlook default" },
@@ -26,13 +28,15 @@ import { useAddUserDraftPrefernce } from "@/features/draftPreference/use-add-use
 // ]
 
 const UserDraftPreference = () => {
-  const { data, isLoading, isError } = useGetUserDraftPreference()
+  const { data, isLoading, isError } = useGetUserDraftPreference();
+  const { data: subData } = useGetUserSubscribed();
   const muation = useAddUserDraftPrefernce();
 
   const [draftPrompt, setDraftPrompt] = useState<string>("")
   const [signature, setSignature] = useState<string>("")
   const [fontSize, setFontSize] = useState<number>(0)
   const [fontColor, setFontColor] = useState<string>("#000000")
+  const [enabled, setEnabled] = useState<boolean>(false)
 
   useEffect(() => {
     if (data?.data) {
@@ -40,6 +44,7 @@ const UserDraftPreference = () => {
       setSignature(data.data.signature ?? "")
       setFontSize(data.data.fontSize ?? 0)
       setFontColor(data.data.fontColor ?? "#000000")
+      setEnabled(data.data.enabled ?? false)
     }
   }, [data])
 
@@ -65,7 +70,8 @@ const UserDraftPreference = () => {
       fontColor:fontColor,
       fontSize:fontSize,
       draftPrompt:draftPrompt,
-      signature:signature
+      signature:signature,
+      enabled:enabled
     })
 
 
@@ -73,7 +79,30 @@ const UserDraftPreference = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full">
+      
+      <div className="flex items-start justify-between">
+				<div>
+					<h2 className="text-lg font-semibold text-gray-900 mb-1">Enable Drafts</h2>
+					<p className="text-gray-600 text-sm md:text-base max-w-2xl">
+						Automatically watch incoming emails and draft suitable response for them if needed.
+					</p>
+				</div>
+				<div className="flex flex-col items-end gap-3">
+					<div className="flex items-center gap-2 pt-1">
+						<span className="text-sm font-medium text-gray-700">
+							{enabled ? 'Active' : 'Inactive'}
+						</span>
+						<Checkbox
+							disabled={subData?.subscribed === false}
+							checked={enabled}
+							onCheckedChange={(checked) => setEnabled(!!checked)}
+							className="w-5 h-5 border-gray-300"
+						/>
+					</div>
+
+				</div>
+			</div>
       {/* Draft Prompt */}
       <div className="space-y-1.5">
         <Label htmlFor="draft-prompt" className="text-lg font-semibold">
@@ -89,9 +118,7 @@ const UserDraftPreference = () => {
           className="resize-none w-full"
         />
         <p className="text-xs text-muted-foreground">
-          Provide custom instructions to the AI that generates your draft email
-          replies. For example, your priorities, how you make decisions, or
-          information about your business. (max 1000 characters)
+          Add personalized guidelines to shape how the AI composes your email responses. You may include your goals, communication preferences, decision-making approach, or important details about your business. (Up to 1000 characters)
         </p>
       </div>
 
@@ -104,9 +131,7 @@ const UserDraftPreference = () => {
           <HelpCircle className="h-4 w-4 text-muted-foreground" />
         </div>
         <p className="text-xs text-muted-foreground">
-          To ensure your signature displays correctly, you should copy it
-          directly from your Gmail/Outlook settings, instead of from an email
-          you&apos;ve sent.
+          To make sure your signature appears properly, copy it from your Gmail settings rather than from a previously sent email.
         </p>
         <Textarea
           id="email-signature"
@@ -151,9 +176,6 @@ const UserDraftPreference = () => {
           onChange={(e) => setFontSize(Number(e.target.value))}
           className="w-full"
         />
-        <p className="text-xs text-muted-foreground">
-          Set this value to 0 to inherit the font size from your email client.
-        </p>
       </div>
 
       {/* Font Color */}
