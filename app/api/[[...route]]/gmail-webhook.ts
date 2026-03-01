@@ -259,10 +259,6 @@ const app = new Hono().post("/", async (ctx) => {
 
       await addMailtoDB(clerkUserId, colourofLabel.id, String(messageId));
 
-      if (draftBody.trim().length > 0) {
-        addDraftToDB(clerkUserId, String(messageId), draftBody, emailData.from);
-      }
-
       currentMessageId = null;
       currentThreadId = null;
     }
