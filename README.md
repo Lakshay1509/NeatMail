@@ -114,6 +114,10 @@ CLERK_WEBHOOK_SECRET=
 # OpenAI
 OPENAI_API_KEY=
 
+#If using Azure
+AZURE_ENDPOINT=
+AZURE_API_KEY=
+
 # Gmail Webhook
 GMAIL_WEBHOOK_TOPIC=projects/your-project/topics/gmail-notifications
 

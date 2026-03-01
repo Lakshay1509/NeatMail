@@ -1,11 +1,22 @@
-import OpenAI from 'openai';
+// import OpenAI from 'openai';
+import { AzureOpenAI } from 'openai';
 
-
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY!,
-  baseURL: "https://openrouter.ai/api/v1",
+const openai = new AzureOpenAI({
+  apiKey: process.env.AZURE_API_KEY!,
+  endpoint:process.env.AZURE_ENDPOINT!,
+  apiVersion: "2024-04-01-preview",
+  deployment:"gpt-4o-mini"
 });
+
+
+//You can use normal openai endpoint by uncommenting this- we use azure by default
+
+// const openai = new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY!, 
+// });
+
+
+
 
 export type UserTag = ({
   tag: {
