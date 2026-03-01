@@ -171,6 +171,7 @@ export async function useGetUserDraftPreference(userId: string) {
     const data = await db.draft_preference.findUnique({
       where: { user_id: userId },
       select: {
+        enabled:true,
         draftPrompt: true,
         fontColor: true,
         fontSize: true,
@@ -180,6 +181,7 @@ export async function useGetUserDraftPreference(userId: string) {
 
     if (!data) {
       return {
+        enabled:true,
         draftPrompt: null,
         fontColor: "#000000",
         fontSize: 14,
@@ -188,6 +190,7 @@ export async function useGetUserDraftPreference(userId: string) {
     }
 
     return {
+      enabled:data.enabled,
       draftPrompt: data.draftPrompt,
       fontColor: data.fontColor,
       fontSize: data.fontSize,

@@ -54,26 +54,6 @@ const app = new Hono()
     return ctx.json({ data }, 200);
   })
 
-  .get("/drafts", async (ctx) => {
-    const { userId } = await auth();
-
-    if (!userId) {
-      return ctx.json({ error: "Unauthorized" }, 401);
-    }
-
-    const data = await db.drafts.findMany({
-      where: { user_id: userId },
-      orderBy: {
-        created_at: "desc",
-      },
-    });
-
-    if (!data) {
-      return ctx.json({ error: "Error getting draft data" }, 500);
-    }
-
-    return ctx.json({ data }, 200);
-  })
 
   .get("/subscription", async (ctx) => {
     const { userId } = await auth();

@@ -13,7 +13,6 @@ import {
   unmarkThreadProcessed,
 } from "@/lib/redis";
 import {
-  addDraftToDB,
   addMailtoDB,
   getLastHistoryId,
   getTagsUser,
@@ -29,7 +28,6 @@ import { Hono } from "hono";
 import { OAuth2Client } from "google-auth-library";
 
 const authClient = new OAuth2Client();
-
 
 const app = new Hono().post("/", async (ctx) => {
   let currentMessageId: string | null = null;
@@ -236,8 +234,16 @@ const app = new Hono().post("/", async (ctx) => {
       let draftBody: string = "";
 
       if (labelName === "Pending Response") {
-        const draft_preference = await useGetUserDraftPreference(user.clerk_user_id)
-        draftBody = await generateEmailReply(emailData,draft_preference.draftPrompt,clerkUser.fullName);
+        const draft_preference = await useGetUserDraftPreference(
+          user.clerk_user_id,
+        );
+        if (draft_preference.enabled === true) {
+          draftBody = await generateEmailReply(
+            emailData,
+            draft_preference.draftPrompt,
+            clerkUser.fullName,
+          );
+        }
 
         if (draftBody.trim().length > 0) {
           await createGmailDraft(
@@ -250,7 +256,6 @@ const app = new Hono().post("/", async (ctx) => {
             draft_preference.fontColor,
             draft_preference.fontSize,
             draft_preference.signature,
-
           );
         }
       }
@@ -274,7 +279,7 @@ const app = new Hono().post("/", async (ctx) => {
     if (currentThreadId) {
       await unmarkThreadProcessed(currentThreadId);
     }
-    
+
     return ctx.json(
       { success: false, error: "Processing failed of webhook" },
       500,
