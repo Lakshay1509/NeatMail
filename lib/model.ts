@@ -54,7 +54,7 @@ const classificationApiAuthorization =
 
 const API_CONFIG = {
   baseURL: process.env.CLASSIFICATION_API_URL,
-  timeout: 120000,
+  timeout: 12000,
   headers: {
     "Content-Type": "application/json",
     ...(classificationApiAuthorization
