@@ -37,37 +37,37 @@ export type Draft_preferenceSumAggregateOutputType = {
 export type Draft_preferenceMinAggregateOutputType = {
   id: string | null
   user_id: string | null
-  enabled: boolean | null
   draftPrompt: string | null
   signature: string | null
   fontSize: number | null
   fontColor: string | null
   createdAt: Date | null
   updatedAt: Date | null
+  enabled: boolean | null
 }
 
 export type Draft_preferenceMaxAggregateOutputType = {
   id: string | null
   user_id: string | null
-  enabled: boolean | null
   draftPrompt: string | null
   signature: string | null
   fontSize: number | null
   fontColor: string | null
   createdAt: Date | null
   updatedAt: Date | null
+  enabled: boolean | null
 }
 
 export type Draft_preferenceCountAggregateOutputType = {
   id: number
   user_id: number
-  enabled: number
   draftPrompt: number
   signature: number
   fontSize: number
   fontColor: number
   createdAt: number
   updatedAt: number
+  enabled: number
   _all: number
 }
 
@@ -83,37 +83,37 @@ export type Draft_preferenceSumAggregateInputType = {
 export type Draft_preferenceMinAggregateInputType = {
   id?: true
   user_id?: true
-  enabled?: true
   draftPrompt?: true
   signature?: true
   fontSize?: true
   fontColor?: true
   createdAt?: true
   updatedAt?: true
+  enabled?: true
 }
 
 export type Draft_preferenceMaxAggregateInputType = {
   id?: true
   user_id?: true
-  enabled?: true
   draftPrompt?: true
   signature?: true
   fontSize?: true
   fontColor?: true
   createdAt?: true
   updatedAt?: true
+  enabled?: true
 }
 
 export type Draft_preferenceCountAggregateInputType = {
   id?: true
   user_id?: true
-  enabled?: true
   draftPrompt?: true
   signature?: true
   fontSize?: true
   fontColor?: true
   createdAt?: true
   updatedAt?: true
+  enabled?: true
   _all?: true
 }
 
@@ -206,13 +206,13 @@ export type draft_preferenceGroupByArgs<ExtArgs extends runtime.Types.Extensions
 export type Draft_preferenceGroupByOutputType = {
   id: string
   user_id: string
-  enabled: boolean
   draftPrompt: string | null
   signature: string | null
   fontSize: number
   fontColor: string
   createdAt: Date
   updatedAt: Date
+  enabled: boolean
   _count: Draft_preferenceCountAggregateOutputType | null
   _avg: Draft_preferenceAvgAggregateOutputType | null
   _sum: Draft_preferenceSumAggregateOutputType | null
@@ -241,26 +241,26 @@ export type draft_preferenceWhereInput = {
   NOT?: Prisma.draft_preferenceWhereInput | Prisma.draft_preferenceWhereInput[]
   id?: Prisma.StringFilter<"draft_preference"> | string
   user_id?: Prisma.StringFilter<"draft_preference"> | string
-  enabled?: Prisma.BoolFilter<"draft_preference"> | boolean
   draftPrompt?: Prisma.StringNullableFilter<"draft_preference"> | string | null
   signature?: Prisma.StringNullableFilter<"draft_preference"> | string | null
   fontSize?: Prisma.IntFilter<"draft_preference"> | number
   fontColor?: Prisma.StringFilter<"draft_preference"> | string
   createdAt?: Prisma.DateTimeFilter<"draft_preference"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"draft_preference"> | Date | string
+  enabled?: Prisma.BoolFilter<"draft_preference"> | boolean
   user_tokens?: Prisma.XOR<Prisma.User_tokensScalarRelationFilter, Prisma.user_tokensWhereInput>
 }
 
 export type draft_preferenceOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
-  enabled?: Prisma.SortOrder
   draftPrompt?: Prisma.SortOrderInput | Prisma.SortOrder
   signature?: Prisma.SortOrderInput | Prisma.SortOrder
   fontSize?: Prisma.SortOrder
   fontColor?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  enabled?: Prisma.SortOrder
   user_tokens?: Prisma.user_tokensOrderByWithRelationInput
 }
 
@@ -270,26 +270,26 @@ export type draft_preferenceWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.draft_preferenceWhereInput | Prisma.draft_preferenceWhereInput[]
   OR?: Prisma.draft_preferenceWhereInput[]
   NOT?: Prisma.draft_preferenceWhereInput | Prisma.draft_preferenceWhereInput[]
-  enabled?: Prisma.BoolFilter<"draft_preference"> | boolean
   draftPrompt?: Prisma.StringNullableFilter<"draft_preference"> | string | null
   signature?: Prisma.StringNullableFilter<"draft_preference"> | string | null
   fontSize?: Prisma.IntFilter<"draft_preference"> | number
   fontColor?: Prisma.StringFilter<"draft_preference"> | string
   createdAt?: Prisma.DateTimeFilter<"draft_preference"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"draft_preference"> | Date | string
+  enabled?: Prisma.BoolFilter<"draft_preference"> | boolean
   user_tokens?: Prisma.XOR<Prisma.User_tokensScalarRelationFilter, Prisma.user_tokensWhereInput>
 }, "id" | "user_id">
 
 export type draft_preferenceOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
-  enabled?: Prisma.SortOrder
   draftPrompt?: Prisma.SortOrderInput | Prisma.SortOrder
   signature?: Prisma.SortOrderInput | Prisma.SortOrder
   fontSize?: Prisma.SortOrder
   fontColor?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  enabled?: Prisma.SortOrder
   _count?: Prisma.draft_preferenceCountOrderByAggregateInput
   _avg?: Prisma.draft_preferenceAvgOrderByAggregateInput
   _max?: Prisma.draft_preferenceMaxOrderByAggregateInput
@@ -303,96 +303,96 @@ export type draft_preferenceScalarWhereWithAggregatesInput = {
   NOT?: Prisma.draft_preferenceScalarWhereWithAggregatesInput | Prisma.draft_preferenceScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"draft_preference"> | string
   user_id?: Prisma.StringWithAggregatesFilter<"draft_preference"> | string
-  enabled?: Prisma.BoolWithAggregatesFilter<"draft_preference"> | boolean
   draftPrompt?: Prisma.StringNullableWithAggregatesFilter<"draft_preference"> | string | null
   signature?: Prisma.StringNullableWithAggregatesFilter<"draft_preference"> | string | null
   fontSize?: Prisma.IntWithAggregatesFilter<"draft_preference"> | number
   fontColor?: Prisma.StringWithAggregatesFilter<"draft_preference"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"draft_preference"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"draft_preference"> | Date | string
+  enabled?: Prisma.BoolWithAggregatesFilter<"draft_preference"> | boolean
 }
 
 export type draft_preferenceCreateInput = {
   id?: string
-  enabled?: boolean
   draftPrompt?: string | null
   signature?: string | null
   fontSize?: number
   fontColor?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  enabled?: boolean
   user_tokens: Prisma.user_tokensCreateNestedOneWithoutDraft_preferenceInput
 }
 
 export type draft_preferenceUncheckedCreateInput = {
   id?: string
   user_id: string
-  enabled?: boolean
   draftPrompt?: string | null
   signature?: string | null
   fontSize?: number
   fontColor?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  enabled?: boolean
 }
 
 export type draft_preferenceUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draftPrompt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fontSize?: Prisma.IntFieldUpdateOperationsInput | number
   fontColor?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   user_tokens?: Prisma.user_tokensUpdateOneRequiredWithoutDraft_preferenceNestedInput
 }
 
 export type draft_preferenceUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
-  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draftPrompt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fontSize?: Prisma.IntFieldUpdateOperationsInput | number
   fontColor?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type draft_preferenceCreateManyInput = {
   id?: string
   user_id: string
-  enabled?: boolean
   draftPrompt?: string | null
   signature?: string | null
   fontSize?: number
   fontColor?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  enabled?: boolean
 }
 
 export type draft_preferenceUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draftPrompt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fontSize?: Prisma.IntFieldUpdateOperationsInput | number
   fontColor?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type draft_preferenceUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
-  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draftPrompt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fontSize?: Prisma.IntFieldUpdateOperationsInput | number
   fontColor?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type Draft_preferenceNullableScalarRelationFilter = {
@@ -403,13 +403,13 @@ export type Draft_preferenceNullableScalarRelationFilter = {
 export type draft_preferenceCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
-  enabled?: Prisma.SortOrder
   draftPrompt?: Prisma.SortOrder
   signature?: Prisma.SortOrder
   fontSize?: Prisma.SortOrder
   fontColor?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  enabled?: Prisma.SortOrder
 }
 
 export type draft_preferenceAvgOrderByAggregateInput = {
@@ -419,25 +419,25 @@ export type draft_preferenceAvgOrderByAggregateInput = {
 export type draft_preferenceMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
-  enabled?: Prisma.SortOrder
   draftPrompt?: Prisma.SortOrder
   signature?: Prisma.SortOrder
   fontSize?: Prisma.SortOrder
   fontColor?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  enabled?: Prisma.SortOrder
 }
 
 export type draft_preferenceMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
-  enabled?: Prisma.SortOrder
   draftPrompt?: Prisma.SortOrder
   signature?: Prisma.SortOrder
   fontSize?: Prisma.SortOrder
   fontColor?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  enabled?: Prisma.SortOrder
 }
 
 export type draft_preferenceSumOrderByAggregateInput = {
@@ -478,24 +478,24 @@ export type draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput = {
 
 export type draft_preferenceCreateWithoutUser_tokensInput = {
   id?: string
-  enabled?: boolean
   draftPrompt?: string | null
   signature?: string | null
   fontSize?: number
   fontColor?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  enabled?: boolean
 }
 
 export type draft_preferenceUncheckedCreateWithoutUser_tokensInput = {
   id?: string
-  enabled?: boolean
   draftPrompt?: string | null
   signature?: string | null
   fontSize?: number
   fontColor?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  enabled?: boolean
 }
 
 export type draft_preferenceCreateOrConnectWithoutUser_tokensInput = {
@@ -516,24 +516,24 @@ export type draft_preferenceUpdateToOneWithWhereWithoutUser_tokensInput = {
 
 export type draft_preferenceUpdateWithoutUser_tokensInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draftPrompt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fontSize?: Prisma.IntFieldUpdateOperationsInput | number
   fontColor?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type draft_preferenceUncheckedUpdateWithoutUser_tokensInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draftPrompt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fontSize?: Prisma.IntFieldUpdateOperationsInput | number
   fontColor?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 
@@ -541,55 +541,55 @@ export type draft_preferenceUncheckedUpdateWithoutUser_tokensInput = {
 export type draft_preferenceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   user_id?: boolean
-  enabled?: boolean
   draftPrompt?: boolean
   signature?: boolean
   fontSize?: boolean
   fontColor?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  enabled?: boolean
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["draft_preference"]>
 
 export type draft_preferenceSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   user_id?: boolean
-  enabled?: boolean
   draftPrompt?: boolean
   signature?: boolean
   fontSize?: boolean
   fontColor?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  enabled?: boolean
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["draft_preference"]>
 
 export type draft_preferenceSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   user_id?: boolean
-  enabled?: boolean
   draftPrompt?: boolean
   signature?: boolean
   fontSize?: boolean
   fontColor?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  enabled?: boolean
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["draft_preference"]>
 
 export type draft_preferenceSelectScalar = {
   id?: boolean
   user_id?: boolean
-  enabled?: boolean
   draftPrompt?: boolean
   signature?: boolean
   fontSize?: boolean
   fontColor?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  enabled?: boolean
 }
 
-export type draft_preferenceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "enabled" | "draftPrompt" | "signature" | "fontSize" | "fontColor" | "createdAt" | "updatedAt", ExtArgs["result"]["draft_preference"]>
+export type draft_preferenceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "draftPrompt" | "signature" | "fontSize" | "fontColor" | "createdAt" | "updatedAt" | "enabled", ExtArgs["result"]["draft_preference"]>
 export type draft_preferenceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
 }
@@ -608,13 +608,13 @@ export type $draft_preferencePayload<ExtArgs extends runtime.Types.Extensions.In
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     user_id: string
-    enabled: boolean
     draftPrompt: string | null
     signature: string | null
     fontSize: number
     fontColor: string
     createdAt: Date
     updatedAt: Date
+    enabled: boolean
   }, ExtArgs["result"]["draft_preference"]>
   composites: {}
 }
@@ -1041,13 +1041,13 @@ export interface Prisma__draft_preferenceClient<T, Null = never, ExtArgs extends
 export interface draft_preferenceFieldRefs {
   readonly id: Prisma.FieldRef<"draft_preference", 'String'>
   readonly user_id: Prisma.FieldRef<"draft_preference", 'String'>
-  readonly enabled: Prisma.FieldRef<"draft_preference", 'Boolean'>
   readonly draftPrompt: Prisma.FieldRef<"draft_preference", 'String'>
   readonly signature: Prisma.FieldRef<"draft_preference", 'String'>
   readonly fontSize: Prisma.FieldRef<"draft_preference", 'Int'>
   readonly fontColor: Prisma.FieldRef<"draft_preference", 'String'>
   readonly createdAt: Prisma.FieldRef<"draft_preference", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"draft_preference", 'DateTime'>
+  readonly enabled: Prisma.FieldRef<"draft_preference", 'Boolean'>
 }
     
 

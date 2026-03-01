@@ -134,42 +134,6 @@ export async function addMailtoDB(
   }
 }
 
-export async function addDraftToDB(
-  user_id: string,
-  message_id: string,
-  draft: string,
-  recipent: string,
-) {
-  try {
-    const data = await db.drafts.upsert({
-      where: {
-        user_id_message_id: {
-          user_id,
-          message_id,
-        },
-      },
-
-      update: {
-        draft: draft,
-      },
-      create: {
-        user_id: user_id,
-        message_id: message_id,
-        draft: draft,
-        receipent: recipent,
-        created_at: new Date().toISOString(),
-      },
-    });
-
-    if (!data) {
-      throw new Error(`Failed to create draft in db`);
-    }
-  } catch (error) {
-    console.error("Error adding draft to db");
-    throw error;
-  }
-}
-
 export async function getUserSubscribed(userId: string) {
   try {
     const data = await db.subscription.findFirst({

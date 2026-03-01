@@ -55,7 +55,6 @@ export const ModelName = {
   tag: 'tag',
   user_tags: 'user_tags',
   email_tracked: 'email_tracked',
-  drafts: 'drafts',
   Subscription: 'Subscription',
   PaymentHistory: 'PaymentHistory',
   Refund: 'Refund',
@@ -121,17 +120,6 @@ export const Email_trackedScalarFieldEnum = {
 } as const
 
 export type Email_trackedScalarFieldEnum = (typeof Email_trackedScalarFieldEnum)[keyof typeof Email_trackedScalarFieldEnum]
-
-
-export const DraftsScalarFieldEnum = {
-  user_id: 'user_id',
-  message_id: 'message_id',
-  draft: 'draft',
-  created_at: 'created_at',
-  receipent: 'receipent'
-} as const
-
-export type DraftsScalarFieldEnum = (typeof DraftsScalarFieldEnum)[keyof typeof DraftsScalarFieldEnum]
 
 
 export const SubscriptionScalarFieldEnum = {
@@ -208,13 +196,13 @@ export type RefundScalarFieldEnum = (typeof RefundScalarFieldEnum)[keyof typeof 
 export const Draft_preferenceScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
-  enabled: 'enabled',
   draftPrompt: 'draftPrompt',
   signature: 'signature',
   fontSize: 'fontSize',
   fontColor: 'fontColor',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  enabled: 'enabled'
 } as const
 
 export type Draft_preferenceScalarFieldEnum = (typeof Draft_preferenceScalarFieldEnum)[keyof typeof Draft_preferenceScalarFieldEnum]

@@ -388,7 +388,6 @@ export const ModelName = {
   tag: 'tag',
   user_tags: 'user_tags',
   email_tracked: 'email_tracked',
-  drafts: 'drafts',
   Subscription: 'Subscription',
   PaymentHistory: 'PaymentHistory',
   Refund: 'Refund',
@@ -408,7 +407,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user_tokens" | "tag" | "user_tags" | "email_tracked" | "drafts" | "subscription" | "paymentHistory" | "refund" | "draft_preference"
+    modelProps: "user_tokens" | "tag" | "user_tags" | "email_tracked" | "subscription" | "paymentHistory" | "refund" | "draft_preference"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -705,80 +704,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.email_trackedCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.Email_trackedCountAggregateOutputType> | number
-        }
-      }
-    }
-    drafts: {
-      payload: Prisma.$draftsPayload<ExtArgs>
-      fields: Prisma.draftsFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.draftsFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$draftsPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.draftsFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$draftsPayload>
-        }
-        findFirst: {
-          args: Prisma.draftsFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$draftsPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.draftsFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$draftsPayload>
-        }
-        findMany: {
-          args: Prisma.draftsFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$draftsPayload>[]
-        }
-        create: {
-          args: Prisma.draftsCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$draftsPayload>
-        }
-        createMany: {
-          args: Prisma.draftsCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.draftsCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$draftsPayload>[]
-        }
-        delete: {
-          args: Prisma.draftsDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$draftsPayload>
-        }
-        update: {
-          args: Prisma.draftsUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$draftsPayload>
-        }
-        deleteMany: {
-          args: Prisma.draftsDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.draftsUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.draftsUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$draftsPayload>[]
-        }
-        upsert: {
-          args: Prisma.draftsUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$draftsPayload>
-        }
-        aggregate: {
-          args: Prisma.DraftsAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateDrafts>
-        }
-        groupBy: {
-          args: Prisma.draftsGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.DraftsGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.draftsCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.DraftsCountAggregateOutputType> | number
         }
       }
     }
@@ -1162,17 +1087,6 @@ export const Email_trackedScalarFieldEnum = {
 export type Email_trackedScalarFieldEnum = (typeof Email_trackedScalarFieldEnum)[keyof typeof Email_trackedScalarFieldEnum]
 
 
-export const DraftsScalarFieldEnum = {
-  user_id: 'user_id',
-  message_id: 'message_id',
-  draft: 'draft',
-  created_at: 'created_at',
-  receipent: 'receipent'
-} as const
-
-export type DraftsScalarFieldEnum = (typeof DraftsScalarFieldEnum)[keyof typeof DraftsScalarFieldEnum]
-
-
 export const SubscriptionScalarFieldEnum = {
   id: 'id',
   clerkUserId: 'clerkUserId',
@@ -1247,13 +1161,13 @@ export type RefundScalarFieldEnum = (typeof RefundScalarFieldEnum)[keyof typeof 
 export const Draft_preferenceScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
-  enabled: 'enabled',
   draftPrompt: 'draftPrompt',
   signature: 'signature',
   fontSize: 'fontSize',
   fontColor: 'fontColor',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  enabled: 'enabled'
 } as const
 
 export type Draft_preferenceScalarFieldEnum = (typeof Draft_preferenceScalarFieldEnum)[keyof typeof Draft_preferenceScalarFieldEnum]
@@ -1481,7 +1395,6 @@ export type GlobalOmitConfig = {
   tag?: Prisma.tagOmit
   user_tags?: Prisma.user_tagsOmit
   email_tracked?: Prisma.email_trackedOmit
-  drafts?: Prisma.draftsOmit
   subscription?: Prisma.SubscriptionOmit
   paymentHistory?: Prisma.PaymentHistoryOmit
   refund?: Prisma.RefundOmit
