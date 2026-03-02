@@ -10,7 +10,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Infinity, Sparkles, Sliders, Tag, Loader2 } from "lucide-react";
+import { ArrowRight, Infinity, Sparkles, Sliders, Tag, Loader2, Settings } from "lucide-react";
 
 interface SubscriptionModalProps {
   open: boolean;
@@ -76,6 +76,11 @@ export const SubscriptionModal = ({
       title: "AI Draft responses",
       desc: "Draft responses automatically for any pending replies.",
     },
+    {
+      icon: Settings,
+      title: "Fully customizable",
+      desc: "Tailor the app and its features to fit your unique workflow.",
+    }
   ];
 
   return (
@@ -133,7 +138,7 @@ export const SubscriptionModal = ({
               </>
             ) : (
               <>
-                Join Now (7-day free trial)
+                Join Now (14-day free trial)
                 <ArrowRight className="ml-2 h-4 w-4" />
               </>
 
