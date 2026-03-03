@@ -1044,14 +1044,15 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 
 export const User_tokensScalarFieldEnum = {
   clerk_user_id: 'clerk_user_id',
-  gmail_email: 'gmail_email',
+  email: 'email',
   created_at: 'created_at',
   updated_at: 'updated_at',
   last_history_id: 'last_history_id',
   watch_activated: 'watch_activated',
   delete_at: 'delete_at',
   deleted_flag: 'deleted_flag',
-  use_external_ai_processing: 'use_external_ai_processing'
+  use_external_ai_processing: 'use_external_ai_processing',
+  is_gmail: 'is_gmail'
 } as const
 
 export type User_tokensScalarFieldEnum = (typeof User_tokensScalarFieldEnum)[keyof typeof User_tokensScalarFieldEnum]

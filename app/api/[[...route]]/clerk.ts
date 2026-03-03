@@ -1,6 +1,3 @@
-//https://gmail-classifier-nine.vercel.app/api/clerk/webhook
-
-import { deactivateWatch } from "@/lib/gmail";
 import { db } from "@/lib/prisma";
 import { WebhookEvent } from "@clerk/nextjs/server";
 import { Hono } from "hono";
@@ -46,11 +43,11 @@ const app = new Hono().post("/webhook", async (ctx) => {
     const data = await db.user_tokens.upsert({
       where: { clerk_user_id: id },
       update: {
-        gmail_email: email_addresses[0]?.email_address,
+        email: email_addresses[0]?.email_address,
       },
       create: {
         clerk_user_id: id,
-        gmail_email: email_addresses[0]?.email_address,
+        email: email_addresses[0]?.email_address,
       },
     });
 
@@ -65,10 +62,10 @@ const app = new Hono().post("/webhook", async (ctx) => {
     const { id, email_addresses } = evt.data;
     const data = await db.user_tokens.upsert({
       where: { clerk_user_id: id },
-      update: { gmail_email: email_addresses[0]?.email_address },
+      update: { email: email_addresses[0]?.email_address },
       create: {
         clerk_user_id: id,
-        gmail_email: email_addresses[0]?.email_address,
+        email: email_addresses[0]?.email_address,
       },
     });
 

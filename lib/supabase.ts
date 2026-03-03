@@ -3,7 +3,7 @@ import { db } from "./prisma";
 export async function getUserByEmail(email: string) {
   try {
     const data = await db.user_tokens.findUnique({
-      where: { gmail_email: email },
+      where: { email: email },
     });
 
     if (!data) {
@@ -20,7 +20,7 @@ export async function getUserByEmail(email: string) {
 export async function getLastHistoryId(email: string) {
   try {
     const data = await db.user_tokens.findUnique({
-      where: { gmail_email: email },
+      where: { email: email },
     });
 
     if (!data) {
@@ -41,7 +41,7 @@ export async function updateHistoryId(
 ) {
   try {
     const data = await db.user_tokens.update({
-      where: { gmail_email: email },
+      where: { email: email },
       data: {
         last_history_id: historyId,
         watch_activated: activated,
