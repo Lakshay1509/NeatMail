@@ -3,9 +3,10 @@
 import { Hono } from "hono";
 import { Webhook } from "standardwebhooks";
 import { addPaymenttoDb, addRefundtoDb, addSubscriptiontoDb } from "@/lib/payement";
-import { isDodoWebhookProcessed, markDodoWebhookProcessed } from "@/lib/redis";
+import { isDodoWebhookProcessed, markDodoWebhookProcessed, unmarkDodoWebhookProcessed } from "@/lib/redis";
 
 const app = new Hono().post("/", async (ctx) => {
+  let webhook_id = "";
   try {
     const WEBHOOK_SECRET = process.env.DODO_WEBHOOK_SECRET;
 
@@ -13,7 +14,8 @@ const app = new Hono().post("/", async (ctx) => {
       return ctx.json({ error: "Please add dodo webhook to .env" }, 400);
     }
 
-    const webhook_id = ctx.req.header("webhook-id");
+    webhook_id = ctx.req.header("webhook-id")??"";
+    
     const webhook_timestamp = ctx.req.header("webhook-timestamp");
     const webhook_signature = ctx.req.header("webhook-signature");
 
@@ -22,11 +24,12 @@ const app = new Hono().post("/", async (ctx) => {
     }
 
     if (await isDodoWebhookProcessed(webhook_id)) {
-            
-        return ctx.json({success:true},200);
+        return ctx.json({ success: true }, 200);
     }
 
-  
+    // Mark early to prevent duplicate concurrent processing.
+    // Will be unmarked on any failure so retries (exponential backoff) can reprocess.
+    await markDodoWebhookProcessed(webhook_id);
 
     const payload = await ctx.req.json();
     const body = JSON.stringify(payload);
@@ -41,6 +44,7 @@ const app = new Hono().post("/", async (ctx) => {
       });
     } catch (err) {
       console.error("Webhook verification failed", err);
+      await unmarkDodoWebhookProcessed(webhook_id);
       return ctx.json({ error: err }, 400);
     }
 
@@ -105,9 +109,10 @@ const app = new Hono().post("/", async (ctx) => {
       default:
         console.log("Unhandled webhook event:", payload.type);
     }
-    await markDodoWebhookProcessed(webhook_id);
+
     return ctx.json({ success: true }, 200);
   } catch (error) {
+    if (webhook_id) await unmarkDodoWebhookProcessed(webhook_id);
     return ctx.json({ error }, 500);
   }
 });

@@ -10,6 +10,7 @@ import checkout from './checkout'
 import dodowebhook from './dodo-webhook'
 import cron from './cron'
 import draftPreference from './draft-preference'
+import outlook from './outlook'
 
 
 export const runtime = "nodejs";
@@ -28,6 +29,7 @@ const routes = app
     .route('/dodowebhook',dodowebhook)
     .route('/cron',cron)
     .route('/draft-preference',draftPreference)
+    .route('/outlook',outlook)
 
 
 

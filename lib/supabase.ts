@@ -12,7 +12,7 @@ export async function getUserByEmail(email: string) {
 
     return data;
   } catch (error) {
-    console.error("Error getting clerk id");
+    console.error("Error getting clerk id`");
     throw error;
   }
 }
@@ -200,4 +200,25 @@ export async function useGetUserDraftPreference(userId: string) {
     console.error("Error getting draft prefernces ");
     throw error;
   }
+}
+
+export async function getUserIsGmail(userId:string){
+  try{
+     const user = await db.user_tokens.findUnique({
+        where: { clerk_user_id: userId },
+        select: { is_gmail: true },
+      });
+
+      if(!user){
+        throw Error
+      }
+
+      return {isGmail:user?.is_gmail}
+
+  }
+  catch (error) {
+    console.error("Error getting is user gmail ");
+    throw error;
+  }
+
 }

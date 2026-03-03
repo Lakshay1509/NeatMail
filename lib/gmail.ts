@@ -169,23 +169,13 @@ export async function createGmailDraft(
   return draft.data;
 }
 
-export async function activateWatch(subscription_id: string) {
+export async function activateWatch(userId: string) {
   try {
     const clerk = await clerkClient();
 
-    const data = await db.subscription.findUnique({
-      where: { dodoSubscriptionId: subscription_id },
-      select: {
-        clerkUserId: true,
-      },
-    });
-
-    if (!data?.clerkUserId) {
-      throw new Error("Subscription not found or user ID missing");
-    }
 
     const tokenResponse = await clerk.users.getUserOauthAccessToken(
-      data.clerkUserId,
+      userId,
       "google",
     );
 
@@ -216,7 +206,7 @@ export async function activateWatch(subscription_id: string) {
     return {
       success: true,
       history_id: historyId,
-      userId: data?.clerkUserId,
+      userId: userId,
     };
   } catch (error) {
     console.error(error);
@@ -224,23 +214,13 @@ export async function activateWatch(subscription_id: string) {
   }
 }
 
-export async function deactivateWatch(subscription_id: string) {
+export async function deactivateWatch(userId:string) {
   try {
     const clerk = await clerkClient();
 
-    const data = await db.subscription.findUnique({
-      where: { dodoSubscriptionId: subscription_id },
-      select: {
-        clerkUserId: true,
-        customerEmail: true,
-      },
-    });
-    if (!data?.clerkUserId) {
-      throw new Error("Subscription not found or user ID missing");
-    }
-
+    
     const tokenResponse = await clerk.users.getUserOauthAccessToken(
-      data.clerkUserId,
+      userId,
       "google",
     );
 
@@ -258,7 +238,7 @@ export async function deactivateWatch(subscription_id: string) {
 
     return {
       success: true,
-      userId: data?.clerkUserId,
+      userId: userId,
     };
   } catch (error) {
     console.error(error);

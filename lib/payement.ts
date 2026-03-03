@@ -1,11 +1,20 @@
-import { PaymentPayload, RefundPayload, SubscriptionPayload } from "@/types/dodo";
+import {
+  PaymentPayload,
+  RefundPayload,
+  SubscriptionPayload,
+} from "@/types/dodo";
+import { Prisma } from "@/prisma/generated/prisma/client";
 import { db } from "./prisma";
 import { activateWatch, deactivateWatch } from "./gmail";
+import {
+  createOutlookSubscription,
+  deleteOutlookSubscription,
+} from "./outlook";
+import { getUserIsGmail } from "./supabase";
 
 export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
   try {
     const data = payload.data;
-
 
     // Step 1: Handle database operations in transaction
     const subscription = await db.$transaction(async (tx) => {
@@ -44,6 +53,7 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
           metadata: data.metadata || {},
         },
       });
+      
 
       await tx.paymentHistory.updateMany({
         where: {
@@ -51,7 +61,7 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
           subscriptionId: null,
         },
         data: {
-          subscriptionId: sub.id,
+          subscriptionId: sub!.id,
         },
       });
 
@@ -59,12 +69,20 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
     });
 
     // Step 2: Handle watch operations outside transaction
-    if (data.status === 'active') {
-      await handleWatchActivation(data.subscription_id);
+    if (data.status === "active") {
+      await handleWatchActivation(
+        data.metadata?.clerk_user_id,
+      );
     }
 
-    if (data.status === 'expired' || data.status === 'cancelled' || data.status==='failed' || data.status==='on_hold' || data.status==='pending') {
-      await handleWatchDeactivation(data.subscription_id);
+    if (
+      data.status === "expired" ||
+      data.status === "cancelled" ||
+      data.status === "failed" ||
+      data.status === "on_hold" ||
+      data.status === "pending"
+    ) {
+      await handleWatchDeactivation(data.metadata?.clerk_user_id);
     }
 
     return subscription;
@@ -74,97 +92,120 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
   }
 }
 
-async function handleWatchActivation(subscriptionId: string): Promise<void> {
+async function handleWatchActivation(
+  userId: string,
+): Promise<void> {
+   const getUserIsGmailData = await getUserIsGmail(userId);
   try {
-    const response = await activateWatch(subscriptionId);
-    
-    if (response.success && response.userId) {
-      await db.user_tokens.update({
-        where: { clerk_user_id: response.userId },
-        data: {
-          watch_activated: true,
-          last_history_id: response.history_id,
-          updated_at: new Date(),
-        },
-      });
+    if (getUserIsGmailData.isGmail) {
+      const response = await activateWatch(userId);
+
+      if (response.success && response.userId) {
+        await db.user_tokens.update({
+          where: { clerk_user_id: response.userId },
+          data: {
+            watch_activated: true,
+            last_history_id: response.history_id,
+            updated_at: new Date(),
+          },
+        });
+      }
+    } else {
+      const outlookResponse = await createOutlookSubscription(userId);
+      if (outlookResponse?.id) {
+        await db.user_tokens.update({
+          where: { clerk_user_id: userId },
+          data: {
+            watch_activated: true,
+            updated_at: new Date(),
+          },
+        });
+      }
     }
   } catch (error) {
-   
+    if(getUserIsGmailData.isGmail){
     console.error("Failed to activate Gmail watch:", error);
-    
+    }
+    else{
+      console.error("Failed to activate outlook watch",error);
+    }
   }
 }
 
-async function handleWatchDeactivation(subscriptionId: string): Promise<void> {
+async function handleWatchDeactivation(userId:string): Promise<void> {
   try {
-    const response = await deactivateWatch(subscriptionId);
-    
-    if (response.success && response.userId) {
-      await db.user_tokens.update({
-        where: { clerk_user_id: response.userId },
-        data: {
-          watch_activated: false,
-          last_history_id: null,
-          updated_at: new Date(),
-        },
-      });
+
+    const isGmail = (await getUserIsGmail(userId)).isGmail;
+
+    if (isGmail) {
+      const response = await deactivateWatch(userId);
+      if (response.success && response.userId) {
+        await db.user_tokens.update({
+          where: { clerk_user_id: response.userId },
+          data: {
+            watch_activated: false,
+            last_history_id: null,
+            updated_at: new Date(),
+          },
+        });
+      }
+    } else {
+      const response = await deleteOutlookSubscription(userId);
+      if (response.success) {
+        await db.user_tokens.update({
+          where: { clerk_user_id: userId },
+          data: {
+            watch_activated: false,
+            updated_at: new Date(),
+          },
+        });
+      }
     }
   } catch (error) {
-    
-    console.error("Failed to deactivate Gmail watch:", error);
-    
+    console.error("Failed to deactivate watch:", error);
   }
 }
 
-export async function addPaymenttoDb(
-  payload: PaymentPayload,
-  retryCount = 0
-) {
+export async function addPaymenttoDb(payload: PaymentPayload, retryCount = 0) {
   const MAX_RETRIES = 3;
   const RETRY_DELAY_MS = 2000;
-  
+
   try {
     const data = payload.data;
 
-  
-
-    
     if (data.subscription_id) {
-      
       const subscriptionData = await db.subscription.findUnique({
         where: { dodoSubscriptionId: data.subscription_id },
       });
 
-      
       if (!subscriptionData && retryCount < MAX_RETRIES) {
         console.log(
           `Subscription not found, retrying in ${RETRY_DELAY_MS}ms (attempt ${
             retryCount + 1
-          }/${MAX_RETRIES})`
+          }/${MAX_RETRIES})`,
         );
         await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
         return addPaymenttoDb(payload, retryCount + 1);
       }
 
-      
       if (!subscriptionData) {
         console.error(
-          `Subscription not found after ${MAX_RETRIES} retries for payment ${data.payment_id}`
+          `Subscription not found after ${MAX_RETRIES} retries for payment ${data.payment_id}`,
         );
         throw new Error(`Subscription ${data.subscription_id} not found`);
       }
 
-     
       const existingPayment = await db.paymentHistory.findUnique({
         where: { dodoPaymentId: data.payment_id },
       });
 
       if (existingPayment && existingPayment.status === data.status) {
-        console.log(`Payment ${data.payment_id} already processed with same status`);
+        console.log(
+          `Payment ${data.payment_id} already processed with same status`,
+        );
         return;
       }
 
-      
       await db.$transaction(async (tx) => {
         await tx.paymentHistory.upsert({
           where: { dodoPaymentId: data.payment_id },
@@ -173,7 +214,7 @@ export async function addPaymenttoDb(
             subscriptionId: subscriptionData.id,
             settlementAmount: data.settlement_amount,
             currency: data.currency,
-            paymentType: data.payment_method_type ?? '',
+            paymentType: data.payment_method_type ?? "",
             paymentMethod: data.payment_method,
             errorCode: data.error_code,
             errorMessage: data.error_message,
@@ -199,7 +240,7 @@ export async function addPaymenttoDb(
             settlementAmount: data.settlement_amount,
             currency: data.currency,
             status: data.status,
-            paymentType: data.payment_method_type ?? '',
+            paymentType: data.payment_method_type ?? "",
             paymentMethod: data.payment_method,
             errorCode: data.error_code,
             errorMessage: data.error_message,
@@ -217,52 +258,47 @@ export async function addPaymenttoDb(
   }
 }
 
-
-export async function addRefundtoDb (
-  payload: RefundPayload
-){
-  try{
-
+export async function addRefundtoDb(payload: RefundPayload) {
+  try {
     const data = payload.data;
 
     const payment = await db.paymentHistory.findUnique({
-      where:{dodoPaymentId:data.payment_id}
-    })
+      where: { dodoPaymentId: data.payment_id },
+    });
 
     if (!payment) {
       throw new Error(`Payment not found for payment_id: ${data.payment_id}`);
     }
 
-    await db.$transaction(async(tx)=>{
+    await db.$transaction(async (tx) => {
       await tx.refund.upsert({
-        where:{dodoRefundId:data.refund_id},
-        update:{
-          amount:data.amount,
-          currency:data.currency,
-          status:data.status,
-          reason:data.reason,
-          isPartial:data.is_partial,
+        where: { dodoRefundId: data.refund_id },
+        update: {
+          amount: data.amount,
+          currency: data.currency,
+          status: data.status,
+          reason: data.reason,
+          isPartial: data.is_partial,
         },
-        create:{
-          user_tokens:{
-            connect:{clerk_user_id:data.metadata.clerk_user_id}
+        create: {
+          user_tokens: {
+            connect: { clerk_user_id: data.metadata.clerk_user_id },
           },
-          payment:{
-            connect:{id:payment.id}
+          payment: {
+            connect: { id: payment.id },
           },
-          dodoRefundId:data.refund_id,
-          dodoPaymentId:data.payment_id,
-          amount:data.amount,
-          currency:data.currency,
-          status:data.status,
-          reason:data.reason,
-          isPartial:data.is_partial,
-
-        }
-      })
-    })
-  }catch(error){
-    console.error("Error adding refund to db",error);
-    throw error
+          dodoRefundId: data.refund_id,
+          dodoPaymentId: data.payment_id,
+          amount: data.amount,
+          currency: data.currency,
+          status: data.status,
+          reason: data.reason,
+          isPartial: data.is_partial,
+        },
+      });
+    });
+  } catch (error) {
+    console.error("Error adding refund to db", error);
+    throw error;
   }
 }
