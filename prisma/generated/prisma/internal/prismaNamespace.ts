@@ -1048,12 +1048,12 @@ export const User_tokensScalarFieldEnum = {
   created_at: 'created_at',
   updated_at: 'updated_at',
   last_history_id: 'last_history_id',
-  outlook_id: 'outlook_id',
   watch_activated: 'watch_activated',
   delete_at: 'delete_at',
   deleted_flag: 'deleted_flag',
   use_external_ai_processing: 'use_external_ai_processing',
   is_gmail: 'is_gmail',
+  outlook_id: 'outlook_id',
   is_folder: 'is_folder'
 } as const
 
@@ -1065,8 +1065,8 @@ export const TagScalarFieldEnum = {
   name: 'name',
   created_at: 'created_at',
   color: 'color',
-  outlook_preset: 'outlook_preset',
-  user_id: 'user_id'
+  user_id: 'user_id',
+  outlook_preset: 'outlook_preset'
 } as const
 
 export type TagScalarFieldEnum = (typeof TagScalarFieldEnum)[keyof typeof TagScalarFieldEnum]

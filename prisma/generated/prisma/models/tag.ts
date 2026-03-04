@@ -29,8 +29,8 @@ export type TagMinAggregateOutputType = {
   name: string | null
   created_at: Date | null
   color: string | null
-  outlook_preset: string | null
   user_id: string | null
+  outlook_preset: string | null
 }
 
 export type TagMaxAggregateOutputType = {
@@ -38,8 +38,8 @@ export type TagMaxAggregateOutputType = {
   name: string | null
   created_at: Date | null
   color: string | null
-  outlook_preset: string | null
   user_id: string | null
+  outlook_preset: string | null
 }
 
 export type TagCountAggregateOutputType = {
@@ -47,8 +47,8 @@ export type TagCountAggregateOutputType = {
   name: number
   created_at: number
   color: number
-  outlook_preset: number
   user_id: number
+  outlook_preset: number
   _all: number
 }
 
@@ -58,8 +58,8 @@ export type TagMinAggregateInputType = {
   name?: true
   created_at?: true
   color?: true
-  outlook_preset?: true
   user_id?: true
+  outlook_preset?: true
 }
 
 export type TagMaxAggregateInputType = {
@@ -67,8 +67,8 @@ export type TagMaxAggregateInputType = {
   name?: true
   created_at?: true
   color?: true
-  outlook_preset?: true
   user_id?: true
+  outlook_preset?: true
 }
 
 export type TagCountAggregateInputType = {
@@ -76,8 +76,8 @@ export type TagCountAggregateInputType = {
   name?: true
   created_at?: true
   color?: true
-  outlook_preset?: true
   user_id?: true
+  outlook_preset?: true
   _all?: true
 }
 
@@ -158,8 +158,8 @@ export type TagGroupByOutputType = {
   name: string
   created_at: Date
   color: string
-  outlook_preset: string | null
   user_id: string | null
+  outlook_preset: string | null
   _count: TagCountAggregateOutputType | null
   _min: TagMinAggregateOutputType | null
   _max: TagMaxAggregateOutputType | null
@@ -188,8 +188,8 @@ export type tagWhereInput = {
   name?: Prisma.StringFilter<"tag"> | string
   created_at?: Prisma.DateTimeFilter<"tag"> | Date | string
   color?: Prisma.StringFilter<"tag"> | string
-  outlook_preset?: Prisma.StringNullableFilter<"tag"> | string | null
   user_id?: Prisma.StringNullableFilter<"tag"> | string | null
+  outlook_preset?: Prisma.StringNullableFilter<"tag"> | string | null
   email_tracked?: Prisma.Email_trackedListRelationFilter
   user_tokens?: Prisma.XOR<Prisma.User_tokensNullableScalarRelationFilter, Prisma.user_tokensWhereInput> | null
   user_tags?: Prisma.User_tagsListRelationFilter
@@ -200,8 +200,8 @@ export type tagOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   color?: Prisma.SortOrder
-  outlook_preset?: Prisma.SortOrderInput | Prisma.SortOrder
   user_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  outlook_preset?: Prisma.SortOrderInput | Prisma.SortOrder
   email_tracked?: Prisma.email_trackedOrderByRelationAggregateInput
   user_tokens?: Prisma.user_tokensOrderByWithRelationInput
   user_tags?: Prisma.user_tagsOrderByRelationAggregateInput
@@ -216,8 +216,8 @@ export type tagWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"tag"> | string
   created_at?: Prisma.DateTimeFilter<"tag"> | Date | string
   color?: Prisma.StringFilter<"tag"> | string
-  outlook_preset?: Prisma.StringNullableFilter<"tag"> | string | null
   user_id?: Prisma.StringNullableFilter<"tag"> | string | null
+  outlook_preset?: Prisma.StringNullableFilter<"tag"> | string | null
   email_tracked?: Prisma.Email_trackedListRelationFilter
   user_tokens?: Prisma.XOR<Prisma.User_tokensNullableScalarRelationFilter, Prisma.user_tokensWhereInput> | null
   user_tags?: Prisma.User_tagsListRelationFilter
@@ -228,8 +228,8 @@ export type tagOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   color?: Prisma.SortOrder
-  outlook_preset?: Prisma.SortOrderInput | Prisma.SortOrder
   user_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  outlook_preset?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.tagCountOrderByAggregateInput
   _max?: Prisma.tagMaxOrderByAggregateInput
   _min?: Prisma.tagMinOrderByAggregateInput
@@ -243,8 +243,8 @@ export type tagScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"tag"> | string
   created_at?: Prisma.DateTimeWithAggregatesFilter<"tag"> | Date | string
   color?: Prisma.StringWithAggregatesFilter<"tag"> | string
-  outlook_preset?: Prisma.StringNullableWithAggregatesFilter<"tag"> | string | null
   user_id?: Prisma.StringNullableWithAggregatesFilter<"tag"> | string | null
+  outlook_preset?: Prisma.StringNullableWithAggregatesFilter<"tag"> | string | null
 }
 
 export type tagCreateInput = {
@@ -263,8 +263,8 @@ export type tagUncheckedCreateInput = {
   name: string
   created_at?: Date | string
   color: string
-  outlook_preset?: string | null
   user_id?: string | null
+  outlook_preset?: string | null
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutTagInput
   user_tags?: Prisma.user_tagsUncheckedCreateNestedManyWithoutTagInput
 }
@@ -285,8 +285,8 @@ export type tagUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   color?: Prisma.StringFieldUpdateOperationsInput | string
-  outlook_preset?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_preset?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutTagNestedInput
   user_tags?: Prisma.user_tagsUncheckedUpdateManyWithoutTagNestedInput
 }
@@ -296,8 +296,8 @@ export type tagCreateManyInput = {
   name: string
   created_at?: Date | string
   color: string
-  outlook_preset?: string | null
   user_id?: string | null
+  outlook_preset?: string | null
 }
 
 export type tagUpdateManyMutationInput = {
@@ -313,8 +313,8 @@ export type tagUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   color?: Prisma.StringFieldUpdateOperationsInput | string
-  outlook_preset?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_preset?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type TagListRelationFilter = {
@@ -337,8 +337,8 @@ export type tagCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   color?: Prisma.SortOrder
-  outlook_preset?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
+  outlook_preset?: Prisma.SortOrder
 }
 
 export type tagMaxOrderByAggregateInput = {
@@ -346,8 +346,8 @@ export type tagMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   color?: Prisma.SortOrder
-  outlook_preset?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
+  outlook_preset?: Prisma.SortOrder
 }
 
 export type tagMinOrderByAggregateInput = {
@@ -355,8 +355,8 @@ export type tagMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   color?: Prisma.SortOrder
-  outlook_preset?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
+  outlook_preset?: Prisma.SortOrder
 }
 
 export type TagScalarRelationFilter = {
@@ -488,8 +488,8 @@ export type tagScalarWhereInput = {
   name?: Prisma.StringFilter<"tag"> | string
   created_at?: Prisma.DateTimeFilter<"tag"> | Date | string
   color?: Prisma.StringFilter<"tag"> | string
-  outlook_preset?: Prisma.StringNullableFilter<"tag"> | string | null
   user_id?: Prisma.StringNullableFilter<"tag"> | string | null
+  outlook_preset?: Prisma.StringNullableFilter<"tag"> | string | null
 }
 
 export type tagCreateWithoutUser_tagsInput = {
@@ -507,8 +507,8 @@ export type tagUncheckedCreateWithoutUser_tagsInput = {
   name: string
   created_at?: Date | string
   color: string
-  outlook_preset?: string | null
   user_id?: string | null
+  outlook_preset?: string | null
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutTagInput
 }
 
@@ -543,8 +543,8 @@ export type tagUncheckedUpdateWithoutUser_tagsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   color?: Prisma.StringFieldUpdateOperationsInput | string
-  outlook_preset?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_preset?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutTagNestedInput
 }
 
@@ -563,8 +563,8 @@ export type tagUncheckedCreateWithoutEmail_trackedInput = {
   name: string
   created_at?: Date | string
   color: string
-  outlook_preset?: string | null
   user_id?: string | null
+  outlook_preset?: string | null
   user_tags?: Prisma.user_tagsUncheckedCreateNestedManyWithoutTagInput
 }
 
@@ -599,8 +599,8 @@ export type tagUncheckedUpdateWithoutEmail_trackedInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   color?: Prisma.StringFieldUpdateOperationsInput | string
-  outlook_preset?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_preset?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   user_tags?: Prisma.user_tagsUncheckedUpdateManyWithoutTagNestedInput
 }
 
@@ -685,8 +685,8 @@ export type tagSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   name?: boolean
   created_at?: boolean
   color?: boolean
-  outlook_preset?: boolean
   user_id?: boolean
+  outlook_preset?: boolean
   email_tracked?: boolean | Prisma.tag$email_trackedArgs<ExtArgs>
   user_tokens?: boolean | Prisma.tag$user_tokensArgs<ExtArgs>
   user_tags?: boolean | Prisma.tag$user_tagsArgs<ExtArgs>
@@ -698,8 +698,8 @@ export type tagSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extension
   name?: boolean
   created_at?: boolean
   color?: boolean
-  outlook_preset?: boolean
   user_id?: boolean
+  outlook_preset?: boolean
   user_tokens?: boolean | Prisma.tag$user_tokensArgs<ExtArgs>
 }, ExtArgs["result"]["tag"]>
 
@@ -708,8 +708,8 @@ export type tagSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extension
   name?: boolean
   created_at?: boolean
   color?: boolean
-  outlook_preset?: boolean
   user_id?: boolean
+  outlook_preset?: boolean
   user_tokens?: boolean | Prisma.tag$user_tokensArgs<ExtArgs>
 }, ExtArgs["result"]["tag"]>
 
@@ -718,11 +718,11 @@ export type tagSelectScalar = {
   name?: boolean
   created_at?: boolean
   color?: boolean
-  outlook_preset?: boolean
   user_id?: boolean
+  outlook_preset?: boolean
 }
 
-export type tagOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "created_at" | "color" | "outlook_preset" | "user_id", ExtArgs["result"]["tag"]>
+export type tagOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "created_at" | "color" | "user_id" | "outlook_preset", ExtArgs["result"]["tag"]>
 export type tagInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   email_tracked?: boolean | Prisma.tag$email_trackedArgs<ExtArgs>
   user_tokens?: boolean | Prisma.tag$user_tokensArgs<ExtArgs>
@@ -748,8 +748,8 @@ export type $tagPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
     name: string
     created_at: Date
     color: string
-    outlook_preset: string | null
     user_id: string | null
+    outlook_preset: string | null
   }, ExtArgs["result"]["tag"]>
   composites: {}
 }
@@ -1180,8 +1180,8 @@ export interface tagFieldRefs {
   readonly name: Prisma.FieldRef<"tag", 'String'>
   readonly created_at: Prisma.FieldRef<"tag", 'DateTime'>
   readonly color: Prisma.FieldRef<"tag", 'String'>
-  readonly outlook_preset: Prisma.FieldRef<"tag", 'String'>
   readonly user_id: Prisma.FieldRef<"tag", 'String'>
+  readonly outlook_preset: Prisma.FieldRef<"tag", 'String'>
 }
     
 
