@@ -17,18 +17,17 @@ const UpdateFolderPrefernce = () => {
     return (
         <div>
             {data?.data.is_gmail === false && (
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between space-x-4">
                     <div>
                         <h2 className="text-lg font-semibold text-gray-900 mb-2">Move to Folder</h2>
-                        <p className="text-gray-600 text-sm md:text-base max-w-2xl">
-                            Automatically move categorized emails into their respective folders after classification.
+                        <p className="text-sm text-gray-500  max-w-md">
+                            {data?.data.is_folder
+                                ? 'Categorized emails are moved out of Inbox into their respective folders.'
+                                : 'Categorized emails are labeled and remain in Inbox.'}
                         </p>
                     </div>
                     <div className="flex flex-col items-end gap-3">
                         <div className="flex items-center gap-2 pt-1">
-                            <span className="text-sm font-medium text-gray-700">
-                                {data?.data.is_folder ? 'Active' : 'Inactive'}
-                            </span>
                             <Checkbox
                                 checked={data?.data.is_folder ?? false}
                                 onCheckedChange={handleCheckedChange}
