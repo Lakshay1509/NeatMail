@@ -143,7 +143,6 @@ model PaymentHistory {
 model Refund {
   id            String         @id @default(uuid())
   clerkUserId   String         @map("clerk_user_id")
-  paymentId     String         @map("payment_id")
   dodoRefundId  String         @unique @map("dodo_refund_id")
   dodoPaymentId String         @map("dodo_payment_id")
   amount        Int
@@ -153,6 +152,7 @@ model Refund {
   isPartial     Boolean        @map("is_partial")
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  paymentId     String         @map("payment_id")
   user_tokens   user_tokens    @relation(fields: [clerkUserId], references: [clerk_user_id], onDelete: Cascade)
   payment       PaymentHistory @relation(fields: [paymentId], references: [id])
 

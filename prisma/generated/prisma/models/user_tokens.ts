@@ -30,12 +30,12 @@ export type User_tokensMinAggregateOutputType = {
   created_at: Date | null
   updated_at: Date | null
   last_history_id: string | null
-  outlook_id: string | null
   watch_activated: boolean | null
   delete_at: Date | null
   deleted_flag: boolean | null
   use_external_ai_processing: boolean | null
   is_gmail: boolean | null
+  outlook_id: string | null
   is_folder: boolean | null
 }
 
@@ -45,12 +45,12 @@ export type User_tokensMaxAggregateOutputType = {
   created_at: Date | null
   updated_at: Date | null
   last_history_id: string | null
-  outlook_id: string | null
   watch_activated: boolean | null
   delete_at: Date | null
   deleted_flag: boolean | null
   use_external_ai_processing: boolean | null
   is_gmail: boolean | null
+  outlook_id: string | null
   is_folder: boolean | null
 }
 
@@ -60,12 +60,12 @@ export type User_tokensCountAggregateOutputType = {
   created_at: number
   updated_at: number
   last_history_id: number
-  outlook_id: number
   watch_activated: number
   delete_at: number
   deleted_flag: number
   use_external_ai_processing: number
   is_gmail: number
+  outlook_id: number
   is_folder: number
   _all: number
 }
@@ -77,12 +77,12 @@ export type User_tokensMinAggregateInputType = {
   created_at?: true
   updated_at?: true
   last_history_id?: true
-  outlook_id?: true
   watch_activated?: true
   delete_at?: true
   deleted_flag?: true
   use_external_ai_processing?: true
   is_gmail?: true
+  outlook_id?: true
   is_folder?: true
 }
 
@@ -92,12 +92,12 @@ export type User_tokensMaxAggregateInputType = {
   created_at?: true
   updated_at?: true
   last_history_id?: true
-  outlook_id?: true
   watch_activated?: true
   delete_at?: true
   deleted_flag?: true
   use_external_ai_processing?: true
   is_gmail?: true
+  outlook_id?: true
   is_folder?: true
 }
 
@@ -107,12 +107,12 @@ export type User_tokensCountAggregateInputType = {
   created_at?: true
   updated_at?: true
   last_history_id?: true
-  outlook_id?: true
   watch_activated?: true
   delete_at?: true
   deleted_flag?: true
   use_external_ai_processing?: true
   is_gmail?: true
+  outlook_id?: true
   is_folder?: true
   _all?: true
 }
@@ -195,12 +195,12 @@ export type User_tokensGroupByOutputType = {
   created_at: Date
   updated_at: Date
   last_history_id: string | null
-  outlook_id: string | null
   watch_activated: boolean
   delete_at: Date | null
   deleted_flag: boolean
   use_external_ai_processing: boolean
   is_gmail: boolean
+  outlook_id: string | null
   is_folder: boolean
   _count: User_tokensCountAggregateOutputType | null
   _min: User_tokensMinAggregateOutputType | null
@@ -231,12 +231,12 @@ export type user_tokensWhereInput = {
   created_at?: Prisma.DateTimeFilter<"user_tokens"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"user_tokens"> | Date | string
   last_history_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
-  outlook_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
   watch_activated?: Prisma.BoolFilter<"user_tokens"> | boolean
   delete_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
   deleted_flag?: Prisma.BoolFilter<"user_tokens"> | boolean
   use_external_ai_processing?: Prisma.BoolFilter<"user_tokens"> | boolean
   is_gmail?: Prisma.BoolFilter<"user_tokens"> | boolean
+  outlook_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
   is_folder?: Prisma.BoolFilter<"user_tokens"> | boolean
   draft_preference?: Prisma.XOR<Prisma.Draft_preferenceNullableScalarRelationFilter, Prisma.draft_preferenceWhereInput> | null
   email_tracked?: Prisma.Email_trackedListRelationFilter
@@ -253,12 +253,12 @@ export type user_tokensOrderByWithRelationInput = {
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrderInput | Prisma.SortOrder
-  outlook_id?: Prisma.SortOrderInput | Prisma.SortOrder
   watch_activated?: Prisma.SortOrder
   delete_at?: Prisma.SortOrderInput | Prisma.SortOrder
   deleted_flag?: Prisma.SortOrder
   use_external_ai_processing?: Prisma.SortOrder
   is_gmail?: Prisma.SortOrder
+  outlook_id?: Prisma.SortOrderInput | Prisma.SortOrder
   is_folder?: Prisma.SortOrder
   draft_preference?: Prisma.draft_preferenceOrderByWithRelationInput
   email_tracked?: Prisma.email_trackedOrderByRelationAggregateInput
@@ -278,12 +278,12 @@ export type user_tokensWhereUniqueInput = Prisma.AtLeast<{
   created_at?: Prisma.DateTimeFilter<"user_tokens"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"user_tokens"> | Date | string
   last_history_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
-  outlook_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
   watch_activated?: Prisma.BoolFilter<"user_tokens"> | boolean
   delete_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
   deleted_flag?: Prisma.BoolFilter<"user_tokens"> | boolean
   use_external_ai_processing?: Prisma.BoolFilter<"user_tokens"> | boolean
   is_gmail?: Prisma.BoolFilter<"user_tokens"> | boolean
+  outlook_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
   is_folder?: Prisma.BoolFilter<"user_tokens"> | boolean
   draft_preference?: Prisma.XOR<Prisma.Draft_preferenceNullableScalarRelationFilter, Prisma.draft_preferenceWhereInput> | null
   email_tracked?: Prisma.Email_trackedListRelationFilter
@@ -300,12 +300,12 @@ export type user_tokensOrderByWithAggregationInput = {
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrderInput | Prisma.SortOrder
-  outlook_id?: Prisma.SortOrderInput | Prisma.SortOrder
   watch_activated?: Prisma.SortOrder
   delete_at?: Prisma.SortOrderInput | Prisma.SortOrder
   deleted_flag?: Prisma.SortOrder
   use_external_ai_processing?: Prisma.SortOrder
   is_gmail?: Prisma.SortOrder
+  outlook_id?: Prisma.SortOrderInput | Prisma.SortOrder
   is_folder?: Prisma.SortOrder
   _count?: Prisma.user_tokensCountOrderByAggregateInput
   _max?: Prisma.user_tokensMaxOrderByAggregateInput
@@ -321,12 +321,12 @@ export type user_tokensScalarWhereWithAggregatesInput = {
   created_at?: Prisma.DateTimeWithAggregatesFilter<"user_tokens"> | Date | string
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"user_tokens"> | Date | string
   last_history_id?: Prisma.StringNullableWithAggregatesFilter<"user_tokens"> | string | null
-  outlook_id?: Prisma.StringNullableWithAggregatesFilter<"user_tokens"> | string | null
   watch_activated?: Prisma.BoolWithAggregatesFilter<"user_tokens"> | boolean
   delete_at?: Prisma.DateTimeNullableWithAggregatesFilter<"user_tokens"> | Date | string | null
   deleted_flag?: Prisma.BoolWithAggregatesFilter<"user_tokens"> | boolean
   use_external_ai_processing?: Prisma.BoolWithAggregatesFilter<"user_tokens"> | boolean
   is_gmail?: Prisma.BoolWithAggregatesFilter<"user_tokens"> | boolean
+  outlook_id?: Prisma.StringNullableWithAggregatesFilter<"user_tokens"> | string | null
   is_folder?: Prisma.BoolWithAggregatesFilter<"user_tokens"> | boolean
 }
 
@@ -336,12 +336,12 @@ export type user_tokensCreateInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
-  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: string | null
   is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
@@ -358,12 +358,12 @@ export type user_tokensUncheckedCreateInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
-  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: string | null
   is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -380,12 +380,12 @@ export type user_tokensUpdateInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
@@ -402,12 +402,12 @@ export type user_tokensUncheckedUpdateInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -424,12 +424,12 @@ export type user_tokensCreateManyInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
-  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: string | null
   is_folder?: boolean
 }
 
@@ -439,12 +439,12 @@ export type user_tokensUpdateManyMutationInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
@@ -454,12 +454,12 @@ export type user_tokensUncheckedUpdateManyInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
@@ -469,12 +469,12 @@ export type user_tokensCountOrderByAggregateInput = {
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrder
-  outlook_id?: Prisma.SortOrder
   watch_activated?: Prisma.SortOrder
   delete_at?: Prisma.SortOrder
   deleted_flag?: Prisma.SortOrder
   use_external_ai_processing?: Prisma.SortOrder
   is_gmail?: Prisma.SortOrder
+  outlook_id?: Prisma.SortOrder
   is_folder?: Prisma.SortOrder
 }
 
@@ -484,12 +484,12 @@ export type user_tokensMaxOrderByAggregateInput = {
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrder
-  outlook_id?: Prisma.SortOrder
   watch_activated?: Prisma.SortOrder
   delete_at?: Prisma.SortOrder
   deleted_flag?: Prisma.SortOrder
   use_external_ai_processing?: Prisma.SortOrder
   is_gmail?: Prisma.SortOrder
+  outlook_id?: Prisma.SortOrder
   is_folder?: Prisma.SortOrder
 }
 
@@ -499,12 +499,12 @@ export type user_tokensMinOrderByAggregateInput = {
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrder
-  outlook_id?: Prisma.SortOrder
   watch_activated?: Prisma.SortOrder
   delete_at?: Prisma.SortOrder
   deleted_flag?: Prisma.SortOrder
   use_external_ai_processing?: Prisma.SortOrder
   is_gmail?: Prisma.SortOrder
+  outlook_id?: Prisma.SortOrder
   is_folder?: Prisma.SortOrder
 }
 
@@ -644,12 +644,12 @@ export type user_tokensCreateWithoutTagInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
-  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: string | null
   is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
@@ -665,12 +665,12 @@ export type user_tokensUncheckedCreateWithoutTagInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
-  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: string | null
   is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -702,12 +702,12 @@ export type user_tokensUpdateWithoutTagInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
@@ -723,12 +723,12 @@ export type user_tokensUncheckedUpdateWithoutTagInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -744,12 +744,12 @@ export type user_tokensCreateWithoutUser_tagsInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
-  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: string | null
   is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
@@ -765,12 +765,12 @@ export type user_tokensUncheckedCreateWithoutUser_tagsInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
-  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: string | null
   is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -802,12 +802,12 @@ export type user_tokensUpdateWithoutUser_tagsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
@@ -823,12 +823,12 @@ export type user_tokensUncheckedUpdateWithoutUser_tagsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -844,12 +844,12 @@ export type user_tokensCreateWithoutEmail_trackedInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
-  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: string | null
   is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
@@ -865,12 +865,12 @@ export type user_tokensUncheckedCreateWithoutEmail_trackedInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
-  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: string | null
   is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -902,12 +902,12 @@ export type user_tokensUpdateWithoutEmail_trackedInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
@@ -923,12 +923,12 @@ export type user_tokensUncheckedUpdateWithoutEmail_trackedInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -944,12 +944,12 @@ export type user_tokensCreateWithoutSubscriptionsInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
-  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: string | null
   is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
@@ -965,12 +965,12 @@ export type user_tokensUncheckedCreateWithoutSubscriptionsInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
-  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: string | null
   is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -1002,12 +1002,12 @@ export type user_tokensUpdateWithoutSubscriptionsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
@@ -1023,12 +1023,12 @@ export type user_tokensUncheckedUpdateWithoutSubscriptionsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -1044,12 +1044,12 @@ export type user_tokensCreateWithoutPayment_historyInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
-  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: string | null
   is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
@@ -1065,12 +1065,12 @@ export type user_tokensUncheckedCreateWithoutPayment_historyInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
-  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: string | null
   is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -1102,12 +1102,12 @@ export type user_tokensUpdateWithoutPayment_historyInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
@@ -1123,12 +1123,12 @@ export type user_tokensUncheckedUpdateWithoutPayment_historyInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -1144,12 +1144,12 @@ export type user_tokensCreateWithoutRefundsInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
-  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: string | null
   is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
@@ -1165,12 +1165,12 @@ export type user_tokensUncheckedCreateWithoutRefundsInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
-  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: string | null
   is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -1202,12 +1202,12 @@ export type user_tokensUpdateWithoutRefundsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
@@ -1223,12 +1223,12 @@ export type user_tokensUncheckedUpdateWithoutRefundsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -1244,12 +1244,12 @@ export type user_tokensCreateWithoutDraft_preferenceInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
-  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: string | null
   is_folder?: boolean
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
@@ -1265,12 +1265,12 @@ export type user_tokensUncheckedCreateWithoutDraft_preferenceInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
-  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: string | null
   is_folder?: boolean
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -1302,12 +1302,12 @@ export type user_tokensUpdateWithoutDraft_preferenceInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
@@ -1323,12 +1323,12 @@ export type user_tokensUncheckedUpdateWithoutDraft_preferenceInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -1420,12 +1420,12 @@ export type user_tokensSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   created_at?: boolean
   updated_at?: boolean
   last_history_id?: boolean
-  outlook_id?: boolean
   watch_activated?: boolean
   delete_at?: boolean
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: boolean
   is_folder?: boolean
   draft_preference?: boolean | Prisma.user_tokens$draft_preferenceArgs<ExtArgs>
   email_tracked?: boolean | Prisma.user_tokens$email_trackedArgs<ExtArgs>
@@ -1443,12 +1443,12 @@ export type user_tokensSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   created_at?: boolean
   updated_at?: boolean
   last_history_id?: boolean
-  outlook_id?: boolean
   watch_activated?: boolean
   delete_at?: boolean
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: boolean
   is_folder?: boolean
 }, ExtArgs["result"]["user_tokens"]>
 
@@ -1458,12 +1458,12 @@ export type user_tokensSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   created_at?: boolean
   updated_at?: boolean
   last_history_id?: boolean
-  outlook_id?: boolean
   watch_activated?: boolean
   delete_at?: boolean
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: boolean
   is_folder?: boolean
 }, ExtArgs["result"]["user_tokens"]>
 
@@ -1473,16 +1473,16 @@ export type user_tokensSelectScalar = {
   created_at?: boolean
   updated_at?: boolean
   last_history_id?: boolean
-  outlook_id?: boolean
   watch_activated?: boolean
   delete_at?: boolean
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  outlook_id?: boolean
   is_folder?: boolean
 }
 
-export type user_tokensOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"clerk_user_id" | "email" | "created_at" | "updated_at" | "last_history_id" | "outlook_id" | "watch_activated" | "delete_at" | "deleted_flag" | "use_external_ai_processing" | "is_gmail" | "is_folder", ExtArgs["result"]["user_tokens"]>
+export type user_tokensOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"clerk_user_id" | "email" | "created_at" | "updated_at" | "last_history_id" | "watch_activated" | "delete_at" | "deleted_flag" | "use_external_ai_processing" | "is_gmail" | "outlook_id" | "is_folder", ExtArgs["result"]["user_tokens"]>
 export type user_tokensInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   draft_preference?: boolean | Prisma.user_tokens$draft_preferenceArgs<ExtArgs>
   email_tracked?: boolean | Prisma.user_tokens$email_trackedArgs<ExtArgs>
@@ -1513,12 +1513,12 @@ export type $user_tokensPayload<ExtArgs extends runtime.Types.Extensions.Interna
     created_at: Date
     updated_at: Date
     last_history_id: string | null
-    outlook_id: string | null
     watch_activated: boolean
     delete_at: Date | null
     deleted_flag: boolean
     use_external_ai_processing: boolean
     is_gmail: boolean
+    outlook_id: string | null
     is_folder: boolean
   }, ExtArgs["result"]["user_tokens"]>
   composites: {}
@@ -1955,12 +1955,12 @@ export interface user_tokensFieldRefs {
   readonly created_at: Prisma.FieldRef<"user_tokens", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"user_tokens", 'DateTime'>
   readonly last_history_id: Prisma.FieldRef<"user_tokens", 'String'>
-  readonly outlook_id: Prisma.FieldRef<"user_tokens", 'String'>
   readonly watch_activated: Prisma.FieldRef<"user_tokens", 'Boolean'>
   readonly delete_at: Prisma.FieldRef<"user_tokens", 'DateTime'>
   readonly deleted_flag: Prisma.FieldRef<"user_tokens", 'Boolean'>
   readonly use_external_ai_processing: Prisma.FieldRef<"user_tokens", 'Boolean'>
   readonly is_gmail: Prisma.FieldRef<"user_tokens", 'Boolean'>
+  readonly outlook_id: Prisma.FieldRef<"user_tokens", 'String'>
   readonly is_folder: Prisma.FieldRef<"user_tokens", 'Boolean'>
 }
     
