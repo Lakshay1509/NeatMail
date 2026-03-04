@@ -43,7 +43,7 @@ const app = new Hono()
         return ctx.json({ success: true, historyId: response.history_id }, 200);
       }
 
-      if (userData.is_gmail === false) {
+      else{
         const response = await createOutlookSubscription(userId);
 
         if (!response) {
@@ -91,7 +91,7 @@ const app = new Hono()
         return ctx.json({ success: true}, 200);
       }
 
-      if (userData.is_gmail === false) {
+      else{
         const response = await deleteOutlookSubscription(userId);
 
         if (!response) {
