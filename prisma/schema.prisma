@@ -11,16 +11,16 @@ datasource db {
 
 model user_tokens {
   clerk_user_id              String            @id @unique
-  email                      String            @unique(map: "user_tokens_gmail_email_key")
+  email                      String            @unique
   created_at                 DateTime          @default(now()) @db.Timestamp(6)
   updated_at                 DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
   last_history_id            String?
-  outlook_id                 String?
   watch_activated            Boolean           @default(false)
   delete_at                  DateTime?
   deleted_flag               Boolean           @default(false)
   use_external_ai_processing Boolean           @default(true)
   is_gmail                   Boolean           @default(true)
+  outlook_id                 String?
   is_folder                  Boolean           @default(true)
   draft_preference           draft_preference?
   email_tracked              email_tracked[]
@@ -34,15 +34,15 @@ model user_tokens {
 }
 
 model tag {
-  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name          String
-  created_at    DateTime        @default(now()) @db.Timestamptz(6)
-  color         String
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  created_at     DateTime        @default(now()) @db.Timestamptz(6)
+  color          String
+  user_id        String?
   outlook_preset String?
-  user_id       String?
-  email_tracked email_tracked[]
-  user_tokens   user_tokens?    @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
-  user_tags     user_tags[]
+  email_tracked  email_tracked[]
+  user_tokens    user_tokens?    @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+  user_tags      user_tags[]
 
   @@unique([name, user_id])
   @@schema("public")
@@ -143,6 +143,7 @@ model PaymentHistory {
 model Refund {
   id            String         @id @default(uuid())
   clerkUserId   String         @map("clerk_user_id")
+  paymentId     String         @map("payment_id")
   dodoRefundId  String         @unique @map("dodo_refund_id")
   dodoPaymentId String         @map("dodo_payment_id")
   amount        Int
@@ -152,7 +153,6 @@ model Refund {
   isPartial     Boolean        @map("is_partial")
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
-  paymentId     String         @map("payment_id")
   user_tokens   user_tokens    @relation(fields: [clerkUserId], references: [clerk_user_id], onDelete: Cascade)
   payment       PaymentHistory @relation(fields: [paymentId], references: [id])
 
