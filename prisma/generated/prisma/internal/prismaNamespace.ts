@@ -1064,6 +1064,7 @@ export const TagScalarFieldEnum = {
   name: 'name',
   created_at: 'created_at',
   color: 'color',
+  outlook_preset: 'outlook_preset',
   user_id: 'user_id'
 } as const
 

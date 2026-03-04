@@ -26,3 +26,31 @@ export const colors = [
   { value: "#662e37" }, { value: "#ebdbde" }, { value: "#cca6ac" }, { value: "#094228" },
   { value: "#42d692" }, { value: "#16a765" }
 ];
+
+export const outlook_colors = [
+  { name: "preset0",  value: "preset0",  color: "#e74856" },
+  { name: "preset1",  value: "preset1",  color: "#ff8c00" },
+  { name: "preset2",  value: "preset2",  color: "#f4d00c" },
+  { name: "preset3",  value: "preset3",  color: "#16c60c" },
+  { name: "preset4",  value: "preset4",  color: "#0099bc" },
+  { name: "preset5",  value: "preset5",  color: "#0078d7" },
+  { name: "preset6",  value: "preset6",  color: "#8764b8" },
+  { name: "preset7",  value: "preset7",  color: "#f7630c" },
+  { name: "preset8",  value: "preset8",  color: "#ca5010" },
+  { name: "preset9",  value: "preset9",  color: "#da3b01" },
+  { name: "preset10", value: "preset10", color: "#ef6950" },
+  { name: "preset11", value: "preset11", color: "#d13438" },
+  { name: "preset12", value: "preset12", color: "#ff4343" },
+  { name: "preset13", value: "preset13", color: "#e3008c" },
+  { name: "preset14", value: "preset14", color: "#bf0077" },
+  { name: "preset15", value: "preset15", color: "#c239b3" },
+  { name: "preset16", value: "preset16", color: "#9a0089" },
+  { name: "preset17", value: "preset17", color: "#881798" },
+  { name: "preset18", value: "preset18", color: "#744da9" },
+  { name: "preset19", value: "preset19", color: "#68217a" },
+  { name: "preset20", value: "preset20", color: "#498205" },
+  { name: "preset21", value: "preset21", color: "#107c10" },
+  { name: "preset22", value: "preset22", color: "#10893e" },
+  { name: "preset23", value: "preset23", color: "#ffb900" },
+  { name: "preset24", value: "preset24", color: "#7a7574" },
+];

@@ -10,15 +10,15 @@ import OnboardingSuccessDialog from "@/components/OnboardComplete"
 import { toast } from "sonner"
 
 export const CATEGORIES = [
-	{ name: 'Action Needed', color: '#cc3a21', description: 'Emails that need your attention' },
-	{ name: 'Pending Response', color: '#eaa041', description: "Emails you are expected to reply" },
-	{ name: 'Automated alerts', color: '#653e9b', description: 'Automated updates from tools you use' },
-	{name : 'Finance', color :'#3c78d8' , description : 'Finance or Payments related mails'},
-	{ name: 'Event update', color: '#285bac', description: 'Calendar updates from Zoom, Google Meet, etc' },
-	{ name: 'Discussion', color: '#0b804b', description: 'Team chats in tools like Google Docs or Microsoft Office' },
-	{ name: 'Read only', color: '#666666', description: "Emails that don't require your response, but are important" },
-	{ name: 'Resolved', color: '#076239', description: 'Email threads that have been resolved' },
-	{ name: 'Marketing', color: '#994a64', description: 'Marketing or cold emails' },
+	{ name: 'Action Needed', color: '#cc3a21', outlookColor: 'preset0', description: 'Emails that need your attention' },
+	{ name: 'Pending Response', color: '#eaa041', outlookColor: 'preset1', description: "Emails you are expected to reply" },
+	{ name: 'Automated alerts', color: '#653e9b', outlookColor: 'preset8', description: 'Automated updates from tools you use' },
+	{ name: 'Finance', color: '#3c78d8', outlookColor: 'preset7', description: 'Finance or Payments related mails' },
+	{ name: 'Event update', color: '#285bac', outlookColor: 'preset22', description: 'Calendar updates from Zoom, Google Meet, etc' },
+	{ name: 'Discussion', color: '#0b804b', outlookColor: 'preset4', description: 'Team chats in tools like Google Docs or Microsoft Office' },
+	{ name: 'Read only', color: '#666666', outlookColor: 'preset12', description: "Emails that don't require your response, but are important" },
+	{ name: 'Resolved', color: '#076239', outlookColor: 'preset19', description: 'Email threads that have been resolved' },
+	{ name: 'Marketing', color: '#994a64', outlookColor: 'preset9', description: 'Marketing or cold emails' },
 ]
 
 interface EmailCategorizationModalProps {

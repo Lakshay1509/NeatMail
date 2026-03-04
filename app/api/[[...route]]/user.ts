@@ -6,6 +6,26 @@ import { zValidator } from "@hono/zod-validator";
 import z, { boolean } from "zod";
 
 const app = new Hono()
+
+  .get('/default',async(ctx)=>{
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const data = await db.user_tokens.findUnique({
+      where: { clerk_user_id: userId },
+    });
+
+    if (!data) {
+      return ctx.json({ error: "Error getting user data" }, 500);
+    }
+
+    return ctx.json({ data }, 200);
+
+  })
+
   .get("/watch", async (ctx) => {
     const { userId } = await auth();
 

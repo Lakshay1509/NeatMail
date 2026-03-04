@@ -37,6 +37,7 @@ model tag {
   name          String
   created_at    DateTime        @default(now()) @db.Timestamptz(6)
   color         String
+  outlook_preset String?
   user_id       String?
   email_tracked email_tracked[]
   user_tokens   user_tokens?    @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)

@@ -33,7 +33,7 @@ export const addCustomTags = () => {
    
     onError: (error) => {
       console.log(error);
-      toast.error("Failed to add custom label");
+      toast.error(error ? String(error.message) : "Failed to add custom label");
     },
   });
 };

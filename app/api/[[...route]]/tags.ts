@@ -3,7 +3,7 @@ import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import z from "zod/v3";
-import { colors } from "@/lib/colors";
+import { colors, outlook_colors } from "@/lib/colors";
 import { google } from "googleapis";
 import { getGmailClient } from "@/lib/gmail";
 import { getTagsUser } from "@/lib/supabase";
@@ -164,6 +164,7 @@ const app = new Hono()
         tag: z.string(),
         color: z.string(),
         description: z.string(),
+        outlookColor:z.string().optional()
       }),
     ),
     async (ctx) => {
@@ -181,14 +182,25 @@ const app = new Hono()
         },
       });
 
-      const colorExist = colors.some((color) => color.value === values.color);
 
-      if (exist || !colorExist) {
+      const colorGmailExist = colors.some((color) => color.value === values.color);
+      const colorOutlookExist = outlook_colors.some((color)=>color.color===values.color)
+
+      if (exist ) {
         return ctx.json(
-          { error: "Same name tag exists or color invalid" },
+          { error: "Same name tag exists" },
           500,
         );
       }
+
+      if(!colorGmailExist && !colorOutlookExist){
+         return ctx.json(
+          { error: "No color exists" },
+          500,
+        );
+      }
+
+      
 
       const [data, addTagToUser] = await db.$transaction(async (tx) => {
         const tag = await tx.tag.create({
@@ -196,6 +208,7 @@ const app = new Hono()
             name: values.tag.trim(),
             user_id: userId,
             color: values.color,
+            outlook_preset:values.outlookColor
           },
         });
 
