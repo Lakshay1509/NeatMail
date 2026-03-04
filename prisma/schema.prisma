@@ -21,7 +21,7 @@ model user_tokens {
   use_external_ai_processing Boolean           @default(true)
   is_gmail                   Boolean           @default(true)
   outlook_id                 String?
-  is_folder                  Boolean           @default(true)
+  is_folder                  Boolean           @default(false)
   draft_preference           draft_preference?
   email_tracked              email_tracked[]
   payment_history            PaymentHistory[]
