@@ -21,6 +21,14 @@ const app = new Hono()
       return ctx.json({error:"Limit overflow"},500);
     }
 
+    const userData = await db.user_tokens.findUnique({
+      where:{clerk_user_id:userId}
+    })
+
+    if(!userData){
+      return ctx.json({error:"Error getting user data"},500)
+    }
+
     const messageData = await db.email_tracked.findMany({
       where:{user_id:userId},
       orderBy:{
@@ -55,7 +63,7 @@ const app = new Hono()
    const ids = messageData.map(item => item.message_id);
 
 
-   if(messageData[0].user_tokens.is_gmail===true){
+   if(userData.is_gmail===true){
     const emails = await getLabelledMails(userId, ids);
     return ctx.json({ emails, nextCursor }, 200);
    }
