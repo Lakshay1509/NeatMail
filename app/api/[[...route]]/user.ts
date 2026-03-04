@@ -1,4 +1,3 @@
-import { deactivateWatch } from "@/lib/gmail";
 import { db } from "@/lib/prisma";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { Hono } from "hono";
@@ -7,6 +6,26 @@ import { zValidator } from "@hono/zod-validator";
 import z, { boolean } from "zod";
 
 const app = new Hono()
+
+  .get('/default',async(ctx)=>{
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const data = await db.user_tokens.findUnique({
+      where: { clerk_user_id: userId },
+    });
+
+    if (!data) {
+      return ctx.json({ error: "Error getting user data" }, 500);
+    }
+
+    return ctx.json({ data }, 200);
+
+  })
+
   .get("/watch", async (ctx) => {
     const { userId } = await auth();
 
@@ -16,9 +35,9 @@ const app = new Hono()
 
     const data = await db.user_tokens.findUnique({
       where: { clerk_user_id: userId },
-      select:{
-        watch_activated:true
-      }
+      select: {
+        watch_activated: true,
+      },
     });
 
     if (!data) {
@@ -54,7 +73,6 @@ const app = new Hono()
     return ctx.json({ data }, 200);
   })
 
-
   .get("/subscription", async (ctx) => {
     const { userId } = await auth();
 
@@ -63,13 +81,13 @@ const app = new Hono()
     }
 
     const data = await db.subscription.findFirst({
-      where: { clerkUserId: userId},
+      where: { clerkUserId: userId },
       select: {
         cancelAtNextBillingDate: true,
         nextBillingDate: true,
-        status:true
+        status: true,
       },
-      orderBy:{updatedAt:'desc'}
+      orderBy: { updatedAt: "desc" },
     });
 
     if (!data) {
@@ -85,8 +103,8 @@ const app = new Hono()
     return ctx.json(
       {
         success: true,
-        subscribed: data.status==='active' ? true :false,
-        status : data.status,
+        subscribed: data.status === "active" ? true : false,
+        status: data.status,
         next_billing_date: data.nextBillingDate,
         cancel_at_next_billing_date: data.cancelAtNextBillingDate,
       },
@@ -111,7 +129,7 @@ const app = new Hono()
         amount: true,
         currency: true,
         createdAt: true,
-        invoiceId:true
+        invoiceId: true,
       },
     });
 
@@ -147,60 +165,122 @@ const app = new Hono()
     }
 
     try {
-      const client = await clerkClient();
+      const user = await db.user_tokens.findUnique({
+        where: { clerk_user_id: userId },
+        select: { is_gmail: true },
+      });
 
-      const tokenResponse = await client.users.getUserOauthAccessToken(
-        userId,
-        "google",
-      );
+      if (!user) {
+        throw Error("User not found");
+      }
 
-      const googleAccount = tokenResponse.data[0];
+      if (user.is_gmail) {
+        const client = await clerkClient();
 
-      if (!googleAccount) {
+        const tokenResponse = await client.users.getUserOauthAccessToken(
+          userId,
+          "google",
+        );
+
+        const googleAccount = tokenResponse.data[0];
+
+        if (!googleAccount) {
+          return ctx.json(
+            {
+              hasAllScopes: false,
+              scopes: [],
+              missingScopes: [
+                "https://www.googleapis.com/auth/gmail.compose",
+                "https://www.googleapis.com/auth/gmail.labels",
+                "https://www.googleapis.com/auth/gmail.modify",
+                "https://www.googleapis.com/auth/gmail.readonly",
+              ],
+            },
+            200,
+          );
+        }
+
+        const requiredScopes = [
+          "https://www.googleapis.com/auth/gmail.compose",
+          "https://www.googleapis.com/auth/gmail.labels",
+          "https://www.googleapis.com/auth/gmail.modify",
+          "https://www.googleapis.com/auth/gmail.readonly",
+        ];
+
+        // scopes is already an array, no need to split
+        const grantedScopes = googleAccount.scopes || [];
+        const missingScopes = requiredScopes.filter(
+          (scope) => !grantedScopes.includes(scope),
+        );
+
         return ctx.json(
           {
-            hasAllScopes: false,
-            scopes: [],
-            missingScopes: [
-              "https://www.googleapis.com/auth/gmail.compose",
-              "https://www.googleapis.com/auth/gmail.labels",
-              "https://www.googleapis.com/auth/gmail.modify",
-              "https://www.googleapis.com/auth/gmail.readonly",
-            ],
+            hasAllScopes: missingScopes.length === 0,
+            scopes: grantedScopes,
+            missingScopes,
+          },
+          200,
+        );
+      } else {
+        const client = await clerkClient();
+
+        const tokenResponse = await client.users.getUserOauthAccessToken(
+          userId,
+          "microsoft",
+        );
+
+        const microsoftAccount = tokenResponse.data[0];
+
+        if (!microsoftAccount) {
+          return ctx.json(
+            {
+              hasAllScopes: false,
+              scopes: [],
+              missingScopes: [
+                "email",
+                "Mail.ReadWrite",
+                "MailboxSettings.ReadWrite",
+                "offline_access",
+                "openid",
+                "profile",
+                "User.Read",
+              ],
+            },
+            200,
+          );
+        }
+
+        const requiredScopes = [
+          "email",
+          "Mail.ReadWrite",
+          "MailboxSettings.ReadWrite",
+          "offline_access",
+          "openid",
+          "profile",
+          "User.Read",
+        ];
+
+        const grantedScopes = microsoftAccount.scopes || [];
+        const missingScopes = requiredScopes.filter(
+          (scope) => !grantedScopes.includes(scope),
+        );
+
+        return ctx.json(
+          {
+            hasAllScopes: missingScopes.length === 0,
+            scopes: grantedScopes,
+            missingScopes,
           },
           200,
         );
       }
-
-      const requiredScopes = [
-        "https://www.googleapis.com/auth/gmail.compose",
-        "https://www.googleapis.com/auth/gmail.labels",
-        "https://www.googleapis.com/auth/gmail.modify",
-        "https://www.googleapis.com/auth/gmail.readonly",
-      ];
-
-      // scopes is already an array, no need to split
-      const grantedScopes = googleAccount.scopes || [];
-      const missingScopes = requiredScopes.filter(
-        (scope) => !grantedScopes.includes(scope),
-      );
-
-      return ctx.json(
-        {
-          hasAllScopes: missingScopes.length === 0,
-          scopes: grantedScopes,
-          missingScopes,
-        },
-        200,
-      );
     } catch (error) {
       console.error("Error fetching scopes:", error);
       return ctx.json({ error: "Failed to fetch scopes" }, 500);
     }
   })
 
-  .get('/walletBalance',async(ctx)=>{
-
+  .get("/walletBalance", async (ctx) => {
     const { userId } = await auth();
 
     if (!userId) {
@@ -210,25 +290,24 @@ const app = new Hono()
     const dodoPayment = getDodoPayments();
 
     const dodocustomerID = await db.subscription.findFirst({
-      where:{clerkUserId:userId},
-      select:{
-        dodoCustomerId:true
-      }
-    })
+      where: { clerkUserId: userId },
+      select: {
+        dodoCustomerId: true,
+      },
+    });
 
-    
-
-    if(!dodocustomerID){
-      return ctx.json({balance:0},200);
+    if (!dodocustomerID) {
+      return ctx.json({ balance: 0 }, 200);
     }
 
-    const wallets = await dodoPayment.customers.wallets.list(dodocustomerID?.dodoCustomerId)
+    const wallets = await dodoPayment.customers.wallets.list(
+      dodocustomerID?.dodoCustomerId,
+    );
 
-    return ctx.json({balance:wallets.total_balance_usd},200);
-
+    return ctx.json({ balance: wallets.total_balance_usd }, 200);
   })
 
-  .get('/privacy',async(ctx)=>{
+  .get("/privacy", async (ctx) => {
     const { userId } = await auth();
 
     if (!userId) {
@@ -236,26 +315,57 @@ const app = new Hono()
     }
 
     const data = await db.user_tokens.findUnique({
-      where:{clerk_user_id:userId},
-      select:{
-        use_external_ai_processing:true
-      }
-    })
+      where: { clerk_user_id: userId },
+      select: {
+        use_external_ai_processing: true,
+      },
+    });
 
-    if(!data){
-      return ctx.json({error:"Error getting privacy data"},500);
+    if (!data) {
+      return ctx.json({ error: "Error getting privacy data" }, 500);
     }
 
-    return ctx.json({data},200);
-
+    return ctx.json({ data }, 200);
   })
 
-  .put('/privacy',zValidator(
+  .put(
+    "/privacy",
+    zValidator(
       "json",
       z.object({
-        enabled:z.boolean()
+        enabled: z.boolean(),
       }),
-    ),async(ctx)=>{
+    ),
+    async (ctx) => {
+      const { userId } = await auth();
+
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const values = ctx.req.valid("json");
+
+      const data = await db.user_tokens.update({
+        where: { clerk_user_id: userId },
+        data: {
+          use_external_ai_processing: values.enabled,
+        },
+      });
+
+      if (!data) {
+        return ctx.json({ error: "Error updating privacy data" }, 500);
+      }
+
+      return ctx.json({ data }, 200);
+    },
+  )
+
+  .put('update/moveToFolder', zValidator(
+        "json",
+        z.object({
+          confirm:z.boolean()
+        }),
+      ),async(ctx)=>{
 
     const { userId } = await auth();
 
@@ -268,15 +378,17 @@ const app = new Hono()
     const data = await db.user_tokens.update({
       where:{clerk_user_id:userId},
       data:{
-        use_external_ai_processing:values.enabled
+        is_folder:values.confirm
       }
     })
 
     if(!data){
-      return ctx.json({error:"Error updating privacy data"},500);
+      return ctx.json({error:"Error updating user prefernce"},500);
     }
 
-    return ctx.json({data},200);
+    return ctx.json({data},200)
+
+
 
 
 

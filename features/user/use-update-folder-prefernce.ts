@@ -3,37 +3,36 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client } from "@/lib/hono";
 import { toast } from "sonner";
 
-type ResponseType = InferResponseType<(typeof client.api.tags)['create-custom']["$post"]>;
+type ResponseType = InferResponseType<(typeof client.api.user.update.moveToFolder)["$put"]>;
 type RequestType = InferRequestType<
-  (typeof client.api.tags)['create-custom']["$post"]
+  (typeof client.api.user.update.moveToFolder)["$put"]
 >['json'];
 
-export const addCustomTags = () => {
+export const useUpdateFolderPreference= () => {
   const query = useQueryClient();
   return useMutation<ResponseType, Error, RequestType>({
     mutationFn: async (json) => {
-      const response = await client.api.tags['create-custom']['$post']({
+      const response = await client.api.user.update.moveToFolder['$put']({
         json
       });
 
      
       if(!response.ok){
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to add custom label");
+        throw new Error(errorData.error || "Failed update folder settings");
       }
 
         return response.json();
     },
 
     onSuccess:()=>{
-        query.invalidateQueries({queryKey:['user-custom-tags']})
-        query.invalidateQueries({queryKey:['user-tags']})
-        toast.success("Custom label added succesfully!")
+        query.invalidateQueries({queryKey:['user-default']})
+        toast.success("Folder settings updates successfully!")
     },
    
     onError: (error) => {
       console.log(error);
-      toast.error(error ? String(error.message) : "Failed to add custom label");
+      toast.error("Failed to update folder settings");
     },
   });
 };

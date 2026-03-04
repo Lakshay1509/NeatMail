@@ -26,13 +26,13 @@ const UserLabel = () => {
                 setShowOnboarding(false);
             } 
             // Second priority: Check subscription
-            else if(subscribedData?.success === false) {
+            else if(subscribedData?.subscribed===false) {
                 setShowSubscription(true);
                 setShowOnboarding(false);
                 setShowPermissions(false);
             } 
             // Lowest priority: Check onboarding
-            else if (subscribedData?.success === true && data?.data.length === 0) {
+            else if (subscribedData?.subscribed===true && data?.data.length === 0) {
                 setShowOnboarding(true);
                 setShowSubscription(false);
                 setShowPermissions(false);

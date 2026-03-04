@@ -3,7 +3,7 @@ import { db } from "./prisma";
 export async function getUserByEmail(email: string) {
   try {
     const data = await db.user_tokens.findUnique({
-      where: { gmail_email: email },
+      where: { email: email },
     });
 
     if (!data) {
@@ -12,7 +12,7 @@ export async function getUserByEmail(email: string) {
 
     return data;
   } catch (error) {
-    console.error("Error getting clerk id");
+    console.error("Error getting clerk id`");
     throw error;
   }
 }
@@ -20,7 +20,7 @@ export async function getUserByEmail(email: string) {
 export async function getLastHistoryId(email: string) {
   try {
     const data = await db.user_tokens.findUnique({
-      where: { gmail_email: email },
+      where: { email: email },
     });
 
     if (!data) {
@@ -41,9 +41,35 @@ export async function updateHistoryId(
 ) {
   try {
     const data = await db.user_tokens.update({
-      where: { gmail_email: email },
+      where: { email: email },
       data: {
         last_history_id: historyId,
+        watch_activated: activated,
+        updated_at: new Date().toISOString(),
+      },
+    });
+
+    if (!data) {
+      throw new Error(`No user token found for email: ${email}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error(`Error updating history ID for ${email}:`, error);
+    throw error;
+  }
+}
+
+export async function updateOutlookId(
+  email: string | undefined,
+  outlookId: string | undefined | null,
+  activated: boolean,
+) {
+  try {
+    const data = await db.user_tokens.update({
+      where: { email: email },
+      data: {
+        outlook_id:outlookId,
         watch_activated: activated,
         updated_at: new Date().toISOString(),
       },
@@ -200,4 +226,25 @@ export async function useGetUserDraftPreference(userId: string) {
     console.error("Error getting draft prefernces ");
     throw error;
   }
+}
+
+export async function getUserIsGmail(userId:string){
+  try{
+     const user = await db.user_tokens.findUnique({
+        where: { clerk_user_id: userId },
+        select: { is_gmail: true },
+      });
+
+      if(!user){
+        throw Error
+      }
+
+      return {isGmail:user?.is_gmail}
+
+  }
+  catch (error) {
+    console.error("Error getting is user gmail ");
+    throw error;
+  }
+
 }

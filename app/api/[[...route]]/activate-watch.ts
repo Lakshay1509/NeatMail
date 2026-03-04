@@ -1,121 +1,116 @@
+import { activateWatch, deactivateWatch } from "@/lib/gmail";
+import { createOutlookSubscription, deleteOutlookSubscription } from "@/lib/outlook";
 import { db } from "@/lib/prisma";
-import { updateHistoryId } from "@/lib/supabase";
-import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
-import { google } from "googleapis";
+import { updateHistoryId, updateOutlookId } from "@/lib/supabase";
+import { auth} from "@clerk/nextjs/server";
 import { Hono } from "hono";
 
-const app = new Hono().post("/", async (ctx) => {
-  try {
-    const { userId } = await auth();
-    const user = await currentUser();
+const app = new Hono()
+  .post("/", async (ctx) => {
+    try {
+      const { userId } = await auth();
 
-    if (!userId) {
-      return ctx.json({ error: "Unauthorized" }, 401);
-    }
-
-    const subscription = await db.subscription.findFirst({
-      where:{
-        clerkUserId:userId,
-        status:'active'
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
       }
-    })
 
-    if(!subscription){
-      return ctx.json({error:'No active subscription'},403);
+      const subscription = await db.subscription.findFirst({
+        where: {
+          clerkUserId: userId,
+          status: "active",
+        },
+      });
+
+      if (!subscription) {
+        return ctx.json({ error: "No active subscription" }, 403);
+      }
+
+      const userData = await db.user_tokens.findUnique({
+        where: { clerk_user_id: userId },
+        select: { is_gmail: true ,email:true},
+      });
+
+      if (!userData) {
+        return ctx.json({ error: "Error getting user data" }, 500);
+      }
+
+      if (userData.is_gmail === true) {
+        const response = await activateWatch(userId);
+        if (!response) {
+          return ctx.json({ error: "Error setting up Gmail watch" }, 500);
+        }
+        await updateHistoryId(userData.email, response.history_id, true);
+        return ctx.json({ success: true, historyId: response.history_id }, 200);
+      }
+
+      else{
+        const response = await createOutlookSubscription(userId);
+
+        if (!response) {
+          return ctx.json({ error: "Error setting up outlook watch" }, 500);
+        }
+        await updateOutlookId(userData.email, response.id, true);
+
+        return ctx.json({ success: true, id: response.id },200);
+      }
+    } catch (error) {
+      console.error("❌ Error activating watch:", error);
+      return ctx.json(
+        {
+          error: "Failed to activate watch",
+          details: error instanceof Error ? error.message : "Unknown error",
+        },
+        500,
+      );
     }
+  })
 
-    const email = user?.emailAddresses[0].emailAddress;
+  .post("/deactivate", async (ctx) => {
+    try {
+      const { userId } = await auth();
 
-    const client = await clerkClient();
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
 
-    const tokenResponse = await client.users.getUserOauthAccessToken(
-      userId,
-      "google"
-    );
+      const userData = await db.user_tokens.findUnique({
+        where: { clerk_user_id: userId },
+        select: { is_gmail: true,email:true },
+      });
 
-    const accessToken = tokenResponse.data[0]?.token;
+      if (!userData) {
+        return ctx.json({ error: "Error getting user data" }, 500);
+      }
 
-    const oauth2Client = new google.auth.OAuth2();
-    oauth2Client.setCredentials({ access_token: accessToken });
-    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+      if (userData.is_gmail === true) {
+        const response = await deactivateWatch(userId);
+        if (!response) {
+          return ctx.json({ error: "Error deleting up Gmail watch" }, 500);
+        }
+        await updateHistoryId(userData.email, null, false);
+        return ctx.json({ success: true}, 200);
+      }
 
-    const watchRequest = {
-      labelIds: ["INBOX"],
-      topicName: process.env.GMAIL_WEBHOOK_TOPIC,
-    };
+      else{
+        const response = await deleteOutlookSubscription(userId);
 
-    const response = await gmail.users.watch({
-      userId: "me",
-      requestBody: watchRequest,
-    });
+        if (!response) {
+          return ctx.json({ error: "Error deleting up outlook watch" }, 500);
+        }
+        await updateOutlookId(userData.email, null, false);
 
-    const initialHistoryId = response.data.historyId;
-    await updateHistoryId(email, initialHistoryId, true);
-
-    console.log(`✅ Watch activated with historyId: ${initialHistoryId}`);
-
-    if (!response) {
-      return ctx.json({ error: "Error setting up watch" }, 500);
+        return ctx.json({ success: true},200);
+      }
+    } catch (error) {
+      console.error("❌ Error deactivating watch:", error);
+      return ctx.json(
+        {
+          error: "Failed to deactivate watch",
+          details: error instanceof Error ? error.message : "Unknown error",
+        },
+        500,
+      );
     }
-
-    return ctx.json(
-      { success: true, expiresIn: "7 days", historyId: response.data.historyId },
-      200
-    );
-  } catch (error) {
-    console.error("❌ Error activating watch:", error);
-    return ctx.json({ error: "Failed to activate watch", details: error instanceof Error ? error.message : "Unknown error" }, 500);
-  }
-})
-
-.post('/deactivate',async(ctx)=>{
-  try{
-    const { userId } = await auth();
-    const user = await currentUser();
-
-    if (!userId) {
-      return ctx.json({ error: "Unauthorized" }, 401);
-    }
-
-    const email = user?.emailAddresses[0].emailAddress;
-
-    const client = await clerkClient();
-
-    const tokenResponse = await client.users.getUserOauthAccessToken(
-      userId,
-      "google"
-    );
-
-    const accessToken = tokenResponse.data[0]?.token;
-
-    const oauth2Client = new google.auth.OAuth2();
-    oauth2Client.setCredentials({ access_token: accessToken });
-    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
-
-    const response = await gmail.users.stop({
-      userId:'me'
-    })
-
-    
-    await updateHistoryId(email, null, false);
-
-    
-    if (!response) {
-      return ctx.json({ error: "Error stopping watch" }, 500);
-    }
-    console.log("✅ Watch deactivated");
-
-    return ctx.json(
-      { success: true},
-      200
-    );
-
-  }catch(error){
-    console.error("❌ Error deactivating watch:", error);
-    return ctx.json({ error: "Failed to deactivate watch", details: error instanceof Error ? error.message : "Unknown error" }, 500);
-
-  }
-
-})
+  });
 
 export default app;

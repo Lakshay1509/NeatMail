@@ -43,3 +43,8 @@ export async function markDodoWebhookProcessed(webhookId: string) {
   // Store for 24 hours (86400 seconds)
   await redis.setex(`processed:dodo:${webhookId}`, 86400, 'true');
 }
+
+export async function unmarkDodoWebhookProcessed(webhookId: string) {
+  await redis.del(`processed:dodo:${webhookId}`);
+}
+

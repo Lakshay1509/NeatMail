@@ -21,6 +21,7 @@ import { MoreVertical, Trash } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
 import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
 import CreateLabel from "./CreateLabel";
+import UpdateFolderPrefernce from "./UpdateFolderPrefernce";
 
 
 
@@ -125,6 +126,10 @@ const UserLabelSettings = () => {
 
 				</div>
 			</div>
+
+			
+
+			<UpdateFolderPrefernce/>
 
 
 			<div className="relative py-6">
