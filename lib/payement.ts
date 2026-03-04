@@ -116,6 +116,7 @@ async function handleWatchActivation(
         await db.user_tokens.update({
           where: { clerk_user_id: userId },
           data: {
+            outlook_id:outlookResponse.id,
             watch_activated: true,
             updated_at: new Date(),
           },
@@ -156,6 +157,7 @@ async function handleWatchDeactivation(userId:string): Promise<void> {
           where: { clerk_user_id: userId },
           data: {
             watch_activated: false,
+            outlook_id:null,
             updated_at: new Date(),
           },
         });

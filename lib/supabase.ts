@@ -60,6 +60,32 @@ export async function updateHistoryId(
   }
 }
 
+export async function updateOutlookId(
+  email: string | undefined,
+  outlookId: string | undefined | null,
+  activated: boolean,
+) {
+  try {
+    const data = await db.user_tokens.update({
+      where: { email: email },
+      data: {
+        outlook_id:outlookId,
+        watch_activated: activated,
+        updated_at: new Date().toISOString(),
+      },
+    });
+
+    if (!data) {
+      throw new Error(`No user token found for email: ${email}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error(`Error updating history ID for ${email}:`, error);
+    throw error;
+  }
+}
+
 export async function labelColor(label: string, userId: string) {
   try {
     const data = await db.tag.findFirst({

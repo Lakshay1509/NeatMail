@@ -15,6 +15,7 @@ model user_tokens {
   created_at                 DateTime          @default(now()) @db.Timestamp(6)
   updated_at                 DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
   last_history_id            String?
+  outlook_id                 String?
   watch_activated            Boolean           @default(false)
   delete_at                  DateTime?
   deleted_flag               Boolean           @default(false)

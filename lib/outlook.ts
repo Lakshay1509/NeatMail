@@ -2,7 +2,7 @@ import { Client } from "@microsoft/microsoft-graph-client";
 import { Subscription } from "@microsoft/microsoft-graph-types";
 import { clerkClient } from "@clerk/nextjs/server";
 
-async function getGraphClient(userId: string): Promise<Client> {
+export async function getGraphClient(userId: string): Promise<Client> {
   try {
     const clerk = await clerkClient();
 
@@ -107,4 +107,47 @@ export async function deleteOutlookSubscription(userId: string) {
     console.error("Failed to delete Outlook subscription:", error);
     throw error;
   }
+}
+
+export async function createOutlookDraft(
+  userId: string,
+  messageId: string,
+  subject: string,
+  to: string,
+  draftBody: string,
+  fontColor: string,
+  fontSize: number,
+  signature: string | null,
+) {
+  const formattedBody = draftBody.replace(/\n/g, "<br>");
+  const formattedSignature = signature ? signature.replace(/\n/g, "<br>") : "";
+
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; font-size: ${fontSize || 14}px; color: ${fontColor || "#000000"};">
+      ${formattedBody}
+      ${formattedSignature ? `<br><br>--<br>${formattedSignature}` : ""}
+    </div>
+  `.trim();
+
+  const client = await getGraphClient(userId);
+
+  // Creates a reply draft saved to the Drafts folder (does not send)
+  const draft = await client.api(`/me/messages/${messageId}/createReply`).post({
+    message: {
+      subject: `Re: ${subject}`,
+      body: {
+        contentType: "HTML",
+        content: htmlContent,
+      },
+      toRecipients: [
+        {
+          emailAddress: {
+            address: to,
+          },
+        },
+      ],
+    },
+  });
+
+  return draft;
 }

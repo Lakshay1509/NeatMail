@@ -1048,6 +1048,7 @@ export const User_tokensScalarFieldEnum = {
   created_at: 'created_at',
   updated_at: 'updated_at',
   last_history_id: 'last_history_id',
+  outlook_id: 'outlook_id',
   watch_activated: 'watch_activated',
   delete_at: 'delete_at',
   deleted_flag: 'deleted_flag',

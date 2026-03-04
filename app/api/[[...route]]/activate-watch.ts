@@ -1,7 +1,7 @@
 import { activateWatch, deactivateWatch } from "@/lib/gmail";
 import { createOutlookSubscription, deleteOutlookSubscription } from "@/lib/outlook";
 import { db } from "@/lib/prisma";
-import { updateHistoryId } from "@/lib/supabase";
+import { updateHistoryId, updateOutlookId } from "@/lib/supabase";
 import { auth} from "@clerk/nextjs/server";
 import { Hono } from "hono";
 
@@ -49,7 +49,7 @@ const app = new Hono()
         if (!response) {
           return ctx.json({ error: "Error setting up outlook watch" }, 500);
         }
-        await updateHistoryId(userData.email, null, true);
+        await updateOutlookId(userData.email, response.id, true);
 
         return ctx.json({ success: true, id: response.id },200);
       }
@@ -97,7 +97,7 @@ const app = new Hono()
         if (!response) {
           return ctx.json({ error: "Error deleting up outlook watch" }, 500);
         }
-        await updateHistoryId(userData.email, null, false);
+        await updateOutlookId(userData.email, null, false);
 
         return ctx.json({ success: true},200);
       }

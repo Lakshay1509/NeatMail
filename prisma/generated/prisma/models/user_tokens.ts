@@ -30,6 +30,7 @@ export type User_tokensMinAggregateOutputType = {
   created_at: Date | null
   updated_at: Date | null
   last_history_id: string | null
+  outlook_id: string | null
   watch_activated: boolean | null
   delete_at: Date | null
   deleted_flag: boolean | null
@@ -43,6 +44,7 @@ export type User_tokensMaxAggregateOutputType = {
   created_at: Date | null
   updated_at: Date | null
   last_history_id: string | null
+  outlook_id: string | null
   watch_activated: boolean | null
   delete_at: Date | null
   deleted_flag: boolean | null
@@ -56,6 +58,7 @@ export type User_tokensCountAggregateOutputType = {
   created_at: number
   updated_at: number
   last_history_id: number
+  outlook_id: number
   watch_activated: number
   delete_at: number
   deleted_flag: number
@@ -71,6 +74,7 @@ export type User_tokensMinAggregateInputType = {
   created_at?: true
   updated_at?: true
   last_history_id?: true
+  outlook_id?: true
   watch_activated?: true
   delete_at?: true
   deleted_flag?: true
@@ -84,6 +88,7 @@ export type User_tokensMaxAggregateInputType = {
   created_at?: true
   updated_at?: true
   last_history_id?: true
+  outlook_id?: true
   watch_activated?: true
   delete_at?: true
   deleted_flag?: true
@@ -97,6 +102,7 @@ export type User_tokensCountAggregateInputType = {
   created_at?: true
   updated_at?: true
   last_history_id?: true
+  outlook_id?: true
   watch_activated?: true
   delete_at?: true
   deleted_flag?: true
@@ -183,6 +189,7 @@ export type User_tokensGroupByOutputType = {
   created_at: Date
   updated_at: Date
   last_history_id: string | null
+  outlook_id: string | null
   watch_activated: boolean
   delete_at: Date | null
   deleted_flag: boolean
@@ -217,6 +224,7 @@ export type user_tokensWhereInput = {
   created_at?: Prisma.DateTimeFilter<"user_tokens"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"user_tokens"> | Date | string
   last_history_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
+  outlook_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
   watch_activated?: Prisma.BoolFilter<"user_tokens"> | boolean
   delete_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
   deleted_flag?: Prisma.BoolFilter<"user_tokens"> | boolean
@@ -237,6 +245,7 @@ export type user_tokensOrderByWithRelationInput = {
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  outlook_id?: Prisma.SortOrderInput | Prisma.SortOrder
   watch_activated?: Prisma.SortOrder
   delete_at?: Prisma.SortOrderInput | Prisma.SortOrder
   deleted_flag?: Prisma.SortOrder
@@ -260,6 +269,7 @@ export type user_tokensWhereUniqueInput = Prisma.AtLeast<{
   created_at?: Prisma.DateTimeFilter<"user_tokens"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"user_tokens"> | Date | string
   last_history_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
+  outlook_id?: Prisma.StringNullableFilter<"user_tokens"> | string | null
   watch_activated?: Prisma.BoolFilter<"user_tokens"> | boolean
   delete_at?: Prisma.DateTimeNullableFilter<"user_tokens"> | Date | string | null
   deleted_flag?: Prisma.BoolFilter<"user_tokens"> | boolean
@@ -280,6 +290,7 @@ export type user_tokensOrderByWithAggregationInput = {
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  outlook_id?: Prisma.SortOrderInput | Prisma.SortOrder
   watch_activated?: Prisma.SortOrder
   delete_at?: Prisma.SortOrderInput | Prisma.SortOrder
   deleted_flag?: Prisma.SortOrder
@@ -299,6 +310,7 @@ export type user_tokensScalarWhereWithAggregatesInput = {
   created_at?: Prisma.DateTimeWithAggregatesFilter<"user_tokens"> | Date | string
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"user_tokens"> | Date | string
   last_history_id?: Prisma.StringNullableWithAggregatesFilter<"user_tokens"> | string | null
+  outlook_id?: Prisma.StringNullableWithAggregatesFilter<"user_tokens"> | string | null
   watch_activated?: Prisma.BoolWithAggregatesFilter<"user_tokens"> | boolean
   delete_at?: Prisma.DateTimeNullableWithAggregatesFilter<"user_tokens"> | Date | string | null
   deleted_flag?: Prisma.BoolWithAggregatesFilter<"user_tokens"> | boolean
@@ -312,6 +324,7 @@ export type user_tokensCreateInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
+  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
@@ -332,6 +345,7 @@ export type user_tokensUncheckedCreateInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
+  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
@@ -352,6 +366,7 @@ export type user_tokensUpdateInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -372,6 +387,7 @@ export type user_tokensUncheckedUpdateInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -392,6 +408,7 @@ export type user_tokensCreateManyInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
+  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
@@ -405,6 +422,7 @@ export type user_tokensUpdateManyMutationInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -418,6 +436,7 @@ export type user_tokensUncheckedUpdateManyInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -431,6 +450,7 @@ export type user_tokensCountOrderByAggregateInput = {
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrder
+  outlook_id?: Prisma.SortOrder
   watch_activated?: Prisma.SortOrder
   delete_at?: Prisma.SortOrder
   deleted_flag?: Prisma.SortOrder
@@ -444,6 +464,7 @@ export type user_tokensMaxOrderByAggregateInput = {
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrder
+  outlook_id?: Prisma.SortOrder
   watch_activated?: Prisma.SortOrder
   delete_at?: Prisma.SortOrder
   deleted_flag?: Prisma.SortOrder
@@ -457,6 +478,7 @@ export type user_tokensMinOrderByAggregateInput = {
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   last_history_id?: Prisma.SortOrder
+  outlook_id?: Prisma.SortOrder
   watch_activated?: Prisma.SortOrder
   delete_at?: Prisma.SortOrder
   deleted_flag?: Prisma.SortOrder
@@ -600,6 +622,7 @@ export type user_tokensCreateWithoutTagInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
+  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
@@ -619,6 +642,7 @@ export type user_tokensUncheckedCreateWithoutTagInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
+  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
@@ -654,6 +678,7 @@ export type user_tokensUpdateWithoutTagInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -673,6 +698,7 @@ export type user_tokensUncheckedUpdateWithoutTagInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -692,6 +718,7 @@ export type user_tokensCreateWithoutUser_tagsInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
+  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
@@ -711,6 +738,7 @@ export type user_tokensUncheckedCreateWithoutUser_tagsInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
+  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
@@ -746,6 +774,7 @@ export type user_tokensUpdateWithoutUser_tagsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -765,6 +794,7 @@ export type user_tokensUncheckedUpdateWithoutUser_tagsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -784,6 +814,7 @@ export type user_tokensCreateWithoutEmail_trackedInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
+  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
@@ -803,6 +834,7 @@ export type user_tokensUncheckedCreateWithoutEmail_trackedInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
+  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
@@ -838,6 +870,7 @@ export type user_tokensUpdateWithoutEmail_trackedInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -857,6 +890,7 @@ export type user_tokensUncheckedUpdateWithoutEmail_trackedInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -876,6 +910,7 @@ export type user_tokensCreateWithoutSubscriptionsInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
+  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
@@ -895,6 +930,7 @@ export type user_tokensUncheckedCreateWithoutSubscriptionsInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
+  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
@@ -930,6 +966,7 @@ export type user_tokensUpdateWithoutSubscriptionsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -949,6 +986,7 @@ export type user_tokensUncheckedUpdateWithoutSubscriptionsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -968,6 +1006,7 @@ export type user_tokensCreateWithoutPayment_historyInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
+  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
@@ -987,6 +1026,7 @@ export type user_tokensUncheckedCreateWithoutPayment_historyInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
+  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
@@ -1022,6 +1062,7 @@ export type user_tokensUpdateWithoutPayment_historyInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1041,6 +1082,7 @@ export type user_tokensUncheckedUpdateWithoutPayment_historyInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1060,6 +1102,7 @@ export type user_tokensCreateWithoutRefundsInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
+  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
@@ -1079,6 +1122,7 @@ export type user_tokensUncheckedCreateWithoutRefundsInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
+  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
@@ -1114,6 +1158,7 @@ export type user_tokensUpdateWithoutRefundsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1133,6 +1178,7 @@ export type user_tokensUncheckedUpdateWithoutRefundsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1152,6 +1198,7 @@ export type user_tokensCreateWithoutDraft_preferenceInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
+  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
@@ -1171,6 +1218,7 @@ export type user_tokensUncheckedCreateWithoutDraft_preferenceInput = {
   created_at?: Date | string
   updated_at?: Date | string
   last_history_id?: string | null
+  outlook_id?: string | null
   watch_activated?: boolean
   delete_at?: Date | string | null
   deleted_flag?: boolean
@@ -1206,6 +1254,7 @@ export type user_tokensUpdateWithoutDraft_preferenceInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1225,6 +1274,7 @@ export type user_tokensUncheckedUpdateWithoutDraft_preferenceInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
   delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1320,6 +1370,7 @@ export type user_tokensSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   created_at?: boolean
   updated_at?: boolean
   last_history_id?: boolean
+  outlook_id?: boolean
   watch_activated?: boolean
   delete_at?: boolean
   deleted_flag?: boolean
@@ -1341,6 +1392,7 @@ export type user_tokensSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   created_at?: boolean
   updated_at?: boolean
   last_history_id?: boolean
+  outlook_id?: boolean
   watch_activated?: boolean
   delete_at?: boolean
   deleted_flag?: boolean
@@ -1354,6 +1406,7 @@ export type user_tokensSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   created_at?: boolean
   updated_at?: boolean
   last_history_id?: boolean
+  outlook_id?: boolean
   watch_activated?: boolean
   delete_at?: boolean
   deleted_flag?: boolean
@@ -1367,6 +1420,7 @@ export type user_tokensSelectScalar = {
   created_at?: boolean
   updated_at?: boolean
   last_history_id?: boolean
+  outlook_id?: boolean
   watch_activated?: boolean
   delete_at?: boolean
   deleted_flag?: boolean
@@ -1374,7 +1428,7 @@ export type user_tokensSelectScalar = {
   is_gmail?: boolean
 }
 
-export type user_tokensOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"clerk_user_id" | "email" | "created_at" | "updated_at" | "last_history_id" | "watch_activated" | "delete_at" | "deleted_flag" | "use_external_ai_processing" | "is_gmail", ExtArgs["result"]["user_tokens"]>
+export type user_tokensOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"clerk_user_id" | "email" | "created_at" | "updated_at" | "last_history_id" | "outlook_id" | "watch_activated" | "delete_at" | "deleted_flag" | "use_external_ai_processing" | "is_gmail", ExtArgs["result"]["user_tokens"]>
 export type user_tokensInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   draft_preference?: boolean | Prisma.user_tokens$draft_preferenceArgs<ExtArgs>
   email_tracked?: boolean | Prisma.user_tokens$email_trackedArgs<ExtArgs>
@@ -1405,6 +1459,7 @@ export type $user_tokensPayload<ExtArgs extends runtime.Types.Extensions.Interna
     created_at: Date
     updated_at: Date
     last_history_id: string | null
+    outlook_id: string | null
     watch_activated: boolean
     delete_at: Date | null
     deleted_flag: boolean
@@ -1845,6 +1900,7 @@ export interface user_tokensFieldRefs {
   readonly created_at: Prisma.FieldRef<"user_tokens", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"user_tokens", 'DateTime'>
   readonly last_history_id: Prisma.FieldRef<"user_tokens", 'String'>
+  readonly outlook_id: Prisma.FieldRef<"user_tokens", 'String'>
   readonly watch_activated: Prisma.FieldRef<"user_tokens", 'Boolean'>
   readonly delete_at: Prisma.FieldRef<"user_tokens", 'DateTime'>
   readonly deleted_flag: Prisma.FieldRef<"user_tokens", 'Boolean'>
