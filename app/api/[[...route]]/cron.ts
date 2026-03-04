@@ -4,7 +4,8 @@ import { db } from "@/lib/prisma";
 import { clerkClient } from "@clerk/nextjs/server";
 import { activateWatch } from "@/lib/gmail";
 import { getDodoPayments } from "./checkout";
-import { updateHistoryId } from "@/lib/supabase";
+import { updateHistoryId, updateOutlookId } from "@/lib/supabase";
+import { createOutlookSubscription } from "@/lib/outlook";
 
 const app = new Hono()
   .get("/delete-user", async (ctx) => {
@@ -91,6 +92,16 @@ const app = new Hono()
             deleted_flag: false,
           },
         },
+        select:{
+          dodoSubscriptionId:true,
+          customerEmail:true,
+          user_tokens:{
+            select:{
+              clerk_user_id:true,
+              is_gmail:true
+            }
+          }
+        }
       });
 
       const results = {
@@ -102,6 +113,8 @@ const app = new Hono()
 
       for (const sub of activeSubscriptions) {
         try {
+
+          if(sub.user_tokens.is_gmail===true){
           const response = await activateWatch(sub.dodoSubscriptionId);
 
           await updateHistoryId(sub.customerEmail,response.history_id,true)
@@ -109,6 +122,14 @@ const app = new Hono()
 
           results.successful++;
           console.log(`✅ Watch renewed for: ${sub.customerEmail}`);
+          }
+          else{
+            const response = await createOutlookSubscription(sub.user_tokens.clerk_user_id);
+            await updateOutlookId(sub.customerEmail,response.id,true);
+
+            results.successful++;
+            console.log(`✅ Watch renewed outlook for: ${sub.customerEmail}`);
+          }
         } catch (error) {
           results.failed++;
           const errorMessage =
