@@ -115,7 +115,7 @@ const app = new Hono()
         try {
 
           if(sub.user_tokens.is_gmail===true){
-          const response = await activateWatch(sub.dodoSubscriptionId);
+          const response = await activateWatch(sub.user_tokens.clerk_user_id);
 
           await updateHistoryId(sub.customerEmail,response.history_id,true)
 
