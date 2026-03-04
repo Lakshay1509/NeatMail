@@ -16,6 +16,11 @@ const UpdateFolderPrefernce = () => {
 
     return (
         <div>
+            {data?.data.is_gmail === false &&<div className="relative py-6">
+                            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                                <div className="w-full border-t border-gray-200" />
+                            </div>
+                        </div>}
             {data?.data.is_gmail === false && (
                 <div className="flex items-start justify-between space-x-4">
                     <div>
