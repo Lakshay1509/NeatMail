@@ -360,6 +360,40 @@ const app = new Hono()
     },
   )
 
+  .put('update/moveToFolder', zValidator(
+        "json",
+        z.object({
+          confirm:z.boolean()
+        }),
+      ),async(ctx)=>{
+
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const values = ctx.req.valid("json");
+
+    const data = await db.user_tokens.update({
+      where:{clerk_user_id:userId},
+      data:{
+        is_folder:values.confirm
+      }
+    })
+
+    if(!data){
+      return ctx.json({error:"Error updating user prefernce"},500);
+    }
+
+    return ctx.json({data},200)
+
+
+
+
+
+  })
+
   .put("/delete/:status", async (ctx) => {
     const { userId } = await auth();
 

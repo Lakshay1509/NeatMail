@@ -36,6 +36,7 @@ export type User_tokensMinAggregateOutputType = {
   deleted_flag: boolean | null
   use_external_ai_processing: boolean | null
   is_gmail: boolean | null
+  is_folder: boolean | null
 }
 
 export type User_tokensMaxAggregateOutputType = {
@@ -50,6 +51,7 @@ export type User_tokensMaxAggregateOutputType = {
   deleted_flag: boolean | null
   use_external_ai_processing: boolean | null
   is_gmail: boolean | null
+  is_folder: boolean | null
 }
 
 export type User_tokensCountAggregateOutputType = {
@@ -64,6 +66,7 @@ export type User_tokensCountAggregateOutputType = {
   deleted_flag: number
   use_external_ai_processing: number
   is_gmail: number
+  is_folder: number
   _all: number
 }
 
@@ -80,6 +83,7 @@ export type User_tokensMinAggregateInputType = {
   deleted_flag?: true
   use_external_ai_processing?: true
   is_gmail?: true
+  is_folder?: true
 }
 
 export type User_tokensMaxAggregateInputType = {
@@ -94,6 +98,7 @@ export type User_tokensMaxAggregateInputType = {
   deleted_flag?: true
   use_external_ai_processing?: true
   is_gmail?: true
+  is_folder?: true
 }
 
 export type User_tokensCountAggregateInputType = {
@@ -108,6 +113,7 @@ export type User_tokensCountAggregateInputType = {
   deleted_flag?: true
   use_external_ai_processing?: true
   is_gmail?: true
+  is_folder?: true
   _all?: true
 }
 
@@ -195,6 +201,7 @@ export type User_tokensGroupByOutputType = {
   deleted_flag: boolean
   use_external_ai_processing: boolean
   is_gmail: boolean
+  is_folder: boolean
   _count: User_tokensCountAggregateOutputType | null
   _min: User_tokensMinAggregateOutputType | null
   _max: User_tokensMaxAggregateOutputType | null
@@ -230,6 +237,7 @@ export type user_tokensWhereInput = {
   deleted_flag?: Prisma.BoolFilter<"user_tokens"> | boolean
   use_external_ai_processing?: Prisma.BoolFilter<"user_tokens"> | boolean
   is_gmail?: Prisma.BoolFilter<"user_tokens"> | boolean
+  is_folder?: Prisma.BoolFilter<"user_tokens"> | boolean
   draft_preference?: Prisma.XOR<Prisma.Draft_preferenceNullableScalarRelationFilter, Prisma.draft_preferenceWhereInput> | null
   email_tracked?: Prisma.Email_trackedListRelationFilter
   payment_history?: Prisma.PaymentHistoryListRelationFilter
@@ -251,6 +259,7 @@ export type user_tokensOrderByWithRelationInput = {
   deleted_flag?: Prisma.SortOrder
   use_external_ai_processing?: Prisma.SortOrder
   is_gmail?: Prisma.SortOrder
+  is_folder?: Prisma.SortOrder
   draft_preference?: Prisma.draft_preferenceOrderByWithRelationInput
   email_tracked?: Prisma.email_trackedOrderByRelationAggregateInput
   payment_history?: Prisma.PaymentHistoryOrderByRelationAggregateInput
@@ -275,6 +284,7 @@ export type user_tokensWhereUniqueInput = Prisma.AtLeast<{
   deleted_flag?: Prisma.BoolFilter<"user_tokens"> | boolean
   use_external_ai_processing?: Prisma.BoolFilter<"user_tokens"> | boolean
   is_gmail?: Prisma.BoolFilter<"user_tokens"> | boolean
+  is_folder?: Prisma.BoolFilter<"user_tokens"> | boolean
   draft_preference?: Prisma.XOR<Prisma.Draft_preferenceNullableScalarRelationFilter, Prisma.draft_preferenceWhereInput> | null
   email_tracked?: Prisma.Email_trackedListRelationFilter
   payment_history?: Prisma.PaymentHistoryListRelationFilter
@@ -296,6 +306,7 @@ export type user_tokensOrderByWithAggregationInput = {
   deleted_flag?: Prisma.SortOrder
   use_external_ai_processing?: Prisma.SortOrder
   is_gmail?: Prisma.SortOrder
+  is_folder?: Prisma.SortOrder
   _count?: Prisma.user_tokensCountOrderByAggregateInput
   _max?: Prisma.user_tokensMaxOrderByAggregateInput
   _min?: Prisma.user_tokensMinOrderByAggregateInput
@@ -316,6 +327,7 @@ export type user_tokensScalarWhereWithAggregatesInput = {
   deleted_flag?: Prisma.BoolWithAggregatesFilter<"user_tokens"> | boolean
   use_external_ai_processing?: Prisma.BoolWithAggregatesFilter<"user_tokens"> | boolean
   is_gmail?: Prisma.BoolWithAggregatesFilter<"user_tokens"> | boolean
+  is_folder?: Prisma.BoolWithAggregatesFilter<"user_tokens"> | boolean
 }
 
 export type user_tokensCreateInput = {
@@ -330,6 +342,7 @@ export type user_tokensCreateInput = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
@@ -351,6 +364,7 @@ export type user_tokensUncheckedCreateInput = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -372,6 +386,7 @@ export type user_tokensUpdateInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
@@ -393,6 +408,7 @@ export type user_tokensUncheckedUpdateInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -414,6 +430,7 @@ export type user_tokensCreateManyInput = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
 }
 
 export type user_tokensUpdateManyMutationInput = {
@@ -428,6 +445,7 @@ export type user_tokensUpdateManyMutationInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type user_tokensUncheckedUpdateManyInput = {
@@ -442,6 +460,7 @@ export type user_tokensUncheckedUpdateManyInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type user_tokensCountOrderByAggregateInput = {
@@ -456,6 +475,7 @@ export type user_tokensCountOrderByAggregateInput = {
   deleted_flag?: Prisma.SortOrder
   use_external_ai_processing?: Prisma.SortOrder
   is_gmail?: Prisma.SortOrder
+  is_folder?: Prisma.SortOrder
 }
 
 export type user_tokensMaxOrderByAggregateInput = {
@@ -470,6 +490,7 @@ export type user_tokensMaxOrderByAggregateInput = {
   deleted_flag?: Prisma.SortOrder
   use_external_ai_processing?: Prisma.SortOrder
   is_gmail?: Prisma.SortOrder
+  is_folder?: Prisma.SortOrder
 }
 
 export type user_tokensMinOrderByAggregateInput = {
@@ -484,6 +505,7 @@ export type user_tokensMinOrderByAggregateInput = {
   deleted_flag?: Prisma.SortOrder
   use_external_ai_processing?: Prisma.SortOrder
   is_gmail?: Prisma.SortOrder
+  is_folder?: Prisma.SortOrder
 }
 
 export type User_tokensNullableScalarRelationFilter = {
@@ -628,6 +650,7 @@ export type user_tokensCreateWithoutTagInput = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
@@ -648,6 +671,7 @@ export type user_tokensUncheckedCreateWithoutTagInput = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -684,6 +708,7 @@ export type user_tokensUpdateWithoutTagInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
@@ -704,6 +729,7 @@ export type user_tokensUncheckedUpdateWithoutTagInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -724,6 +750,7 @@ export type user_tokensCreateWithoutUser_tagsInput = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
@@ -744,6 +771,7 @@ export type user_tokensUncheckedCreateWithoutUser_tagsInput = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -780,6 +808,7 @@ export type user_tokensUpdateWithoutUser_tagsInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
@@ -800,6 +829,7 @@ export type user_tokensUncheckedUpdateWithoutUser_tagsInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -820,6 +850,7 @@ export type user_tokensCreateWithoutEmail_trackedInput = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
   refunds?: Prisma.RefundCreateNestedManyWithoutUser_tokensInput
@@ -840,6 +871,7 @@ export type user_tokensUncheckedCreateWithoutEmail_trackedInput = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
   refunds?: Prisma.RefundUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -876,6 +908,7 @@ export type user_tokensUpdateWithoutEmail_trackedInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
   refunds?: Prisma.RefundUpdateManyWithoutUser_tokensNestedInput
@@ -896,6 +929,7 @@ export type user_tokensUncheckedUpdateWithoutEmail_trackedInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
   refunds?: Prisma.RefundUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -916,6 +950,7 @@ export type user_tokensCreateWithoutSubscriptionsInput = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
@@ -936,6 +971,7 @@ export type user_tokensUncheckedCreateWithoutSubscriptionsInput = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -972,6 +1008,7 @@ export type user_tokensUpdateWithoutSubscriptionsInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
@@ -992,6 +1029,7 @@ export type user_tokensUncheckedUpdateWithoutSubscriptionsInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -1012,6 +1050,7 @@ export type user_tokensCreateWithoutPayment_historyInput = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
   refunds?: Prisma.RefundCreateNestedManyWithoutUser_tokensInput
@@ -1032,6 +1071,7 @@ export type user_tokensUncheckedCreateWithoutPayment_historyInput = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
   refunds?: Prisma.RefundUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -1068,6 +1108,7 @@ export type user_tokensUpdateWithoutPayment_historyInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
   refunds?: Prisma.RefundUpdateManyWithoutUser_tokensNestedInput
@@ -1088,6 +1129,7 @@ export type user_tokensUncheckedUpdateWithoutPayment_historyInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
   refunds?: Prisma.RefundUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -1108,6 +1150,7 @@ export type user_tokensCreateWithoutRefundsInput = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
@@ -1128,6 +1171,7 @@ export type user_tokensUncheckedCreateWithoutRefundsInput = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
   draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -1164,6 +1208,7 @@ export type user_tokensUpdateWithoutRefundsInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
@@ -1184,6 +1229,7 @@ export type user_tokensUncheckedUpdateWithoutRefundsInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -1204,6 +1250,7 @@ export type user_tokensCreateWithoutDraft_preferenceInput = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
   refunds?: Prisma.RefundCreateNestedManyWithoutUser_tokensInput
@@ -1224,6 +1271,7 @@ export type user_tokensUncheckedCreateWithoutDraft_preferenceInput = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
   payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
   refunds?: Prisma.RefundUncheckedCreateNestedManyWithoutUser_tokensInput
@@ -1260,6 +1308,7 @@ export type user_tokensUpdateWithoutDraft_preferenceInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
   refunds?: Prisma.RefundUpdateManyWithoutUser_tokensNestedInput
@@ -1280,6 +1329,7 @@ export type user_tokensUncheckedUpdateWithoutDraft_preferenceInput = {
   deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
   use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
   is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
   payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
   refunds?: Prisma.RefundUncheckedUpdateManyWithoutUser_tokensNestedInput
@@ -1376,6 +1426,7 @@ export type user_tokensSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
   draft_preference?: boolean | Prisma.user_tokens$draft_preferenceArgs<ExtArgs>
   email_tracked?: boolean | Prisma.user_tokens$email_trackedArgs<ExtArgs>
   payment_history?: boolean | Prisma.user_tokens$payment_historyArgs<ExtArgs>
@@ -1398,6 +1449,7 @@ export type user_tokensSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
 }, ExtArgs["result"]["user_tokens"]>
 
 export type user_tokensSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1412,6 +1464,7 @@ export type user_tokensSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
 }, ExtArgs["result"]["user_tokens"]>
 
 export type user_tokensSelectScalar = {
@@ -1426,9 +1479,10 @@ export type user_tokensSelectScalar = {
   deleted_flag?: boolean
   use_external_ai_processing?: boolean
   is_gmail?: boolean
+  is_folder?: boolean
 }
 
-export type user_tokensOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"clerk_user_id" | "email" | "created_at" | "updated_at" | "last_history_id" | "outlook_id" | "watch_activated" | "delete_at" | "deleted_flag" | "use_external_ai_processing" | "is_gmail", ExtArgs["result"]["user_tokens"]>
+export type user_tokensOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"clerk_user_id" | "email" | "created_at" | "updated_at" | "last_history_id" | "outlook_id" | "watch_activated" | "delete_at" | "deleted_flag" | "use_external_ai_processing" | "is_gmail" | "is_folder", ExtArgs["result"]["user_tokens"]>
 export type user_tokensInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   draft_preference?: boolean | Prisma.user_tokens$draft_preferenceArgs<ExtArgs>
   email_tracked?: boolean | Prisma.user_tokens$email_trackedArgs<ExtArgs>
@@ -1465,6 +1519,7 @@ export type $user_tokensPayload<ExtArgs extends runtime.Types.Extensions.Interna
     deleted_flag: boolean
     use_external_ai_processing: boolean
     is_gmail: boolean
+    is_folder: boolean
   }, ExtArgs["result"]["user_tokens"]>
   composites: {}
 }
@@ -1906,6 +1961,7 @@ export interface user_tokensFieldRefs {
   readonly deleted_flag: Prisma.FieldRef<"user_tokens", 'Boolean'>
   readonly use_external_ai_processing: Prisma.FieldRef<"user_tokens", 'Boolean'>
   readonly is_gmail: Prisma.FieldRef<"user_tokens", 'Boolean'>
+  readonly is_folder: Prisma.FieldRef<"user_tokens", 'Boolean'>
 }
     
 

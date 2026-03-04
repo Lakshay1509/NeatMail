@@ -1053,7 +1053,8 @@ export const User_tokensScalarFieldEnum = {
   delete_at: 'delete_at',
   deleted_flag: 'deleted_flag',
   use_external_ai_processing: 'use_external_ai_processing',
-  is_gmail: 'is_gmail'
+  is_gmail: 'is_gmail',
+  is_folder: 'is_folder'
 } as const
 
 export type User_tokensScalarFieldEnum = (typeof User_tokensScalarFieldEnum)[keyof typeof User_tokensScalarFieldEnum]

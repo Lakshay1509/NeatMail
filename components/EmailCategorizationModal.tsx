@@ -8,6 +8,7 @@ import { addTagstoUser } from "@/features/tags/use-add-tag-user"
 import { addWatch } from "@/features/watch/use-post-watch"
 import OnboardingSuccessDialog from "@/components/OnboardComplete"
 import { toast } from "sonner"
+import UpdateFolderPrefernce from "./UpdateFolderPrefernce"
 
 export const CATEGORIES = [
 	{ name: 'Action Needed', color: '#cc3a21', outlookColor: 'preset0', description: 'Emails that need your attention' },
@@ -33,6 +34,7 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 	const [showSuccessDialog, setShowSuccessDialog] = useState<boolean>(false);
     const mutation = addTagstoUser();
 	const watchMutation = addWatch();
+	
 	const toggleCategory = (categoryName: string) => {
 		setSelectedCategories(prev =>
 			prev.includes(categoryName)
@@ -107,6 +109,10 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 						</div>
 					))}
 				</div>
+
+				<UpdateFolderPrefernce/>
+
+				
 
 				<DialogFooter className="mt-6">
 					<Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg" onClick={handleSubmit} disabled={mutation.isPending || !isValid}>

@@ -100,43 +100,86 @@ export const processOutlookMailFn = inngest.createFunction(
       return modelResult.label;
     });
 
+    let movedMessageId: string = messageId;
+
     if (labelName.trim().length > 0) {
       const tagProperties = await labelColor(
         labelName,
         subscription.clerk_user_id,
       );
-      const movedMessageId = await step.run("mark-processed", async () => {
+
+      movedMessageId = await step.run("mark-processed", async () => {
         const client = await getGraphClient(subscription.clerk_user_id);
-        // Find existing folder with the label name
-        const foldersResponse = await client
-          .api("/me/mailFolders")
-          .filter(`displayName eq '${labelName}'`)
+
+        // Ensure a master category exists with the label name and the user's chosen color preset
+        const categoriesResponse = await client
+          .api("/me/outlook/masterCategories")
           .get();
-
-        let folderId: string;
-
-        if (foldersResponse.value && foldersResponse.value.length > 0) {
-          folderId = foldersResponse.value[0].id;
-        } else {
-          // Create a new folder if it doesn't exist
-          const newFolder = await client.api("/me/mailFolders").post({
+        const existingCategory = categoriesResponse.value?.find(
+          (c: any) => c.displayName === labelName,
+        );
+        if (!existingCategory) {
+          await client.api("/me/outlook/masterCategories").post({
             displayName: labelName,
+            ...(tagProperties.outlook_preset
+              ? { color: tagProperties.outlook_preset }
+              : {}),
           });
-          folderId = newFolder.id;
+        } else if (
+          tagProperties.outlook_preset &&
+          existingCategory.color !== tagProperties.outlook_preset
+        ) {
+          // Update the color if it doesn't match what's stored
+          await client
+            .api(`/me/outlook/masterCategories/${existingCategory.id}`)
+            .delete();
+
+          await client.api("/me/outlook/masterCategories").post({
+            displayName: labelName,
+            color: tagProperties.outlook_preset,
+          });
         }
 
-        // Move the message to the folder — Outlook assigns a new ID after move
-        const movedMessage = await client.api(`/me/messages/${messageId}/move`).post({
-          destinationId: folderId,
-        });
+        if (subscription.is_folder === true) {
+          // Find existing folder with the label name
+          const foldersResponse = await client
+            .api("/me/mailFolders")
+            .filter(`displayName eq '${labelName}'`)
+            .get();
 
-        return movedMessage.id as string;
+          let folderId: string;
+
+          if (foldersResponse.value && foldersResponse.value.length > 0) {
+            folderId = foldersResponse.value[0].id;
+          } else {
+            // Create a new folder if it doesn't exist
+            const newFolder = await client.api("/me/mailFolders").post({
+              displayName: labelName,
+            });
+            folderId = newFolder.id;
+          }
+
+          // Move the message to the folder — Outlook assigns a new ID after move
+          const movedMessage = await client
+            .api(`/me/messages/${messageId}/move`)
+            .post({
+              destinationId: folderId,
+            });
+
+          // Assign the category to the moved message so the color is visible in Outlook
+          await client.api(`/me/messages/${movedMessage.id}`).patch({
+            categories: [labelName],
+          });
+
+          return movedMessage.id as string;
+        } else {
+          await client.api(`/me/messages/${movedMessageId}`).patch({
+            categories: [labelName],
+          });
+          return movedMessageId;
+        }
       });
-      addMailtoDB(
-        subscription.clerk_user_id,
-        tagProperties.id,
-        movedMessageId,
-      );
+      addMailtoDB(subscription.clerk_user_id, tagProperties.id, movedMessageId);
     }
 
     if (labelName === "Pending Response") {
@@ -155,7 +198,7 @@ export const processOutlookMailFn = inngest.createFunction(
         if (draftBody.trim().length > 0) {
           await createOutlookDraft(
             subscription.clerk_user_id,
-            messageId,
+            movedMessageId,
             subject,
             from,
             draftBody,

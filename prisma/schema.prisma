@@ -21,6 +21,7 @@ model user_tokens {
   deleted_flag               Boolean           @default(false)
   use_external_ai_processing Boolean           @default(true)
   is_gmail                   Boolean           @default(true)
+  is_folder                  Boolean           @default(true)
   draft_preference           draft_preference?
   email_tracked              email_tracked[]
   payment_history            PaymentHistory[]
