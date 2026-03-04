@@ -1,4 +1,5 @@
 import { getLabelledMails } from "@/lib/gmail";
+import { getLabelledMailsOutlook } from "@/lib/outlook";
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { Hono } from "hono";
@@ -27,6 +28,12 @@ const app = new Hono()
       },
       select:{
         message_id:true,
+        user_tokens:{
+          select:{
+
+            is_gmail:true
+          }
+        }
         
       },
       take : limit + 1,
@@ -48,22 +55,21 @@ const app = new Hono()
    const ids = messageData.map(item => item.message_id);
 
 
+   if(messageData[0].user_tokens.is_gmail===true){
     const emails = await getLabelledMails(userId, ids);
-
-  //   const foundMessageIds = new Set(emails.map(e => e.messageId));
-  // const deletedIds = ids.filter(id => !foundMessageIds.has(id));
-  
-  // if (deletedIds.length > 0) {
-  //   await db.email_tracked.deleteMany({
-  //     where: {
-  //       message_id: { in: deletedIds },
-  //       user_id: userId
-  //     }
-  //   });
-  // }
-
-
     return ctx.json({ emails, nextCursor }, 200);
+   }
+
+   else{
+   
+    const emails = await getLabelledMailsOutlook(userId,ids);
+    return ctx.json({ emails, nextCursor }, 200);
+   }
+
+  
+
+
+    
   })
 
   .get("/thisWeek", async (ctx) => {

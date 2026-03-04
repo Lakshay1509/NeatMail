@@ -109,6 +109,75 @@ export async function deleteOutlookSubscription(userId: string) {
   }
 }
 
+async function getFolderMap(userId: string): Promise<Map<string, string>> {
+  const client = await getGraphClient(userId);
+
+  const response = await client
+    .api("/me/mailFolders")
+    .select("id,displayName")
+    .top(100)
+    .get() as { value: { id: string; displayName: string }[] };
+
+  const map = new Map<string, string>();
+  response.value?.forEach((folder) => {
+    map.set(folder.id, folder.displayName);
+  });
+
+  return map;
+}
+
+export async function getLabelledMailsOutlook(userId: string, messageIds: string[]) {
+  const client = await getGraphClient(userId);
+  const folderMap = await getFolderMap(userId);
+
+  const messages = await Promise.all(
+    messageIds.map(async (messageId) => {
+      try {
+        return await client
+          .api(`/me/messages/${messageId}`)
+          .select("id,categories,subject,from,receivedDateTime,parentFolderId")
+          .get() as {
+            id: string;
+            categories: string[];
+            subject: string;
+            from: { emailAddress: { name: string; address: string } };
+            receivedDateTime: string;
+            parentFolderId: string;
+          };
+      } catch (error: any) {
+        if (error?.statusCode === 404) {
+          return null;
+        }
+        throw error;
+      }
+    }),
+  );
+
+  return messages
+    .filter((msg) => msg !== null)
+    .map((msg) => {
+      const folderName = folderMap.get(msg!.parentFolderId) ?? msg!.parentFolderId;
+      const categories: string[] = msg!.categories ?? [];
+
+      // Combine folder name + categories to mirror Gmail's labelIds behavior
+      const labels = [folderName, ...categories].filter(Boolean);
+
+      const fromAddress = msg!.from?.emailAddress
+        ? `${msg!.from.emailAddress.name} <${msg!.from.emailAddress.address}>`
+        : "";
+
+      return {
+        messageId: msg!.id,
+        labels,
+        subject: msg!.subject ?? "",
+        from: fromAddress,
+        internalDate: msg!.receivedDateTime
+          ? new Date(msg!.receivedDateTime).toISOString()
+          : null,
+      };
+    });
+}
+
 export async function createOutlookDraft(
   userId: string,
   messageId: string,

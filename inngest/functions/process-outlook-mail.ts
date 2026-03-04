@@ -105,7 +105,7 @@ export const processOutlookMailFn = inngest.createFunction(
         labelName,
         subscription.clerk_user_id,
       );
-      await step.run("mark-processed", async () => {
+      const movedMessageId = await step.run("mark-processed", async () => {
         const client = await getGraphClient(subscription.clerk_user_id);
         // Find existing folder with the label name
         const foldersResponse = await client
@@ -125,15 +125,17 @@ export const processOutlookMailFn = inngest.createFunction(
           folderId = newFolder.id;
         }
 
-        // Move the message to the folder
-        await client.api(`/me/messages/${messageId}/move`).post({
+        // Move the message to the folder — Outlook assigns a new ID after move
+        const movedMessage = await client.api(`/me/messages/${messageId}/move`).post({
           destinationId: folderId,
         });
+
+        return movedMessage.id as string;
       });
       addMailtoDB(
         subscription.clerk_user_id,
         tagProperties.id,
-        String(messageId),
+        movedMessageId,
       );
     }
 

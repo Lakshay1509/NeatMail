@@ -23,8 +23,6 @@ const app = new Hono().post("/webhook", async (ctx) => {
       .filter((n) => n.resourceData?.id && n.subscriptionId)
       .map((n) => ({
         // Setting `id` makes Inngest deduplicate events with the same key,
-        // preventing double processing when Graph resends or a folder-move
-        // triggers a second notification for the same message.
         id: `outlook/msg/${n.resourceData.id as string}`,
         name: "outlook/mail.received" as const,
         data: {
