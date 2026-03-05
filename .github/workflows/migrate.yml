@@ -1,0 +1,36 @@
+name: Production DB Migration
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+jobs:
+  migrate:
+    # For PRs, only run if actually merged (not just closed)
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
+
+    name: Run Prisma Migrations
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run Prisma migrate deploy
+        run: bun prisma migrate deploy
