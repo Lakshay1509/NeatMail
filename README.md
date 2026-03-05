@@ -1,7 +1,7 @@
 <div align="center">
   <h1>NeatMail</h1>
   <p><strong>Your Inbox Deserves Better</strong></p>
-  <p>AI-powered email automation that labels your Gmail messages automatically and drafts intelligent responses.</p>
+   <p>AI-powered email automation that labels your Gmail and Outlook messages automatically and drafts intelligent responses.</p>
   
   <p>
     <a href="https://www.neatmail.tech">Website</a> •
@@ -22,7 +22,7 @@
 
 ## 🎯 What is NeatMail?
 
-NeatMail is an intelligent email management platform that automatically organizes your Gmail inbox in real-time. No complicated setup, no manual sorting - just clean, organized emails labeled exactly where you need them in Gmail.
+NeatMail is an intelligent email management platform that automatically organizes your Gmail and Outlook inboxes in real-time. No complicated setup, no manual sorting - just clean, organized emails labeled exactly where you need them.
 
 ### The Problem
 - Drowning in emails with no structure
@@ -32,7 +32,7 @@ NeatMail is an intelligent email management platform that automatically organize
 
 ### The Solution
 NeatMail watches your inbox 24/7 and:
-- ✨ **Automatically labels** incoming emails directly in Gmail
+- ✨ **Automatically labels** incoming emails directly in Gmail and Outlook
 - 🎨 **Custom categories** - use presets or create your own
 - 🤖 **AI-powered drafts** - generates response drafts for pending emails in your tone
 - 🔄 **Real-time processing** - labels emails as they arrive, not in batches
@@ -44,13 +44,13 @@ NeatMail watches your inbox 24/7 and:
 ### 🏷️ Smart Email Labeling
 - **Preset Categories**: Action Needed, Pending Response, Automated Alerts, Event Updates, Discussion, Read Only, Resolved, Marketing
 - **Custom Labels**: Create personalized labels with custom colors
-- **Direct Gmail Integration**: Labels appear instantly in your Gmail interface
+- **Direct Gmail & Outlook Integration**: Labels/categories appear instantly in your mailbox interface
 - **95%+ Confidence Threshold**: Only labels when AI is highly confident
 
 ### 🤖 AI Draft Responses
 - Automatically detects emails requiring responses
 - Generates contextual draft replies in your tone
-- Creates drafts directly in Gmail for easy editing and sending
+- Creates drafts directly in Gmail and Outlook for easy editing and sending
 - Skips automated/newsletter emails intelligently
 
 ### 📊 Analytics Dashboard
@@ -61,7 +61,7 @@ NeatMail watches your inbox 24/7 and:
 
 ### 🔐 Security & Privacy
 - OAuth 2.0 authentication via Clerk
-- Minimal permission scope (read metadata, labels, drafts)
+- Minimal permission scope (read metadata, labels/categories, drafts)
 - No email content storage
 - Row-level security with Prisma
 
@@ -73,7 +73,8 @@ NeatMail watches your inbox 24/7 and:
 - Node.js 20+ and npm/yarn/pnpm
 - PostgreSQL database
 - Redis instance
-- Google Cloud Project with Gmail API enabled
+- Google Cloud Project with Gmail API enabled (for Gmail)
+- Microsoft Entra app registration with Microsoft Graph Mail permissions (for Outlook)
 - Clerk account for authentication
 - OpenAI API key
 - DodoPay account (payment processing)
@@ -176,12 +177,12 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ```mermaid
 graph LR
-    A[Gmail] -->|Push Notification| B[Google Pub/Sub]
+   A[Gmail / Outlook] -->|Push Notification| B[Google Pub/Sub / Graph Subscription]
     B -->|Webhook| C[NeatMail API]
-    C -->|Fetch Email| A
+   C -->|Fetch Email| A
     C -->|Classify| D[Classification Model]
     D -->|Label Name| C
-    C -->|Apply Label| A
+   C -->|Apply Label/Category| A
     C -->|Generate Draft| D
     D -->|Draft Content| C
     C -->|Create Draft| A
@@ -194,7 +195,7 @@ graph LR
 - **Next.js 16** - Frontend & API routes
 - **Hono** - Lightweight API framework
 - **Prisma** - Type-safe ORM
-- **Gmail API** - Email operations
+- **Gmail API / Microsoft Graph API** - Email operations
 - **OpenAI GPT-4** - Email classification & draft generation
 - **Clerk** - Authentication & OAuth management
 - **Redis** - Message deduplication
@@ -226,7 +227,7 @@ graph LR
 ### AI & Integrations
 - **Draft Generation**: OpenAI 6.15.0 (GPT-4 Mini)
 - **In-House Model**: [neatmail_model](https://github.com/Lakshay1509/neatmail_model) — our proprietary classification model built and maintained in-house (still under work)
-- **Email API**: Google APIs 169.0.0 (Gmail API)
+- **Email APIs**: Google APIs 169.0.0 (Gmail API), Microsoft Graph API (Outlook)
 - **Webhooks**: Google Cloud Pub/Sub
 
 ### Infrastructure
@@ -273,6 +274,19 @@ npx prisma migrate deploy
 4. Create OAuth 2.0 credentials
 5. Add authorized redirect URIs (Clerk callback)
 6. Create a Pub/Sub topic for webhooks
+
+### Outlook API Setup
+
+1. Go to [Azure Portal](https://portal.azure.com)
+2. Open **Microsoft Entra ID** → **App registrations** → **New registration**
+3. Add redirect URIs used by your auth provider (Clerk callback)
+4. Add Microsoft Graph delegated permissions (for example):
+   - `Mail.Read`
+   - `Mail.ReadWrite`
+   - `Mail.Send`
+   - `offline_access`
+5. Grant admin consent if required by your tenant policy
+6. Configure subscription/webhook notifications for mailbox events
 
 ### Clerk Setup
 
