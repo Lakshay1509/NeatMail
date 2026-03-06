@@ -77,11 +77,6 @@ export async function classifyEmail(
     }
 
 
-    const labelMap = new Map<string, string>();
-    request.labels.forEach((label) => {
-      labelMap.set(label.toLowerCase(), label);
-    });
-
     const response = await apiClient.post<ClassifyResponse>("/classify", {
       ...request,
       labels: request.labels.map((label) => label.toLowerCase()),
@@ -90,7 +85,9 @@ export async function classifyEmail(
     console.log("Model repsonse", "", response.data);
 
     const originalLabel =
-      labelMap.get(response.data.label.toLowerCase()) || response.data.label;
+      request.labels.find(
+        (l) => l.toLowerCase() === response.data.label.toLowerCase(),
+      ) ?? response.data.label;
 
     return {
       ...response.data,
