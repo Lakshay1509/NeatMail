@@ -180,23 +180,16 @@ const app = new Hono()
         debug: false,
       });
 
-      // const subscriptions = await db.subscription.findMany({
-      //   where: {
-      //     status: "active",
-      //     nextBillingDate: {
-      //       gte: now,
-      //       lte: in24Hours,
-      //     },
-      //     cancelAtNextBillingDate: true,
-      //   },
-      // });
-
       const subscriptions = await db.subscription.findMany({
-        where:{
-          clerkUserId:"user_38NbAtb7Fk5Vmm0QIdSs5l0bMV5",
-          status:'active'
+        where: {
+          status: "active",
+          nextBillingDate: {
+            gte: now,
+            lt: in24Hours,
+          },
+          cancelAtNextBillingDate: true,
         },
-      })
+      });
 
       for (const sub of subscriptions) {
         try {
