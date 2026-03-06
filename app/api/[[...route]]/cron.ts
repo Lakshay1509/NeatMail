@@ -3,9 +3,9 @@ import { Hono } from "hono";
 import { db } from "@/lib/prisma";
 import { clerkClient } from "@clerk/nextjs/server";
 import { activateWatch } from "@/lib/gmail";
-import { getDodoPayments } from "./checkout";
 import { updateHistoryId, updateOutlookId } from "@/lib/supabase";
 import { createOutlookSubscription } from "@/lib/outlook";
+import { Autosend } from "autosendjs";
 
 const app = new Hono()
   .get("/delete-user", async (ctx) => {
@@ -92,16 +92,16 @@ const app = new Hono()
             deleted_flag: false,
           },
         },
-        select:{
-          dodoSubscriptionId:true,
-          customerEmail:true,
-          user_tokens:{
-            select:{
-              clerk_user_id:true,
-              is_gmail:true
-            }
-          }
-        }
+        select: {
+          dodoSubscriptionId: true,
+          customerEmail: true,
+          user_tokens: {
+            select: {
+              clerk_user_id: true,
+              is_gmail: true,
+            },
+          },
+        },
       });
 
       const results = {
@@ -113,19 +113,18 @@ const app = new Hono()
 
       for (const sub of activeSubscriptions) {
         try {
+          if (sub.user_tokens.is_gmail === true) {
+            const response = await activateWatch(sub.user_tokens.clerk_user_id);
 
-          if(sub.user_tokens.is_gmail===true){
-          const response = await activateWatch(sub.user_tokens.clerk_user_id);
+            await updateHistoryId(sub.customerEmail, response.history_id, true);
 
-          await updateHistoryId(sub.customerEmail,response.history_id,true)
-
-
-          results.successful++;
-          console.log(`✅ Watch renewed for: ${sub.customerEmail}`);
-          }
-          else{
-            const response = await createOutlookSubscription(sub.user_tokens.clerk_user_id);
-            await updateOutlookId(sub.customerEmail,response.id,true);
+            results.successful++;
+            console.log(`✅ Watch renewed for: ${sub.customerEmail}`);
+          } else {
+            const response = await createOutlookSubscription(
+              sub.user_tokens.clerk_user_id,
+            );
+            await updateOutlookId(sub.customerEmail, response.id, true);
 
             results.successful++;
             console.log(`✅ Watch renewed outlook for: ${sub.customerEmail}`);
@@ -151,6 +150,99 @@ const app = new Hono()
       });
     } catch (error) {
       console.error("Watch renewal cron job error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      return ctx.json(
+        {
+          error: "Internal server error",
+          details: errorMessage,
+        },
+        500,
+      );
+    }
+  })
+  .get("/mail/send-reminder", async (ctx) => {
+    const authHeader = ctx.req.header("x-authorization");
+    const expectedToken = `Bearer ${process.env.CRON_SECRET}`;
+
+    if (authHeader !== expectedToken) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    try {
+      const now = new Date();
+      const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+      const autosend = new Autosend(process.env.AUTOSEND_API_KEY!, {
+        baseUrl: "https://api.autosend.com/v1",
+        timeout: 30000,
+        maxRetries: 3,
+        debug: false,
+      });
+
+      // const subscriptions = await db.subscription.findMany({
+      //   where: {
+      //     status: "active",
+      //     nextBillingDate: {
+      //       gte: now,
+      //       lte: in24Hours,
+      //     },
+      //     cancelAtNextBillingDate: true,
+      //   },
+      // });
+
+      const subscriptions = await db.subscription.findMany({
+        where:{
+          clerkUserId:"user_38NbAtb7Fk5Vmm0QIdSs5l0bMV5",
+          status:'active'
+        }
+      })
+
+      for (const sub of subscriptions) {
+        try {
+
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+          const startOfNextMonth = new Date(
+            now.getFullYear(),
+            now.getMonth() + 1,
+            1,
+          );
+
+          const data = await db.email_tracked.count({
+            where: {
+              user_id: sub.clerkUserId,
+              created_at: {
+                gte: startOfMonth,
+                lt: startOfNextMonth,
+              },
+            },
+          });
+
+          await autosend.emails.send({
+            from: { email: "subscription@mail.neatmail.app" },
+            to: { email: sub.customerEmail },
+            subject: "Quick reminder: Your NeatMail plan ends soon",
+            templateId: "A-06b8aaad61bd8c3afc94",
+            dynamicData: {
+              firstName: sub.customerName ?? "",
+              last30DaysCount: data,
+              renewalLink: "https://dashboard.neatmail.app/billing",
+            },
+          });
+        } catch (error) {
+          console.error(`Failed to send reminder to ${sub.customerEmail}:`, error);
+        }
+      }
+
+      return ctx.json({
+        message: "Reminder check completed",
+        timestamp: now.toISOString(),
+        total: subscriptions.length,
+        subscriptions,
+      });
+    } catch (error) {
+      console.error("Send reminder cron job error:", error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       return ctx.json(

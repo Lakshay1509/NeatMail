@@ -25,6 +25,7 @@
         "@tanstack/react-query": "^5.90.16",
         "@upstash/ratelimit": "^2.0.8",
         "@upstash/redis": "^1.36.2",
+        "autosendjs": "^1.0.3",
         "axios": "^1.13.5",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -812,6 +813,8 @@
     "async-function": ["async-function@1.0.0", "", {}, "sha512-hsU18Ae8CDTR6Kgu9DYf0EbCr/a5iGL0rytQDobUcdpYOKokk8LEjVphnXkDkgpi0wYVsqrXuP0bZxJaTqdgoA=="],
 
     "asynckit": ["asynckit@0.4.0", "", {}, "sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q=="],
+
+    "autosendjs": ["autosendjs@1.0.3", "", {}, "sha512-UFbM6YZqhvG1IN9gGta6QatpAJ6gsVWdpwkIK8s/9NvBq3o/XaRPJdcAavhpatrn2XAopVMoVx8i8jUnfjmdYg=="],
 
     "available-typed-arrays": ["available-typed-arrays@1.0.7", "", { "dependencies": { "possible-typed-array-names": "^1.0.0" } }, "sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ=="],
 
