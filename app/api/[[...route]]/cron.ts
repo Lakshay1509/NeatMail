@@ -195,7 +195,7 @@ const app = new Hono()
         where:{
           clerkUserId:"user_38NbAtb7Fk5Vmm0QIdSs5l0bMV5",
           status:'active'
-        }
+        },
       })
 
       for (const sub of subscriptions) {
@@ -219,13 +219,16 @@ const app = new Hono()
             },
           });
 
+           const client = await clerkClient();
+          const clerkUser = await client.users.getUser(sub.clerkUserId);
+
           await autosend.emails.send({
-            from: { email: "subscription@mail.neatmail.app" },
+            from: { email: "subscription@mail.neatmail.app", name:"NeatMail" },
             to: { email: sub.customerEmail },
             subject: "Quick reminder: Your NeatMail plan ends soon",
             templateId: "A-06b8aaad61bd8c3afc94",
             dynamicData: {
-              firstName: sub.customerName ?? "",
+              firstName: clerkUser.fullName ?? "",
               last30DaysCount: data,
               renewalLink: "https://dashboard.neatmail.app/billing",
             },
