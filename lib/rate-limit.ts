@@ -26,18 +26,21 @@ export const apiLimiter = new Ratelimit({
 
 export const routeLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(30, '10 s'), 
+  limiter: Ratelimit.slidingWindow(100, '1 m'), 
   analytics: true,
   prefix: 'ratelimit:route',
 });
 
-export function getIdentifier(req: Request): string {
- 
+export function getIdentifier(req: Request, userId?: string | null): string {
+  if (userId) {
+    return `user:${userId}`;
+  }
+
   const forwarded = req.headers.get('x-forwarded-for');
   const realIp = req.headers.get('x-real-ip');
   const cfConnectingIp = req.headers.get('cf-connecting-ip');
   
   const ip = cfConnectingIp || realIp || forwarded?.split(',')[0] || 'unknown';
   
-  return ip;
+  return `ip:${ip}`;
 }

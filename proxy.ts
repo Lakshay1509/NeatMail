@@ -28,23 +28,28 @@ const isApiRoute = createRouteMatcher([
   '/api/:path*'
 ]);
 
+// Clerk's own internal routes during auth/logout — skip rate limiting
+const isClerkInternalRoute = createRouteMatcher([
+  '/sign-in(.*)',
+  '/sign-out(.*)',
+  '/api/clerk(.*)',
+]);
+
 export default clerkMiddleware(async (auth, req) => {
-  const identifier = getIdentifier(req);
+  const { userId } = await auth();
+  const identifier = getIdentifier(req, userId);
   
   
   try {
     let rateLimitResult;
 
-    
-    if (isGmailWebhook(req)) {
+    if (isClerkInternalRoute(req)) {
+      // skip rate limiting for Clerk auth/logout flows
+    } else if (isGmailWebhook(req)) {
       rateLimitResult = await gmailWebhookLimiter.limit(identifier);
-    } 
-    
-    else if (isApiRoute(req)) {
+    } else if (isApiRoute(req)) {
       rateLimitResult = await apiLimiter.limit(identifier);
-    } 
-    
-    else if (!isPublicRoute(req)) {
+    } else if (!isPublicRoute(req)) {
       rateLimitResult = await routeLimiter.limit(identifier);
     }
 
