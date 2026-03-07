@@ -5,7 +5,7 @@ const openai = new AzureOpenAI({
   apiKey: process.env.AZURE_API_KEY!,
   endpoint:process.env.AZURE_ENDPOINT!,
   apiVersion: "2024-04-01-preview",
-  deployment:"gpt-4o-mini"
+  deployment:"gpt-4.1-mini"
 });
 
 
@@ -86,7 +86,7 @@ Available categories:
   ];
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-4.1-mini",
     messages,
     response_format: { type: "json_object" },
     temperature: 0, 
@@ -145,7 +145,7 @@ OUTPUT:
 [Your reply text OR "NO_REPLY_NEEDED"]`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-4.1-mini",
     messages: [
       {
         role: "system",
