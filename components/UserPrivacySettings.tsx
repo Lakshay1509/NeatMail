@@ -38,8 +38,16 @@ const UserPrivacySettings = () => {
                 <div>
                     <h2 className="text-lg font-semibold text-gray-900 mb-2">Privacy Settings </h2>
                     <p className="text-gray-600 text-sm md:text-base max-w-2xl">
-                        Enable advanced AI processing to improve email classification accuracy using secure, encrypted third-party services, we recommend keeping this on for best results if you have custom labels, and no sensitive email data is stored during processing.
-
+                        Enable secure AI processing for better classification accuracy. Keep this on for best results, especially with custom labels. No sensitive email data is stored during processing.
+                        {' '}
+                        <a
+                            href="https://www.neatmail.app/privacy#ai-privacy-settings"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline"
+                        >
+                            Learn more here
+                        </a>
                     </p>
                 </div>
                 <div className="flex flex-col items-end gap-3">
