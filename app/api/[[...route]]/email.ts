@@ -6,6 +6,19 @@ import { Hono } from "hono";
 
 const app = new Hono()
 
+  //this route is for landing page
+
+  .get('/all',async(ctx)=>{
+    
+    const data = await db.email_tracked.count();
+
+    if(!data){
+      return ctx.json({error:"Error getting data"},500);
+    }
+
+    return ctx.json({data},200);
+  })
+
   .get("/fetch", async (ctx) => {
     const { userId } = await auth();
 

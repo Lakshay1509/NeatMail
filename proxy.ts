@@ -17,7 +17,8 @@ const isPublicApiRoute = createRouteMatcher([
   '/api/dodowebhook/:path*',
   '/api/cron/:path*',
   '/api/inngest/:path*',
-  '/api/outlook/:path*'
+  '/api/outlook/:path*',
+  '/api/email/all'
 ]);
 
 const isGmailWebhook = createRouteMatcher([
