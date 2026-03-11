@@ -107,11 +107,22 @@ const app = new Hono().post("/", async (ctx) => {
     oauth2Client.setCredentials({ access_token: tokenData });
     const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
-    const history = await gmail.users.history.list({
-      userId: "me",
-      startHistoryId: lastHistoryId.last_history_id,
-      historyTypes: ["messageAdded"],
-    });
+    let history;
+    try {
+      history = await gmail.users.history.list({
+        userId: "me",
+        startHistoryId: lastHistoryId.last_history_id,
+        historyTypes: ["messageAdded"],
+      });
+    } catch (err: any) {
+      if (err.code === 410 || err.status === 410) {
+        // historyId is too old/expired — reset it and ack the webhook
+        console.log(`historyId ${lastHistoryId.last_history_id} expired for ${emailAddress}, resetting.`);
+        await updateHistoryId(emailAddress, String(newHistoryId), true);
+        return ctx.json({ success: true }, 200);
+      }
+      throw err;
+    }
 
     const messages =
       history.data.history?.flatMap(
@@ -133,10 +144,20 @@ const app = new Hono().post("/", async (ctx) => {
       await markMessageProcessed(messageId);
       currentMessageId = messageId;
 
-      const email = await gmail.users.messages.get({
-        userId: "me",
-        id: messageId,
-      });
+      let email;
+      try {
+        email = await gmail.users.messages.get({
+          userId: "me",
+          id: messageId,
+        });
+      } catch (err: any) {
+        if (err.code === 404 || err.status === 404) {
+          console.log(`Message ${messageId} not found (likely deleted), skipping.`);
+          currentMessageId = null;
+          continue;
+        }
+        throw err;
+      }
 
       const emailData = {
         id: email.data.id,
@@ -222,14 +243,23 @@ const app = new Hono().post("/", async (ctx) => {
       }
 
       // Apply label
-
-      await gmail.users.messages.modify({
-        userId: "me",
-        id: messageId,
-        requestBody: {
-          addLabelIds: [labelId],
-        },
-      });
+      try {
+        await gmail.users.messages.modify({
+          userId: "me",
+          id: messageId,
+          requestBody: {
+            addLabelIds: [labelId],
+          },
+        });
+      } catch (err: any) {
+        if (err.code === 404 || err.status === 404) {
+          console.log(`Message ${messageId} deleted before label could be applied, skipping.`);
+          currentMessageId = null;
+          currentThreadId = null;
+          continue;
+        }
+        throw err;
+      }
 
       let draftBody: string = "";
 
