@@ -239,6 +239,37 @@ const app = new Hono()
       console.error("Invoice download error:", error);
       return ctx.json({ error: "Failed to download invoice" }, 500);
     }
-  });
+  })
+
+  .get('/portal',async(ctx)=>{
+    const { userId } = await auth();
+
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      try{
+
+        const data = await db.subscription.findFirst({
+          where:{clerkUserId:userId},
+          select:{dodoCustomerId:true}
+          
+        })
+
+        if(!data){
+          return ctx.json({data:""},200);
+        }
+
+        const dodopayments = getDodoPayments();
+        const customerPortalSession = await dodopayments.customers.customerPortal.create(data.dodoCustomerId);
+
+        return ctx.json({data:customerPortalSession.link},200);
+      }
+      catch(error){
+        console.error("Error getting portal for customer");
+        return ctx.json({error:"Error getting portal for customer"},500);
+      }
+
+  })
 
 export default app;
