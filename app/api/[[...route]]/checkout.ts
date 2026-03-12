@@ -241,35 +241,47 @@ const app = new Hono()
     }
   })
 
-  .get('/portal',async(ctx)=>{
-    const { userId } = await auth();
+  .get("/portal", async (ctx) => {
+    try {
+      const { userId } = await auth();
 
       if (!userId) {
         return ctx.json({ error: "Unauthorized" }, 401);
       }
 
-      try{
+      const [data, paymentData] = await Promise.all([
+        db.subscription.findFirst({
+          where: { clerkUserId: userId },
+          select: { dodoCustomerId: true },
+        }),
+        db.paymentHistory.findFirst({
+          where: { clerkUserId: userId },
+          include: {
+            subscription: {
+              select: { dodoCustomerId: true },
+            },
+          },
+        }),
+      ]);
 
-        const data = await db.subscription.findFirst({
-          where:{clerkUserId:userId},
-          select:{dodoCustomerId:true}
-          
-        })
+      const customerId =
+        data?.dodoCustomerId ??
+        paymentData?.subscription?.dodoCustomerId ??
+        null;
 
-        if(!data){
-          return ctx.json({data:""},200);
-        }
-
-        const dodopayments = getDodoPayments();
-        const customerPortalSession = await dodopayments.customers.customerPortal.create(data.dodoCustomerId);
-
-        return ctx.json({data:customerPortalSession.link},200);
+      if (!customerId) {
+        return ctx.json({ data: "" }, 200);
       }
-      catch(error){
-        console.error("Error getting portal for customer");
-        return ctx.json({error:"Error getting portal for customer"},500);
-      }
 
+      const dodopayments = getDodoPayments();
+      const customerPortalSession =
+        await dodopayments.customers.customerPortal.create(customerId);
+
+      return ctx.json({ data: customerPortalSession.link }, 200);
+    } catch (error) {
+      console.error("Error getting portal for customer", error);
+      return ctx.json({ error: "Error getting portal for customer" }, 500);
+    }
   })
 
 export default app;

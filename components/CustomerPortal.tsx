@@ -2,18 +2,13 @@
 
 import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { useGetUserCustomerPortal } from "@/features/checkout/use-get-customer-portal";
 import Image from "next/image";
-import { toast } from "sonner";
 
 export const CustomerPortal = () => {
   const { data, isLoading } = useGetUserCustomerPortal();
 
   const handleManage = () => {
-    if(data?.data===""){
-        toast.warning("No active subscription")
-    }
     if (data?.data) {
       window.open(data.data, "_blank");
     }
