@@ -1,6 +1,7 @@
 import {useQuery} from "@tanstack/react-query";
 import {client} from "@/lib/hono"
 import { useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
 
 
 export const useGetUserCustomerPortal= ()=>{
@@ -12,7 +13,10 @@ export const useGetUserCustomerPortal= ()=>{
         queryFn: async ()=>{
             const response = await client.api.checkout.portal.$get();
 
-            if(!response.ok) throw new Error("failed to get user portal");
+            if(!response.ok) {
+                toast.error("Error getting customer portal")
+                throw new Error("failed to get user portal");
+            }
 
             const data = await response.json();
 
