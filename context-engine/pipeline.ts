@@ -1,0 +1,104 @@
+// src/context-engine/pipeline.ts
+
+import { ContextAssembler }        from "./assembler"
+import { extractEntities }          from "./entity-extractor"
+import { GoogleCalendarProvider } from "./providers/google-calender"
+
+import { IncomingEmail }            from "./types"
+
+// ── Register all providers here — this is the ONLY file
+//    you touch when adding a new integration ──────────────
+
+import OpenAI from "openai";
+
+const endpoint = process.env.AZURE_ENDPOINT!;
+const deploymentName = "gpt-5-nano";
+const apiKey = process.env.AZURE_API_KEY!;
+
+const openai = new OpenAI({
+  baseURL: endpoint,
+  apiKey,
+});
+
+const assembler = new ContextAssembler()
+
+assembler.register(new GoogleCalendarProvider())
+// assembler.register(new SlackProvider())       ← you'll add this next
+// assembler.register(new JiraProvider())        ← then this
+// assembler.register(new NotionProvider())      ← and so on forever
+
+// ── Main function your webhook calls ───────────────────────
+
+export async function buildContextAndDraft(
+  email:    IncomingEmail,
+  timezone: string,
+  draftPrompt: string | null,
+  user_name: string | null
+
+): Promise<{ draft: string; contextSummary: string }> {
+
+  // 1. Extract entities
+  const entities = await extractEntities(email, timezone)
+
+  // 2. Assemble context from all relevant providers in parallel
+  const cards = await assembler.assemble(email, entities)
+
+  // 3. Build prompt block from cards
+  const contextBlock = cards.length > 0
+    ? `## Context from connected apps\n\n${cards.map(c => `### ${c.providerName}\n${c.summary}`).join("\n\n")}`
+    : ""
+  
+  const customInstructions = draftPrompt ? `\n- Follow these custom instructions from the user: "${draftPrompt}"` : "";
+  const userNameInstruction = user_name ? `\n- The user's name is ${user_name}. Keep this in mind and reply on their behalf.` : "";
+
+  const prompt = `You are an email reply generator. Follow these rules strictly:
+
+STEP 1: DETECTION
+Check if email is:
+- Automated (contains: "noreply", "do-not-reply", "notification", "alert", "receipt", "invoice")
+- Newsletter (contains: "unsubscribe", "manage preferences")
+- System message (From contains: "no-reply", "automated", "system")
+
+If ANY above is true → Output exactly: "NO_REPLY_NEEDED"
+
+STEP 2: REPLY GENERATION (only if Step 1 is false)
+Requirements:
+- Acknowledge the sender's message
+- Address the main point/question
+- Use professional tone
+- Do NOT include: subject line, greetings like "Dear", signatures
+- Do NOT use markdown formatting (like **bold** or *italics*), output plain text only
+- Context : ${contextBlock}
+- Start directly with response ${customInstructions}, ${userNameInstruction}
+
+INPUT EMAIL:
+From: ${email.senderName}
+Subject: ${email.subject}
+Body: ${email.body}
+
+OUTPUT:
+[Your reply text OR "NO_REPLY_NEEDED"]`;
+
+  // 4. Generate draft
+  const completion = await openai.chat.completions.create({
+  model: deploymentName,
+  messages: [
+    {
+      role: "system",
+      content:
+        `You are a professional email assistant. Use the provided context to write an accurate, natural reply. Do not mention that you checked any external apps.You output either 'NO_REPLY_NEEDED' or a concise reply. Nothing else.`
+    },
+    {
+      role: "user",
+      content: prompt
+    },
+  ]
+});
+
+const draft = completion.choices?.[0]?.message?.content ?? "";
+
+  return {
+    draft,
+    contextSummary: contextBlock,
+  }
+}
