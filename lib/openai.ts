@@ -7,6 +7,7 @@ const apiKey = process.env.AZURE_API_KEY!;
 const openai = new OpenAI({
   baseURL: endpoint,
   apiKey,
+  
 });
 
 
@@ -90,7 +91,7 @@ Available categories:
     model: deploymentName,
     messages,
     response_format: { type: "json_object" },
-    max_completion_tokens: 20,
+    // max_completion_tokens: 20,
     seed: 42, 
   });
 
@@ -157,7 +158,7 @@ OUTPUT:
       },
     ],
  
-    max_completion_tokens: 200, 
+    // max_completion_tokens: 200, 
     top_p: 0.9, 
     frequency_penalty: 0.3, 
   });
