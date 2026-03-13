@@ -303,7 +303,7 @@ const app = new Hono().post("/", async (ctx) => {
 
           const { draft } = await buildContextAndDraft(
             incomingEmail,
-            "Asia",
+            "Asia/Kolkata",  //need to change this from hardcoded
             draft_preference.draftPrompt,
             clerkUser.fullName,
           );
