@@ -159,8 +159,8 @@ OUTPUT:
     ],
  
     // max_completion_tokens: 200, 
-    top_p: 0.9, 
-    frequency_penalty: 0.3, 
+    // top_p: 0.9, 
+    // frequency_penalty: 0.3, 
   });
 
   const response = completion.choices[0]?.message?.content ?? "";
