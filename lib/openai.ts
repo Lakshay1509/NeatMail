@@ -157,7 +157,7 @@ OUTPUT:
         content: prompt,
       },
     ],
-    temperature: 0.3, 
+ 
     max_completion_tokens: 200, 
     top_p: 0.9, 
     frequency_penalty: 0.3, 
