@@ -90,7 +90,6 @@ Available categories:
     model: deploymentName,
     messages,
     response_format: { type: "json_object" },
-    temperature: 0, 
     max_completion_tokens: 20,
     seed: 42, 
   });
