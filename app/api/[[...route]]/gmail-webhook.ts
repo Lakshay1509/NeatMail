@@ -26,6 +26,25 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { google } from "googleapis";
 import { Hono } from "hono";
 import { OAuth2Client } from "google-auth-library";
+import { buildContextAndDraft } from "@/context-engine/pipeline";
+import { IncomingEmail } from "@/context-engine/types";
+
+function parseFromHeader(fromHeader: string): {
+  senderName: string;
+  senderEmail: string;
+} {
+  const emailMatch = fromHeader.match(/<([^>]+)>/);
+  const senderEmail = (emailMatch?.[1] || fromHeader).trim();
+  const senderName = fromHeader
+    .replace(/<[^>]+>/, "")
+    .replace(/"/g, "")
+    .trim();
+
+  return {
+    senderName: senderName || senderEmail,
+    senderEmail,
+  };
+}
 
 const authClient = new OAuth2Client();
 
@@ -161,6 +180,7 @@ const app = new Hono().post("/", async (ctx) => {
 
       const emailData = {
         id: email.data.id,
+        userId:user.clerk_user_id,
         threadId: email.data.threadId,
         subject:
           email.data.payload?.headers?.find((h) => h.name === "Subject")
@@ -268,11 +288,29 @@ const app = new Hono().post("/", async (ctx) => {
           user.clerk_user_id,
         );
         if (draft_preference.enabled === true) {
-          draftBody = await generateEmailReply(
-            emailData,
+          const { senderName, senderEmail } = parseFromHeader(emailData.from);
+
+          const incomingEmail: IncomingEmail = {
+            id: emailData.id,
+            userId: emailData.userId,
+            threadId: emailData.threadId,
+            subject: emailData.subject,
+            body: emailData.bodySnippet,
+            senderName,
+            senderEmail,
+            receivedAt: new Date(),
+          };
+
+          const { draft } = await buildContextAndDraft(
+            incomingEmail,
+            "Asia",
             draft_preference.draftPrompt,
             clerkUser.fullName,
           );
+
+          if (draft.trim() !== "NO_REPLY_NEEDED") {
+            draftBody = draft;
+          }
         }
 
         if (draftBody.trim().length > 0) {
