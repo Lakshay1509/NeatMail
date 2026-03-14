@@ -110,6 +110,10 @@ export class GoogleCalendarProvider implements ContextProvider {
     const freeBusy = await freeBusyRes.json()
     const events   = await eventsRes.json()
 
+    console.log("Events raw:", JSON.stringify(events))
+    console.log("FreeBusy raw:", JSON.stringify(freeBusy))
+
+
     return {
       raw:        date.raw,
       iso:        date.iso,
