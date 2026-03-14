@@ -289,10 +289,12 @@ const app = new Hono().post("/", async (ctx) => {
               ...emailData,
               receivedAt: new Date().toISOString(),
             },
-            senderName,
-            senderEmail,
-            messageId,
-            tokenData
+            senderName:senderName,
+            senderEmail:senderEmail,
+            messageId:messageId,
+            tokenData:tokenData,
+            timezone:'Asia/Kolkata'
+            
           },
         });
       }
