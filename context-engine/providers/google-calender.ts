@@ -74,6 +74,14 @@ export class GoogleCalendarProvider implements ContextProvider {
     const start = new Date(date.iso)
     const end   = new Date(start.getTime() + 60 * 60 * 1000)
 
+    // Extract the timezone offset from the ISO string (e.g. "+05:30" or "Z")
+    // so that day-boundary queries stay in the user's local timezone, not UTC.
+    // Without this, an IST event at 10 AM on Mon maps to Sunday UTC — returning 0 events.
+    const tzOffsetMatch = date.iso.match(/([+-]\d{2}:\d{2}|Z)$/)
+    const tzOffset      = tzOffsetMatch ? tzOffsetMatch[1] : "Z"
+    const isoDate       = date.iso.split("T")[0]
+    const dayStart      = `${isoDate}T00:00:00${tzOffset}`
+    const dayEnd        = `${isoDate}T23:59:59${tzOffset}`
 
     const [freeBusyRes, eventsRes] = await Promise.all([
       fetch("https://www.googleapis.com/calendar/v3/freeBusy", {
@@ -86,14 +94,13 @@ export class GoogleCalendarProvider implements ContextProvider {
         }),
       }),
       fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${date.iso.split("T")[0]}T00:00:00Z&timeMax=${date.iso.split("T")[0]}T23:59:59Z&singleEvents=true`,
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${dayStart}&timeMax=${dayEnd}&singleEvents=true`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
     ])
 
     const freeBusy = await freeBusyRes.json()
     const events   = await eventsRes.json()
-
 
     return {
       raw:        date.raw,
