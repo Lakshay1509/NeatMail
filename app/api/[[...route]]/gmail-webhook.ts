@@ -1,3 +1,4 @@
+import { inngest } from "@/lib/inngest";
 import { createGmailDraft } from "@/lib/gmail";
 import {
   classifyEmail as classifyEmailOpenAI,
@@ -101,7 +102,6 @@ const app = new Hono().post("/", async (ctx) => {
     const clerkUserId = user.clerk_user_id;
 
     const client = await clerkClient();
-    const clerkUser = await client.users.getUser(clerkUserId);
 
     const tokenResponse = await client.users.getUserOauthAccessToken(
       clerkUserId,
@@ -281,51 +281,22 @@ const app = new Hono().post("/", async (ctx) => {
         throw err;
       }
 
-      let draftBody: string = "";
-
       if (labelName === "Pending Response") {
-        const draft_preference = await useGetUserDraftPreference(
-          user.clerk_user_id,
-        );
-        if (draft_preference.enabled === true) {
-          const { senderName, senderEmail } = parseFromHeader(emailData.from);
-
-          const incomingEmail: IncomingEmail = {
-            id: emailData.id,
-            userId: emailData.userId,
-            threadId: emailData.threadId,
-            subject: emailData.subject,
-            body: emailData.bodySnippet,
+        const { senderName, senderEmail } = parseFromHeader(emailData.from);
+        await inngest.send({
+          name: "email/process.draft",
+          data: {
+            userId: clerkUserId,
+            emailData: {
+              ...emailData,
+              receivedAt: new Date().toISOString(),
+            },
             senderName,
             senderEmail,
-            receivedAt: new Date(),
-          };
-
-          const { draft } = await buildContextAndDraft(
-            incomingEmail,
-            "Asia/Kolkata",  //need to change this from hardcoded
-            draft_preference.draftPrompt,
-            clerkUser.fullName,
-          );
-
-          if (draft.trim() !== "NO_REPLY_NEEDED") {
-            draftBody = draft;
-          }
-        }
-
-        if (draftBody.trim().length > 0) {
-          await createGmailDraft(
-            clerkUserId,
-            emailData.threadId!,
             messageId,
-            emailData.subject,
-            emailData.from,
-            draftBody,
-            draft_preference.fontColor,
-            draft_preference.fontSize,
-            draft_preference.signature,
-          );
-        }
+            tokenData
+          },
+        });
       }
 
       await markThreadProcessed(String(emailData.threadId));
