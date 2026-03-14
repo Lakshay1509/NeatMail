@@ -33,7 +33,10 @@ export async function buildContextAndDraft(
   email:    IncomingEmail,
   timezone: string,
   draftPrompt: string | null,
-  user_name: string | null
+  user_name: string | null,
+  relationship_context?:string|null,
+  topic_context?:string|null,
+  behavioural_context?:string|null
 
 ): Promise<{ draft: string; contextSummary: string }> {
 
@@ -50,6 +53,9 @@ export async function buildContextAndDraft(
   
   const customInstructions = draftPrompt ? `\n- Follow these custom instructions from the user: "${draftPrompt}"` : "";
   const userNameInstruction = user_name ? `\n- The user's name is ${user_name}. Keep this in mind and reply on their behalf.` : "";
+  const relationshipInstruction = relationship_context ? `\n- Relationship context (how to address them): ${relationship_context}` : "";
+  const topicInstruction = topic_context ? `\n- Topic context (what this is about): ${topic_context}` : "";
+  const behaviouralInstruction = behavioural_context ? `\n- Behavioural context (tone and style): ${behavioural_context}` : "";
 
   const prompt = `You are an email reply generator. Follow these rules strictly:
 
@@ -68,7 +74,7 @@ Requirements:
 - Use professional tone
 - Do NOT include: subject line, greetings like "Dear", signatures
 - Do NOT use markdown formatting (like **bold** or *italics*), output plain text only
-- Context : ${contextBlock}
+- Context : ${contextBlock}${relationshipInstruction}${topicInstruction}${behaviouralInstruction}
 - Start directly with response ${customInstructions}, ${userNameInstruction}
 
 INPUT EMAIL:
