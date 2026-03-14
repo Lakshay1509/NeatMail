@@ -16,7 +16,7 @@ export const processDraftGmail = inngest.createFunction(
       senderName,
       senderEmail,
       messageId,
-      token,
+      tokenData,
       timezone
     } = event.data;
 
@@ -51,8 +51,8 @@ export const processDraftGmail = inngest.createFunction(
             user_id: userId,
             subject: emailData.subject,
             sender_email:senderEmail,
-            body: emailData.body,
-            token:token,
+            body: emailData.bodySnippet,
+            token:tokenData,
             timezone:timezone
           });
           return modelResult
