@@ -53,7 +53,7 @@ export const processDraftGmail = inngest.createFunction(
             sender_email:senderEmail,
             body: emailData.body,
             token:token,
-            timezone
+            timezone:timezone
           });
           return modelResult
         });
