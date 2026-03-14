@@ -83,6 +83,14 @@ export class GoogleCalendarProvider implements ContextProvider {
     const dayStart      = `${isoDate}T00:00:00${tzOffset}`
     const dayEnd        = `${isoDate}T23:59:59${tzOffset}`
 
+    // Use URL + URLSearchParams so the "+" in offsets like "+05:30" is
+    // automatically encoded as %2B. Without this, "+" is read as a space
+    // and the Google Calendar API silently returns 0 events.
+    const eventsUrl = new URL("https://www.googleapis.com/calendar/v3/calendars/primary/events")
+    eventsUrl.searchParams.set("timeMin",      dayStart)
+    eventsUrl.searchParams.set("timeMax",      dayEnd)
+    eventsUrl.searchParams.set("singleEvents", "true")
+
     const [freeBusyRes, eventsRes] = await Promise.all([
       fetch("https://www.googleapis.com/calendar/v3/freeBusy", {
         method: "POST",
@@ -94,7 +102,7 @@ export class GoogleCalendarProvider implements ContextProvider {
         }),
       }),
       fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${dayStart}&timeMax=${dayEnd}&singleEvents=true`,
+        eventsUrl.toString(),
         { headers: { Authorization: `Bearer ${token}` } }
       )
     ])
