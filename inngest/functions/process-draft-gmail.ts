@@ -16,7 +16,8 @@ export const processDraftGmail = inngest.createFunction(
       senderName,
       senderEmail,
       messageId,
-      token
+      token,
+      timezone
     } = event.data;
 
     const draftPreference = await step.run("get-draft-preference", async () => {
@@ -36,9 +37,8 @@ export const processDraftGmail = inngest.createFunction(
     });
 
     const incomingEmail: IncomingEmail = {
-      id: emailData.id,
+  
       userId: userId,
-      threadId: emailData.threadId,
       subject: emailData.subject,
       body: emailData.bodySnippet,
       senderName,
@@ -52,7 +52,8 @@ export const processDraftGmail = inngest.createFunction(
             subject: emailData.subject,
             sender_email:senderEmail,
             body: emailData.body,
-            token:token
+            token:token,
+            timezone
           });
           return modelResult
         });
@@ -62,12 +63,16 @@ export const processDraftGmail = inngest.createFunction(
     const draftBody = await step.run("build-context-and-draft", async () => {
       const { draft } = await buildContextAndDraft(
         incomingEmail,
-        "Asia/Kolkata", 
+        timezone, 
         draftPrompt,
         clerkUserFullName,
         response.relationship_context.description,
         response.topic_context.description,
-        response.behavioural_context.description
+        response.behavioural_context.description,
+        response.intent,
+        response.keywords,
+        response.mentionedDates
+
         
       );
       return draft;

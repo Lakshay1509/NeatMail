@@ -7,11 +7,11 @@ import {
 import { classifyEmail as classifyEmailModel } from "@/lib/model";
 import {
   isMessageProcessed,
-  isThreadProcessed,
+  // isThreadProcessed,
   markMessageProcessed,
-  markThreadProcessed,
+  // markThreadProcessed,
   unmarkMessageProcessed,
-  unmarkThreadProcessed,
+  // unmarkThreadProcessed,
 } from "@/lib/redis";
 import {
   addMailtoDB,
@@ -51,7 +51,7 @@ const authClient = new OAuth2Client();
 
 const app = new Hono().post("/", async (ctx) => {
   let currentMessageId: string | null = null;
-  let currentThreadId: string | null = null;
+  // let currentThreadId: string | null = null;
 
   try {
     const authHeader = ctx.req.header("Authorization");
@@ -179,9 +179,7 @@ const app = new Hono().post("/", async (ctx) => {
       }
 
       const emailData = {
-        id: email.data.id,
         userId:user.clerk_user_id,
-        threadId: email.data.threadId,
         subject:
           email.data.payload?.headers?.find((h) => h.name === "Subject")
             ?.value || "",
@@ -191,14 +189,14 @@ const app = new Hono().post("/", async (ctx) => {
         bodySnippet: email.data.snippet || "",
       };
 
-      currentThreadId = String(emailData.threadId);
+      // currentThreadId = String(emailData.threadId);
 
       // if thread as processed for 24 hours to prevent duplication tags
-      if (await isThreadProcessed(String(emailData.threadId))) {
-        currentMessageId = null;
-        currentThreadId = null;
-        continue;
-      }
+      // if (await isThreadProcessed(String(emailData.threadId))) {
+      //   currentMessageId = null;
+      //   currentThreadId = null;
+      //   continue;
+      // }
 
       const tagsOfUser = await getTagsUser(clerkUserId);
 
@@ -275,7 +273,7 @@ const app = new Hono().post("/", async (ctx) => {
         if (err.code === 404 || err.status === 404) {
           console.log(`Message ${messageId} deleted before label could be applied, skipping.`);
           currentMessageId = null;
-          currentThreadId = null;
+          // currentThreadId = null;
           continue;
         }
         throw err;
@@ -299,12 +297,12 @@ const app = new Hono().post("/", async (ctx) => {
         });
       }
 
-      await markThreadProcessed(String(emailData.threadId));
+      // await markThreadProcessed(String(emailData.threadId));
 
       await addMailtoDB(clerkUserId, colourofLabel.id, String(messageId));
 
       currentMessageId = null;
-      currentThreadId = null;
+      // currentThreadId = null;
     }
 
     await updateHistoryId(emailAddress, String(newHistoryId), true);
@@ -315,9 +313,9 @@ const app = new Hono().post("/", async (ctx) => {
     if (currentMessageId) {
       await unmarkMessageProcessed(currentMessageId);
     }
-    if (currentThreadId) {
-      await unmarkThreadProcessed(currentThreadId);
-    }
+    // if (currentThreadId) {
+    //   await unmarkThreadProcessed(currentThreadId);
+    // }
 
     return ctx.json(
       { success: false, error: "Processing failed of webhook" },

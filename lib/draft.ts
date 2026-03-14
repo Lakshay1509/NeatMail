@@ -1,3 +1,4 @@
+import { EmailIntent } from "@/context-engine/types";
 import axios, { AxiosError } from "axios";
 
 export interface DraftContextRequest{
@@ -5,7 +6,8 @@ export interface DraftContextRequest{
   token:string,
   body:string,
   subject:string,
-  sender_email:string
+  sender_email:string,
+  timezone:string
 }
 
 export interface Context{
@@ -20,7 +22,10 @@ export interface DraftContextResponse{
   is_relevant:boolean,
   vectors_upserted:number,
   user_namespace:string,
-  sender_email:string
+  sender_email:string,
+  keywords:       string[],
+  mentionedDates: { raw: string; iso: string }[],
+  intent:         EmailIntent
 }
 
 export interface ApiErrorResponse {
