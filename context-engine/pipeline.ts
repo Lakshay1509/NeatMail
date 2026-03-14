@@ -1,10 +1,9 @@
 // src/context-engine/pipeline.ts
 
 import { ContextAssembler }        from "./assembler"
-import { extractEntities }          from "./entity-extractor"
 import { GoogleCalendarProvider } from "./providers/google-calender"
 
-import { IncomingEmail }            from "./types"
+import { EmailEntities, EmailIntent, IncomingEmail }            from "./types"
 
 // ── Register all providers here — this is the ONLY file
 //    you touch when adding a new integration ──────────────
@@ -34,15 +33,29 @@ export async function buildContextAndDraft(
   timezone: string,
   draftPrompt: string | null,
   user_name: string | null,
-  relationship_context?:string|null,
-  topic_context?:string|null,
-  behavioural_context?:string|null
+  relationship_context:string|null,
+  topic_context:string|null,
+  behavioural_context:string|null,
+  intent:         EmailIntent,
+  keywords:       string[],
+  mentionedDates: { raw: string; iso: string }[],
+  
 
 ): Promise<{ draft: string; contextSummary: string }> {
 
-  // 1. Extract entities
-  const entities = await extractEntities(email, timezone)
 
+
+  const entities: EmailEntities={
+    senderEmail:email.senderEmail,
+    senderName:email.senderName,
+   senderDomain: email.senderEmail.split("@")[1],
+    keywords:keywords,
+    mentionedDates:mentionedDates,
+    intent:intent,
+    timezone:timezone
+
+  }
+  
   // 2. Assemble context from all relevant providers in parallel
   const cards = await assembler.assemble(email, entities)
 
