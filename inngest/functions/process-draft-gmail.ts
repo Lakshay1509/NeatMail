@@ -37,9 +37,8 @@ export const processDraftGmail = inngest.createFunction(
     });
 
     const incomingEmail: IncomingEmail = {
-      id: emailData.id,
+  
       userId: userId,
-      threadId: emailData.threadId,
       subject: emailData.subject,
       body: emailData.bodySnippet,
       senderName,

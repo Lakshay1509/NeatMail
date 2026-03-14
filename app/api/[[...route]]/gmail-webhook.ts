@@ -179,9 +179,7 @@ const app = new Hono().post("/", async (ctx) => {
       }
 
       const emailData = {
-        id: email.data.id,
         userId:user.clerk_user_id,
-        threadId: email.data.threadId,
         subject:
           email.data.payload?.headers?.find((h) => h.name === "Subject")
             ?.value || "",

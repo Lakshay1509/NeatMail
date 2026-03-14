@@ -1,9 +1,7 @@
 // src/context-engine/types.ts
 
 export interface IncomingEmail {
-  id:         string|null|undefined
   userId:     string
-  threadId:   string|null|undefined
   subject:    string
   body:       string
   senderName: string
