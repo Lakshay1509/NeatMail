@@ -54,6 +54,8 @@ export class GoogleCalendarProvider implements ContextProvider {
       return `- ${r.raw} → ${status}${conflict}. ${r.eventCount} total events that day.`
     })
 
+    console.log(summaryLines);
+
     return {
       providerId:   this.id,
       providerName: this.name,
