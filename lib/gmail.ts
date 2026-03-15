@@ -111,6 +111,78 @@ export async function getLabelledMails(userId: string, messageIds: string[]) {
     });
 }
 
+function decodeGmailBase64Url(data: string): string {
+  const normalized = data.replace(/-/g, "+").replace(/_/g, "/");
+  return Buffer.from(normalized, "base64").toString("utf-8");
+}
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function extractBodyFromPart(part: any): { text: string[]; html: string[] } {
+  const text: string[] = [];
+  const html: string[] = [];
+
+  if (!part) {
+    return { text, html };
+  }
+
+  if (part.mimeType === "text/plain" && part.body?.data) {
+    text.push(decodeGmailBase64Url(part.body.data));
+  }
+
+  if (part.mimeType === "text/html" && part.body?.data) {
+    html.push(decodeGmailBase64Url(part.body.data));
+  }
+
+  if (Array.isArray(part.parts)) {
+    for (const child of part.parts) {
+      const childBody = extractBodyFromPart(child);
+      text.push(...childBody.text);
+      html.push(...childBody.html);
+    }
+  }
+
+  return { text, html };
+}
+
+export async function getGmailMessageBody(userId: string, messageId: string) {
+  const gmail = await getGmailClient(userId);
+
+  const res = await gmail.users.messages.get({
+    userId: "me",
+    id: messageId,
+    format: "full",
+    fields: "payload,mimeType,snippet",
+  });
+
+  const { text, html } = extractBodyFromPart(res.data.payload);
+  const plainBody = text.join("\n").trim();
+
+  if (plainBody.length > 0) {
+    return plainBody;
+  }
+
+  const htmlBody = html.join("\n").trim();
+  if (htmlBody.length > 0) {
+    return stripHtml(htmlBody);
+  }
+
+  return res.data.snippet ?? "";
+}
+
 export async function createGmailDraft(
   userId: string,
   threadId: string,

@@ -1,6 +1,6 @@
 import { inngest } from "@/lib/inngest";
 import { useGetUserDraftPreference } from "@/lib/supabase";
-import { createGmailDraft } from "@/lib/gmail";
+import { createGmailDraft, getGmailMessageBody } from "@/lib/gmail";
 import { buildContextAndDraft } from "@/context-engine/pipeline";
 import { IncomingEmail } from "@/context-engine/types";
 import { clerkClient } from "@clerk/nextjs/server";
@@ -36,11 +36,28 @@ export const processDraftGmail = inngest.createFunction(
       return user.fullName;
     });
 
+    const fullEmailBody = await step.run("get-full-email-body", async () => {
+      try {
+        return await getGmailMessageBody(userId, messageId);
+      } catch (error) {
+        console.error("Failed to fetch full Gmail body, using snippet fallback", {
+          userId,
+          messageId,
+          error,
+        });
+        return emailData.bodySnippet;
+      }
+    });
+
+    console.log(fullEmailBody)
+
+    
+
     const incomingEmail: IncomingEmail = {
   
       userId: userId,
       subject: emailData.subject,
-      body: emailData.bodySnippet,
+      body: fullEmailBody,
       senderName,
       senderEmail,
       receivedAt: new Date(emailData.receivedAt || Date.now()),
@@ -51,7 +68,7 @@ export const processDraftGmail = inngest.createFunction(
             user_id: userId,
             subject: emailData.subject,
             sender_email:senderEmail,
-            body: emailData.bodySnippet,
+            body: fullEmailBody,
             token:tokenData,
             timezone:timezone
           });
