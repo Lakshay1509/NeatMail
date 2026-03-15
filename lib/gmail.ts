@@ -165,7 +165,7 @@ export async function getGmailMessageBody(userId: string, messageId: string) {
     userId: "me",
     id: messageId,
     format: "full",
-    fields: "payload,mimeType,snippet",
+    fields: "payload,snippet",
   });
 
   const { text, html } = extractBodyFromPart(res.data.payload);
