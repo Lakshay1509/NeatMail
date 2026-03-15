@@ -227,15 +227,15 @@ const app = new Hono()
       }
 
       // Fire and forget — runs in background, user gets instant response
-      await inngest.send({
-        name: "tag/label.add",
-        data: {
-          user_id: userId,
-          tag_id: data.id,
-          label_name: values.tag.trim().toLowerCase(),
-          description: values.description,
-        },
-      });
+      // await inngest.send({
+      //   name: "tag/label.add",
+      //   data: {
+      //     user_id: userId,
+      //     tag_id: data.id,
+      //     label_name: values.tag.trim().toLowerCase(),
+      //     description: values.description,
+      //   },
+      // });
 
       return ctx.json({ data }, 200);
     },
@@ -295,10 +295,10 @@ const app = new Hono()
         });
 
         //todo revert when failed
-        await deleteUserLabel({
-          user_id:userId,
-          label_name:exist.name.toLowerCase()
-        })
+        // await deleteUserLabel({
+        //   user_id:userId,
+        //   label_name:exist.name.toLowerCase()
+        // })
 
         if (!response) {
           return ctx.json({ error: "Error deleting data for this tag" }, 500);
