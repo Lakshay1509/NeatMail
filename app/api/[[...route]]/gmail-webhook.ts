@@ -201,6 +201,7 @@ const app = new Hono().post("/", async (ctx) => {
 
       // Check if Gmail already classified this as Promotions
       let labelName: string;
+      let responseRequired = false;
       const hasMarketingTag = tagsOfUser.some(
         (tag: any) => tag.tag.name === "Marketing",
       );
@@ -211,8 +212,13 @@ const app = new Hono().post("/", async (ctx) => {
       ) {
         labelName = "Marketing";
       } else {
-        labelName = await classifyEmailOpenAI(emailData, tagsOfUser);
+        const classification = await classifyEmailOpenAI(emailData, tagsOfUser);
+        labelName = classification.category;
+        responseRequired = classification.response_required;
       }
+
+      console.log(labelName);
+      console.log(responseRequired);
 
       if (labelName === "") {
         console.log(`No label assigned for message: ${messageId}`);
@@ -262,7 +268,7 @@ const app = new Hono().post("/", async (ctx) => {
         throw err;
       }
 
-      if (labelName === "Pending Response") {
+      if (labelName === "Pending Response" || responseRequired) {
         const { senderName, senderEmail } = parseFromHeader(emailData.from);
         await inngest.send({
           name: "email/process.draft",

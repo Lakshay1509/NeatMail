@@ -90,12 +90,14 @@ export const processOutlookMailFn = inngest.createFunction(
     const client = await clerkClient();
     const clerkUser = await client.users.getUser(subscription.clerk_user_id);
 
-    const labelName = await step.run("openai-called", async () => {
+    const classification = await step.run("openai-called", async () => {
       return classifyEmailOpenAI(
         { subject, from, bodySnippet: body },
         tagsOfUser,
       );
     });
+    const labelName = classification.category;
+    const responseRequired = classification.response_required;
 
     let movedMessageId: string = messageId;
 
@@ -179,7 +181,7 @@ export const processOutlookMailFn = inngest.createFunction(
       addMailtoDB(subscription.clerk_user_id, tagProperties.id, movedMessageId);
     }
 
-    if (labelName === "Pending Response") {
+    if (labelName === "Pending Response" || responseRequired) {
       await step.run("draft", async () => {
         const draft_preference = await useGetUserDraftPreference(
           subscription.clerk_user_id,

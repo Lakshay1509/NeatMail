@@ -30,17 +30,23 @@ export type UserTag = ({
   tag_id: string;
 });
 
+export type EmailClassificationResult = {
+  category: string;
+  response_required: boolean;
+};
+
 
 export async function classifyEmail(email: {
   subject: string;
   from: string;
   bodySnippet: string;
-}, tags: UserTag[]): Promise<string> {
+}, tags: UserTag[]): Promise<EmailClassificationResult> {
   const tagNames = tags.map(t => t.tag.name).join("\n- ");
+  const allowedCategories = new Set(tags.map((t) => t.tag.name));
   const messages = [
     {
       role: "system" as const,
-      content: `You are an email classification system. Your ONLY job is to return a valid JSON object with a "category" field.
+      content: `You are an email classification system. Your ONLY job is to return a valid JSON object with "category" and "response_required" fields.
 
 ALLOWED CATEGORIES (case-sensitive, exact match required):
 - ${tagNames}
@@ -55,23 +61,33 @@ CLASSIFICATION RULES (apply in order, highest priority first):
 4. KEYWORD MATCHING: Use for unclear cases
 5. CONFIDENCE: If < 85% confidence → return empty string
 
+RESPONSE_REQUIRED RULES:
+- Set "response_required": true ONLY when BOTH are true:
+  1) Sender appears to be a human (personal/corporate mailbox, conversational language, not automated system patterns)
+  2) Email clearly asks for a reply, decision, approval, confirmation, or manual action from the user
+- Set "response_required": false for automated notifications, receipts, invoices, OTPs, alerts, newsletters, marketing campaigns, no-reply/system senders, and informational updates that do not need a direct response
+- If uncertain, set "response_required": false
+
 OUTPUT FORMAT (strict):
-{"category": "exact_category_name"}
+{"category": "exact_category_name", "response_required": true}
 OR
-{"category": ""}
+{"category": "", "response_required": false}
 
 EXAMPLES:
 Input: Subject="You have done a UPI txn", From="HDFC Bank", Body="Rs.110.00 has been debited"
-Output: {"category": "Finance"}
+Output: {"category": "Finance", "response_required": false}
 
 Input: Subject="Server CPU usage at 90%", From="monitoring@company.com"
-Output: {"category": "Automated alerts"}
+Output: {"category": "Automated alerts", "response_required": false}
 
 Input: Subject="Meeting Tomorrow", From="calendar@zoom.us"
-Output: {"category": "Event update"}
+Output: {"category": "Event update", "response_required": false}
+
+Input: Subject="Can you review the proposal by EOD?", From="alex@partner.com"
+Output: {"category": "Pending Response", "response_required": true}
 
 Input: Subject="Your monthly invoice", Body="Payment of $99 is due"
-Output: {"category": "Finance"}`,
+Output: {"category": "Finance", "response_required": false}`,
     },
     {
       role: "user" as const,
@@ -98,8 +114,26 @@ Available categories:
   if (!content) throw new Error("No response from OpenAI");
 
   try {
-    const json = JSON.parse(content);
-    return json.category as string;
+    const json = JSON.parse(content) as {
+      category?: unknown;
+      response_required?: unknown;
+    };
+
+    const rawCategory = typeof json.category === "string" ? json.category : "";
+    const category = allowedCategories.has(rawCategory) ? rawCategory : "";
+
+    const rawResponseRequired = json.response_required ?? json.response_required;
+    const response_required =
+      typeof rawResponseRequired === "boolean"
+        ? rawResponseRequired
+        : typeof rawResponseRequired === "string"
+          ? rawResponseRequired.toLowerCase() === "true"
+          : false;
+
+    return {
+      category,
+      response_required,
+    };
   } catch {
     throw new Error("Invalid JSON response from OpenAI");
   }
