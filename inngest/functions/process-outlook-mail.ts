@@ -1,13 +1,15 @@
 import { createOutlookDraft, getGraphClient } from "@/lib/outlook";
 import { inngest } from "@/lib/inngest";
 import { db } from "@/lib/prisma";
-import { classifyEmail } from "@/lib/model";
 import {
   addMailtoDB,
   labelColor,
   useGetUserDraftPreference,
 } from "@/lib/supabase";
-import { generateEmailReply } from "@/lib/openai";
+import {
+  classifyEmail as classifyEmailOpenAI,
+  generateEmailReply,
+} from "@/lib/openai";
 import { clerkClient } from "@clerk/nextjs/server";
 import { isMessageProcessed, markMessageProcessed } from "@/lib/redis";
 
@@ -88,16 +90,11 @@ export const processOutlookMailFn = inngest.createFunction(
     const client = await clerkClient();
     const clerkUser = await client.users.getUser(subscription.clerk_user_id);
 
-    const labelName = await step.run("model-called", async () => {
-      const modelResult = await classifyEmail({
-        user_id: subscription.clerk_user_id,
-        subject: subject,
-        sender: from,
-        body: body,
-        labels: tagsOfUser.map((tag: any) => tag.tag.name),
-        use_llm: subscription.use_external_ai_processing,
-      });
-      return modelResult.label;
+    const labelName = await step.run("openai-called", async () => {
+      return classifyEmailOpenAI(
+        { subject, from, bodySnippet: body },
+        tagsOfUser,
+      );
     });
 
     let movedMessageId: string = messageId;

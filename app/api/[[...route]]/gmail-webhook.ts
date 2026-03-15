@@ -4,7 +4,6 @@ import {
   classifyEmail as classifyEmailOpenAI,
   generateEmailReply,
 } from "@/lib/openai";
-import { classifyEmail as classifyEmailModel } from "@/lib/model";
 import {
   isMessageProcessed,
   // isThreadProcessed,
@@ -212,23 +211,7 @@ const app = new Hono().post("/", async (ctx) => {
       ) {
         labelName = "Marketing";
       } else {
-        try {
-          const modelResult = await classifyEmailModel({
-            user_id: clerkUserId,
-            subject: emailData.subject,
-            sender: emailData.from,
-            body: emailData.bodySnippet,
-            labels: tagsOfUser.map((tag: any) => tag.tag.name),
-            use_llm: user.use_external_ai_processing,
-          });
-          labelName = modelResult.label;
-        } catch (error) {
-          console.error(
-            `Model classification failed for message ${messageId}. Falling back to OpenAI classifier.`,
-            error,
-          );
-          labelName = await classifyEmailOpenAI(emailData, tagsOfUser);
-        }
+        labelName = await classifyEmailOpenAI(emailData, tagsOfUser);
       }
 
       if (labelName === "") {
