@@ -42,11 +42,11 @@ const items = [
     url: "/settings/draft-preference",
     icon: MessageSquareDashed
   },
-  {
-    title: "Privacy",
-    url: "/settings/privacy",
-    icon: ShieldCheck,
-  }
+  // {
+  //   title: "Privacy",
+  //   url: "/settings/privacy",
+  //   icon: ShieldCheck,
+  // }
  
 ]
 
