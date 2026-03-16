@@ -57,8 +57,10 @@ export class OutlookCalendarProvider implements ContextProvider {
 
 		const summaryLines = results.map((r) => {
 			const status = r.isFree ? "✅ FREE" : "BUSY"
-			const conflict = r.busySlots[0]
-				? ` — conflicts with event from ${r.busySlots[0].start} to ${r.busySlots[0].end}`
+			const conflict = r.busySlots.length
+				? ` — busy slots: ${r.busySlots
+					.map((slot) => `${slot.start} to ${slot.end}`)
+					.join(", ")}`
 				: ""
 
 			return `- ${r.raw} → ${status}${conflict}. ${r.eventCount} total events that day.`
