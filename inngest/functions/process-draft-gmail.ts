@@ -72,6 +72,7 @@ export const processDraftGmail = inngest.createFunction(
 
     }
 
+    console.log(fullEmailBody)
 
 
 
