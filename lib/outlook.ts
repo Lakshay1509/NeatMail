@@ -221,13 +221,32 @@ export async function createOutlookDraft(
   return draft;
 }
 
+// function htmlToPlainText(html: string): string {
+//   return html
+//     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")   // remove style blocks
+//     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")  // remove script blocks
+//     .replace(/<br\s*\/?>/gi, "\n")                      // <br> → newline
+//     .replace(/<\/p>/gi, "\n\n")                         // </p> → double newline
+//     .replace(/<\/div>/gi, "\n")                         // </div> → newline
+//     .replace(/<[^>]+>/g, "")                            // strip remaining tags
+//     .replace(/&nbsp;/g, " ")                            // decode &nbsp;
+//     .replace(/&amp;/g, "&")
+//     .replace(/&lt;/g, "<")
+//     .replace(/&gt;/g, ">")
+//     .replace(/&quot;/g, '"')
+//     .replace(/&#39;/g, "'")
+//     .replace(/\r\n/g, "\n")                             // normalize line endings
+//     .replace(/\n{3,}/g, "\n\n")                        // collapse excessive newlines
+//     .trim();
+// }
+
 export async function getOutlookMessageBody(userId: string, messageId: string) {
   const client = await getGraphClient(userId);
 
   try {
     const message = await client
       .api(`/me/messages/${messageId}`)
-      .header("Prefer", 'outlook.body-content-type="text"')
+      .header("Prefer", "outlook.body-content-type=text")
       .select("id,body,bodyPreview,subject")
       .get() as {
         id: string;
@@ -236,13 +255,17 @@ export async function getOutlookMessageBody(userId: string, messageId: string) {
         bodyPreview?: string;
       };
 
-    return message.body?.content ?? message.bodyPreview ?? "";
+    const content = message.body?.content ?? message.bodyPreview ?? "";
+    const contentType = message.body?.contentType?.toLowerCase();
+
+    // If Graph API still returned HTML despite the Prefer header, strip it
+    // if (contentType === "html" || content.trimStart().startsWith("<")) {
+    //   return htmlToPlainText(content);
+    // }
+
+    return content;
   } catch (error: any) {
-    if (error?.statusCode === 404) {
-      return "";
-    }
+    if (error?.statusCode === 404) return "";
     throw error;
   }
 }
-
-
