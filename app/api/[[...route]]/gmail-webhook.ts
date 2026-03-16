@@ -29,7 +29,7 @@ import { OAuth2Client } from "google-auth-library";
 import { buildContextAndDraft } from "@/context-engine/pipeline";
 import { IncomingEmail } from "@/context-engine/types";
 
-function parseFromHeader(fromHeader: string): {
+export function parseFromHeader(fromHeader: string): {
   senderName: string;
   senderEmail: string;
 } {
@@ -282,7 +282,8 @@ const app = new Hono().post("/", async (ctx) => {
             senderEmail:senderEmail,
             messageId:messageId,
             tokenData:tokenData,
-            timezone:'Asia/Kolkata'
+            timezone:'Asia/Kolkata',
+            is_gmail:true
             
           },
         });

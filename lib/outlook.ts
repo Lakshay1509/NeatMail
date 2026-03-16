@@ -220,3 +220,30 @@ export async function createOutlookDraft(
 
   return draft;
 }
+
+export async function getOutlookMessageBody(userId: string, messageId: string) {
+  const client = await getGraphClient(userId);
+
+  try {
+    const message = await client
+      .api(`/me/messages/${messageId}`)
+      .select("id,body,bodyPreview,subject")
+      .get() as {
+        id: string;
+        subject?: string;
+        body?: { contentType?: "text" | "html" | string; content?: string };
+        bodyPreview?: string;
+      };
+
+    return {
+      body: message.body?.content ?? "",
+    };
+  } catch (error: any) {
+    if (error?.statusCode === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+

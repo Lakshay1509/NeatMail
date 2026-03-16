@@ -7,7 +7,8 @@ export interface DraftContextRequest{
   body:string,
   subject:string,
   sender_email:string,
-  timezone:string
+  timezone:string,
+  is_gmail:boolean
 }
 
 export interface Context{

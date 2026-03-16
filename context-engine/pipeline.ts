@@ -2,6 +2,7 @@
 
 import { ContextAssembler }        from "./assembler"
 import { GoogleCalendarProvider } from "./providers/google-calender"
+import { OutlookCalendarProvider } from "./providers/outlook-calender"
 
 import { EmailEntities, EmailIntent, IncomingEmail }            from "./types"
 
@@ -22,6 +23,7 @@ const openai = new OpenAI({
 const assembler = new ContextAssembler()
 
 assembler.register(new GoogleCalendarProvider())
+assembler.register(new OutlookCalendarProvider())
 // assembler.register(new SlackProvider())       ← you'll add this next
 // assembler.register(new JiraProvider())        ← then this
 // assembler.register(new NotionProvider())      ← and so on forever

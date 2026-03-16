@@ -12,6 +12,7 @@ import {
 } from "@/lib/openai";
 import { clerkClient } from "@clerk/nextjs/server";
 import { isMessageProcessed, markMessageProcessed } from "@/lib/redis";
+import { parseFromHeader } from "@/app/api/[[...route]]/gmail-webhook";
 
 export const processOutlookMailFn = inngest.createFunction(
   {
@@ -183,29 +184,45 @@ export const processOutlookMailFn = inngest.createFunction(
 
     if (labelName === "Pending Response" || responseRequired) {
       await step.run("draft", async () => {
-        const draft_preference = await useGetUserDraftPreference(
-          subscription.clerk_user_id,
+        const clerk = await clerkClient();
+
+        const externalAccounts = await clerk.users.getUserOauthAccessToken(
+          clerkUser.id,
+          "microsoft",
         );
-        let draftBody = "";
-        if (draft_preference.enabled === true) {
-          draftBody = await generateEmailReply(
-            { subject, from, bodySnippet: body },
-            draft_preference.draftPrompt,
-            clerkUser.fullName,
+
+        const accessToken = externalAccounts.data[0]?.token;
+
+        if (!accessToken) {
+          throw new Error(
+            "No Microsoft access token found. User needs to reconnect their Microsoft account.",
           );
         }
-        if (draftBody.trim().length > 0) {
-          await createOutlookDraft(
-            subscription.clerk_user_id,
-            movedMessageId,
-            subject,
-            from,
-            draftBody,
-            draft_preference.fontColor,
-            draft_preference.fontSize,
-            draft_preference.signature,
-          );
-        }
+
+        const emailData = {
+          userId: clerkUser.id,
+          subject: subject,
+          from: from,
+          bodySnippet: body,
+        };
+
+        const { senderName, senderEmail } = parseFromHeader(emailData.from);
+        await inngest.send({
+          name: "email/process.draft",
+          data: {
+            userId: clerkUser.id,
+            emailData: {
+              ...emailData,
+              receivedAt: new Date().toISOString(),
+            },
+            senderName: senderName,
+            senderEmail: senderEmail,
+            messageId: messageId,
+            tokenData: accessToken,
+            timezone: "Asia/Kolkata",
+            is_gmail: false,
+          },
+        });
       });
     }
 

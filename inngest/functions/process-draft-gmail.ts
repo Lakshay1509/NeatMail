@@ -5,6 +5,7 @@ import { buildContextAndDraft } from "@/context-engine/pipeline";
 import { IncomingEmail } from "@/context-engine/types";
 import { clerkClient } from "@clerk/nextjs/server";
 import { getDraftContext } from "@/lib/draft";
+import { getOutlookMessageBody } from "@/lib/outlook";
 
 export const processDraftGmail = inngest.createFunction(
   { id: "process-draft-gmail" },
@@ -17,7 +18,8 @@ export const processDraftGmail = inngest.createFunction(
       senderEmail,
       messageId,
       tokenData,
-      timezone
+      timezone,
+      is_gmail
     } = event.data;
 
     const draftPreference = await step.run("get-draft-preference", async () => {
@@ -36,7 +38,11 @@ export const processDraftGmail = inngest.createFunction(
       return user.fullName;
     });
 
-    const fullEmailBody = await step.run("get-full-email-body", async () => {
+    let fullEmailBody=""
+
+    if(is_gmail){
+
+    fullEmailBody = await step.run("get-full-email-body", async () => {
       try {
         return await getGmailMessageBody(userId, messageId);
       } catch (error) {
@@ -48,8 +54,26 @@ export const processDraftGmail = inngest.createFunction(
         return emailData.bodySnippet;
       }
     });
+    }
 
-    console.log(fullEmailBody)
+    else{
+      fullEmailBody = await step.run("get-full-email-body", async () => {
+      try {
+        return await getOutlookMessageBody(userId, messageId);
+      } catch (error) {
+        console.error("Failed to fetch full Outlook body, using snippet fallback", {
+          userId,
+          messageId,
+          error,
+        });
+        return emailData.bodySnippet;
+      }
+    });
+
+    }
+
+
+
 
     
 
@@ -70,7 +94,8 @@ export const processDraftGmail = inngest.createFunction(
             sender_email:senderEmail,
             body: fullEmailBody,
             token:tokenData,
-            timezone:timezone
+            timezone:timezone,
+            is_gmail:is_gmail
           });
           return modelResult
         });
