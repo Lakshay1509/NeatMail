@@ -227,6 +227,7 @@ export async function getOutlookMessageBody(userId: string, messageId: string) {
   try {
     const message = await client
       .api(`/me/messages/${messageId}`)
+      .header("Prefer", 'outlook.body-content-type="text"')
       .select("id,body,bodyPreview,subject")
       .get() as {
         id: string;
@@ -235,12 +236,10 @@ export async function getOutlookMessageBody(userId: string, messageId: string) {
         bodyPreview?: string;
       };
 
-    return {
-      body: message.body?.content ?? "",
-    };
+    return message.body?.content ?? message.bodyPreview ?? "";
   } catch (error: any) {
     if (error?.statusCode === 404) {
-      return null;
+      return "";
     }
     throw error;
   }
