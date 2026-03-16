@@ -19,11 +19,6 @@ const openai = new OpenAI({
   baseURL: endpoint,
   apiKey,
 });
-
-const assembler = new ContextAssembler()
-
-assembler.register(new GoogleCalendarProvider())
-assembler.register(new OutlookCalendarProvider())
 // assembler.register(new SlackProvider())       ← you'll add this next
 // assembler.register(new JiraProvider())        ← then this
 // assembler.register(new NotionProvider())      ← and so on forever
@@ -32,6 +27,7 @@ assembler.register(new OutlookCalendarProvider())
 
 export async function buildContextAndDraft(
   email:    IncomingEmail,
+  isGmail: boolean,
   timezone: string,
   draftPrompt: string | null,
   user_name: string | null,
@@ -44,6 +40,14 @@ export async function buildContextAndDraft(
   
 
 ): Promise<{ draft: string; contextSummary: string }> {
+
+  const assembler = new ContextAssembler()
+
+  if (isGmail) {
+    assembler.register(new GoogleCalendarProvider())
+  } else {
+    assembler.register(new OutlookCalendarProvider())
+  }
 
 
 

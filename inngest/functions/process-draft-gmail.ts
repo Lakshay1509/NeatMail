@@ -5,7 +5,7 @@ import { buildContextAndDraft } from "@/context-engine/pipeline";
 import { IncomingEmail } from "@/context-engine/types";
 import { clerkClient } from "@clerk/nextjs/server";
 import { getDraftContext } from "@/lib/draft";
-import { getOutlookMessageBody } from "@/lib/outlook";
+import { createOutlookDraft, getOutlookMessageBody } from "@/lib/outlook";
 
 export const processDraftGmail = inngest.createFunction(
   { id: "process-draft-gmail" },
@@ -72,12 +72,6 @@ export const processDraftGmail = inngest.createFunction(
 
     }
 
-    console.log(fullEmailBody)
-
-
-
-    
-
     const incomingEmail: IncomingEmail = {
   
       userId: userId,
@@ -106,6 +100,7 @@ export const processDraftGmail = inngest.createFunction(
     const draftBody = await step.run("build-context-and-draft", async () => {
       const { draft } = await buildContextAndDraft(
         incomingEmail,
+        is_gmail,
         timezone, 
         draftPrompt,
         clerkUserFullName,
@@ -122,6 +117,7 @@ export const processDraftGmail = inngest.createFunction(
     });
 
     if (draftBody.trim() !== "NO_REPLY_NEEDED" && draftBody.trim().length > 0) {
+      if(is_gmail){
       await step.run("create-gmail-draft", async () => {
         await createGmailDraft(
           userId,
@@ -136,6 +132,23 @@ export const processDraftGmail = inngest.createFunction(
         );
       });
       return { status: "success", drafted: true };
+    }
+    else{
+      await step.run("create-outlook-draft",async()=>{
+        await createOutlookDraft(
+
+          userId,
+          messageId,
+          emailData.subject,
+          emailData.from,
+          draftBody,
+          fontColor,
+          fontSize,
+          signature
+
+        )
+      })
+    }
     }
 
     return { status: "success", drafted: false };

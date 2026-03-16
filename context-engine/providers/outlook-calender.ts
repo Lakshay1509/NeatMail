@@ -34,8 +34,12 @@ export class OutlookCalendarProvider implements ContextProvider {
 		if (entities.mentionedDates.length === 0) return null
 
 		let token: string
+		let userEmail:string
 		try {
 			const client = await clerkClient()
+			const user = await client.users.getUser(userId)
+			userEmail = user.emailAddresses[0]?.emailAddress
+			
 			const tokenResponse = await client.users.getUserOauthAccessToken(
 				userId,
 				"microsoft"
@@ -48,7 +52,7 @@ export class OutlookCalendarProvider implements ContextProvider {
 		}
 
 		const results = await Promise.all(
-			entities.mentionedDates.slice(0, 3).map((d) => this.checkSlot(d, token))
+			entities.mentionedDates.slice(0, 3).map((d) => this.checkSlot(d, token,userEmail))
 		)
 
 		const summaryLines = results.map((r) => {
@@ -59,6 +63,8 @@ export class OutlookCalendarProvider implements ContextProvider {
 
 			return `- ${r.raw} → ${status}${conflict}. ${r.eventCount} total events that day.`
 		})
+
+		console.log(summaryLines)
 
 		return {
 			providerId: this.id,
@@ -71,7 +77,8 @@ export class OutlookCalendarProvider implements ContextProvider {
 
 	private async checkSlot(
 		date: { raw: string; iso: string },
-		token: string
+		token: string,
+		email:string
 	): Promise<OutlookSlotResult> {
 		const start = new Date(date.iso)
 		const end = new Date(start.getTime() + 60 * 60 * 1000)
@@ -97,7 +104,7 @@ export class OutlookCalendarProvider implements ContextProvider {
 					"Content-Type": "application/json",
 				},
 				body: JSON.stringify({
-					schedules: ["me"],
+					schedules: [email],
 					startTime: { dateTime: start.toISOString(), timeZone: "UTC" },
 					endTime: { dateTime: end.toISOString(), timeZone: "UTC" },
 					availabilityViewInterval: 60,

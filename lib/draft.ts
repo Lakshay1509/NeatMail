@@ -63,8 +63,6 @@ export async function getDraftContext(
       throw new Error("user_id is required");
     }
 
-    console.log(request)
-
 
     const response = await apiClient.post<DraftContextResponse>(
       "/context",
@@ -72,7 +70,6 @@ export async function getDraftContext(
       request,
     );
 
-    console.log(response.data)
 
     return response.data;
   } catch (error) {
