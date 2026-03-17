@@ -476,6 +476,30 @@ const app = new Hono()
 
       return ctx.json({ data }, 200);
     }
-  });
+  })
+
+  //this route is for dev purpose only
+  .get('/token',async(ctx)=>{
+
+    if(process.env.NODE_ENV!=='development'){
+      return ctx.json({error:"Not a dev env"},500);
+    }
+
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+    const client = await clerkClient();
+
+     const tokenResponse = await client.users.getUserOauthAccessToken(
+          userId,
+          "microsoft",
+        );
+
+    return ctx.json({tokenResponse},200);
+
+
+  })
 
 export default app;
