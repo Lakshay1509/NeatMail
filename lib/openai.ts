@@ -56,7 +56,6 @@ CLASSIFICATION RULES (apply in order):
    - Payment confirmations, transactions, invoices, bank alerts → pick whichever category from the allowed list best represents financial/payment content
    - Calendar invites, meeting updates → pick the event-related category
    - Marketing, promotions → pick the marketing-related category
-   -Newsletter, daily digest -> pick the read only related category
    - System alerts, monitoring → pick the alerts-related category
 
 RESPONSE_REQUIRED RULES:
