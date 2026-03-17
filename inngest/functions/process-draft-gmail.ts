@@ -18,7 +18,6 @@ export const processDraftGmail = inngest.createFunction(
       senderEmail,
       messageId,
       tokenData,
-      timezone,
       is_gmail
     } = event.data;
 
@@ -89,7 +88,7 @@ export const processDraftGmail = inngest.createFunction(
             sender_email:senderEmail,
             body: fullEmailBody,
             token:tokenData,
-            timezone:timezone,
+            timezone:draftPreference.timezone ?? 'UTC',
             is_gmail:is_gmail
           });
           return modelResult
@@ -101,7 +100,7 @@ export const processDraftGmail = inngest.createFunction(
       const { draft } = await buildContextAndDraft(
         incomingEmail,
         is_gmail,
-        timezone, 
+        draftPreference.timezone ?? 'UTC', 
         draftPrompt,
         clerkUserFullName,
         response.relationship_context.description,

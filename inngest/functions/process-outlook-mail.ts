@@ -219,7 +219,6 @@ export const processOutlookMailFn = inngest.createFunction(
             senderEmail: senderEmail,
             messageId: messageId,
             tokenData: accessToken,
-            timezone: "Asia/Kolkata",
             is_gmail: false,
           },
         });

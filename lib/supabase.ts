@@ -202,6 +202,7 @@ export async function useGetUserDraftPreference(userId: string) {
         fontColor: true,
         fontSize: true,
         signature: true,
+        timezone:true
       },
     });
 
@@ -212,6 +213,7 @@ export async function useGetUserDraftPreference(userId: string) {
         fontColor: "#000000",
         fontSize: 14,
         signature: null,
+        timezone:null
       };
     }
 
@@ -221,6 +223,7 @@ export async function useGetUserDraftPreference(userId: string) {
       fontColor: data.fontColor,
       fontSize: data.fontSize,
       signature: data.signature,
+      timezone:data.timezone
     };
   } catch (error) {
     console.error("Error getting draft prefernces ");

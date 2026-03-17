@@ -21,6 +21,7 @@ const app = new Hono()
         fontColor: true,
         fontSize: true,
         signature: true,
+        timezone:true
       },
     });
 

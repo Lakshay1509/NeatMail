@@ -282,7 +282,6 @@ const app = new Hono().post("/", async (ctx) => {
             senderEmail:senderEmail,
             messageId:messageId,
             tokenData:tokenData,
-            timezone:'Asia/Kolkata',
             is_gmail:true
             
           },
