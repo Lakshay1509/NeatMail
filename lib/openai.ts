@@ -46,20 +46,18 @@ export async function classifyEmail(email: {
   const messages = [
     {
       role: "system" as const,
-      content: `You are an email classification system. Your ONLY job is to return a valid JSON object with "category" and "response_required" fields.
+content: `You are an email classification system. Return a valid JSON object with "category" and "response_required" fields.
 
 ALLOWED CATEGORIES (case-sensitive, exact match required):
 - ${tagNames}
 
-CLASSIFICATION RULES (apply in order, highest priority first):
-1. FINANCE/PAYMENT: If email contains transactions, payments, UPI, bank alerts, invoices, money (₹/$) → use "Finance" if available, else use "Automated alerts" as fallback
-2. DOMAIN-SPECIFIC: Match sender domain to category (bank → Finance/Automated alerts, calendar → Event update)
-3. SEMANTIC CONTEXT: Analyze PURPOSE, not keywords
-   - Financial transactions → Finance (or Automated alerts if Finance unavailable)
-   - Calendar invites → Event update
-   - Marketing → Marketing
-4. KEYWORD MATCHING: Use for unclear cases
-5. CONFIDENCE: If < 85% confidence → return empty string
+CLASSIFICATION RULES (apply in order):
+1. Match the email's PURPOSE to the most semantically appropriate category from the allowed list above.
+   - Payment confirmations, transactions, invoices, bank alerts → pick whichever category from the allowed list best represents financial/payment content
+   - Calendar invites, meeting updates → pick the event-related category
+   - Marketing, promotions → pick the marketing-related category
+   -Newsletter, daily digest -> pick the read only related category
+   - System alerts, monitoring → pick the alerts-related category
 
 RESPONSE_REQUIRED RULES:
 - Set "response_required": true ONLY when BOTH are true:
