@@ -9,6 +9,7 @@ import { addWatch } from "@/features/watch/use-post-watch"
 import OnboardingSuccessDialog from "@/components/OnboardComplete"
 import { toast } from "sonner"
 import UpdateFolderPrefernce from "./UpdateFolderPrefernce"
+import { useAddUserDraftPrefernce } from "@/features/draftPreference/use-add-user-draftPreference"
 
 export const CATEGORIES = [
 	{ name: 'Action Needed', color: '#cc3a21', outlookColor: 'preset0', description: 'Emails that need your attention' },
@@ -34,6 +35,7 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 	const [showSuccessDialog, setShowSuccessDialog] = useState<boolean>(false);
     const mutation = addTagstoUser();
 	const watchMutation = addWatch();
+	const draftMutation = useAddUserDraftPrefernce();
 	
 	const toggleCategory = (categoryName: string) => {
 		setSelectedCategories(prev =>
@@ -48,9 +50,17 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
     const handleSubmit = async()=>{
 		if (!isValid) return;
 		
+		const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+		
 		try {
 			await mutation.mutateAsync({tags:selectedCategories});
 			await watchMutation.mutateAsync({});
+			await draftMutation.mutateAsync({
+				enabled:true,
+				fontColor:'#000000',
+				fontSize:14,
+				timezone:userTimezone
+			})
 			
 			onOpenChange(false);
 			setShowSuccessDialog(true);

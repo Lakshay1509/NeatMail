@@ -206,7 +206,8 @@ export const Draft_preferenceScalarFieldEnum = {
   fontColor: 'fontColor',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  enabled: 'enabled'
+  enabled: 'enabled',
+  timezone: 'timezone'
 } as const
 
 export type Draft_preferenceScalarFieldEnum = (typeof Draft_preferenceScalarFieldEnum)[keyof typeof Draft_preferenceScalarFieldEnum]

@@ -66,12 +66,15 @@ const UserDraftPreference = () => {
 
   const handleSubmit = async()=>{
 
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
     await muation.mutateAsync({
       fontColor:fontColor,
       fontSize:fontSize,
       draftPrompt:draftPrompt,
       signature:signature,
-      enabled:enabled
+      enabled:enabled,
+      timezone:userTimezone
     })
 
 

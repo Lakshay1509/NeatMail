@@ -173,6 +173,7 @@ model draft_preference {
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
   enabled     Boolean     @default(true)
+  timezone    String?      
   user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
   @@schema("public")

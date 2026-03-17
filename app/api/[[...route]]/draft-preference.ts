@@ -42,6 +42,7 @@ const app = new Hono()
     return ctx.json({ data }, 200);
   })
 
+
   .post(
     "/",
     zValidator(
@@ -52,6 +53,7 @@ const app = new Hono()
         fontColor: z.string(),
         fontSize: z.number().min(8).max(72),
         signature: z.string().optional(),
+        timezone:z.string()
       }),
     ),
     async (ctx) => {
@@ -71,6 +73,7 @@ const app = new Hono()
           fontColor: values.fontColor,
           fontSize: values.fontSize,
           signature: values.signature,
+          timezone:values.timezone
         },
         create: {
           user_tokens: {
@@ -81,6 +84,7 @@ const app = new Hono()
           fontColor: values.fontColor,
           fontSize: values.fontSize,
           signature: values.signature,
+          timezone:values.timezone
         },
       });
 
