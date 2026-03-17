@@ -205,12 +205,20 @@ const app = new Hono().post("/", async (ctx) => {
       const hasMarketingTag = tagsOfUser.some(
         (tag: any) => tag.tag.name === "Marketing",
       );
+      const hasReadonlyTag = tagsOfUser.some((tag: any) => tag.tag.name==="Read only");
 
       if (
         email.data.labelIds?.includes("CATEGORY_PROMOTIONS") &&
         hasMarketingTag
       ) {
         labelName = "Marketing";
+      }
+      else if (
+        hasReadonlyTag &&
+        (email.data.labelIds?.includes("CATEGORY_SOCIAL") ||
+          email.data.labelIds?.includes("CATEGORY_UPDATES"))
+      ) {
+        labelName = "Read only";
       } else {
         const classification = await classifyEmailOpenAI(emailData, tagsOfUser);
         labelName = classification.category;
