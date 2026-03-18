@@ -42,31 +42,27 @@ export async function classifyEmail(
   const tagNames = tags.map((t) => t.tag.name).join("\n- ");
   const allowedCategories = new Set(tags.map((t) => t.tag.name));
   const messages = [
-    {
-      role: "system" as const,
-      content: `You are an email classifier. Output ONLY valid JSON: {"category":"<name>","response_required":<bool>}
-
-CATEGORIES (use exact name or empty string if none fit):
-${tagNames}
+  {
+    role: "system" as const,
+    content: `You are an email classifier. Output ONLY valid JSON: {"category":"<name>","response_required":<bool>}
 
 RULES:
-- category: pick the best semantic match; "" if uncertain
-- response_required: true ONLY if sender is human AND email explicitly needs a reply/decision/approval
-- Always false for: automated alerts, OTPs, receipts, invoices, newsletters, no-reply senders, marketing
+- category: pick the best semantic match from the provided list; "" only if nothing remotely fits
+- response_required: true ONLY if sender is clearly human AND email explicitly needs a reply/decision/approval
+- Always false for: receipts, OTPs, invoices, newsletters, no-reply senders, automated alerts, marketing`,
+  },
+  {
+    role: "user" as const,
+    content: `Classify this email. Pick a category from the list below — only use "" if absolutely nothing fits.
 
-EXAMPLES:
-{"subject":"UPI txn of Rs.110","from":"HDFC Bank"} → {"category":"Finance","response_required":false}
-{"subject":"Server CPU at 90%","from":"monitoring@co.com"} → {"category":"Automated alerts","response_required":false}
-{"subject":"Can you review by EOD?","from":"alex@partner.com"} → {"category":"Pending Response","response_required":true}
-{"subject":"Your invoice - $99 due","from":"billing@stripe.com"} → {"category":"Finance","response_required":false}`,
-    },
-    {
-      role: "user" as const,
-      content: `Subject: ${email.subject}
+Categories:
+- ${tagNames}
+
+Subject: ${email.subject}
 From: ${email.from}
 Body: ${email.bodySnippet}`,
-    },
-  ];
+  },
+];
 
   const completion = await openai.chat.completions.create({
     model: deploymentName,
