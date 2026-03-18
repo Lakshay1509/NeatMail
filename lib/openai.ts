@@ -1,101 +1,70 @@
-import OpenAI from 'openai';
+import OpenAI from "openai";
 
 // const endpoint = process.env.AZURE_ENDPOINT!;
-const deploymentName = 'gpt-5.4-nano-2026-03-17';
+const deploymentName = "gpt-5.4-nano-2026-03-17";
 // const apiKey = process.env.AZURE_API_KEY!;
 
 // const openai = new OpenAI({
 //   baseURL: endpoint,
 //   apiKey,
-  
-// });
 
+// });
 
 //You can use normal openai endpoint by uncommenting this- we use azure by default
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!, 
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
-
-
-
-export type UserTag = ({
+export type UserTag = {
   tag: {
-      name: string;
+    name: string;
   };
 } & {
   created_at: Date | null;
   user_id: string;
   tag_id: string;
-});
+};
 
 export type EmailClassificationResult = {
   category: string;
   response_required: boolean;
 };
 
-
-export async function classifyEmail(email: {
-  subject: string;
-  from: string;
-  bodySnippet: string;
-}, tags: UserTag[]): Promise<EmailClassificationResult> {
-  const tagNames = tags.map(t => t.tag.name).join("\n- ");
+export async function classifyEmail(
+  email: {
+    subject: string;
+    from: string;
+    bodySnippet: string;
+  },
+  tags: UserTag[],
+): Promise<EmailClassificationResult> {
+  const tagNames = tags.map((t) => t.tag.name).join("\n- ");
   const allowedCategories = new Set(tags.map((t) => t.tag.name));
   const messages = [
     {
       role: "system" as const,
-content: `You are an email classification system. Return a valid JSON object with "category" and "response_required" fields.
+      content: `You are an email classifier. Output ONLY valid JSON: {"category":"<name>","response_required":<bool>}
 
-ALLOWED CATEGORIES (case-sensitive, exact match required):
-- ${tagNames}
+CATEGORIES (use exact name or empty string if none fit):
+${tagNames}
 
-CLASSIFICATION RULES (apply in order):
-1. Match the email's PURPOSE to the most semantically appropriate category from the allowed list above.
-   - Payment confirmations, transactions, invoices, bank alerts → pick whichever category from the allowed list best represents financial/payment content
-   - Calendar invites, meeting updates → pick the event-related category
-   - Marketing, promotions → pick the marketing-related category
-   - System alerts, monitoring → pick the alerts-related category
-
-RESPONSE_REQUIRED RULES:
-- Set "response_required": true ONLY when BOTH are true:
-  1) Sender appears to be a human (personal/corporate mailbox, conversational language, not automated system patterns)
-  2) Email clearly asks for a reply, decision, approval, confirmation, or manual action from the user
-- Set "response_required": false for automated notifications, receipts, invoices, OTPs, alerts, newsletters, marketing campaigns, no-reply/system senders, and informational updates that do not need a direct response
-- If uncertain, set "response_required": false
-
-OUTPUT FORMAT (strict):
-{"category": "exact_category_name", "response_required": true}
-OR
-{"category": "", "response_required": false}
+RULES:
+- category: pick the best semantic match; "" if uncertain
+- response_required: true ONLY if sender is human AND email explicitly needs a reply/decision/approval
+- Always false for: automated alerts, OTPs, receipts, invoices, newsletters, no-reply senders, marketing
 
 EXAMPLES:
-Input: Subject="You have done a UPI txn", From="HDFC Bank", Body="Rs.110.00 has been debited"
-Output: {"category": "Finance", "response_required": false}
-
-Input: Subject="Server CPU usage at 90%", From="monitoring@company.com"
-Output: {"category": "Automated alerts", "response_required": false}
-
-Input: Subject="Meeting Tomorrow", From="calendar@zoom.us"
-Output: {"category": "Event update", "response_required": false}
-
-Input: Subject="Can you review the proposal by EOD?", From="alex@partner.com"
-Output: {"category": "Pending Response", "response_required": true}
-
-Input: Subject="Your monthly invoice", Body="Payment of $99 is due"
-Output: {"category": "Finance", "response_required": false}`,
+{"subject":"UPI txn of Rs.110","from":"HDFC Bank"} → {"category":"Finance","response_required":false}
+{"subject":"Server CPU at 90%","from":"monitoring@co.com"} → {"category":"Automated alerts","response_required":false}
+{"subject":"Can you review by EOD?","from":"alex@partner.com"} → {"category":"Pending Response","response_required":true}
+{"subject":"Your invoice - $99 due","from":"billing@stripe.com"} → {"category":"Finance","response_required":false}`,
     },
     {
       role: "user" as const,
-      content: `Classify this email into ONE category or return empty if uncertain:
-
-Subject: ${email.subject}
+      content: `Subject: ${email.subject}
 From: ${email.from}
-Body: ${email.bodySnippet}
-
-Available categories:
-- ${tagNames}`,
+Body: ${email.bodySnippet}`,
     },
   ];
 
@@ -103,8 +72,8 @@ Available categories:
     model: deploymentName,
     messages,
     response_format: { type: "json_object" },
-    // max_completion_tokens: 20,
-    seed: 42, 
+    // max_completion_tokens: 60, // {"category":"...","response_required":false} is ~50 chars max
+    seed: 42,
   });
 
   const content = completion.choices[0]?.message?.content;
@@ -119,34 +88,36 @@ Available categories:
     const rawCategory = typeof json.category === "string" ? json.category : "";
     const category = allowedCategories.has(rawCategory) ? rawCategory : "";
 
-    const rawResponseRequired = json.response_required ?? json.response_required;
+    // BUG FIX: was `json.response_required ?? json.response_required` (no-op)
+    const rawRR = json.response_required;
     const response_required =
-      typeof rawResponseRequired === "boolean"
-        ? rawResponseRequired
-        : typeof rawResponseRequired === "string"
-          ? rawResponseRequired.toLowerCase() === "true"
+      typeof rawRR === "boolean"
+        ? rawRR
+        : typeof rawRR === "string"
+          ? rawRR.toLowerCase() === "true"
           : false;
 
-    return {
-      category,
-      response_required,
-    };
+    return { category, response_required };
   } catch {
     throw new Error("Invalid JSON response from OpenAI");
   }
 }
 
-
-
-
-export async function generateEmailReply(emailData: {
-  subject: string;
-  from: string;
-  bodySnippet: string;
-}, draftPrompt: string | null,
-user_name: string | null) {
-  const customInstructions = draftPrompt ? `\n- Follow these custom instructions from the user: "${draftPrompt}"` : "";
-  const userNameInstruction = user_name ? `\n- The user's name is ${user_name}. Keep this in mind and reply on their behalf.` : "";
+export async function generateEmailReply(
+  emailData: {
+    subject: string;
+    from: string;
+    bodySnippet: string;
+  },
+  draftPrompt: string | null,
+  user_name: string | null,
+) {
+  const customInstructions = draftPrompt
+    ? `\n- Follow these custom instructions from the user: "${draftPrompt}"`
+    : "";
+  const userNameInstruction = user_name
+    ? `\n- The user's name is ${user_name}. Keep this in mind and reply on their behalf.`
+    : "";
 
   const prompt = `You are an email reply generator. Follow these rules strictly:
 
@@ -180,17 +151,18 @@ OUTPUT:
     messages: [
       {
         role: "system",
-        content: "You are a professional email reply assistant. You output either 'NO_REPLY_NEEDED' or a concise reply. Nothing else.",
+        content:
+          "You are a professional email reply assistant. You output either 'NO_REPLY_NEEDED' or a concise reply. Nothing else.",
       },
       {
         role: "user",
         content: prompt,
       },
     ],
- 
-    // max_completion_tokens: 200, 
-    // top_p: 0.9, 
-    // frequency_penalty: 0.3, 
+
+    // max_completion_tokens: 200,
+    // top_p: 0.9,
+    // frequency_penalty: 0.3,
   });
 
   const response = completion.choices[0]?.message?.content ?? "";
