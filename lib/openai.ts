@@ -29,7 +29,6 @@ export type UserTag = {
 
 export type EmailClassificationResult = {
   category: string;
-  response_required: boolean;
 };
 
 export async function classifyEmail(
@@ -52,7 +51,7 @@ export async function classifyEmail(
   const messages = [
     {
       role: "system" as const,
-      content: `You are an email classifier. Output ONLY valid JSON: {"category":"<name>","response_required":<bool>}
+      content: `You are an email classifier. Output ONLY valid JSON: {"category":"<name>"}
 
 CLASSIFICATION RULES (apply in order, highest priority first):
 1. FINANCE/PAYMENT: If email contains transactions, payments, UPI, bank alerts, invoices, money (₹/$) → use "Finance" if available, else use "Automated alerts" as fallback
@@ -65,12 +64,9 @@ CLASSIFICATION RULES (apply in order, highest priority first):
 5. CONFIDENCE: If < 85% confidence → return empty string
 
 EXAMPLES:
-From: "HDFC Bank", Subject: "UPI txn of ₹110 debited" → {"category":"Finance","response_required":false}
-From: "info@vas-hosting.cz", Subject: "Unpaid hosting invoice" → {"category":"Finance","response_required":false}
-From: "monitoring@company.com", Subject: "CPU at 90%" → {"category":"Automated alerts","response_required":false}
-
-response_required: true ONLY if sender is human AND email needs reply/decision/approval.
-Always false for: receipts, OTPs, newsletters, no-reply senders, automated alerts.`,
+From: "HDFC Bank", Subject: "UPI txn of ₹110 debited" → {"category":"Finance"}
+From: "info@vas-hosting.cz", Subject: "Unpaid hosting invoice" → {"category":"Finance"}
+From: "monitoring@company.com", Subject: "CPU at 90%" → {"category":"Automated alerts"}`,
     },
     {
       role: "user" as const,
@@ -100,22 +96,12 @@ Body: ${email.bodySnippet}`,
   try {
     const json = JSON.parse(content) as {
       category?: unknown;
-      response_required?: unknown;
     };
 
     const rawCategory = typeof json.category === "string" ? json.category : "";
     const category = allowedCategories.has(rawCategory) ? rawCategory : "";
 
-    // BUG FIX: was `json.response_required ?? json.response_required` (no-op)
-    const rawRR = json.response_required;
-    const response_required =
-      typeof rawRR === "boolean"
-        ? rawRR
-        : typeof rawRR === "string"
-          ? rawRR.toLowerCase() === "true"
-          : false;
-
-    return { category, response_required };
+    return { category };
   } catch {
     throw new Error("Invalid JSON response from OpenAI");
   }

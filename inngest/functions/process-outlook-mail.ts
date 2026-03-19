@@ -99,7 +99,6 @@ export const processOutlookMailFn = inngest.createFunction(
       );
     });
     const labelName = classification.category;
-    const responseRequired = classification.response_required;
 
     let movedMessageId: string = messageId;
 
@@ -183,7 +182,7 @@ export const processOutlookMailFn = inngest.createFunction(
       addMailtoDB(subscription.clerk_user_id, tagProperties.id, movedMessageId);
     }
 
-    if (labelName === "Pending Response" || responseRequired) {
+    if (labelName === "Pending Response") {
       await step.run("draft", async () => {
         const clerk = await clerkClient();
 
