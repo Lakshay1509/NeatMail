@@ -59,7 +59,8 @@ PRIORITY RULES (apply in order):
 2. ACTION: anything requiring approval, decision, or reply from a human → "Action Needed"  
 3. AUTOMATED: no-reply senders, monitoring alerts, receipts, OTPs → "Automated alerts"
 4. MARKETING: newsletters, promotions, cold outreach → "Marketing"
-5. Prefer the MORE SPECIFIC category when two fit
+5. SEMANTIC CONTEXT: Analyze PURPOSE, not keywords
+6. Prefer the MORE SPECIFIC category when two fit
 
 EXAMPLES:
 From: "HDFC Bank", Subject: "UPI txn of ₹110 debited" → {"category":"Finance","response_required":false}
