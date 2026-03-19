@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
 // const endpoint = process.env.AZURE_ENDPOINT!;
-const deploymentName = "gpt-4.1-mini";
+// const deploymentName = "gpt-4.1-mini";
 // const apiKey = process.env.AZURE_API_KEY!;
 
 // const openai = new OpenAI({
@@ -31,27 +31,22 @@ export type EmailClassificationResult = {
   category: string;
 };
 
-export async function classifyEmail(
-  email: {
-    subject: string;
-    from: string;
-    bodySnippet: string;
-  },
-  tags: UserTag[],
-): Promise<EmailClassificationResult> {
-  const tagDefinitions = tags
-    .map((t) => {
-      const description = t.tag.description?.trim();
-      return description
-        ? `${t.tag.name}: ${description}`
-        : `${t.tag.name}: (no description)`;
-    })
-    .join("\n- ");
-  const allowedCategories = new Set(tags.map((t) => t.tag.name));
+
+
+
+export async function classifyEmail(email: {
+  subject: string;
+  from: string;
+  bodySnippet: string;
+}, tags: UserTag[]): Promise<string> {
+  const tagNames = tags.map(t => t.tag.name).join("\n- ");
   const messages = [
     {
       role: "system" as const,
-      content: `You are an email classifier. Output ONLY valid JSON: {"category":"<name>"}
+      content: `You are an email classification system. Your ONLY job is to return a valid JSON object with a "category" field.
+
+ALLOWED CATEGORIES (case-sensitive, exact match required):
+- ${tagNames}
 
 CLASSIFICATION RULES (apply in order, highest priority first):
 1. FINANCE/PAYMENT: If email contains transactions, payments, UPI, bank alerts, invoices, money (₹/$) → use "Finance" if available, else use "Automated alerts" as fallback
@@ -63,112 +58,53 @@ CLASSIFICATION RULES (apply in order, highest priority first):
 4. KEYWORD MATCHING: Use for unclear cases
 5. CONFIDENCE: If < 85% confidence → return empty string
 
+OUTPUT FORMAT (strict):
+{"category": "exact_category_name"}
+OR
+{"category": ""}
+
 EXAMPLES:
-From: "HDFC Bank", Subject: "UPI txn of ₹110 debited" → {"category":"Finance"}
-From: "info@vas-hosting.cz", Subject: "Unpaid hosting invoice" → {"category":"Finance"}
-From: "monitoring@company.com", Subject: "CPU at 90%" → {"category":"Automated alerts"}`,
+Input: Subject="You have done a UPI txn", From="HDFC Bank", Body="Rs.110.00 has been debited"
+Output: {"category": "Finance"}
+
+Input: Subject="Server CPU usage at 90%", From="monitoring@company.com"
+Output: {"category": "Automated alerts"}
+
+Input: Subject="Meeting Tomorrow", From="calendar@zoom.us"
+Output: {"category": "Event update"}
+
+Input: Subject="Your monthly invoice", Body="Payment of $99 is due"
+Output: {"category": "Finance"}`,
     },
     {
       role: "user" as const,
-      content: `Classify this email. Pick a category from the list below — only use "" if absolutely nothing fits.
-  Use category descriptions to understand intent before choosing.
-
-  Categories (name: description):
-  - ${tagDefinitions}
+      content: `Classify this email into ONE category or return empty if uncertain:
 
 Subject: ${email.subject}
 From: ${email.from}
-Body: ${email.bodySnippet}`,
+Body: ${email.bodySnippet}
+
+Available categories:
+- ${tagNames}`,
     },
   ];
 
   const completion = await openai.chat.completions.create({
-    model: deploymentName,
+    model: "gpt-4o-mini",
     messages,
     response_format: { type: "json_object" },
-    // max_completion_tokens: 60, // {"category":"...","response_required":false} is ~50 chars max
-    seed: 42,
+    temperature: 0, 
+    max_completion_tokens: 20,
+    seed: 42, 
   });
 
   const content = completion.choices[0]?.message?.content;
   if (!content) throw new Error("No response from OpenAI");
 
   try {
-    const json = JSON.parse(content) as {
-      category?: unknown;
-    };
-
-    const rawCategory = typeof json.category === "string" ? json.category : "";
-    const category = allowedCategories.has(rawCategory) ? rawCategory : "";
-
-    return { category };
+    const json = JSON.parse(content);
+    return json.category as string;
   } catch {
     throw new Error("Invalid JSON response from OpenAI");
   }
-}
-
-export async function generateEmailReply(
-  emailData: {
-    subject: string;
-    from: string;
-    bodySnippet: string;
-  },
-  draftPrompt: string | null,
-  user_name: string | null,
-) {
-  const customInstructions = draftPrompt
-    ? `\n- Follow these custom instructions from the user: "${draftPrompt}"`
-    : "";
-  const userNameInstruction = user_name
-    ? `\n- The user's name is ${user_name}. Keep this in mind and reply on their behalf.`
-    : "";
-
-  const prompt = `You are an email reply generator. Follow these rules strictly:
-
-STEP 1: DETECTION
-Check if email is:
-- Automated (contains: "noreply", "do-not-reply", "notification", "alert", "receipt", "invoice")
-- Newsletter (contains: "unsubscribe", "manage preferences")
-- System message (From contains: "no-reply", "automated", "system")
-
-If ANY above is true → Output exactly: "NO_REPLY_NEEDED"
-
-STEP 2: REPLY GENERATION (only if Step 1 is false)
-Requirements:
-- Acknowledge the sender's message
-- Address the main point/question
-- Use professional tone
-- Do NOT include: subject line, greetings like "Dear", signatures
-- Do NOT use markdown formatting (like **bold** or *italics*), output plain text only
-- Start directly with response ${customInstructions}, ${userNameInstruction}
-
-INPUT EMAIL:
-From: ${emailData.from}
-Subject: ${emailData.subject}
-Body: ${emailData.bodySnippet}
-
-OUTPUT:
-[Your reply text OR "NO_REPLY_NEEDED"]`;
-
-  const completion = await openai.chat.completions.create({
-    model: deploymentName,
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are a professional email reply assistant. You output either 'NO_REPLY_NEEDED' or a concise reply. Nothing else.",
-      },
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
-
-    // max_completion_tokens: 200,
-    // top_p: 0.9,
-    // frequency_penalty: 0.3,
-  });
-
-  const response = completion.choices[0]?.message?.content ?? "";
-  return response.trim() === "NO_REPLY_NEEDED" ? "" : response.trim();
 }

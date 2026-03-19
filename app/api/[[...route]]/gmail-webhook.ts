@@ -2,7 +2,6 @@ import { inngest } from "@/lib/inngest";
 import { createGmailDraft, getGmailMessageBody } from "@/lib/gmail";
 import {
   classifyEmail as classifyEmailOpenAI,
-  generateEmailReply,
 } from "@/lib/openai";
 import {
   isMessageProcessed,
@@ -224,7 +223,7 @@ const app = new Hono().post("/", async (ctx) => {
         labelName = "Read only";
       } else {
         const classification = await classifyEmailOpenAI(emailData, tagsOfUser);
-        labelName = classification.category;
+        labelName = classification;
       }
 
       console.log(emailData.bodySnippet);

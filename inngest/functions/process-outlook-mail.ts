@@ -8,7 +8,7 @@ import {
 } from "@/lib/supabase";
 import {
   classifyEmail as classifyEmailOpenAI,
-  generateEmailReply,
+  
 } from "@/lib/openai";
 import { clerkClient } from "@clerk/nextjs/server";
 import { isMessageProcessed, markMessageProcessed } from "@/lib/redis";
@@ -98,7 +98,7 @@ export const processOutlookMailFn = inngest.createFunction(
         tagsOfUser,
       );
     });
-    const labelName = classification.category;
+    const labelName = classification;
 
     let movedMessageId: string = messageId;
 
