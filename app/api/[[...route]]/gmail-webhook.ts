@@ -225,6 +225,8 @@ const app = new Hono().post("/", async (ctx) => {
         responseRequired = classification.response_required;
       }
 
+      console.log(emailData.bodySnippet);
+      console.log(emailData.from)
       console.log(labelName);
       console.log(responseRequired);
 
