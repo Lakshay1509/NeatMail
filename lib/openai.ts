@@ -100,7 +100,7 @@ ${tagContext}`,
     messages,
     response_format: { type: "json_object" },
     temperature: 0, 
-    max_completion_tokens: 20,
+    max_completion_tokens: 40,
     seed: 42, 
   });
 
