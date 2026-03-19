@@ -1066,7 +1066,8 @@ export const TagScalarFieldEnum = {
   created_at: 'created_at',
   color: 'color',
   user_id: 'user_id',
-  outlook_preset: 'outlook_preset'
+  outlook_preset: 'outlook_preset',
+  description: 'description'
 } as const
 
 export type TagScalarFieldEnum = (typeof TagScalarFieldEnum)[keyof typeof TagScalarFieldEnum]

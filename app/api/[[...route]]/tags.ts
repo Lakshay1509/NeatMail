@@ -163,7 +163,7 @@ const app = new Hono()
       z.object({
         tag: z.string(),
         color: z.string(),
-        description: z.string(),
+        description: z.string().min(10).max(100),
         outlookColor:z.string().optional()
       }),
     ),
@@ -208,7 +208,9 @@ const app = new Hono()
             name: values.tag.trim(),
             user_id: userId,
             color: values.color,
-            outlook_preset:values.outlookColor
+            outlook_preset:values.outlookColor,
+            description:values.description
+            
           },
         });
 

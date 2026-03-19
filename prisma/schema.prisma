@@ -40,6 +40,7 @@ model tag {
   color          String
   user_id        String?
   outlook_preset String?
+  description    String?
   email_tracked  email_tracked[]
   user_tokens    user_tokens?    @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
   user_tags      user_tags[]
