@@ -12,15 +12,15 @@ import UpdateFolderPrefernce from "./UpdateFolderPrefernce"
 import { useAddUserDraftPrefernce } from "@/features/draftPreference/use-add-user-draftPreference"
 
 export const CATEGORIES = [
-	{ name: 'Action Needed', color: '#cc3a21', outlookColor: 'preset0', description: 'Emails that need your attention' },
-	{ name: 'Pending Response', color: '#eaa041', outlookColor: 'preset1', description: "Emails you are expected to reply" },
-	{ name: 'Automated alerts', color: '#653e9b', outlookColor: 'preset8', description: 'Automated updates from tools you use' },
-	{ name: 'Finance', color: '#3c78d8', outlookColor: 'preset7', description: 'Finance or Payments related mails' },
-	{ name: 'Event update', color: '#285bac', outlookColor: 'preset22', description: 'Calendar updates from Zoom, Google Meet, etc' },
-	{ name: 'Discussion', color: '#0b804b', outlookColor: 'preset4', description: 'Team chats in tools like Google Docs or Microsoft Office' },
-	{ name: 'Read only', color: '#666666', outlookColor: 'preset12', description: "Emails that don't require your response, but are important" },
-	{ name: 'Resolved', color: '#076239', outlookColor: 'preset19', description: 'Email threads that have been resolved' },
-	{ name: 'Marketing', color: '#994a64', outlookColor: 'preset9', description: 'Marketing or cold emails' },
+	{ name: 'Action Needed', color: '#cc3a21', outlookColor: 'preset0', description: 'Direct request to complete a task, approve, sign, submit, or decide.' },
+	{ name: 'Pending Response', color: '#eaa041', outlookColor: 'preset1', description: 'Sender expects your reply (answer, clarification, confirmation), but no separate task execution.' },
+	{ name: 'Automated alerts', color: '#653e9b', outlookColor: 'preset8', description: 'System-generated notifications from tools/services (build, incident, status, reminder), not human conversation.' },
+	{ name: 'Finance', color: '#3c78d8', outlookColor: 'preset7', description: 'Money-related communication: invoices, receipts, billing, payments, expenses, payroll, taxes, statements.' },
+	{ name: 'Event update', color: '#285bac', outlookColor: 'preset22', description: 'Calendar and meeting lifecycle updates: invite, reschedule, cancellation, RSVP, join details.' },
+	{ name: 'Discussion', color: '#0b804b', outlookColor: 'preset4', description: 'Human collaboration thread for context-sharing or brainstorming without a clear owner action.' },
+	{ name: 'Read only', color: '#666666', outlookColor: 'preset12', description: 'FYI or announcement content to read for awareness only; no reply or action expected.' },
+	{ name: 'Resolved', color: '#076239', outlookColor: 'preset19', description: 'Thread is closed: issue completed, question answered, or final confirmation already provided.' },
+	{ name: 'Marketing', color: '#994a64', outlookColor: 'preset9', description: 'Promotional or sales outreach: newsletters, campaigns, offers, product updates, cold pitches.' },
 ]
 
 interface EmailCategorizationModalProps {
