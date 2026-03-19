@@ -116,46 +116,24 @@ function decodeGmailBase64Url(data: string): string {
   return Buffer.from(normalized, "base64").toString("utf-8");
 }
 
-function stripHtml(html: string): string {
-  return html
-    .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
+function extractBodyFromPart(part: any): string[] {
+  if (!part) return [];
 
-function extractBodyFromPart(part: any): { text: string[]; html: string[] } {
   const text: string[] = [];
-  const html: string[] = [];
 
-  if (!part) {
-    return { text, html };
-  }
+  if (part.body?.attachmentId) return []; // skip attachments
 
   if (part.mimeType === "text/plain" && part.body?.data) {
     text.push(decodeGmailBase64Url(part.body.data));
   }
 
-  if (part.mimeType === "text/html" && part.body?.data) {
-    html.push(decodeGmailBase64Url(part.body.data));
-  }
-
   if (Array.isArray(part.parts)) {
     for (const child of part.parts) {
-      const childBody = extractBodyFromPart(child);
-      text.push(...childBody.text);
-      html.push(...childBody.html);
+      text.push(...extractBodyFromPart(child));
     }
   }
 
-  return { text, html };
+  return text;
 }
 
 export async function getGmailMessageBody(userId: string, messageId: string) {
@@ -165,23 +143,14 @@ export async function getGmailMessageBody(userId: string, messageId: string) {
     userId: "me",
     id: messageId,
     format: "full",
-    fields: "payload,snippet",
+    fields: "snippet,payload(mimeType,body,parts)",
   });
 
-  const { text, html } = extractBodyFromPart(res.data.payload);
-  const plainBody = text.join("\n").trim();
-
-  if (plainBody.length > 0) {
-    return plainBody;
-  }
-
-  const htmlBody = html.join("\n").trim();
-  if (htmlBody.length > 0) {
-    return stripHtml(htmlBody);
-  }
-
-  return res.data.snippet ?? "";
+  const plainBody = extractBodyFromPart(res.data.payload).join("\n").trim();
+  return plainBody.length > 0 ? plainBody : (res.data.snippet ?? "");
 }
+
+
 
 export async function createGmailDraft(
   userId: string,
