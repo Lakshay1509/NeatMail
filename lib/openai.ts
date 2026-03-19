@@ -39,14 +39,17 @@ export async function classifyEmail(email: {
   from: string;
   bodySnippet: string;
 }, tags: UserTag[]): Promise<string> {
-  const tagNames = tags.map(t => t.tag.name).join("\n- ");
+  const tagNames = tags.map((t) => t.tag.name).join("\n- ");
+  const tagContext = tags
+    .map(
+      (t) =>
+        `- ${t.tag.name}: ${t.tag.description?.trim() || "No description provided"}`,
+    )
+    .join("\n");
   const messages = [
     {
       role: "system" as const,
       content: `You are an email classification system. Your ONLY job is to return a valid JSON object with a "category" field.
-
-ALLOWED CATEGORIES (case-sensitive, exact match required):
-- ${tagNames}
 
 CLASSIFICATION RULES (apply in order, highest priority first):
 1. FINANCE/PAYMENT: If email contains transactions, payments, UPI, bank alerts, invoices, money (₹/$) → use "Finance" if available, else use "Automated alerts" as fallback
@@ -85,7 +88,10 @@ From: ${email.from}
 Body: ${email.bodySnippet}
 
 Available categories:
-- ${tagNames}`,
+- ${tagNames}
+
+Category descriptions:
+${tagContext}`,
     },
   ];
 
