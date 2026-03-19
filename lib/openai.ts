@@ -51,6 +51,9 @@ export async function classifyEmail(email: {
       role: "system" as const,
       content: `You are an email classification system. Your ONLY job is to return a valid JSON object with a "category" field.
 
+      Available Categories:
+      ${tagNames}
+
 CLASSIFICATION RULES (apply in order, highest priority first):
 1. FINANCE/PAYMENT: If email contains transactions, payments, UPI, bank alerts, invoices, money (₹/$) → use "Finance" if available, else use "Automated alerts" as fallback
 2. DOMAIN-SPECIFIC: Match sender domain to category (bank → Finance/Automated alerts, calendar → Event update)
