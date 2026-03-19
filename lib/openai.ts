@@ -56,10 +56,7 @@ export async function classifyEmail(
 
 RULES:
 - category: pick the best semantic match from the provided list; "" only if nothing remotely fits
-- If an email is sent by a bot/service (indicated by no-reply addresses, 
-  "[bot]" in sender name, automated subject patterns like alerts/notifications/
-  digests, or sent on behalf of a system), prefer "Automated alerts" over "Read only"
-- "Read only" is for human-sent emails that are informational (forwarded threads, FYIs, CC'd emails)
+- If two categories fit equally well, prefer the more specific one
 - response_required: true ONLY if sender is clearly human AND email explicitly needs a reply/decision/approval
 - Always false for: receipts, OTPs, invoices, newsletters, no-reply senders, automated alerts, marketing`,
   },
