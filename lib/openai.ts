@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
 // const endpoint = process.env.AZURE_ENDPOINT!;
-const deploymentName = "gpt-5.4-nano-2026-03-17";
+const deploymentName = "gpt-5-mini";
 // const apiKey = process.env.AZURE_API_KEY!;
 
 // const openai = new OpenAI({
