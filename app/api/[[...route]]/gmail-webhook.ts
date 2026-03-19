@@ -177,8 +177,7 @@ const app = new Hono().post("/", async (ctx) => {
         throw err;
       }
 
-      const fullBody = await getGmailMessageBody(clerkUserId, messageId)
-      const truncated = fullBody?.slice(0, 300);
+      
 
       const emailData = {
         userId:user.clerk_user_id,
@@ -188,7 +187,7 @@ const app = new Hono().post("/", async (ctx) => {
         from:
           email.data.payload?.headers?.find((h) => h.name === "From")?.value ||
           "",
-        bodySnippet: truncated,
+        bodySnippet: email.data.snippet || "",
       };
 
       // currentThreadId = String(emailData.threadId);
