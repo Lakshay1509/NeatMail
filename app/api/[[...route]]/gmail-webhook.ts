@@ -217,8 +217,7 @@ const app = new Hono().post("/", async (ctx) => {
       }
       else if (
         hasReadonlyTag &&
-        (email.data.labelIds?.includes("CATEGORY_SOCIAL") ||
-          email.data.labelIds?.includes("CATEGORY_UPDATES"))
+        (email.data.labelIds?.includes("CATEGORY_SOCIAL"))
       ) {
         labelName = "Read only";
       } else {
