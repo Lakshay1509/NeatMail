@@ -54,17 +54,19 @@ export async function classifyEmail(
       role: "system" as const,
       content: `You are an email classifier. Output ONLY valid JSON: {"category":"<name>","response_required":<bool>}
 
-PRIORITY RULES (apply in order):
-1. FINANCE: transactions, payments, UPI, bank alerts, invoices, billing, ₹/$, overdue → "Finance"
-2. ACTION: anything requiring approval, decision, or reply from a human → "Action Needed"  
-3. AUTOMATED: no-reply senders, monitoring alerts, receipts, OTPs → "Automated alerts"
-4. MARKETING: newsletters, promotions, cold outreach → "Marketing"
-5. SEMANTIC CONTEXT: Analyze PURPOSE, not keywords
-6. Prefer the MORE SPECIFIC category when two fit
+CLASSIFICATION RULES (apply in order, highest priority first):
+1. FINANCE/PAYMENT: If email contains transactions, payments, UPI, bank alerts, invoices, money (₹/$) → use "Finance" if available, else use "Automated alerts" as fallback
+2. DOMAIN-SPECIFIC: Match sender domain to category (bank → Finance/Automated alerts, calendar → Event update)
+3. SEMANTIC CONTEXT: Analyze PURPOSE, not keywords
+   - Financial transactions → Finance (or Automated alerts if Finance unavailable)
+   - Calendar invites → Event update
+   - Marketing → Marketing
+4. KEYWORD MATCHING: Use for unclear cases
+5. CONFIDENCE: If < 85% confidence → return empty string
 
 EXAMPLES:
 From: "HDFC Bank", Subject: "UPI txn of ₹110 debited" → {"category":"Finance","response_required":false}
-From: "info@vas-hosting.cz", Subject: "Unpaid hosting invoice" → {"category":"Finance","response_required":true}
+From: "info@vas-hosting.cz", Subject: "Unpaid hosting invoice" → {"category":"Finance","response_required":false}
 From: "monitoring@company.com", Subject: "CPU at 90%" → {"category":"Automated alerts","response_required":false}
 
 response_required: true ONLY if sender is human AND email needs reply/decision/approval.
