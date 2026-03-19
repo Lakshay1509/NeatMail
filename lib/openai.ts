@@ -50,19 +50,28 @@ export async function classifyEmail(
     .join("\n- ");
   const allowedCategories = new Set(tags.map((t) => t.tag.name));
   const messages = [
-  {
-    role: "system" as const,
-    content: `You are an email classifier. Output ONLY valid JSON: {"category":"<name>","response_required":<bool>}
+    {
+      role: "system" as const,
+      content: `You are an email classifier. Output ONLY valid JSON: {"category":"<name>","response_required":<bool>}
 
-RULES:
-- category: pick the best semantic match from the provided list; "" only if nothing remotely fits
-- If two categories fit equally well, prefer the more specific one
-- response_required: true ONLY if sender is clearly human AND email explicitly needs a reply/decision/approval
-- Always false for: receipts, OTPs, invoices, newsletters, no-reply senders, automated alerts, marketing`,
-  },
-  {
-    role: "user" as const,
-    content: `Classify this email. Pick a category from the list below — only use "" if absolutely nothing fits.
+PRIORITY RULES (apply in order):
+1. FINANCE: transactions, payments, UPI, bank alerts, invoices, billing, ₹/$, overdue → "Finance"
+2. ACTION: anything requiring approval, decision, or reply from a human → "Action Needed"  
+3. AUTOMATED: no-reply senders, monitoring alerts, receipts, OTPs → "Automated alerts"
+4. MARKETING: newsletters, promotions, cold outreach → "Marketing"
+5. Prefer the MORE SPECIFIC category when two fit
+
+EXAMPLES:
+From: "HDFC Bank", Subject: "UPI txn of ₹110 debited" → {"category":"Finance","response_required":false}
+From: "info@vas-hosting.cz", Subject: "Unpaid hosting invoice" → {"category":"Finance","response_required":true}
+From: "monitoring@company.com", Subject: "CPU at 90%" → {"category":"Automated alerts","response_required":false}
+
+response_required: true ONLY if sender is human AND email needs reply/decision/approval.
+Always false for: receipts, OTPs, newsletters, no-reply senders, automated alerts.`,
+    },
+    {
+      role: "user" as const,
+      content: `Classify this email. Pick a category from the list below — only use "" if absolutely nothing fits.
   Use category descriptions to understand intent before choosing.
 
   Categories (name: description):
@@ -71,8 +80,8 @@ RULES:
 Subject: ${email.subject}
 From: ${email.from}
 Body: ${email.bodySnippet}`,
-  },
-];
+    },
+  ];
 
   const completion = await openai.chat.completions.create({
     model: deploymentName,
