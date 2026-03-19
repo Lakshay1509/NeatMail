@@ -74,6 +74,7 @@ export const processOutlookMailFn = inngest.createFunction(
         tag: {
           select: {
             name: true,
+            description: true,
           },
         },
       },

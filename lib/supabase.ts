@@ -116,6 +116,7 @@ export async function getTagsUser(id: string) {
         tag: {
           select: {
             name: true,
+            description:true
           },
         },
       },

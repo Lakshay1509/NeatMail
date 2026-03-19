@@ -19,6 +19,7 @@ const openai = new OpenAI({
 export type UserTag = {
   tag: {
     name: string;
+    description: string | null;
   };
 } & {
   created_at: Date | null;
@@ -39,7 +40,14 @@ export async function classifyEmail(
   },
   tags: UserTag[],
 ): Promise<EmailClassificationResult> {
-  const tagNames = tags.map((t) => t.tag.name).join("\n- ");
+  const tagDefinitions = tags
+    .map((t) => {
+      const description = t.tag.description?.trim();
+      return description
+        ? `${t.tag.name}: ${description}`
+        : `${t.tag.name}: (no description)`;
+    })
+    .join("\n- ");
   const allowedCategories = new Set(tags.map((t) => t.tag.name));
   const messages = [
   {
@@ -58,9 +66,10 @@ RULES:
   {
     role: "user" as const,
     content: `Classify this email. Pick a category from the list below — only use "" if absolutely nothing fits.
+  Use category descriptions to understand intent before choosing.
 
-Categories:
-- ${tagNames}
+  Categories (name: description):
+  - ${tagDefinitions}
 
 Subject: ${email.subject}
 From: ${email.from}
