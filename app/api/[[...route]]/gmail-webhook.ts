@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest";
-import { createGmailDraft } from "@/lib/gmail";
+import { createGmailDraft, getGmailMessageBody } from "@/lib/gmail";
 import {
   classifyEmail as classifyEmailOpenAI,
   generateEmailReply,
@@ -177,6 +177,9 @@ const app = new Hono().post("/", async (ctx) => {
         throw err;
       }
 
+      const fullBody = await getGmailMessageBody(clerkUserId, messageId)
+      const truncated = fullBody?.slice(0, 300);
+
       const emailData = {
         userId:user.clerk_user_id,
         subject:
@@ -185,7 +188,7 @@ const app = new Hono().post("/", async (ctx) => {
         from:
           email.data.payload?.headers?.find((h) => h.name === "From")?.value ||
           "",
-        bodySnippet: email.data.snippet || "",
+        bodySnippet: truncated,
       };
 
       // currentThreadId = String(emailData.threadId);
