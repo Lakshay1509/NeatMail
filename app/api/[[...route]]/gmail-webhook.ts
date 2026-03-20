@@ -205,6 +205,7 @@ const app = new Hono().post("/", async (ctx) => {
 
       // Check if Gmail already classified this as Promotions
       let labelName: string;
+      let responseRequired = false;
       const hasMarketingTag = tagsOfUser.some(
         (tag: any) => tag.tag.name === "Marketing",
       );
@@ -223,59 +224,66 @@ const app = new Hono().post("/", async (ctx) => {
         labelName = "Read only";
       } else {
         const classification = await classifyEmailOpenAI(emailData, tagsOfUser,draftsenstivity ?? "if actionable" );
-        labelName = classification;
+        labelName = classification.category;
+        responseRequired = classification.response_required === true;
       }
 
+      const shouldDraft =
+        labelName === "Pending Response" || responseRequired;
 
-      if (labelName === "") {
+      if (labelName === "" && !shouldDraft) {
         console.log(`No label assigned for message: ${messageId}`);
         continue;
       }
 
-      const colourofLabel = await labelColor(labelName, clerkUserId);
+      if (labelName.trim().length > 0) {
+        const colourofLabel = await labelColor(labelName, clerkUserId);
 
-      const labelsResponse = await gmail.users.labels.list({ userId: "me" });
-      let labelId = labelsResponse.data.labels?.find(
-        (l) => l.name === labelName,
-      )?.id;
+        const labelsResponse = await gmail.users.labels.list({ userId: "me" });
+        let labelId = labelsResponse.data.labels?.find(
+          (l) => l.name === labelName,
+        )?.id;
 
-      if (!labelId) {
-        console.log(`Creating new label: ${labelName}`);
-        const newLabel = await gmail.users.labels.create({
-          userId: "me",
-          requestBody: {
-            name: labelName,
-            labelListVisibility: "labelShow",
-            messageListVisibility: "show",
-            color: {
-              textColor: "#ffffff",
-              backgroundColor: colourofLabel.color,
+        if (!labelId) {
+          console.log(`Creating new label: ${labelName}`);
+          const newLabel = await gmail.users.labels.create({
+            userId: "me",
+            requestBody: {
+              name: labelName,
+              labelListVisibility: "labelShow",
+              messageListVisibility: "show",
+              color: {
+                textColor: "#ffffff",
+                backgroundColor: colourofLabel.color,
+              },
             },
-          },
-        });
-        labelId = newLabel.data.id!;
-      }
-
-      // Apply label
-      try {
-        await gmail.users.messages.modify({
-          userId: "me",
-          id: messageId,
-          requestBody: {
-            addLabelIds: [labelId],
-          },
-        });
-      } catch (err: any) {
-        if (err.code === 404 || err.status === 404) {
-          console.log(`Message ${messageId} deleted before label could be applied, skipping.`);
-          currentMessageId = null;
-          // currentThreadId = null;
-          continue;
+          });
+          labelId = newLabel.data.id!;
         }
-        throw err;
+
+        // Apply label
+        try {
+          await gmail.users.messages.modify({
+            userId: "me",
+            id: messageId,
+            requestBody: {
+              addLabelIds: [labelId],
+            },
+          });
+        } catch (err: any) {
+          if (err.code === 404 || err.status === 404) {
+            console.log(`Message ${messageId} deleted before label could be applied, skipping.`);
+            currentMessageId = null;
+            // currentThreadId = null;
+            continue;
+          }
+          throw err;
+        }
+
+        await addMailtoDB(clerkUserId, colourofLabel.id, String(messageId));
       }
 
-      if (labelName === "Pending Response") {
+      if (shouldDraft) {
         const { senderName, senderEmail } = parseFromHeader(emailData.from);
         await inngest.send({
           name: "email/process.draft",
@@ -296,8 +304,6 @@ const app = new Hono().post("/", async (ctx) => {
       }
 
       // await markThreadProcessed(String(emailData.threadId));
-
-      await addMailtoDB(clerkUserId, colourofLabel.id, String(messageId));
 
       currentMessageId = null;
       // currentThreadId = null;

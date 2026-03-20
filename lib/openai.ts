@@ -29,6 +29,7 @@ export type UserTag = {
 
 export type EmailClassificationResult = {
   category: string;
+  response_required: boolean;
 };
 
 
@@ -38,7 +39,7 @@ export async function classifyEmail(email: {
   subject: string;
   from: string;
   bodySnippet: string;
-}, tags: UserTag[], sensitivity:string): Promise<string> {
+}, tags: UserTag[], sensitivity:string): Promise<EmailClassificationResult> {
   const tagNames = tags.map((t) => t.tag.name).join("\n- ");
   const tagContext = tags
     .map(
@@ -49,7 +50,7 @@ export async function classifyEmail(email: {
   const messages = [
     {
       role: "system" as const,
-      content: `You are an email classification system. Your ONLY job is to return a valid JSON object with a "category" field.
+      content: `You are an email classification system. Your ONLY job is to return a valid JSON object with "category" and "response_required" fields.
 
       Available Categories:
       ${tagNames}
@@ -64,23 +65,25 @@ CLASSIFICATION RULES (apply in order, highest priority first):
 4. KEYWORD MATCHING: Use for unclear cases
 5. CONFIDENCE: If < 85% confidence → return empty string
 
+RESPONSE_REQUIRED RULES:
+- Set "response_required": true if the sender is directly expecting a reply, asks a question, requests confirmation, asks for a decision, or the message is actionable based on sensitivity.
+- Set "response_required": false for receipts, alerts, newsletters, notifications, FYI-only updates, and other informational messages that do not need a reply.
+- Keep this independent from category selection. A message can have any category with response_required true/false.
+
+SENSITIVITY GUIDANCE FOR response_required (based on the draft sensitivity setting provided by the user message):
+- "always draft" => response_required should be true for nearly all human-origin emails except obvious automated/no-reply notifications.
+- "if known sender AND directly addressed" => true only when sender appears known/personal and email is directly asking this user to respond.
+- "if actionable" => true when concrete action/decision/reply is needed.
+- "if actionable AND critical" => true only when action is needed and urgency/risk/deadline/importance is clear.
+
 OUTPUT FORMAT (strict):
-{"category": "exact_category_name"}
+{"category": "exact_category_name", "response_required": true}
 OR
-{"category": ""}
+{"category": "", "response_required": false}
 
 EXAMPLES:
 Input: Subject="You have done a UPI txn", From="HDFC Bank", Body="Rs.110.00 has been debited"
-Output: {"category": "Finance"}
-
-Input: Subject="Server CPU usage at 90%", From="monitoring@company.com"
-Output: {"category": "Automated alerts"}
-
-Input: Subject="Meeting Tomorrow", From="calendar@zoom.us"
-Output: {"category": "Event update"}
-
-Input: Subject="Your monthly invoice", Body="Payment of $99 is due"
-Output: {"category": "Finance"}`,
+Output: {"category": "Finance", "response_required": false}`,
     },
     {
       role: "user" as const,
@@ -94,7 +97,12 @@ Available categories:
 - ${tagNames}
 
 Category descriptions:
-${tagContext}`,
+${tagContext}
+
+Draft sensitivity setting:
+${sensitivity}
+
+Return only valid JSON with fields: category, response_required.`,
     },
   ];
 
@@ -112,7 +120,13 @@ ${tagContext}`,
 
   try {
     const json = JSON.parse(content);
-    return json.category as string;
+    return {
+      category: typeof json.category === "string" ? json.category : "",
+      response_required:
+        typeof json.response_required === "boolean"
+          ? json.response_required
+          : false,
+    };
   } catch {
     throw new Error("Invalid JSON response from OpenAI");
   }

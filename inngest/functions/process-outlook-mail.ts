@@ -102,7 +102,10 @@ export const processOutlookMailFn = inngest.createFunction(
         tagsOfUser,draftsenstivity ?? "if actionable"
       );
     });
-    const labelName = classification;
+    const labelName = classification.category;
+    const shouldDraft =
+      labelName === "Pending Response" ||
+      classification.response_required === true;
 
     let movedMessageId: string = messageId;
 
@@ -186,7 +189,7 @@ export const processOutlookMailFn = inngest.createFunction(
       addMailtoDB(subscription.clerk_user_id, tagProperties.id, movedMessageId);
     }
 
-    if (labelName === "Pending Response") {
+    if (shouldDraft) {
       await step.run("draft", async () => {
         const clerk = await clerkClient();
 
@@ -221,7 +224,7 @@ export const processOutlookMailFn = inngest.createFunction(
             },
             senderName: senderName,
             senderEmail: senderEmail,
-            messageId: messageId,
+            messageId: movedMessageId,
             tokenData: accessToken,
             is_gmail: false,
           },
