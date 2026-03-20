@@ -5,27 +5,26 @@ import { useGetUserDraftPreference } from "@/features/draftPreference/use-get-us
 import { Textarea } from "./ui/textarea"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
-// import {
-//   Select,
-//   SelectContent,
-//   SelectItem,
-//   SelectTrigger,
-//   SelectValue,
-// } from "./ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select"
 import { Button } from "./ui/button"
 import { HelpCircle } from "lucide-react"
 import { useAddUserDraftPrefernce } from "@/features/draftPreference/use-add-user-draftPreference"
 import { Checkbox } from "./ui/checkbox"
 import { useGetUserSubscribed } from "@/features/user/use-get-subscribed"
 
-// const FONT_OPTIONS = [
-//   { value: "default", label: "Gmail/Outlook default" },
-//   { value: "arial", label: "Arial" },
-//   { value: "times-new-roman", label: "Times New Roman" },
-//   { value: "courier-new", label: "Courier New" },
-//   { value: "georgia", label: "Georgia" },
-//   { value: "verdana", label: "Verdana" },
-// ]
+
+const SENSITIVITY_OPTIONS = [
+  { value: "always draft" },
+  { value: "if known sender AND directly addressed" },
+  { value: "if actionable" },
+  { value: "if actionable AND critical" },
+]
 
 const UserDraftPreference = () => {
   const { data, isLoading, isError } = useGetUserDraftPreference();
@@ -37,6 +36,7 @@ const UserDraftPreference = () => {
   const [fontSize, setFontSize] = useState<number>(0)
   const [fontColor, setFontColor] = useState<string>("#000000")
   const [enabled, setEnabled] = useState<boolean>(false)
+  const [senstivity, setSenstivity] = useState<string>("")
 
   useEffect(() => {
     if (data?.data) {
@@ -45,6 +45,7 @@ const UserDraftPreference = () => {
       setFontSize(data.data.fontSize ?? 0)
       setFontColor(data.data.fontColor ?? "#000000")
       setEnabled(data.data.enabled ?? false)
+      setSenstivity(data.data.senstivity ?? "")
     }
   }, [data])
 
@@ -74,7 +75,8 @@ const UserDraftPreference = () => {
       draftPrompt:draftPrompt,
       signature:signature,
       enabled:enabled,
-      timezone:userTimezone
+      timezone:userTimezone,
+      senstivity:senstivity
     })
 
 
@@ -146,25 +148,24 @@ const UserDraftPreference = () => {
         />
       </div>
 
-      {/* Font
+      {/* Draft Sensitivity */}
       <div className="space-y-1.5">
-        <Label htmlFor="font-select" className="text-sm font-medium">
-          Font
+        <Label htmlFor="sensitivity-select" className="text-lg font-semibold">
+          Draft Sensitivity
         </Label>
-        <Select value={font} onValueChange={setFont}>
-          <SelectTrigger id="font-select" className="w-full">
-            <SelectValue placeholder="Select a font" />
+        <Select value={senstivity} onValueChange={setSenstivity}>
+          <SelectTrigger id="sensitivity-select" className="w-full">
+            <SelectValue placeholder="Select sensitivity level" />
           </SelectTrigger>
           <SelectContent>
-            {FONT_OPTIONS.map((option) => (
+            {SENSITIVITY_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
-                {option.label}
+                {option.value}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-      </div> */}
-
+      </div>
       {/* Font Size */}
       <div className="space-y-1.5">
         <Label htmlFor="font-size" className="text-lg font-semibold">

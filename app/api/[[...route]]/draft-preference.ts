@@ -4,7 +4,7 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import z from "zod";
 
-const SENSITIVITY_LEVELS = ["L1", "L2", "L3", "L4"] as const;
+
 const app = new Hono()
 
   .get("/", async (ctx) => {
@@ -37,7 +37,7 @@ const app = new Hono()
             fontSize: 14,
             signature: null,
             timezone: "UTC",
-            senstivity: "L2",
+            senstivity: "",
           },
         },
         200,
@@ -59,7 +59,7 @@ const app = new Hono()
         fontSize: z.number().min(8).max(72),
         signature: z.string().optional(),
         timezone:z.string(),
-        senstivity:z.enum(SENSITIVITY_LEVELS)
+        senstivity:z.string().optional()
       }),
     ),
     async (ctx) => {
