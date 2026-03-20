@@ -203,7 +203,8 @@ export async function useGetUserDraftPreference(userId: string) {
         fontColor: true,
         fontSize: true,
         signature: true,
-        timezone:true
+        timezone:true,
+        senstivity:true
       },
     });
 
@@ -214,7 +215,8 @@ export async function useGetUserDraftPreference(userId: string) {
         fontColor: "#000000",
         fontSize: 14,
         signature: null,
-        timezone:null
+        timezone:null,
+        senstivity:"L2"
       };
     }
 
@@ -224,7 +226,8 @@ export async function useGetUserDraftPreference(userId: string) {
       fontColor: data.fontColor,
       fontSize: data.fontSize,
       signature: data.signature,
-      timezone:data.timezone
+      timezone:data.timezone,
+      senstivity:data.senstivity ?? "L2"
     };
   } catch (error) {
     console.error("Error getting draft prefernces ");

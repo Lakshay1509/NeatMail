@@ -45,6 +45,7 @@ export type Draft_preferenceMinAggregateOutputType = {
   updatedAt: Date | null
   enabled: boolean | null
   timezone: string | null
+  senstivity: string | null
 }
 
 export type Draft_preferenceMaxAggregateOutputType = {
@@ -58,6 +59,7 @@ export type Draft_preferenceMaxAggregateOutputType = {
   updatedAt: Date | null
   enabled: boolean | null
   timezone: string | null
+  senstivity: string | null
 }
 
 export type Draft_preferenceCountAggregateOutputType = {
@@ -71,6 +73,7 @@ export type Draft_preferenceCountAggregateOutputType = {
   updatedAt: number
   enabled: number
   timezone: number
+  senstivity: number
   _all: number
 }
 
@@ -94,6 +97,7 @@ export type Draft_preferenceMinAggregateInputType = {
   updatedAt?: true
   enabled?: true
   timezone?: true
+  senstivity?: true
 }
 
 export type Draft_preferenceMaxAggregateInputType = {
@@ -107,6 +111,7 @@ export type Draft_preferenceMaxAggregateInputType = {
   updatedAt?: true
   enabled?: true
   timezone?: true
+  senstivity?: true
 }
 
 export type Draft_preferenceCountAggregateInputType = {
@@ -120,6 +125,7 @@ export type Draft_preferenceCountAggregateInputType = {
   updatedAt?: true
   enabled?: true
   timezone?: true
+  senstivity?: true
   _all?: true
 }
 
@@ -220,6 +226,7 @@ export type Draft_preferenceGroupByOutputType = {
   updatedAt: Date
   enabled: boolean
   timezone: string | null
+  senstivity: string | null
   _count: Draft_preferenceCountAggregateOutputType | null
   _avg: Draft_preferenceAvgAggregateOutputType | null
   _sum: Draft_preferenceSumAggregateOutputType | null
@@ -256,6 +263,7 @@ export type draft_preferenceWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"draft_preference"> | Date | string
   enabled?: Prisma.BoolFilter<"draft_preference"> | boolean
   timezone?: Prisma.StringNullableFilter<"draft_preference"> | string | null
+  senstivity?: Prisma.StringNullableFilter<"draft_preference"> | string | null
   user_tokens?: Prisma.XOR<Prisma.User_tokensScalarRelationFilter, Prisma.user_tokensWhereInput>
 }
 
@@ -270,6 +278,7 @@ export type draft_preferenceOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   enabled?: Prisma.SortOrder
   timezone?: Prisma.SortOrderInput | Prisma.SortOrder
+  senstivity?: Prisma.SortOrderInput | Prisma.SortOrder
   user_tokens?: Prisma.user_tokensOrderByWithRelationInput
 }
 
@@ -287,6 +296,7 @@ export type draft_preferenceWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"draft_preference"> | Date | string
   enabled?: Prisma.BoolFilter<"draft_preference"> | boolean
   timezone?: Prisma.StringNullableFilter<"draft_preference"> | string | null
+  senstivity?: Prisma.StringNullableFilter<"draft_preference"> | string | null
   user_tokens?: Prisma.XOR<Prisma.User_tokensScalarRelationFilter, Prisma.user_tokensWhereInput>
 }, "id" | "user_id">
 
@@ -301,6 +311,7 @@ export type draft_preferenceOrderByWithAggregationInput = {
   updatedAt?: Prisma.SortOrder
   enabled?: Prisma.SortOrder
   timezone?: Prisma.SortOrderInput | Prisma.SortOrder
+  senstivity?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.draft_preferenceCountOrderByAggregateInput
   _avg?: Prisma.draft_preferenceAvgOrderByAggregateInput
   _max?: Prisma.draft_preferenceMaxOrderByAggregateInput
@@ -322,6 +333,7 @@ export type draft_preferenceScalarWhereWithAggregatesInput = {
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"draft_preference"> | Date | string
   enabled?: Prisma.BoolWithAggregatesFilter<"draft_preference"> | boolean
   timezone?: Prisma.StringNullableWithAggregatesFilter<"draft_preference"> | string | null
+  senstivity?: Prisma.StringNullableWithAggregatesFilter<"draft_preference"> | string | null
 }
 
 export type draft_preferenceCreateInput = {
@@ -334,6 +346,7 @@ export type draft_preferenceCreateInput = {
   updatedAt?: Date | string
   enabled?: boolean
   timezone?: string | null
+  senstivity?: string | null
   user_tokens: Prisma.user_tokensCreateNestedOneWithoutDraft_preferenceInput
 }
 
@@ -348,6 +361,7 @@ export type draft_preferenceUncheckedCreateInput = {
   updatedAt?: Date | string
   enabled?: boolean
   timezone?: string | null
+  senstivity?: string | null
 }
 
 export type draft_preferenceUpdateInput = {
@@ -360,6 +374,7 @@ export type draft_preferenceUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  senstivity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   user_tokens?: Prisma.user_tokensUpdateOneRequiredWithoutDraft_preferenceNestedInput
 }
 
@@ -374,6 +389,7 @@ export type draft_preferenceUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  senstivity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type draft_preferenceCreateManyInput = {
@@ -387,6 +403,7 @@ export type draft_preferenceCreateManyInput = {
   updatedAt?: Date | string
   enabled?: boolean
   timezone?: string | null
+  senstivity?: string | null
 }
 
 export type draft_preferenceUpdateManyMutationInput = {
@@ -399,6 +416,7 @@ export type draft_preferenceUpdateManyMutationInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  senstivity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type draft_preferenceUncheckedUpdateManyInput = {
@@ -412,6 +430,7 @@ export type draft_preferenceUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  senstivity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type Draft_preferenceNullableScalarRelationFilter = {
@@ -430,6 +449,7 @@ export type draft_preferenceCountOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
   enabled?: Prisma.SortOrder
   timezone?: Prisma.SortOrder
+  senstivity?: Prisma.SortOrder
 }
 
 export type draft_preferenceAvgOrderByAggregateInput = {
@@ -447,6 +467,7 @@ export type draft_preferenceMaxOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
   enabled?: Prisma.SortOrder
   timezone?: Prisma.SortOrder
+  senstivity?: Prisma.SortOrder
 }
 
 export type draft_preferenceMinOrderByAggregateInput = {
@@ -460,6 +481,7 @@ export type draft_preferenceMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
   enabled?: Prisma.SortOrder
   timezone?: Prisma.SortOrder
+  senstivity?: Prisma.SortOrder
 }
 
 export type draft_preferenceSumOrderByAggregateInput = {
@@ -508,6 +530,7 @@ export type draft_preferenceCreateWithoutUser_tokensInput = {
   updatedAt?: Date | string
   enabled?: boolean
   timezone?: string | null
+  senstivity?: string | null
 }
 
 export type draft_preferenceUncheckedCreateWithoutUser_tokensInput = {
@@ -520,6 +543,7 @@ export type draft_preferenceUncheckedCreateWithoutUser_tokensInput = {
   updatedAt?: Date | string
   enabled?: boolean
   timezone?: string | null
+  senstivity?: string | null
 }
 
 export type draft_preferenceCreateOrConnectWithoutUser_tokensInput = {
@@ -548,6 +572,7 @@ export type draft_preferenceUpdateWithoutUser_tokensInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  senstivity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type draft_preferenceUncheckedUpdateWithoutUser_tokensInput = {
@@ -560,6 +585,7 @@ export type draft_preferenceUncheckedUpdateWithoutUser_tokensInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  senstivity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -575,6 +601,7 @@ export type draft_preferenceSelect<ExtArgs extends runtime.Types.Extensions.Inte
   updatedAt?: boolean
   enabled?: boolean
   timezone?: boolean
+  senstivity?: boolean
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["draft_preference"]>
 
@@ -589,6 +616,7 @@ export type draft_preferenceSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   updatedAt?: boolean
   enabled?: boolean
   timezone?: boolean
+  senstivity?: boolean
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["draft_preference"]>
 
@@ -603,6 +631,7 @@ export type draft_preferenceSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   updatedAt?: boolean
   enabled?: boolean
   timezone?: boolean
+  senstivity?: boolean
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["draft_preference"]>
 
@@ -617,9 +646,10 @@ export type draft_preferenceSelectScalar = {
   updatedAt?: boolean
   enabled?: boolean
   timezone?: boolean
+  senstivity?: boolean
 }
 
-export type draft_preferenceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "draftPrompt" | "signature" | "fontSize" | "fontColor" | "createdAt" | "updatedAt" | "enabled" | "timezone", ExtArgs["result"]["draft_preference"]>
+export type draft_preferenceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "draftPrompt" | "signature" | "fontSize" | "fontColor" | "createdAt" | "updatedAt" | "enabled" | "timezone" | "senstivity", ExtArgs["result"]["draft_preference"]>
 export type draft_preferenceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
 }
@@ -646,6 +676,7 @@ export type $draft_preferencePayload<ExtArgs extends runtime.Types.Extensions.In
     updatedAt: Date
     enabled: boolean
     timezone: string | null
+    senstivity: string | null
   }, ExtArgs["result"]["draft_preference"]>
   composites: {}
 }
@@ -1080,6 +1111,7 @@ export interface draft_preferenceFieldRefs {
   readonly updatedAt: Prisma.FieldRef<"draft_preference", 'DateTime'>
   readonly enabled: Prisma.FieldRef<"draft_preference", 'Boolean'>
   readonly timezone: Prisma.FieldRef<"draft_preference", 'String'>
+  readonly senstivity: Prisma.FieldRef<"draft_preference", 'String'>
 }
     
 

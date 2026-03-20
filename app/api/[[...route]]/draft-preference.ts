@@ -4,6 +4,7 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import z from "zod";
 
+const SENSITIVITY_LEVELS = ["L1", "L2", "L3", "L4"] as const;
 const app = new Hono()
 
   .get("/", async (ctx) => {
@@ -21,7 +22,8 @@ const app = new Hono()
         fontColor: true,
         fontSize: true,
         signature: true,
-        timezone:true
+        timezone:true,
+        senstivity:true
       },
     });
 
@@ -34,6 +36,8 @@ const app = new Hono()
             fontColor: "#000000",
             fontSize: 14,
             signature: null,
+            timezone: "UTC",
+            senstivity: "L2",
           },
         },
         200,
@@ -54,7 +58,8 @@ const app = new Hono()
         fontColor: z.string(),
         fontSize: z.number().min(8).max(72),
         signature: z.string().optional(),
-        timezone:z.string()
+        timezone:z.string(),
+        senstivity:z.enum(SENSITIVITY_LEVELS)
       }),
     ),
     async (ctx) => {
@@ -74,7 +79,8 @@ const app = new Hono()
           fontColor: values.fontColor,
           fontSize: values.fontSize,
           signature: values.signature,
-          timezone:values.timezone
+          timezone:values.timezone,
+          senstivity:values.senstivity
         },
         create: {
           user_tokens: {
@@ -85,7 +91,8 @@ const app = new Hono()
           fontColor: values.fontColor,
           fontSize: values.fontSize,
           signature: values.signature,
-          timezone:values.timezone
+          timezone:values.timezone,
+          senstivity:values.senstivity
         },
       });
 

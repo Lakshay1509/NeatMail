@@ -8,7 +8,8 @@ export interface DraftContextRequest{
   subject:string,
   sender_email:string,
   timezone:string,
-  is_gmail:boolean
+  is_gmail:boolean,
+  senstivity?:"L1"|"L2"|"L3"|"L4"
 }
 
 export interface Context{

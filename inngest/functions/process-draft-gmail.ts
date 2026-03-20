@@ -89,7 +89,8 @@ export const processDraftGmail = inngest.createFunction(
             body: fullEmailBody,
             token:tokenData,
             timezone:draftPreference.timezone ?? 'UTC',
-            is_gmail:is_gmail
+            is_gmail:is_gmail,
+            senstivity:(draftPreference.senstivity as "L1" | "L2" | "L3" | "L4" | null) ?? "L2"
           });
           return modelResult
         });
