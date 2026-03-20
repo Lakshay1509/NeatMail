@@ -104,8 +104,7 @@ export const processOutlookMailFn = inngest.createFunction(
     });
     const labelName = classification.category;
     const shouldDraft =
-      labelName === "Pending Response" ||
-      classification.response_required === true;
+        (labelName === "Pending Response" || labelName === "Action Needed"  ) && classification.response_required;
 
     let movedMessageId: string = messageId;
 

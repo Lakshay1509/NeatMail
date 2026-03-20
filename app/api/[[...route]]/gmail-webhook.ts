@@ -229,7 +229,7 @@ const app = new Hono().post("/", async (ctx) => {
       }
 
       const shouldDraft =
-        labelName === "Pending Response" || responseRequired;
+        (labelName === "Pending Response" || labelName === "Action Needed"  ) && responseRequired;
 
       if (labelName === "" && !shouldDraft) {
         console.log(`No label assigned for message: ${messageId}`);
