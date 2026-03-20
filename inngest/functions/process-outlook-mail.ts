@@ -92,10 +92,14 @@ export const processOutlookMailFn = inngest.createFunction(
     const client = await clerkClient();
     const clerkUser = await client.users.getUser(subscription.clerk_user_id);
 
+    const draftsenstivity = await step.run("draft-senstivity",async()=>{
+      return (await useGetUserDraftPreference(clerkUser.id)).senstivity
+    })
+
     const classification = await step.run("openai-called", async () => {
       return classifyEmailOpenAI(
         { subject, from, bodySnippet: body },
-        tagsOfUser,
+        tagsOfUser,draftsenstivity ?? "if actionable"
       );
     });
     const labelName = classification;

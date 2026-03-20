@@ -38,7 +38,7 @@ export async function classifyEmail(email: {
   subject: string;
   from: string;
   bodySnippet: string;
-}, tags: UserTag[]): Promise<string> {
+}, tags: UserTag[], sensitivity:string): Promise<string> {
   const tagNames = tags.map((t) => t.tag.name).join("\n- ");
   const tagContext = tags
     .map(

@@ -201,6 +201,7 @@ const app = new Hono().post("/", async (ctx) => {
       // }
 
       const tagsOfUser = await getTagsUser(clerkUserId);
+      const draftsenstivity = (await useGetUserDraftPreference(clerkUserId)).senstivity;
 
       // Check if Gmail already classified this as Promotions
       let labelName: string;
@@ -221,7 +222,7 @@ const app = new Hono().post("/", async (ctx) => {
       ) {
         labelName = "Read only";
       } else {
-        const classification = await classifyEmailOpenAI(emailData, tagsOfUser);
+        const classification = await classifyEmailOpenAI(emailData, tagsOfUser,draftsenstivity ?? "if actionable" );
         labelName = classification;
       }
 

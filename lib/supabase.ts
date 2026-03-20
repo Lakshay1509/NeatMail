@@ -216,7 +216,7 @@ export async function useGetUserDraftPreference(userId: string) {
         fontSize: 14,
         signature: null,
         timezone:null,
-        senstivity:"L2"
+        senstivity:""
       };
     }
 
@@ -227,7 +227,7 @@ export async function useGetUserDraftPreference(userId: string) {
       fontSize: data.fontSize,
       signature: data.signature,
       timezone:data.timezone,
-      senstivity:data.senstivity ?? "L2"
+      senstivity:data.senstivity
     };
   } catch (error) {
     console.error("Error getting draft prefernces ");
