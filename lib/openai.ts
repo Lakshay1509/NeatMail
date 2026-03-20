@@ -66,9 +66,11 @@ CLASSIFICATION RULES (apply in order, highest priority first):
 5. CONFIDENCE: If < 85% confidence → return empty string
 
 RESPONSE_REQUIRED RULES:
-- Set "response_required": true if the sender is directly expecting a reply, asks a question, requests confirmation, asks for a decision, or the message is actionable based on sensitivity.
-- Set "response_required": false for receipts, alerts, newsletters, notifications, FYI-only updates, and other informational messages that do not need a reply.
+- true ONLY if ALL conditions hold: (1) sent by a real human, (2) directly addressed to the recipient, (3) explicitly asks a question, requests a decision, or needs confirmation.
+- false for everything else — automated alerts, receipts, notifications, newsletters, system emails, FYI updates, CC'd messages, or any message where no reply would be rude or unusual.
+- When in doubt, default to false.
 - Keep this independent from category selection. A message can have any category with response_required true/false.
+
 
 SENSITIVITY GUIDANCE FOR response_required (based on the draft sensitivity setting provided by the user message):
 - "always draft" => response_required should be true for nearly all human-origin emails except obvious automated/no-reply notifications.
