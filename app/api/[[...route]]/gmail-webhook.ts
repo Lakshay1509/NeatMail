@@ -225,9 +225,6 @@ const app = new Hono().post("/", async (ctx) => {
         labelName = classification;
       }
 
-      console.log(emailData.bodySnippet);
-      console.log(emailData.from)
-      console.log(labelName);
 
       if (labelName === "") {
         console.log(`No label assigned for message: ${messageId}`);
