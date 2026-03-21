@@ -12,7 +12,7 @@ import { EmailEntities, EmailIntent, IncomingEmail }            from "./types"
 import OpenAI from "openai";
 
 const endpoint = process.env.AZURE_ENDPOINT!;
-const deploymentName = "gpt-5-nano";
+const deploymentName = "gpt-5-mini";
 const apiKey = process.env.AZURE_API_KEY!;
 
 const openai = new OpenAI({
