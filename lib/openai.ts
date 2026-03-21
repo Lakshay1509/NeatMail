@@ -68,6 +68,7 @@ CLASSIFICATION RULES (apply in order, highest priority first):
 RESPONSE_REQUIRED RULES:
 - true ONLY if ALL conditions hold: (1) sent by a real human, (2) directly addressed to the recipient, (3) explicitly asks a question, requests a decision, or needs confirmation.
 - false for everything else — automated alerts, receipts, notifications, newsletters, system emails, FYI updates, CC'd messages, or any message where no reply would be rude or unusual.
+- NEVER set true when sender appears no-reply/notification/system-generated, or when the message is a receipt/alert/status update.
 - When in doubt, default to false.
 - Keep this independent from category selection. A message can have any category with response_required true/false.
 
@@ -85,7 +86,12 @@ OR
 
 EXAMPLES:
 Input: Subject="You have done a UPI txn", From="HDFC Bank", Body="Rs.110.00 has been debited"
-Output: {"category": "Finance", "response_required": false}`,
+Output: {"category": "Finance", "response_required": false}
+Input: Subject="Your project is paused", From="Appwrite <noreply@appwrite.io>", Body="Your project has been paused due to inactivity"
+Output: {"category":"Automated alert", "response required": false}
+
+`,
+
     },
     {
       role: "user" as const,
