@@ -185,7 +185,7 @@ export const processOutlookMailFn = inngest.createFunction(
           return movedMessageId;
         }
       });
-      addMailtoDB(subscription.clerk_user_id, tagProperties.id, movedMessageId);
+      addMailtoDB(subscription.clerk_user_id, tagProperties.id, movedMessageId,from);
     }
 
     if (shouldDraft) {
