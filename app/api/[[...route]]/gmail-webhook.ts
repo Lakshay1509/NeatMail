@@ -1,8 +1,6 @@
 import { inngest } from "@/lib/inngest";
 import { createGmailDraft, getGmailMessageBody } from "@/lib/gmail";
-import {
-  classifyEmail as classifyEmailOpenAI,
-} from "@/lib/openai";
+import { classifyEmail as classifyEmailOpenAI } from "@/lib/openai";
 import {
   isMessageProcessed,
   // isThreadProcessed,
@@ -19,6 +17,7 @@ import {
   getUserSubscribed,
   labelColor,
   updateHistoryId,
+  updateMessageStatus,
   useGetUserDraftPreference,
 } from "@/lib/supabase";
 import { clerkClient } from "@clerk/nextjs/server";
@@ -129,16 +128,40 @@ const app = new Hono().post("/", async (ctx) => {
       history = await gmail.users.history.list({
         userId: "me",
         startHistoryId: lastHistoryId.last_history_id,
-        historyTypes: ["messageAdded"],
+        historyTypes: ["messageAdded", "labelAdded", "labelRemoved"],
       });
     } catch (err: any) {
       if (err.code === 410 || err.status === 410) {
         // historyId is too old/expired — reset it and ack the webhook
-        console.log(`historyId ${lastHistoryId.last_history_id} expired for ${emailAddress}, resetting.`);
+        console.log(
+          `historyId ${lastHistoryId.last_history_id} expired for ${emailAddress}, resetting.`,
+        );
         await updateHistoryId(emailAddress, String(newHistoryId), true);
         return ctx.json({ success: true }, 200);
       }
       throw err;
+    }
+
+    const historyRecords = history.data.history ?? [];
+
+    for (const record of historyRecords) {
+      
+      for (const item of record.labelsRemoved ?? []) {
+        if (item.labelIds?.includes("UNREAD")) {
+          const messageId = item.message?.id;
+          if(!messageId) continue;
+          await updateMessageStatus(messageId,true)
+        }
+      }
+
+     
+      for (const item of record.labelsAdded ?? []) {
+        if (item.labelIds?.includes("UNREAD")) {
+          const messageId = item.message?.id;
+          if(!messageId) continue;
+          await updateMessageStatus(messageId,false)
+        }
+      }
     }
 
     const messages =
@@ -169,19 +192,20 @@ const app = new Hono().post("/", async (ctx) => {
         });
       } catch (err: any) {
         if (err.code === 404 || err.status === 404) {
-          console.log(`Message ${messageId} not found (likely deleted), skipping.`);
+          console.log(
+            `Message ${messageId} not found (likely deleted), skipping.`,
+          );
           currentMessageId = null;
           continue;
         }
         throw err;
       }
 
-      const fullBody = await getGmailMessageBody(clerkUserId,messageId);
-     const truncatedBody = fullBody?.slice(0, 300);
-      
+      const fullBody = await getGmailMessageBody(clerkUserId, messageId);
+      const truncatedBody = fullBody?.slice(0, 300);
 
       const emailData = {
-        userId:user.clerk_user_id,
+        userId: user.clerk_user_id,
         subject:
           email.data.payload?.headers?.find((h) => h.name === "Subject")
             ?.value || "",
@@ -201,7 +225,8 @@ const app = new Hono().post("/", async (ctx) => {
       // }
 
       const tagsOfUser = await getTagsUser(clerkUserId);
-      const draftsenstivity = (await useGetUserDraftPreference(clerkUserId)).senstivity;
+      const draftsenstivity = (await useGetUserDraftPreference(clerkUserId))
+        .senstivity;
 
       // Check if Gmail already classified this as Promotions
       let labelName: string;
@@ -209,27 +234,33 @@ const app = new Hono().post("/", async (ctx) => {
       const hasMarketingTag = tagsOfUser.some(
         (tag: any) => tag.tag.name === "Marketing",
       );
-      const hasReadonlyTag = tagsOfUser.some((tag: any) => tag.tag.name==="Read only");
+      const hasReadonlyTag = tagsOfUser.some(
+        (tag: any) => tag.tag.name === "Read only",
+      );
 
       if (
         email.data.labelIds?.includes("CATEGORY_PROMOTIONS") &&
         hasMarketingTag
       ) {
         labelName = "Marketing";
-      }
-      else if (
+      } else if (
         hasReadonlyTag &&
-        (email.data.labelIds?.includes("CATEGORY_SOCIAL"))
+        email.data.labelIds?.includes("CATEGORY_SOCIAL")
       ) {
         labelName = "Read only";
       } else {
-        const classification = await classifyEmailOpenAI(emailData, tagsOfUser,draftsenstivity ?? "if actionable" );
+        const classification = await classifyEmailOpenAI(
+          emailData,
+          tagsOfUser,
+          draftsenstivity ?? "if actionable",
+        );
         labelName = classification.category;
         responseRequired = classification.response_required === true;
       }
 
       const shouldDraft =
-        (labelName === "Pending Response" || labelName === "Action Needed"  ) && responseRequired;
+        (labelName === "Pending Response" || labelName === "Action Needed") &&
+        responseRequired;
 
       if (labelName === "" && !shouldDraft) {
         console.log(`No label assigned for message: ${messageId}`);
@@ -272,7 +303,9 @@ const app = new Hono().post("/", async (ctx) => {
           });
         } catch (err: any) {
           if (err.code === 404 || err.status === 404) {
-            console.log(`Message ${messageId} deleted before label could be applied, skipping.`);
+            console.log(
+              `Message ${messageId} deleted before label could be applied, skipping.`,
+            );
             currentMessageId = null;
             // currentThreadId = null;
             continue;
@@ -280,7 +313,7 @@ const app = new Hono().post("/", async (ctx) => {
           throw err;
         }
 
-        await addMailtoDB(clerkUserId, colourofLabel.id, String(messageId));
+        await addMailtoDB(clerkUserId, colourofLabel.id, String(messageId),emailData.from);
       }
 
       if (shouldDraft) {
@@ -293,12 +326,11 @@ const app = new Hono().post("/", async (ctx) => {
               ...emailData,
               receivedAt: new Date().toISOString(),
             },
-            senderName:senderName,
-            senderEmail:senderEmail,
-            messageId:messageId,
-            tokenData:tokenData,
-            is_gmail:true
-            
+            senderName: senderName,
+            senderEmail: senderEmail,
+            messageId: messageId,
+            tokenData: tokenData,
+            is_gmail: true,
           },
         });
       }

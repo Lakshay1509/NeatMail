@@ -67,6 +67,8 @@ model email_tracked {
   user_id     String
   tag_id      String      @db.Uuid
   message_id  String      @unique
+  domain      String?    
+  is_read     Boolean     @default(false) @map("isRead")
   created_at  DateTime    @default(now()) @db.Timestamptz(6)
   tag         tag         @relation(fields: [tag_id], references: [id], onDelete: Cascade)
   user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)

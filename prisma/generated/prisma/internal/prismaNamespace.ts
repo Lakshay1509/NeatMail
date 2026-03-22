@@ -1086,6 +1086,8 @@ export const Email_trackedScalarFieldEnum = {
   user_id: 'user_id',
   tag_id: 'tag_id',
   message_id: 'message_id',
+  domain: 'domain',
+  is_read: 'is_read',
   created_at: 'created_at'
 } as const
 

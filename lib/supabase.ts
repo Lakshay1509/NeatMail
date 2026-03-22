@@ -1,3 +1,4 @@
+import { encryptDomain } from "./encode";
 import { db } from "./prisma";
 
 export async function getUserByEmail(email: string) {
@@ -137,18 +138,26 @@ export async function addMailtoDB(
   user_id: string,
   tag_id: string,
   message_id: string,
+  domain: string | null,
 ) {
   try {
+    const normalizedDomain = domain?.trim()
+    const encryptedDomain = normalizedDomain
+      ? encryptDomain(normalizedDomain)
+      : null;
+
     const data = await db.email_tracked.upsert({
       where: { message_id: message_id },
       update: {
         message_id: message_id,
+        ...(encryptedDomain ? { domain: encryptedDomain } : {}),
+        
       },
       create: {
         user_id: user_id,
         tag_id: tag_id,
         message_id: message_id,
-        created_at: new Date().toISOString(),
+        domain: encryptedDomain,
       },
     });
 
@@ -253,5 +262,41 @@ export async function getUserIsGmail(userId:string){
     console.error("Error getting is user gmail ");
     throw error;
   }
+}
 
+
+export async function updateMessageStatus(message_id:string,is_read:boolean){
+
+  try{
+
+    const exist = await db.email_tracked.findMany({
+      where:{message_id:message_id}
+    })
+
+    if(exist.length===0){
+      return {updated:false}
+    }
+   
+
+    const data = await db.email_tracked.updateMany({
+      where:{message_id:message_id},
+      data:{
+        is_read:is_read
+      }
+    })
+
+    if(data.count === 0){
+      return {
+        updated: false,
+      };
+    }
+
+    return {
+      updated: true,
+    };
+
+  }catch(error){
+      console.error("Error updating read status");
+      throw error;
+    }
 }

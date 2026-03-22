@@ -28,6 +28,8 @@ export type Email_trackedMinAggregateOutputType = {
   user_id: string | null
   tag_id: string | null
   message_id: string | null
+  domain: string | null
+  is_read: boolean | null
   created_at: Date | null
 }
 
@@ -35,6 +37,8 @@ export type Email_trackedMaxAggregateOutputType = {
   user_id: string | null
   tag_id: string | null
   message_id: string | null
+  domain: string | null
+  is_read: boolean | null
   created_at: Date | null
 }
 
@@ -42,6 +46,8 @@ export type Email_trackedCountAggregateOutputType = {
   user_id: number
   tag_id: number
   message_id: number
+  domain: number
+  is_read: number
   created_at: number
   _all: number
 }
@@ -51,6 +57,8 @@ export type Email_trackedMinAggregateInputType = {
   user_id?: true
   tag_id?: true
   message_id?: true
+  domain?: true
+  is_read?: true
   created_at?: true
 }
 
@@ -58,6 +66,8 @@ export type Email_trackedMaxAggregateInputType = {
   user_id?: true
   tag_id?: true
   message_id?: true
+  domain?: true
+  is_read?: true
   created_at?: true
 }
 
@@ -65,6 +75,8 @@ export type Email_trackedCountAggregateInputType = {
   user_id?: true
   tag_id?: true
   message_id?: true
+  domain?: true
+  is_read?: true
   created_at?: true
   _all?: true
 }
@@ -145,6 +157,8 @@ export type Email_trackedGroupByOutputType = {
   user_id: string
   tag_id: string
   message_id: string
+  domain: string | null
+  is_read: boolean
   created_at: Date
   _count: Email_trackedCountAggregateOutputType | null
   _min: Email_trackedMinAggregateOutputType | null
@@ -173,6 +187,8 @@ export type email_trackedWhereInput = {
   user_id?: Prisma.StringFilter<"email_tracked"> | string
   tag_id?: Prisma.UuidFilter<"email_tracked"> | string
   message_id?: Prisma.StringFilter<"email_tracked"> | string
+  domain?: Prisma.StringNullableFilter<"email_tracked"> | string | null
+  is_read?: Prisma.BoolFilter<"email_tracked"> | boolean
   created_at?: Prisma.DateTimeFilter<"email_tracked"> | Date | string
   tag?: Prisma.XOR<Prisma.TagScalarRelationFilter, Prisma.tagWhereInput>
   user_tokens?: Prisma.XOR<Prisma.User_tokensScalarRelationFilter, Prisma.user_tokensWhereInput>
@@ -182,6 +198,8 @@ export type email_trackedOrderByWithRelationInput = {
   user_id?: Prisma.SortOrder
   tag_id?: Prisma.SortOrder
   message_id?: Prisma.SortOrder
+  domain?: Prisma.SortOrderInput | Prisma.SortOrder
+  is_read?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   tag?: Prisma.tagOrderByWithRelationInput
   user_tokens?: Prisma.user_tokensOrderByWithRelationInput
@@ -195,6 +213,8 @@ export type email_trackedWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.email_trackedWhereInput | Prisma.email_trackedWhereInput[]
   user_id?: Prisma.StringFilter<"email_tracked"> | string
   tag_id?: Prisma.UuidFilter<"email_tracked"> | string
+  domain?: Prisma.StringNullableFilter<"email_tracked"> | string | null
+  is_read?: Prisma.BoolFilter<"email_tracked"> | boolean
   created_at?: Prisma.DateTimeFilter<"email_tracked"> | Date | string
   tag?: Prisma.XOR<Prisma.TagScalarRelationFilter, Prisma.tagWhereInput>
   user_tokens?: Prisma.XOR<Prisma.User_tokensScalarRelationFilter, Prisma.user_tokensWhereInput>
@@ -204,6 +224,8 @@ export type email_trackedOrderByWithAggregationInput = {
   user_id?: Prisma.SortOrder
   tag_id?: Prisma.SortOrder
   message_id?: Prisma.SortOrder
+  domain?: Prisma.SortOrderInput | Prisma.SortOrder
+  is_read?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   _count?: Prisma.email_trackedCountOrderByAggregateInput
   _max?: Prisma.email_trackedMaxOrderByAggregateInput
@@ -217,11 +239,15 @@ export type email_trackedScalarWhereWithAggregatesInput = {
   user_id?: Prisma.StringWithAggregatesFilter<"email_tracked"> | string
   tag_id?: Prisma.UuidWithAggregatesFilter<"email_tracked"> | string
   message_id?: Prisma.StringWithAggregatesFilter<"email_tracked"> | string
+  domain?: Prisma.StringNullableWithAggregatesFilter<"email_tracked"> | string | null
+  is_read?: Prisma.BoolWithAggregatesFilter<"email_tracked"> | boolean
   created_at?: Prisma.DateTimeWithAggregatesFilter<"email_tracked"> | Date | string
 }
 
 export type email_trackedCreateInput = {
   message_id: string
+  domain?: string | null
+  is_read?: boolean
   created_at?: Date | string
   tag: Prisma.tagCreateNestedOneWithoutEmail_trackedInput
   user_tokens: Prisma.user_tokensCreateNestedOneWithoutEmail_trackedInput
@@ -231,11 +257,15 @@ export type email_trackedUncheckedCreateInput = {
   user_id: string
   tag_id: string
   message_id: string
+  domain?: string | null
+  is_read?: boolean
   created_at?: Date | string
 }
 
 export type email_trackedUpdateInput = {
   message_id?: Prisma.StringFieldUpdateOperationsInput | string
+  domain?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_read?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tag?: Prisma.tagUpdateOneRequiredWithoutEmail_trackedNestedInput
   user_tokens?: Prisma.user_tokensUpdateOneRequiredWithoutEmail_trackedNestedInput
@@ -245,6 +275,8 @@ export type email_trackedUncheckedUpdateInput = {
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   tag_id?: Prisma.StringFieldUpdateOperationsInput | string
   message_id?: Prisma.StringFieldUpdateOperationsInput | string
+  domain?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_read?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -252,11 +284,15 @@ export type email_trackedCreateManyInput = {
   user_id: string
   tag_id: string
   message_id: string
+  domain?: string | null
+  is_read?: boolean
   created_at?: Date | string
 }
 
 export type email_trackedUpdateManyMutationInput = {
   message_id?: Prisma.StringFieldUpdateOperationsInput | string
+  domain?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_read?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -264,6 +300,8 @@ export type email_trackedUncheckedUpdateManyInput = {
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   tag_id?: Prisma.StringFieldUpdateOperationsInput | string
   message_id?: Prisma.StringFieldUpdateOperationsInput | string
+  domain?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_read?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -287,6 +325,8 @@ export type email_trackedCountOrderByAggregateInput = {
   user_id?: Prisma.SortOrder
   tag_id?: Prisma.SortOrder
   message_id?: Prisma.SortOrder
+  domain?: Prisma.SortOrder
+  is_read?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
 }
 
@@ -294,6 +334,8 @@ export type email_trackedMaxOrderByAggregateInput = {
   user_id?: Prisma.SortOrder
   tag_id?: Prisma.SortOrder
   message_id?: Prisma.SortOrder
+  domain?: Prisma.SortOrder
+  is_read?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
 }
 
@@ -301,6 +343,8 @@ export type email_trackedMinOrderByAggregateInput = {
   user_id?: Prisma.SortOrder
   tag_id?: Prisma.SortOrder
   message_id?: Prisma.SortOrder
+  domain?: Prisma.SortOrder
+  is_read?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
 }
 
@@ -390,6 +434,8 @@ export type email_trackedUncheckedUpdateManyWithoutTagNestedInput = {
 
 export type email_trackedCreateWithoutUser_tokensInput = {
   message_id: string
+  domain?: string | null
+  is_read?: boolean
   created_at?: Date | string
   tag: Prisma.tagCreateNestedOneWithoutEmail_trackedInput
 }
@@ -397,6 +443,8 @@ export type email_trackedCreateWithoutUser_tokensInput = {
 export type email_trackedUncheckedCreateWithoutUser_tokensInput = {
   tag_id: string
   message_id: string
+  domain?: string | null
+  is_read?: boolean
   created_at?: Date | string
 }
 
@@ -433,11 +481,15 @@ export type email_trackedScalarWhereInput = {
   user_id?: Prisma.StringFilter<"email_tracked"> | string
   tag_id?: Prisma.UuidFilter<"email_tracked"> | string
   message_id?: Prisma.StringFilter<"email_tracked"> | string
+  domain?: Prisma.StringNullableFilter<"email_tracked"> | string | null
+  is_read?: Prisma.BoolFilter<"email_tracked"> | boolean
   created_at?: Prisma.DateTimeFilter<"email_tracked"> | Date | string
 }
 
 export type email_trackedCreateWithoutTagInput = {
   message_id: string
+  domain?: string | null
+  is_read?: boolean
   created_at?: Date | string
   user_tokens: Prisma.user_tokensCreateNestedOneWithoutEmail_trackedInput
 }
@@ -445,6 +497,8 @@ export type email_trackedCreateWithoutTagInput = {
 export type email_trackedUncheckedCreateWithoutTagInput = {
   user_id: string
   message_id: string
+  domain?: string | null
+  is_read?: boolean
   created_at?: Date | string
 }
 
@@ -477,11 +531,15 @@ export type email_trackedUpdateManyWithWhereWithoutTagInput = {
 export type email_trackedCreateManyUser_tokensInput = {
   tag_id: string
   message_id: string
+  domain?: string | null
+  is_read?: boolean
   created_at?: Date | string
 }
 
 export type email_trackedUpdateWithoutUser_tokensInput = {
   message_id?: Prisma.StringFieldUpdateOperationsInput | string
+  domain?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_read?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tag?: Prisma.tagUpdateOneRequiredWithoutEmail_trackedNestedInput
 }
@@ -489,23 +547,31 @@ export type email_trackedUpdateWithoutUser_tokensInput = {
 export type email_trackedUncheckedUpdateWithoutUser_tokensInput = {
   tag_id?: Prisma.StringFieldUpdateOperationsInput | string
   message_id?: Prisma.StringFieldUpdateOperationsInput | string
+  domain?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_read?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type email_trackedUncheckedUpdateManyWithoutUser_tokensInput = {
   tag_id?: Prisma.StringFieldUpdateOperationsInput | string
   message_id?: Prisma.StringFieldUpdateOperationsInput | string
+  domain?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_read?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type email_trackedCreateManyTagInput = {
   user_id: string
   message_id: string
+  domain?: string | null
+  is_read?: boolean
   created_at?: Date | string
 }
 
 export type email_trackedUpdateWithoutTagInput = {
   message_id?: Prisma.StringFieldUpdateOperationsInput | string
+  domain?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_read?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user_tokens?: Prisma.user_tokensUpdateOneRequiredWithoutEmail_trackedNestedInput
 }
@@ -513,12 +579,16 @@ export type email_trackedUpdateWithoutTagInput = {
 export type email_trackedUncheckedUpdateWithoutTagInput = {
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   message_id?: Prisma.StringFieldUpdateOperationsInput | string
+  domain?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_read?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type email_trackedUncheckedUpdateManyWithoutTagInput = {
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   message_id?: Prisma.StringFieldUpdateOperationsInput | string
+  domain?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_read?: Prisma.BoolFieldUpdateOperationsInput | boolean
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -528,6 +598,8 @@ export type email_trackedSelect<ExtArgs extends runtime.Types.Extensions.Interna
   user_id?: boolean
   tag_id?: boolean
   message_id?: boolean
+  domain?: boolean
+  is_read?: boolean
   created_at?: boolean
   tag?: boolean | Prisma.tagDefaultArgs<ExtArgs>
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
@@ -537,6 +609,8 @@ export type email_trackedSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   user_id?: boolean
   tag_id?: boolean
   message_id?: boolean
+  domain?: boolean
+  is_read?: boolean
   created_at?: boolean
   tag?: boolean | Prisma.tagDefaultArgs<ExtArgs>
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
@@ -546,6 +620,8 @@ export type email_trackedSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   user_id?: boolean
   tag_id?: boolean
   message_id?: boolean
+  domain?: boolean
+  is_read?: boolean
   created_at?: boolean
   tag?: boolean | Prisma.tagDefaultArgs<ExtArgs>
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
@@ -555,10 +631,12 @@ export type email_trackedSelectScalar = {
   user_id?: boolean
   tag_id?: boolean
   message_id?: boolean
+  domain?: boolean
+  is_read?: boolean
   created_at?: boolean
 }
 
-export type email_trackedOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"user_id" | "tag_id" | "message_id" | "created_at", ExtArgs["result"]["email_tracked"]>
+export type email_trackedOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"user_id" | "tag_id" | "message_id" | "domain" | "is_read" | "created_at", ExtArgs["result"]["email_tracked"]>
 export type email_trackedInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   tag?: boolean | Prisma.tagDefaultArgs<ExtArgs>
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
@@ -582,6 +660,8 @@ export type $email_trackedPayload<ExtArgs extends runtime.Types.Extensions.Inter
     user_id: string
     tag_id: string
     message_id: string
+    domain: string | null
+    is_read: boolean
     created_at: Date
   }, ExtArgs["result"]["email_tracked"]>
   composites: {}
@@ -1011,6 +1091,8 @@ export interface email_trackedFieldRefs {
   readonly user_id: Prisma.FieldRef<"email_tracked", 'String'>
   readonly tag_id: Prisma.FieldRef<"email_tracked", 'String'>
   readonly message_id: Prisma.FieldRef<"email_tracked", 'String'>
+  readonly domain: Prisma.FieldRef<"email_tracked", 'String'>
+  readonly is_read: Prisma.FieldRef<"email_tracked", 'Boolean'>
   readonly created_at: Prisma.FieldRef<"email_tracked", 'DateTime'>
 }
     
