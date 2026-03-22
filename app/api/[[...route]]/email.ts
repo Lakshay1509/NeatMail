@@ -290,7 +290,7 @@ const app = new Hono()
       const values = ctx.req.valid("json");
 
       const messageId = await db.email_tracked.findFirst({
-        where: { domain: values.domain },
+        where: { domain: values.domain ,user_id:userId },
         select: {
           message_id: true,
         },

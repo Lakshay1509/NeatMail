@@ -205,7 +205,13 @@ const EmailStats = () => {
               variant="outline"
               size="sm"
               disabled={unsubscribeMutation.isPending}
-              onClick={() => unsubscribeMutation.mutate({ domain })}
+              onClick={() => unsubscribeMutation.mutate({ domain }, {
+                onSuccess: (data: any) => {
+                  if (data?.requiresRedirect && data?.redirectUrl) {
+                    window.open(data.redirectUrl, "_blank");
+                  }
+                }
+              })}
             >
               Unsubscribe
             </Button>

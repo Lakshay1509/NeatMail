@@ -2,7 +2,6 @@ import { google } from "googleapis";
 import { clerkClient } from "@clerk/nextjs/server";
 import { db } from "./prisma";
 
-
 export async function getGmailClient(userId: string) {
   try {
     const client = await clerkClient();
@@ -79,7 +78,6 @@ export async function getLabelledMails(userId: string, messageIds: string[]) {
       } catch (error: any) {
         // Handle deleted messages or 404 errors
         if (error.code === 404 || error.status === 404) {
-          
           return null;
         }
         throw error;
@@ -150,8 +148,6 @@ export async function getGmailMessageBody(userId: string, messageId: string) {
   return plainBody.length > 0 ? plainBody : (res.data.snippet ?? "");
 }
 
-
-
 export async function createGmailDraft(
   userId: string,
   threadId: string,
@@ -166,9 +162,9 @@ export async function createGmailDraft(
   // Apply font styling and signature, converting newlines to <br> for HTML
   const formattedBody = draftBody.replace(/\n/g, "<br>");
   const formattedSignature = signature ? signature.replace(/\n/g, "<br>") : "";
-  
+
   const htmlContent = `
-    <div style="font-family: Arial, sans-serif; font-size: ${fontSize || 14}px; color: ${fontColor || '#000000'};">
+    <div style="font-family: Arial, sans-serif; font-size: ${fontSize || 14}px; color: ${fontColor || "#000000"};">
       ${formattedBody}
       ${formattedSignature ? `<br><br>--<br>${formattedSignature}` : ""}
     </div>
@@ -214,7 +210,6 @@ export async function activateWatch(userId: string) {
   try {
     const clerk = await clerkClient();
 
-
     const tokenResponse = await clerk.users.getUserOauthAccessToken(
       userId,
       "google",
@@ -230,8 +225,7 @@ export async function activateWatch(userId: string) {
       userId: "me",
       requestBody: {
         labelIds: ["INBOX"],
-        topicName:
-          process.env.GMAIL_WEBHOOK_TOPIC,
+        topicName: process.env.GMAIL_WEBHOOK_TOPIC,
       },
     });
 
@@ -242,7 +236,7 @@ export async function activateWatch(userId: string) {
       throw new Error("Invalid watch response from Gmail");
     }
 
-    console.log('Watch activated');
+    console.log("Watch activated");
 
     return {
       success: true,
@@ -255,11 +249,10 @@ export async function activateWatch(userId: string) {
   }
 }
 
-export async function deactivateWatch(userId:string) {
+export async function deactivateWatch(userId: string) {
   try {
     const clerk = await clerkClient();
 
-    
     const tokenResponse = await clerk.users.getUserOauthAccessToken(
       userId,
       "google",
@@ -296,13 +289,16 @@ export async function unsubscribeFromEmail(userId: string, messageId: string) {
       userId: "me",
       id: messageId,
       format: "metadata",
-      metadataHeaders: ["List-Unsubscribe"],
+      metadataHeaders: ["List-Unsubscribe", "List-Unsubscribe-Post"],
     });
 
     const headers = message.data.payload?.headers || [];
-    const unsubscribeHeader = headers.find(
-      (h) => h.name?.toLowerCase() === "list-unsubscribe"
-    )?.value;
+    const getHeader = (name: string) =>
+      headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())
+        ?.value ?? "";
+
+    const unsubscribeHeader = getHeader("List-Unsubscribe");
+    const unsubscribePost = getHeader("List-Unsubscribe-Post");
 
     if (!unsubscribeHeader) {
       throw new Error("You cannot unsubscribe from this domain");
@@ -318,12 +314,32 @@ export async function unsubscribeFromEmail(userId: string, messageId: string) {
     const mailtoLink = links.find((link) => link.startsWith("mailto:"));
 
     if (httpLink) {
-      // Best effort HTTP unenrollment (Often list-unsubscribe expects a POST request, but GET works as a fallback)
-      const res = await fetch(httpLink, { method: "POST" }).catch(() =>
-        fetch(httpLink)
-      );
-      
-      return { success: res.ok, method: "http", link: httpLink };
+      try {
+        // Use POST only if sender explicitly supports one-click (RFC 8058)
+        const isOneClick = unsubscribePost?.includes("One-Click");
+        const res = await fetch(httpLink, {
+          method: isOneClick ? "POST" : "GET",
+          ...(isOneClick && {
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "List-Unsubscribe=One-Click",
+          }),
+          redirect: "follow",
+        });
+
+        if (res.status < 500) {
+          return { success: true, method: "http" ,requiresRedirect: false,
+        redirectUrl: httpLink};
+        }
+      } catch {
+        // CORS or network blocked — return URL for client to open in browser
+      }
+
+      return {
+        success: false,
+        method: "redirect",
+        requiresRedirect: true,
+        redirectUrl: httpLink,
+      };
     } else if (mailtoLink) {
       // Parse the mailto string to extract the email and optional subject
       const emailMatches = mailtoLink.match(/mailto:([^?]+)/i);
@@ -356,7 +372,8 @@ export async function unsubscribeFromEmail(userId: string, messageId: string) {
           },
         });
 
-        return { success: true, method: "mailto", link: mailtoLink };
+        return { success: true, method: "mailto", requiresRedirect: false,
+        redirectUrl: mailtoLink};
       }
     }
 
