@@ -23,8 +23,10 @@ const app = new Hono().post("/webhook", async (ctx) => {
       .filter((n) => n.resourceData?.id && n.subscriptionId)
       .map((n) => ({
         // Setting `id` makes Inngest deduplicate events with the same key,
-        id: `outlook/msg/${n.resourceData.id as string}`,
-        name: "outlook/mail.received" as const,
+        id: `outlook/msg/${n.resourceData.id as string}-${n.changeType}`,
+        name: n.changeType === "updated" 
+          ? ("outlook/mail.updated" as const)
+          : ("outlook/mail.received" as const),
         data: {
           messageId: n.resourceData.id as string,
           subscriptionId: n.subscriptionId as string,

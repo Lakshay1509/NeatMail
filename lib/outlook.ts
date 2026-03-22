@@ -61,7 +61,7 @@ export async function createOutlookSubscription(userId: string) {
     ).toISOString(); // 3 days
 
     const subscription: Subscription = {
-      changeType: "created",
+      changeType: "created,updated",
       notificationUrl: `${process.env.NEXT_PUBLIC_API_URL}/api/outlook/webhook`,
       resource: "me/mailFolders/Inbox/messages",
       expirationDateTime,
