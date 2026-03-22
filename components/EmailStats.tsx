@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import * as React from "react";
+import * as React from "react"
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -10,10 +10,10 @@ import {
   getFilteredRowModel,
   getSortedRowModel,
   useReactTable,
-} from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+} from "@tanstack/react-table"
+import { ArrowUpDown } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Table,
   TableBody,
@@ -21,42 +21,42 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useGetUserEmailStats } from "@/features/email/use-get-stats";
+} from "@/components/ui/table"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useGetUserEmailStats } from "@/features/email/use-get-stats"
 
 type EmailStatsRow = {
-  domain: string | null;
-  total: number;
-  read_count: number;
-  unread_count: number;
-  unread_percentage: number;
-};
+  domain: string | null
+  total: number
+  read_count: number
+  unread_count: number
+  unread_percentage: number
+}
 
 const clampPercentage = (value: number): number => {
-  if (!Number.isFinite(value)) return 0;
-  if (value < 0) return 0;
-  if (value > 100) return 100;
-  return value;
-};
+  if (!Number.isFinite(value)) return 0
+  if (value < 0) return 0
+  if (value > 100) return 100
+  return value
+}
 
 const formatPercentage = (value: number): string => {
-  return `${Math.round(clampPercentage(value))}%`;
-};
+  return `${Math.round(clampPercentage(value))}%`
+}
 
 const getReadPercentage = (row: EmailStatsRow): number => {
-  if (!row.total || row.total <= 0) return 0;
-  return clampPercentage((row.read_count / row.total) * 100);
-};
+  if (!row.total || row.total <= 0) return 0
+  return clampPercentage((row.read_count / row.total) * 100)
+}
 
 const getDomainLabel = (domain: string | null): string => {
-  return domain?.trim() || "Unknown sender";
-};
+  return domain?.trim() || "Unknown sender"
+}
 
 const normalizeRows = (value: unknown): EmailStatsRow[] => {
   if (Array.isArray(value)) {
-    return value as EmailStatsRow[];
+    return value as EmailStatsRow[]
   }
 
   if (
@@ -64,49 +64,49 @@ const normalizeRows = (value: unknown): EmailStatsRow[] => {
     typeof value === "object" &&
     Array.isArray((value as { data?: unknown }).data)
   ) {
-    return (value as { data: EmailStatsRow[] }).data;
+    return (value as { data: EmailStatsRow[] }).data
   }
 
-  return [];
-};
+  return []
+}
 
 const getUnreadPercentage = (row: EmailStatsRow): number => {
-  return clampPercentage(row.unread_percentage);
-};
+  return clampPercentage(row.unread_percentage)
+}
 
 const ProgressBar = ({
   percentage,
   className,
 }: {
-  percentage: number;
-  className: string;
+  percentage: number
+  className?: string
 }) => {
-  const safePercentage = clampPercentage(percentage);
+  const safePercentage = clampPercentage(percentage)
 
   return (
-    <div className="flex min-w-40 items-center gap-3">
-      <div className="bg-muted h-2 w-full rounded-full">
+    <div className="flex w-30 items-center gap-2 sm:w-50">
+      <div className="bg-secondary h-1.5 w-full overflow-hidden rounded-full">
         <div
-          className={`h-2 rounded-full transition-all ${className}`}
+          className={`h-full rounded-full bg-black transition-all ${className || ""}`}
           style={{ width: `${safePercentage}%` }}
         />
       </div>
-      <span className="text-muted-foreground w-10 text-right text-xs tabular-nums sm:text-sm">
+      <span className="text-muted-foreground w-12 text-right text-sm font-medium tabular-nums">
         {formatPercentage(safePercentage)}
       </span>
     </div>
-  );
-};
+  )
+}
 
 const EmailStats = () => {
-  const { data, isLoading, isError } = useGetUserEmailStats();
+  const { data, isLoading, isError } = useGetUserEmailStats()
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: "total", desc: true },
-  ]);
+  ])
   const [columnFilters, setColumnFilters] =
-    React.useState<ColumnFiltersState>([]);
+    React.useState<ColumnFiltersState>([])
 
-  const rows = React.useMemo(() => normalizeRows(data), [data]);
+  const rows = React.useMemo(() => normalizeRows(data), [data])
 
   const columns = React.useMemo<ColumnDef<EmailStatsRow>[]>(
     () => [
@@ -115,15 +115,16 @@ const EmailStats = () => {
         header: ({ column }) => (
           <Button
             variant="ghost"
-            className="-ml-4 h-8 data-[state=open]:bg-accent"
+            className="-ml-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-transparent"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Domain
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            From
           </Button>
         ),
         cell: ({ row }) => (
-          <span className="font-medium">{getDomainLabel(row.original.domain)}</span>
+          <div className="max-w-50 truncate font-medium sm:max-w-md" title={getDomainLabel(row.original.domain)}>
+            {getDomainLabel(row.original.domain)}
+          </div>
         ),
         sortingFn: "alphanumeric",
       },
@@ -132,15 +133,15 @@ const EmailStats = () => {
         header: ({ column }) => (
           <Button
             variant="ghost"
-            className="-ml-4 h-8 data-[state=open]:bg-accent"
+            className="-ml-4  text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-transparent"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Emails
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            <ArrowUpDown className="ml-2 h-3 w-3" />
           </Button>
         ),
         cell: ({ row }) => (
-          <span className="tabular-nums">{row.original.total}</span>
+          <span className="tabular-nums text-muted-foreground">{row.original.total}</span>
         ),
       },
       {
@@ -149,17 +150,17 @@ const EmailStats = () => {
         header: ({ column }) => (
           <Button
             variant="ghost"
-            className="-ml-4 h-8 data-[state=open]:bg-accent"
+            className="-ml-4  text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-transparent"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Read
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            <ArrowUpDown className="ml-2 h-3 w-3" />
           </Button>
         ),
         cell: ({ row }) => (
           <ProgressBar
             percentage={getReadPercentage(row.original)}
-            className="bg-primary/60"
+            className="bg-black"
           />
         ),
       },
@@ -169,23 +170,23 @@ const EmailStats = () => {
         header: ({ column }) => (
           <Button
             variant="ghost"
-            className="-ml-4 h-8 data-[state=open]:bg-accent"
+            className="-ml-4  text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-transparent"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Unread
-            <ArrowUpDown className="ml-2 h-4 w-4" />
+            <ArrowUpDown className="ml-2 h-3 w-3" />
           </Button>
         ),
         cell: ({ row }) => (
           <ProgressBar
             percentage={getUnreadPercentage(row.original)}
-            className="bg-primary"
+            className="bg-black"
           />
         ),
       },
     ],
     []
-  );
+  )
 
   const table = useReactTable({
     data: rows,
@@ -199,7 +200,7 @@ const EmailStats = () => {
       sorting,
       columnFilters,
     },
-  });
+  })
 
   if (isLoading) {
     return (
@@ -210,7 +211,7 @@ const EmailStats = () => {
           ))}
         </div>
       </div>
-    );
+    )
   }
 
   if (isError) {
@@ -221,7 +222,7 @@ const EmailStats = () => {
           Please refresh the page and try again.
         </AlertDescription>
       </Alert>
-    );
+    )
   }
 
   if (rows.length === 0) {
@@ -229,12 +230,12 @@ const EmailStats = () => {
       <div className="text-muted-foreground rounded-lg border p-6 text-sm">
         No email statistics available yet.
       </div>
-    );
+    )
   }
 
   return (
-    <div className="rounded-lg border">
-      <div className="border-b p-4">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between px-2">
         <Input
           placeholder="Filter domains..."
           value={(table.getColumn("domain")?.getFilterValue() as string) ?? ""}
@@ -244,54 +245,52 @@ const EmailStats = () => {
           className="max-w-sm"
         />
       </div>
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead
-                  key={header.id}
-                  className={
-                    header.column.id === "total"
-                      ? "w-28"
-                      : header.column.id === "read" || header.column.id === "unread"
-                        ? "min-w-52"
-                        : undefined
-                  }
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.length > 0 ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
+      <div className="">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
                 ))}
               </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
-                No matching domains.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.length > 0 ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow 
+                  key={row.id}
+                  className="group transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id} className="s align-middle">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  No matching domains.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
-  );
-};
+  )
+}
 
-export default EmailStats;
+export default EmailStats

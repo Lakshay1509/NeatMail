@@ -3,8 +3,8 @@ import EmailStats from "@/components/EmailStats";
 const Page = () => {
 
     return (
-        <div className="w-full p-4 space-y-4">
-            <EmailStats />;
+        <div className="w-full p-4 ">
+            <EmailStats />
         </div>
     )
 };
