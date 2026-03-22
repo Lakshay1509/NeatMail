@@ -1,6 +1,6 @@
 import { google } from "googleapis";
 import { clerkClient } from "@clerk/nextjs/server";
-import { db } from "./prisma";
+import { extractUnsubscribeLinkFromBody } from "./unsubscribe";
 
 export async function getGmailClient(userId: string) {
   try {
@@ -300,10 +300,6 @@ export async function unsubscribeFromEmail(userId: string, messageId: string) {
     const unsubscribeHeader = getHeader("List-Unsubscribe");
     const unsubscribePost = getHeader("List-Unsubscribe-Post");
 
-    if (!unsubscribeHeader) {
-      throw new Error("You cannot unsubscribe from this domain");
-    }
-
     // The header typically contains comma-separated values like:
     // <https://example.com/unsubscribe>, <mailto:unsubscribe@example.com?subject=Unsubscribe>
     const links = unsubscribeHeader
@@ -327,8 +323,12 @@ export async function unsubscribeFromEmail(userId: string, messageId: string) {
         });
 
         if (res.status < 500) {
-          return { success: true, method: "http" ,requiresRedirect: false,
-        redirectUrl: httpLink};
+          return {
+            success: true,
+            method: "http",
+            requiresRedirect: false,
+            redirectUrl: httpLink,
+          };
         }
       } catch {
         // CORS or network blocked — return URL for client to open in browser
@@ -372,8 +372,29 @@ export async function unsubscribeFromEmail(userId: string, messageId: string) {
           },
         });
 
-        return { success: true, method: "mailto", requiresRedirect: false,
-        redirectUrl: mailtoLink};
+        return {
+          success: true,
+          method: "mailto",
+          requiresRedirect: false,
+          redirectUrl: mailtoLink,
+        };
+      }
+    } else {
+      const fullMessage = await gmail.users.messages.get({
+        userId: "me",
+        id: messageId,
+        format: "full",
+      });
+
+      const bodyLink = extractUnsubscribeLinkFromBody(fullMessage.data.payload);
+
+      if (bodyLink) {
+        return {
+          success: false,
+          method: "redirect",
+          requiresRedirect: true,
+          redirectUrl: bodyLink,
+        };
       }
     }
 
