@@ -1,3 +1,4 @@
+import { decryptDomain } from "@/lib/encode";
 import { getLabelledMails } from "@/lib/gmail";
 import { getLabelledMailsOutlook } from "@/lib/outlook";
 import { db } from "@/lib/prisma";
@@ -8,15 +9,14 @@ const app = new Hono()
 
   //this route is for landing page
 
-  .get('/all',async(ctx)=>{
-    
+  .get("/all", async (ctx) => {
     const data = await db.email_tracked.count();
 
-    if(!data){
-      return ctx.json({error:"Error getting data"},500);
+    if (!data) {
+      return ctx.json({ error: "Error getting data" }, 500);
     }
 
-    return ctx.json({data},200);
+    return ctx.json({ data }, 200);
   })
 
   .get("/fetch", async (ctx) => {
@@ -30,67 +30,54 @@ const app = new Hono()
     const cursor = ctx.req.query("cursor");
     const limit = limitQuery ? parseInt(limitQuery) : 5;
 
-    if(limit > 50 || limit< 0){
-      return ctx.json({error:"Limit overflow"},500);
+    if (limit > 50 || limit < 0) {
+      return ctx.json({ error: "Limit overflow" }, 500);
     }
 
     const userData = await db.user_tokens.findUnique({
-      where:{clerk_user_id:userId}
-    })
+      where: { clerk_user_id: userId },
+    });
 
-    if(!userData){
-      return ctx.json({error:"Error getting user data"},500)
+    if (!userData) {
+      return ctx.json({ error: "Error getting user data" }, 500);
     }
 
     const messageData = await db.email_tracked.findMany({
-      where:{user_id:userId},
-      orderBy:{
-        created_at:'desc'
+      where: { user_id: userId },
+      orderBy: {
+        created_at: "desc",
       },
-      select:{
-        message_id:true,
-        user_tokens:{
-          select:{
-
-            is_gmail:true
-          }
-        }
-        
+      select: {
+        message_id: true,
+        user_tokens: {
+          select: {
+            is_gmail: true,
+          },
+        },
       },
-      take : limit + 1,
+      take: limit + 1,
       cursor: cursor ? { message_id: cursor } : undefined,
-    })
+    });
 
     let nextCursor: string | undefined = undefined;
     if (messageData.length > limit) {
-        const nextItem = messageData.pop();
-        nextCursor = nextItem?.message_id;
+      const nextItem = messageData.pop();
+      nextCursor = nextItem?.message_id;
     }
 
-    if(!messageData){
-      return ctx.json({error:"Error getting messageId"},500);
+    if (!messageData) {
+      return ctx.json({ error: "Error getting messageId" }, 500);
     }
 
-    
+    const ids = messageData.map((item) => item.message_id);
 
-   const ids = messageData.map(item => item.message_id);
-
-
-   if(userData.is_gmail===true){
-    const emails = await getLabelledMails(userId, ids);
-    return ctx.json({ emails, nextCursor }, 200);
-   }
-
-   else{
-   
-    const emails = await getLabelledMailsOutlook(userId,ids);
-    return ctx.json({ emails, nextCursor }, 200);
-   }
-
-  
-
-
-    
+    if (userData.is_gmail === true) {
+      const emails = await getLabelledMails(userId, ids);
+      return ctx.json({ emails, nextCursor }, 200);
+    } else {
+      const emails = await getLabelledMailsOutlook(userId, ids);
+      return ctx.json({ emails, nextCursor }, 200);
+    }
   })
 
   .get("/thisWeek", async (ctx) => {
@@ -214,7 +201,7 @@ const app = new Hono()
     });
 
     const tagMap = new Map(
-      tags.map((tag) => [tag.id, { name: tag.name, color: tag.color }])
+      tags.map((tag) => [tag.id, { name: tag.name, color: tag.color }]),
     );
 
     const labels = topLabels.map((item) => {
@@ -237,6 +224,46 @@ const app = new Hono()
     return ctx.json(labels);
   })
 
-  .get('/')
+  .get("/stats", async (ctx) => {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const [total, readData] = await Promise.all([
+      db.email_tracked.groupBy({
+        by: ["domain"],
+        where: { user_id: userId ,domain: { not: null } },
+        _count: { message_id: true },
+      }),
+      db.email_tracked.groupBy({
+        by: ["domain"],
+        where: { user_id: userId, is_read: true,domain: { not: null }  },
+        _count: { message_id: true },
+      }),
+    ]);
+
+    const readMap = new Map(
+      readData.map((r) => [r.domain, r._count.message_id]),
+    );
+
+    const stats = total.map((row) => {
+      const totalCount = row._count.message_id;
+      const readCount = readMap.get(row.domain) ?? 0;
+      const unreadCount = totalCount - readCount;
+
+      return {
+        domain: row.domain ? decryptDomain(row.domain) : null,
+        total: totalCount,
+        read_count: readCount,
+        unread_count: unreadCount,
+        unread_percentage:
+          totalCount > 0 ? Math.round((unreadCount / totalCount) * 100) : 0,
+      };
+    });
+
+    return ctx.json(stats);
+  });
 
 export default app;
