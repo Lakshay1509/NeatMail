@@ -25,6 +25,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useGetUserEmailStats } from "@/features/email/use-get-stats"
+import { useUnsubscribeDomain } from "@/features/email/use-post-unsubscribe"
 
 type EmailStatsRow = {
   domain: string | null
@@ -100,6 +101,7 @@ const ProgressBar = ({
 
 const EmailStats = () => {
   const { data, isLoading, isError } = useGetUserEmailStats()
+  const unsubscribeMutation = useUnsubscribeDomain();
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: "total", desc: true },
   ])
@@ -184,8 +186,33 @@ const EmailStats = () => {
           />
         ),
       },
+      {
+        id: "actions",
+        header: () => (
+          <Button
+            variant="ghost"
+            className="-ml-4  text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-transparent"
+          >
+            Actions
+          </Button>
+        ),
+        cell: ({ row }) => {
+          const domain = row.original.domain;
+          if (!domain) return null;
+          return (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={unsubscribeMutation.isPending}
+              onClick={() => unsubscribeMutation.mutate({ domain })}
+            >
+              Unsubscribe
+            </Button>
+          )
+        }
+      },
     ],
-    []
+    [unsubscribeMutation]
   )
 
   const table = useReactTable({
@@ -225,7 +252,7 @@ const EmailStats = () => {
     )
   }
 
-  if (rows.length === 0) {
+  if (rows.length === 0 && !isLoading) {
     return (
       <div className="text-muted-foreground rounded-lg border p-6 text-sm">
         No email statistics available yet.
@@ -273,7 +300,7 @@ const EmailStats = () => {
                   className="group transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="s align-middle">
+                    <TableCell key={cell.id} className="align-middle">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}

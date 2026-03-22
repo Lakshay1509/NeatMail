@@ -1,9 +1,11 @@
-import { decryptDomain } from "@/lib/encode";
-import { getLabelledMails } from "@/lib/gmail";
+import { decryptDomain, encryptDomain } from "@/lib/encode";
+import { getLabelledMails, unsubscribeFromEmail } from "@/lib/gmail";
 import { getLabelledMailsOutlook } from "@/lib/outlook";
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import z from "zod";
 
 const app = new Hono()
 
@@ -264,6 +266,41 @@ const app = new Hono()
     });
 
     return ctx.json(stats);
-  });
+  })
+
+  .post('/unsubscribe',zValidator(
+      "json",
+      z.object({
+        domain:z.string()
+      }),
+    ),async(ctx)=>{
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const values = ctx.req.valid("json");
+
+    const encryptedDomain = encryptDomain(values.domain);
+
+    const messageId = await db.email_tracked.findFirst({
+      where:{domain:encryptedDomain},
+      select:{
+        message_id:true
+      }
+    })
+
+    if(!messageId){
+      return ctx.json({error:"Error unsubscribing from this domain"},500);
+    }
+
+    try{
+      const response = await unsubscribeFromEmail(userId,messageId.message_id);
+      return ctx.json(response, 200);
+    }catch(error: any){
+      return ctx.json({error: error.message || "Error unsubscribing from this domain"}, 500);
+    }
+  })
 
 export default app;

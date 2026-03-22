@@ -286,3 +286,83 @@ export async function deactivateWatch(userId:string) {
     throw error;
   }
 }
+
+export async function unsubscribeFromEmail(userId: string, messageId: string) {
+  try {
+    const gmail = await getGmailClient(userId);
+
+    // Call API to get the specific metadata header
+    const message = await gmail.users.messages.get({
+      userId: "me",
+      id: messageId,
+      format: "metadata",
+      metadataHeaders: ["List-Unsubscribe"],
+    });
+
+    const headers = message.data.payload?.headers || [];
+    const unsubscribeHeader = headers.find(
+      (h) => h.name?.toLowerCase() === "list-unsubscribe"
+    )?.value;
+
+    if (!unsubscribeHeader) {
+      throw new Error("You cannot unsubscribe from this domain");
+    }
+
+    // The header typically contains comma-separated values like:
+    // <https://example.com/unsubscribe>, <mailto:unsubscribe@example.com?subject=Unsubscribe>
+    const links = unsubscribeHeader
+      .split(",")
+      .map((link) => link.trim().replace(/^</, "").replace(/>$/, ""));
+
+    const httpLink = links.find((link) => link.startsWith("http"));
+    const mailtoLink = links.find((link) => link.startsWith("mailto:"));
+
+    if (httpLink) {
+      // Best effort HTTP unenrollment (Often list-unsubscribe expects a POST request, but GET works as a fallback)
+      const res = await fetch(httpLink, { method: "POST" }).catch(() =>
+        fetch(httpLink)
+      );
+      
+      return { success: res.ok, method: "http", link: httpLink };
+    } else if (mailtoLink) {
+      // Parse the mailto string to extract the email and optional subject
+      const emailMatches = mailtoLink.match(/mailto:([^?]+)/i);
+      const emailAddress = emailMatches ? emailMatches[1] : null;
+
+      const subjectMatches = mailtoLink.match(/subject=([^&>]+)/i);
+      const subject = subjectMatches
+        ? decodeURIComponent(subjectMatches[1])
+        : "Unsubscribe";
+
+      if (emailAddress) {
+        const messageParts = [
+          `To: ${emailAddress}`,
+          `Subject: ${subject}`,
+          "Content-Type: text/plain; charset=utf-8",
+          "",
+          "Please unsubscribe me from this mailing list.",
+        ];
+
+        const encodedMessage = Buffer.from(messageParts.join("\n"))
+          .toString("base64")
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+
+        await gmail.users.messages.send({
+          userId: "me",
+          requestBody: {
+            raw: encodedMessage,
+          },
+        });
+
+        return { success: true, method: "mailto", link: mailtoLink };
+      }
+    }
+
+    throw new Error("Could not parse a valid unsubscribe action from headers.");
+  } catch (error) {
+    console.error("Failed to unsubscribe:", error);
+    throw error;
+  }
+}
