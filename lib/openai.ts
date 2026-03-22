@@ -56,7 +56,7 @@ export async function classifyEmail(email: {
       ${tagNames}
 
 CLASSIFICATION RULES (apply in order, highest priority first):
-1. FINANCE/PAYMENT: If email contains transactions, payments, UPI, bank alerts, invoices, money (₹/$) → use "Finance" if available, else use "Automated alerts" as fallback
+1. FINANCE/PAYMENT: If email contains transactions, payments, UPI, bank alerts, invoices, or money → use a relevant finance-related category if available, else use "Automated alerts" as fallback
 2. DOMAIN-SPECIFIC: Match sender domain to category (bank → Finance/Automated alerts, calendar → Event update)
 3. SEMANTIC CONTEXT: Analyze PURPOSE, not keywords
    - Financial transactions → Finance (or Automated alerts if Finance unavailable)
@@ -66,11 +66,14 @@ CLASSIFICATION RULES (apply in order, highest priority first):
 5. CONFIDENCE: If < 85% confidence → return empty string
 
 RESPONSE_REQUIRED RULES:
-- true ONLY if ALL conditions hold: (1) sent by a real human, (2) directly addressed to the recipient, (3) explicitly asks a question, requests a decision, or needs confirmation.
-- false for everything else — automated alerts, receipts, notifications, newsletters, system emails, FYI updates, CC'd messages, or any message where no reply would be rude or unusual.
-- NEVER set true when sender appears no-reply/notification/system-generated, or when the message is a receipt/alert/status update.
-- When in doubt, default to false.
-- Keep this independent from category selection. A message can have any category with response_required true/false.
+true ONLY when ALL three hold:
+1. Sent by a real human (not no-reply/system/automated sender)
+2. Directly addressed to the recipient (not CC'd, BCC'd, or broadcast)
+3. Explicitly needs a reply — question, decision, or confirmation requested
+
+false for everything else: alerts, receipts, newsletters, notifications, FYIs, status updates, or any email where not replying would be normal.
+
+Default: false. Independent of category.
 
 
 SENSITIVITY GUIDANCE FOR response_required (based on the draft sensitivity setting provided by the user message):
