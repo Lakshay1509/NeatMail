@@ -1,4 +1,4 @@
-import { Mail, Home, MessageSquareDashed, Receipt, AlertCircle, Tag, ShieldCheck } from "lucide-react"
+import { Mail, Home, MessageSquareDashed, Receipt, AlertCircle, Tag,Shredder } from "lucide-react"
 
 
 import {
@@ -23,9 +23,9 @@ const items = [
     icon: Home,
   },
   {
-    title: "Mails",
-    url: "/mails",
-    icon: Mail,
+    title: "Unsubscribe",
+    url: "/unsubscribe",
+    icon: Shredder,
   },
   {
     title: 'Billing',
