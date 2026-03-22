@@ -1,6 +1,7 @@
 import { Client } from "@microsoft/microsoft-graph-client";
 import { Subscription } from "@microsoft/microsoft-graph-types";
 import { clerkClient } from "@clerk/nextjs/server";
+import { extractUnsubscribeLinkFromBodyOutlook } from "./unsubscribe";
 
 export async function getGraphClient(userId: string): Promise<Client> {
   try {
@@ -237,7 +238,7 @@ export async function getOutlookMessageBody(userId: string, messageId: string) {
       };
 
     const content = message.body?.content ?? message.bodyPreview ?? "";
-    const contentType = message.body?.contentType?.toLowerCase();
+    
 
     // If Graph API still returned HTML despite the Prefer header, strip it
     // if (contentType === "html" || content.trimStart().startsWith("<")) {
@@ -263,13 +264,15 @@ export async function unsubscribeFromEmailOutlook(userId: string, messageId: str
     const headers = message.internetMessageHeaders || [];
     const unsubscribeHeader = headers.find(
       (h) => h.name.toLowerCase() === "list-unsubscribe"
+
     )?.value;
 
-    if (!unsubscribeHeader) {
-      throw new Error("You cannot unsubscribe from this domain");
-    }
+    const unsubscribePost= headers.find(
+      (h) => h.name.toLowerCase() === "list-unsubscribe-post"
 
-    const links = unsubscribeHeader
+    )?.value;
+
+    const links = (unsubscribeHeader ?? "")
       .split(",")
       .map((link) => link.trim().replace(/^</, "").replace(/>$/, ""));
 
@@ -277,11 +280,37 @@ export async function unsubscribeFromEmailOutlook(userId: string, messageId: str
     const mailtoLink = links.find((link) => link.startsWith("mailto:"));
 
     if (httpLink) {
-      const res = await fetch(httpLink, { method: "POST" }).catch(() =>
-        fetch(httpLink)
-      );
+      try {
+        // Use POST only if sender explicitly supports one-click (RFC 8058)
+        const isOneClick = unsubscribePost?.includes("One-Click");
+        const res = await fetch(httpLink, {
+          method: isOneClick ? "POST" : "GET",
+          ...(isOneClick && {
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "List-Unsubscribe=One-Click",
+          }),
+          redirect: "follow",
+        });
+
+        if (res.status < 500) {
+          return {
+            success: true,
+            method: "http",
+            requiresRedirect: false,
+            redirectUrl: httpLink,
+          };
+        }
+      } catch {
+        // CORS or network blocked — return URL for client to open in browser
+      }
+
+      return {
+        success: false,
+        method: "redirect",
+        requiresRedirect: true,
+        redirectUrl: httpLink,
+      };
       
-      return { success: res.ok, method: "http", link: httpLink };
     } else if (mailtoLink) {
       const emailMatches = mailtoLink.match(/mailto:([^?]+)/i);
       const emailAddress = emailMatches ? emailMatches[1] : null;
@@ -312,6 +341,20 @@ export async function unsubscribeFromEmailOutlook(userId: string, messageId: str
 
         return { success: true, method: "mailto", link: mailtoLink };
       }
+    }
+    else{
+      const fullMessage = await getOutlookMessageBody(userId, messageId);
+      const bodyLink = extractUnsubscribeLinkFromBodyOutlook(fullMessage);
+
+      if (bodyLink) {
+        return {
+          success: false,
+          method: "redirect",
+          requiresRedirect: true,
+          redirectUrl: bodyLink,
+        };
+      }
+
     }
 
     throw new Error("Could not parse a valid unsubscribe action from headers.");

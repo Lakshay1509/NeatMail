@@ -1,6 +1,6 @@
 import { google } from "googleapis";
 import { clerkClient } from "@clerk/nextjs/server";
-import { extractUnsubscribeLinkFromBody } from "./unsubscribe";
+import { extractUnsubscribeLinkFromBodyGmail } from "./unsubscribe";
 
 export async function getGmailClient(userId: string) {
   try {
@@ -386,7 +386,7 @@ export async function unsubscribeFromEmail(userId: string, messageId: string) {
         format: "full",
       });
 
-      const bodyLink = extractUnsubscribeLinkFromBody(fullMessage.data.payload);
+      const bodyLink = extractUnsubscribeLinkFromBodyGmail(fullMessage.data.payload);
 
       if (bodyLink) {
         return {

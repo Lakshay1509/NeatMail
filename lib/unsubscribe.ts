@@ -1,4 +1,4 @@
-export function extractUnsubscribeLinkFromBody(payload: any): string | null {
+export function extractUnsubscribeLinkFromBodyGmail(payload: any): string | null {
   if (!payload) return null;
 
   // Decode the body part
@@ -33,5 +33,27 @@ export function extractUnsubscribeLinkFromBody(payload: any): string | null {
   }
 
   return null;
+}
+
+export function extractUnsubscribeLinkFromBodyOutlook(content: string | null | undefined): string | null {
+  if (!content) return null;
+
+  const html = content;
+
+  const linkRegex = /<a[^>]+href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi;
+  let match;
+  while ((match = linkRegex.exec(html)) !== null) {
+    const href = match[1];
+    const text = match[2].replace(/<[^>]+>/g, "").toLowerCase();
+    if (text.includes("unsubscribe") || href.toLowerCase().includes("unsubscribe")) {
+      return href;
+    }
+  }
+
+  const urlRegex = /https?:\/\/[^\s<>")]+/gi;
+  const urls = html.match(urlRegex) || [];
+  const unsubscribeUrl = urls.find((url) => url.toLowerCase().includes("unsubscribe"));
+
+  return unsubscribeUrl || null;
 }
 
