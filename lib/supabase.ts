@@ -143,7 +143,7 @@ export async function addMailtoDB(
   try {
     const normalizedDomain = domain?.trim()
     const encryptedDomain = normalizedDomain
-      ? encryptDomain(normalizedDomain)
+      ? await encryptDomain(normalizedDomain)
       : null;
 
     const data = await db.email_tracked.upsert({

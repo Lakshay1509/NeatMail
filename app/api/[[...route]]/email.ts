@@ -253,13 +253,13 @@ const app = new Hono()
       readData.map((r) => [r.domain, r._count.message_id]),
     );
 
-    const stats = total.map((row) => {
+    const stats = await Promise.all(total.map(async (row) => {
       const totalCount = row._count.message_id;
       const readCount = readMap.get(row.domain) ?? 0;
       const unreadCount = totalCount - readCount;
 
       return {
-        domain: row.domain ? decryptDomain(row.domain) : null,
+        domain: row.domain ? await decryptDomain(row.domain) : null,
         rawDomain: row.domain,
         total: totalCount,
         read_count: readCount,
@@ -267,7 +267,7 @@ const app = new Hono()
         unread_percentage:
           totalCount > 0 ? Math.round((unreadCount / totalCount) * 100) : 0,
       };
-    });
+    }));
 
     return ctx.json(stats);
   })

@@ -1,22 +1,55 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
+import sodium from "libsodium-wrappers";
 
-const ENCRYPTION_KEY = Buffer.from(process.env.ENCRYPTION_KEY!, "hex"); // 32-byte key
-const IV_LENGTH = 16;
+let initialized = false;
 
-export function encryptDomain(domain: string): string {
-  const iv = randomBytes(IV_LENGTH);
-  const cipher = createCipheriv("aes-256-cbc", ENCRYPTION_KEY, iv);
-  const encrypted = Buffer.concat([cipher.update(domain, "utf8"), cipher.final()]);
-  return `${iv.toString("hex")}:${encrypted.toString("hex")}`;
+async function init() {
+  if (!initialized) {
+    await sodium.ready;
+    initialized = true;
+  }
 }
 
-export function decryptDomain(encrypted: string): string {
-  const [ivHex, encryptedHex] = encrypted.split(":");
-  const iv = Buffer.from(ivHex, "hex");
-  const decipher = createDecipheriv("aes-256-cbc", ENCRYPTION_KEY, iv);
-  const decrypted = Buffer.concat([
-    decipher.update(Buffer.from(encryptedHex, "hex")),
-    decipher.final(),
-  ]);
-  return decrypted.toString("utf8");
+// Helper to get key (must be 32 bytes for AES-256-SIV)
+function getKey(): Uint8Array {
+  const key = process.env.ENCRYPTION_KEY;
+  if (!key) {
+    throw new Error("ENCRYPTION_KEY is not set");
+  }
+
+  // Ensure 32 bytes key
+  const keyBytes = sodium.crypto_generichash(32, key, null);
+  return keyBytes;
+}
+
+// Encrypt
+export async function encryptDomain(domain: string): Promise<string> {
+  await init();
+
+  const key = getKey();
+  const message = sodium.from_string(domain);
+
+  const nonce = sodium.randombytes_buf(sodium.crypto_secretbox_NONCEBYTES);
+  const ciphertext = sodium.crypto_secretbox_easy(message, nonce, key);
+
+  const combined = new Uint8Array(nonce.length + ciphertext.length);
+  combined.set(nonce, 0);
+  combined.set(ciphertext, nonce.length);
+
+  return sodium.to_base64(combined);
+}
+
+// Decrypt
+export async function decryptDomain(ciphertextB64: string): Promise<string> {
+  await init();
+
+  const key = getKey();
+  const combined = sodium.from_base64(ciphertextB64);
+  const nonceLength = sodium.crypto_secretbox_NONCEBYTES;
+
+  const nonce = combined.slice(0, nonceLength);
+  const ciphertext = combined.slice(nonceLength);
+
+  const decrypted = sodium.crypto_secretbox_open_easy(ciphertext, nonce, key);
+
+  return sodium.to_string(decrypted);
 }

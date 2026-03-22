@@ -39,6 +39,7 @@
     "googleapis": "^169.0.0",
     "hono": "^4.11.3",
     "inngest": "^3.52.3",
+    "libsodium-wrappers": "^0.8.2",
     "lucide-react": "^0.562.0",
     "next": "16.1.5",
     "openai": "^6.15.0",
