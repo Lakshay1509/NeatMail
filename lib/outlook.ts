@@ -221,25 +221,6 @@ export async function createOutlookDraft(
   return draft;
 }
 
-// function htmlToPlainText(html: string): string {
-//   return html
-//     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")   // remove style blocks
-//     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")  // remove script blocks
-//     .replace(/<br\s*\/?>/gi, "\n")                      // <br> → newline
-//     .replace(/<\/p>/gi, "\n\n")                         // </p> → double newline
-//     .replace(/<\/div>/gi, "\n")                         // </div> → newline
-//     .replace(/<[^>]+>/g, "")                            // strip remaining tags
-//     .replace(/&nbsp;/g, " ")                            // decode &nbsp;
-//     .replace(/&amp;/g, "&")
-//     .replace(/&lt;/g, "<")
-//     .replace(/&gt;/g, ">")
-//     .replace(/&quot;/g, '"')
-//     .replace(/&#39;/g, "'")
-//     .replace(/\r\n/g, "\n")                             // normalize line endings
-//     .replace(/\n{3,}/g, "\n\n")                        // collapse excessive newlines
-//     .trim();
-// }
-
 export async function getOutlookMessageBody(userId: string, messageId: string) {
   const client = await getGraphClient(userId);
 
@@ -266,6 +247,76 @@ export async function getOutlookMessageBody(userId: string, messageId: string) {
     return content;
   } catch (error: any) {
     if (error?.statusCode === 404) return "";
+    throw error;
+  }
+}
+
+export async function unsubscribeFromEmailOutlook(userId: string, messageId: string) {
+  try {
+    const client = await getGraphClient(userId);
+
+    const message = (await client
+      .api(`/me/messages/${messageId}`)
+      .select("internetMessageHeaders")
+      .get()) as { internetMessageHeaders?: { name: string; value: string }[] };
+
+    const headers = message.internetMessageHeaders || [];
+    const unsubscribeHeader = headers.find(
+      (h) => h.name.toLowerCase() === "list-unsubscribe"
+    )?.value;
+
+    if (!unsubscribeHeader) {
+      throw new Error("You cannot unsubscribe from this domain");
+    }
+
+    const links = unsubscribeHeader
+      .split(",")
+      .map((link) => link.trim().replace(/^</, "").replace(/>$/, ""));
+
+    const httpLink = links.find((link) => link.startsWith("http"));
+    const mailtoLink = links.find((link) => link.startsWith("mailto:"));
+
+    if (httpLink) {
+      const res = await fetch(httpLink, { method: "POST" }).catch(() =>
+        fetch(httpLink)
+      );
+      
+      return { success: res.ok, method: "http", link: httpLink };
+    } else if (mailtoLink) {
+      const emailMatches = mailtoLink.match(/mailto:([^?]+)/i);
+      const emailAddress = emailMatches ? emailMatches[1] : null;
+
+      const subjectMatches = mailtoLink.match(/subject=([^&>]+)/i);
+      const subject = subjectMatches
+        ? decodeURIComponent(subjectMatches[1])
+        : "Unsubscribe";
+
+      if (emailAddress) {
+        await client.api("/me/sendMail").post({
+          message: {
+            subject: subject,
+            toRecipients: [
+              {
+                emailAddress: {
+                  address: emailAddress,
+                },
+              },
+            ],
+            body: {
+              contentType: "Text",
+              content: "Please unsubscribe me from this mailing list.",
+            },
+          },
+          saveToSentItems: false,
+        });
+
+        return { success: true, method: "mailto", link: mailtoLink };
+      }
+    }
+
+    throw new Error("Could not parse a valid unsubscribe action from headers.");
+  } catch (error) {
+    console.error("Failed to unsubscribe:", error);
     throw error;
   }
 }

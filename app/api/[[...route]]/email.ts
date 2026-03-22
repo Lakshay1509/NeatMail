@@ -1,6 +1,9 @@
 import { decryptDomain, encryptDomain } from "@/lib/encode";
 import { getLabelledMails, unsubscribeFromEmail } from "@/lib/gmail";
-import { getLabelledMailsOutlook } from "@/lib/outlook";
+import {
+  getLabelledMailsOutlook,
+  unsubscribeFromEmailOutlook,
+} from "@/lib/outlook";
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { zValidator } from "@hono/zod-validator";
@@ -236,12 +239,12 @@ const app = new Hono()
     const [total, readData] = await Promise.all([
       db.email_tracked.groupBy({
         by: ["domain"],
-        where: { user_id: userId ,domain: { not: null } },
+        where: { user_id: userId, domain: { not: null } },
         _count: { message_id: true },
       }),
       db.email_tracked.groupBy({
         by: ["domain"],
-        where: { user_id: userId, is_read: true,domain: { not: null }  },
+        where: { user_id: userId, is_read: true, domain: { not: null } },
         _count: { message_id: true },
       }),
     ]);
@@ -269,37 +272,60 @@ const app = new Hono()
     return ctx.json(stats);
   })
 
-  .post('/unsubscribe',zValidator(
+  .post(
+    "/unsubscribe",
+    zValidator(
       "json",
       z.object({
-        domain:z.string()
+        domain: z.string(),
       }),
-    ),async(ctx)=>{
-    const { userId } = await auth();
+    ),
+    async (ctx) => {
+      const { userId } = await auth();
 
-    if (!userId) {
-      return ctx.json({ error: "Unauthorized" }, 401);
-    }
-
-    const values = ctx.req.valid("json");
-
-    const messageId = await db.email_tracked.findFirst({
-      where:{domain:values.domain},
-      select:{
-        message_id:true
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
       }
-    })
 
-    if(!messageId){
-      return ctx.json({error:"Error unsubscribing from this domain"},500);
-    }
+      const values = ctx.req.valid("json");
 
-    try{
-      const response = await unsubscribeFromEmail(userId,messageId.message_id);
-      return ctx.json(response, 200);
-    }catch(error: any){
-      return ctx.json({error: error.message || "Error unsubscribing from this domain"}, 500);
-    }
-  })
+      const messageId = await db.email_tracked.findFirst({
+        where: { domain: values.domain },
+        select: {
+          message_id: true,
+        },
+      });
+
+       const is_gmail = await db.user_tokens.findUnique({
+        where: { clerk_user_id: userId },
+        select: { is_gmail: true },
+      });
+
+      if (!messageId || !is_gmail) {
+        return ctx.json({ error: "Error unsubscribing from this domain" }, 500);
+      }
+
+      try {
+        if (is_gmail?.is_gmail === true) {
+          const response = await unsubscribeFromEmail(
+            userId,
+            messageId.message_id,
+          );
+          return ctx.json(response, 200);
+        } else {
+          const response = await unsubscribeFromEmailOutlook(
+            userId,
+            messageId.message_id,
+          );
+          return ctx.json(response, 200);
+        }
+      } catch (error: any) {
+        return ctx.json(
+          { error: error.message || "Error unsubscribing from this domain" },
+          500,
+        );
+      }
+    },
+  );
 
 export default app;
