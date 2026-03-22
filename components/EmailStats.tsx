@@ -28,7 +28,8 @@ import { useGetUserEmailStats } from "@/features/email/use-get-stats"
 import { useUnsubscribeDomain } from "@/features/email/use-post-unsubscribe"
 
 type EmailStatsRow = {
-  domain: string | null
+  domain: string | null,
+  rawDomain: string | null;
   total: number
   read_count: number
   unread_count: number
@@ -197,7 +198,7 @@ const EmailStats = () => {
           </Button>
         ),
         cell: ({ row }) => {
-          const domain = row.original.domain;
+          const domain = row.original.rawDomain;
           if (!domain) return null;
           return (
             <Button

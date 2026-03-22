@@ -257,6 +257,7 @@ const app = new Hono()
 
       return {
         domain: row.domain ? decryptDomain(row.domain) : null,
+        rawDomain: row.domain,
         total: totalCount,
         read_count: readCount,
         unread_count: unreadCount,
@@ -282,10 +283,8 @@ const app = new Hono()
 
     const values = ctx.req.valid("json");
 
-    const encryptedDomain = encryptDomain(values.domain);
-
     const messageId = await db.email_tracked.findFirst({
-      where:{domain:encryptedDomain},
+      where:{domain:values.domain},
       select:{
         message_id:true
       }
