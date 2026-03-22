@@ -1,7 +1,12 @@
 import EmailStats from "@/components/EmailStats";
 
 const Page = () => {
-  return <EmailStats />;
+
+    return (
+        <div className="w-full p-4 space-y-4">
+            <EmailStats />;
+        </div>
+    )
 };
 
 export default Page;

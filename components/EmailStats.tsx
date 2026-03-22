@@ -115,7 +115,7 @@ const EmailStats = () => {
         header: ({ column }) => (
           <Button
             variant="ghost"
-            className="h-8 px-0"
+            className="-ml-4 h-8 data-[state=open]:bg-accent"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Domain
@@ -132,7 +132,7 @@ const EmailStats = () => {
         header: ({ column }) => (
           <Button
             variant="ghost"
-            className="h-8 px-0"
+            className="-ml-4 h-8 data-[state=open]:bg-accent"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Emails
@@ -149,7 +149,7 @@ const EmailStats = () => {
         header: ({ column }) => (
           <Button
             variant="ghost"
-            className="h-8 px-0"
+            className="-ml-4 h-8 data-[state=open]:bg-accent"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Read
@@ -169,7 +169,7 @@ const EmailStats = () => {
         header: ({ column }) => (
           <Button
             variant="ghost"
-            className="h-8 px-0"
+            className="-ml-4 h-8 data-[state=open]:bg-accent"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Unread
@@ -203,7 +203,7 @@ const EmailStats = () => {
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border">
+      <div className="">
         <div className="space-y-3 p-4">
           {[...Array(6)].map((_, index) => (
             <Skeleton key={index} className="h-10 w-full" />
