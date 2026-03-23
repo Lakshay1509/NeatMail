@@ -131,8 +131,23 @@ Return only valid JSON with fields: category, response_required.`,
 
   try {
     const json = JSON.parse(content);
+    
+    const parsedCategory = typeof json.category === "string" ? json.category : "";
+    
+    // Normalize string: lowercase, remove non-alphanumeric chars, remove trailing 's'
+    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').replace(/s$/, '');
+    const normalizedParsed = normalize(parsedCategory);
+
+    const matchedTag = tags.find(
+      (t) => normalize(t.tag.name) === normalizedParsed
+    ) || tags.find(
+      (t) => 
+        t.tag.name.toLowerCase().includes(parsedCategory.toLowerCase()) || 
+        parsedCategory.toLowerCase().includes(t.tag.name.toLowerCase())
+    );
+
     return {
-      category: typeof json.category === "string" ? json.category : "",
+      category: matchedTag ? matchedTag.tag.name : "",
       response_required:
         typeof json.response_required === "boolean"
           ? json.response_required
