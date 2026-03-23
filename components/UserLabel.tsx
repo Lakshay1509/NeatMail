@@ -4,9 +4,9 @@ import { useGetUserTags } from "@/features/tags/use-get-user-tags"
 import { EmailCategorizationModal } from "./EmailCategorizationModal";
 import { useState, useEffect } from "react";
 import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
-import { SubscriptionModal } from "./SubscriptionModal";
 import { useGetScopes } from "@/features/user/use-get-scopes";
 import { PermissionsModal } from "./PermissionsModal";
+import WelcomeDialog from "./Welcome";
 
 const UserLabel = () => {
 
@@ -47,10 +47,7 @@ const UserLabel = () => {
             onOpenChange={setShowPermissions}
             missingScopes={scopesData?.missingScopes}
         />
-        <SubscriptionModal
-            open={showSubscription}
-            onOpenChange={setShowSubscription}
-        />
+        {showSubscription && <WelcomeDialog />}
         <EmailCategorizationModal 
             open={showOnboarding} 
             onOpenChange={setShowOnboarding} 
