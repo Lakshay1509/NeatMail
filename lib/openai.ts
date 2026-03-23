@@ -134,17 +134,20 @@ Return only valid JSON with fields: category, response_required.`,
     
     const parsedCategory = typeof json.category === "string" ? json.category : "";
     
-    // Normalize string: lowercase, remove non-alphanumeric chars, remove trailing 's'
-    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '').replace(/s$/, '');
+    // Helper to normalize strings for comparison (removes spaces, punctuation)
+    const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
     const normalizedParsed = normalize(parsedCategory);
 
-    const matchedTag = tags.find(
-      (t) => normalize(t.tag.name) === normalizedParsed
-    ) || tags.find(
-      (t) => 
-        t.tag.name.toLowerCase().includes(parsedCategory.toLowerCase()) || 
-        parsedCategory.toLowerCase().includes(t.tag.name.toLowerCase())
-    );
+    // 1. Try exact normalized match
+    let matchedTag = tags.find((t) => normalize(t.tag.name) === normalizedParsed);
+
+    // 2. Fallback: try substring matching to catch plurals/singulars or missing words
+    if (!matchedTag && normalizedParsed.length > 2) {
+      matchedTag = tags.find((t) => {
+        const normalizedTarget = normalize(t.tag.name);
+        return normalizedTarget.includes(normalizedParsed) || normalizedParsed.includes(normalizedTarget);
+      });
+    }
 
     return {
       category: matchedTag ? matchedTag.tag.name : "",
