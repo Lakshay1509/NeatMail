@@ -77,6 +77,7 @@ model email_tracked {
   @@index([user_id], map: "idx_tracked_user")
   @@index([user_id, message_id], map: "idx_tracked_user_message")
   @@index([user_id, tag_id], map: "idx_tracked_user_tag")
+  @@index([user_id, domain], map: "idx_tracked_user_domain")
   @@schema("public")
 }
 
