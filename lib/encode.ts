@@ -28,7 +28,8 @@ export async function encryptDomain(domain: string): Promise<string> {
   const key = getKey();
   const message = sodium.from_string(domain);
 
-  const nonce = sodium.randombytes_buf(sodium.crypto_secretbox_NONCEBYTES);
+  // Generate a deterministic nonce using the message and key
+  const nonce = sodium.crypto_generichash(sodium.crypto_secretbox_NONCEBYTES, message, key);
   const ciphertext = sodium.crypto_secretbox_easy(message, nonce, key);
 
   const combined = new Uint8Array(nonce.length + ciphertext.length);
