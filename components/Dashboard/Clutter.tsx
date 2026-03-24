@@ -50,7 +50,7 @@ const Clutter = () => {
         {data?.clutterData?.map((item) => (
           <div 
             key={item.domain} 
-            className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-50 transition-colors"
+            className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-50 transition-colors gap-x-2"
           >
             <div className="flex items-center gap-4">
               
