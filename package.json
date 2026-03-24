@@ -32,6 +32,7 @@
     "@upstash/redis": "^1.36.2",
     "autosendjs": "^1.0.3",
     "axios": "^1.13.5",
+    "boring-avatars": "^2.0.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dodopayments": "^2.14.1",

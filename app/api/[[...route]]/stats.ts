@@ -24,18 +24,19 @@ const app = new Hono()
       orderBy: {
         _count: { message_id: "desc" },
       },
-      take: 10,
+      take: 3,
     });
 
     const clutterData = await Promise.all(
       clutterSources.map(async (source) => ({
+        rawDomain: source.domain,
         domain: source.domain ? await decryptDomain(source.domain) : "",
         unreadCount: source._count.message_id,
       }))
     );
 
     return ctx.json({
-      data: clutterData,
+      clutterData,
     },200);
   })
 
@@ -135,7 +136,7 @@ const app = new Hono()
       ORDER BY day_of_week, hour_of_day;
     `;
 
-    return ctx.json({ data: trafficData },200);
+    return ctx.json({trafficData },200);
   });
 
 export default app;

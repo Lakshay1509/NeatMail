@@ -6,6 +6,7 @@ import { ArrowUpRight, Mail } from "lucide-react"
 import { EmailTrendsChart } from "./EmailTrendsChart"
 import { LabelDistribution } from "./LabelDistribution"
 import TrackedEmail from "./TrackedEmail"
+import Clutter from "./Dashboard/Clutter"
 
 
 const Dashboard = () => {
@@ -64,16 +65,19 @@ const Dashboard = () => {
 
             {/* Charts & Distribution Section */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2">
-                    <EmailTrendsChart />
-                </div>
                 <div className="lg:col-span-1">
                     <LabelDistribution />
                 </div>
+                <div className="lg:col-span-2">
+                    <Clutter/>
+                </div>
+
             </div>
 
             {/* Recent Mail Section */}
             <TrackedEmail limit={5} dashboard={true}/>
+
+            
         </div>
     )
 }
