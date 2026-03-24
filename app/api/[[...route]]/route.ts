@@ -11,6 +11,7 @@ import dodowebhook from './dodo-webhook'
 import cron from './cron'
 import draftPreference from './draft-preference'
 import outlook from './outlook'
+import stats from './stats'
 
 
 export const runtime = "nodejs";
@@ -30,6 +31,7 @@ const routes = app
     .route('/cron',cron)
     .route('/draft-preference',draftPreference)
     .route('/outlook',outlook)
+    .route('/stats',stats)
 
 
 
