@@ -35,13 +35,13 @@ const Clutter = () => {
   }
 
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 w-full max-w-md">
-      <div className="flex justify-between items-start mb-6">
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 w-full ">
+      <div className="flex justify-between items-start mb-6 space-x-2">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Top Clutter Sources</h2>
           <p className="text-sm text-gray-500 mt-1">Domains impacting your attention span</p>
         </div>
-        <Link className="text-sm font-semibold text-indigo-700 hover:text-indigo-800 transition-colors pt-1" href='/unsubscribe'>
+        <Link className="text-sm font-semibold text-indigo-700 hover:text-indigo-800 transition-colors pt-1 text-right" href='/unsubscribe'>
           View all sources
         </Link>
       </div>
@@ -56,7 +56,7 @@ const Clutter = () => {
               
                 <Avatar name={item.domain} size='35' variant="beam"/>
               
-              <div className="flex flex-col max-w-20 md:max-w-40 space-y-1">
+              <div className="flex flex-col max-w-20 md:max-w-60 space-y-1">
                 <span className="font-semibold text-gray-900 text-sm truncate">{item.domain}</span>
                 <span className="text-xs font-bold text-red-600 mt-0.5 tracking-wide">
                   {item.unreadCount} UNREAD

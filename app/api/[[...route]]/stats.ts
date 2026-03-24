@@ -4,6 +4,12 @@ import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
 import { decryptDomain } from "@/lib/encode";
 
+interface TrafficData {
+  day_of_week: number;
+  hour_of_day: number;
+  email_count: number;
+}
+
 const app = new Hono()
 
   // 1. The Clutter Metric (Top Domains to Unsubscribe From)
@@ -125,7 +131,7 @@ const app = new Hono()
 
     // Using a raw query to extract Date parts in Postgres.
     // DOW (Day Of Week): 0 = Sunday, 1 = Monday, etc.
-    const trafficData = await db.$queryRaw`
+    const trafficData = await db.$queryRaw<TrafficData[]>`
       SELECT 
         EXTRACT(DOW FROM created_at) as day_of_week,
         EXTRACT(HOUR FROM created_at) as hour_of_day,
