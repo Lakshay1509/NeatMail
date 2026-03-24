@@ -2,6 +2,7 @@ import { Hono } from "hono";
 
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
+import { decryptDomain } from "@/lib/encode";
 
 const app = new Hono()
 
@@ -26,11 +27,15 @@ const app = new Hono()
       take: 10,
     });
 
-    return ctx.json({
-      data: clutterSources.map((source) => ({
-        domain: source.domain,
+    const clutterData = await Promise.all(
+      clutterSources.map(async (source) => ({
+        domain: source.domain ? await decryptDomain(source.domain) : "",
         unreadCount: source._count.message_id,
-      })),
+      }))
+    );
+
+    return ctx.json({
+      data: clutterData,
     },200);
   })
 
@@ -50,7 +55,9 @@ const app = new Hono()
 
     // Fetch tag details to enrich the response
     const tags = await db.tag.findMany({
-      where: { user_id: userId },
+     where: {
+        OR: [{ user_id: userId }, { user_id: null }],
+      },
       select: { id: true, name: true, color: true },
     });
 
