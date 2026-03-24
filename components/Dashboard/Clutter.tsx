@@ -18,7 +18,7 @@ const Clutter = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100 w-full max-w-md">
+      <div className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100 w-full">
         <Skeleton className="h-6 w-3/4" />
         <Skeleton className="h-4 w-1/2 mb-6" />
         <div className="space-y-4">
@@ -54,7 +54,7 @@ const Clutter = () => {
           >
             <div className="flex items-center gap-4">
               
-                <Avatar name={item.domain} size='35' variant="beam"/>
+                <Avatar name={item.domain} size='35' variant="bauhaus"/>
               
               <div className="flex flex-col max-w-20 md:max-w-60 space-y-1">
                 <span className="font-semibold text-gray-900 text-sm truncate">{item.domain}</span>
