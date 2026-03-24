@@ -95,10 +95,10 @@ const HeatMap = () => {
           <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Inbox Traffic Heatmap</h2>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Hourly arrival density for the last 7 days</p>
         </div>
-        <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 px-4 py-2 rounded-xl text-sm font-medium">
+        {/* <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 px-4 py-2 rounded-xl text-sm font-medium">
           <Lightbulb className="w-4 h-4" />
           Optimal focus time: {formatHour(bestStartTime)} - {formatHour(bestEndTime)}
-        </div>
+        </div> */}
       </div>
 
       <div className="flex">
