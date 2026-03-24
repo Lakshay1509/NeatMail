@@ -179,6 +179,32 @@ export async function getLabelledMailsOutlook(userId: string, messageIds: string
     });
 }
 
+export async function deleteOutlookTag(userId: string, tagName: string) {
+  const client = await getGraphClient(userId);
+
+  try {
+    const categoriesResponse = await client.api("/me/outlook/masterCategories").get();
+    const category = categoriesResponse.value?.find((c: any) => c.displayName === tagName);
+    
+    if (category) {
+      await client.api(`/me/outlook/masterCategories/${category.id}`).delete();
+    }
+  } catch (error: any) {
+    console.error("Failed to delete Outlook category:", error);
+  }
+
+  try {
+    const foldersResponse = await client.api("/me/mailFolders").get();
+    const folder = foldersResponse.value?.find((f: any) => f.displayName === tagName);
+
+    if (folder) {
+      await client.api(`/me/mailFolders/${folder.id}`).delete();
+    }
+  } catch (error: any) {
+    console.error("Failed to delete Outlook folder:", error);
+  }
+}
+
 export async function createOutlookDraft(
   userId: string,
   messageId: string,

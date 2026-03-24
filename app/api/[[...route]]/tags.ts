@@ -1,14 +1,12 @@
 import { db } from "@/lib/prisma";
-import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
+import { auth} from "@clerk/nextjs/server";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import z from "zod/v3";
 import { colors, outlook_colors } from "@/lib/colors";
-import { google } from "googleapis";
 import { getGmailClient } from "@/lib/gmail";
-import { getTagsUser } from "@/lib/supabase";
-import { addUserLabel, deleteUserLabel } from "@/lib/model";
-import { inngest } from "@/lib/inngest";
+import { deleteOutlookTag } from "@/lib/outlook";
+
 
 const app = new Hono()
 
@@ -164,7 +162,7 @@ const app = new Hono()
         tag: z.string(),
         color: z.string(),
         description: z.string().min(10).max(100),
-        outlookColor:z.string().optional()
+        outlookColor: z.string().optional(),
       }),
     ),
     async (ctx) => {
@@ -182,25 +180,20 @@ const app = new Hono()
         },
       });
 
+      const colorGmailExist = colors.some(
+        (color) => color.value === values.color,
+      );
+      const colorOutlookExist = outlook_colors.some(
+        (color) => color.color === values.color,
+      );
 
-      const colorGmailExist = colors.some((color) => color.value === values.color);
-      const colorOutlookExist = outlook_colors.some((color)=>color.color===values.color)
-
-      if (exist ) {
-        return ctx.json(
-          { error: "Same name tag exists" },
-          500,
-        );
+      if (exist) {
+        return ctx.json({ error: "Same name tag exists" }, 500);
       }
 
-      if(!colorGmailExist && !colorOutlookExist){
-         return ctx.json(
-          { error: "No color exists" },
-          500,
-        );
+      if (!colorGmailExist && !colorOutlookExist) {
+        return ctx.json({ error: "No color exists" }, 500);
       }
-
-      
 
       const [data, addTagToUser] = await db.$transaction(async (tx) => {
         const tag = await tx.tag.create({
@@ -208,9 +201,8 @@ const app = new Hono()
             name: values.tag.trim(),
             user_id: userId,
             color: values.color,
-            outlook_preset:values.outlookColor,
-            description:values.description
-            
+            outlook_preset: values.outlookColor,
+            description: values.description,
           },
         });
 
@@ -257,7 +249,6 @@ const app = new Hono()
         if (!userId) {
           return ctx.json({ error: "Unuathorized" }, 401);
         }
-        const clerk = await clerkClient();
 
         const values = ctx.req.valid("json");
 
@@ -268,27 +259,46 @@ const app = new Hono()
           },
         });
 
+        const userData = await db.user_tokens.findUnique({
+          where: { clerk_user_id: userId },
+          select: {
+            is_gmail: true,
+          },
+        });
+
         if (!exist) {
           return ctx.json({ error: "Error getting data for this tag" }, 500);
         }
 
-        const gmail = await getGmailClient(userId)
-
-        const { data } = await gmail.users.labels.list({
-          userId: "me",
-          fields: "labels(id,name)", 
-        });
-
-        const gmailLabel = data.labels?.find(
-          (label) => label.name === exist.name,
-        );
-
-        if (gmailLabel && gmailLabel.id) {
-          await gmail.users.labels.delete({
-            userId: "me",
-            id: gmailLabel.id,
-          });
+        if (!userData) {
+          return ctx.json({ error: "Error getting user data" }, 500);
         }
+
+        // try {
+        //   if (userData.is_gmail === true) {
+        //     const gmail = await getGmailClient(userId);
+
+        //     const { data } = await gmail.users.labels.list({
+        //       userId: "me",
+        //       fields: "labels(id,name)",
+        //     });
+
+        //     const gmailLabel = data.labels?.find(
+        //       (label) => label.name === exist.name,
+        //     );
+
+        //     if (gmailLabel && gmailLabel.id) {
+        //       await gmail.users.labels.delete({
+        //         userId: "me",
+        //         id: gmailLabel.id,
+        //       });
+        //     }
+        //   } else {
+        //     await deleteOutlookTag(userId, exist.name);
+        //   }
+        // } catch (error) {
+        //   return ctx.json({ error: "Error deleting tag" }, 500);
+        // }
 
         const response = await db.tag.delete({
           where: {
