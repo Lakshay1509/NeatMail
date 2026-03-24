@@ -44,11 +44,12 @@ const HeatMap = () => {
     data.trafficData.forEach((item) => {
       // Assuming day_of_week is 0-6 where 0 is Monday (or 1-7). Modify if different.
       // If 1=Monday, 7=Sunday:
-      let dayIdx = item.day_of_week; 
+      const dayOfWeek = Number(item.day_of_week);
+      let dayIdx = dayOfWeek; 
       // Adjust standard 0=Sun, 1=Mon if needed, let's safely modulo and handle both cases
       // Try to map to 0=Mon, ..., 6=Sun
-      if (item.day_of_week === 0) dayIdx = 6; // If 0 is Sunday, shift it to 6
-      else dayIdx = item.day_of_week - 1; // If 1 is Monday, shift to 0
+      if (dayOfWeek === 0) dayIdx = 6; // If 0 is Sunday, shift it to 6
+      else dayIdx = dayOfWeek - 1; // If 1 is Monday, shift to 0
       
       if (dayIdx < 0 || dayIdx > 6) dayIdx = 0; // fallback
 
@@ -57,7 +58,8 @@ const HeatMap = () => {
       // 10,11 -> 1
       // ...
       // 6,7 -> 11
-      const normalizedHour = (item.hour_of_day - 8 + 24) % 24;
+      const hourOfDay = Number(item.hour_of_day);
+      const normalizedHour = (hourOfDay - 8 + 24) % 24;
       const bucketIdx = Math.floor(normalizedHour / 2);
 
       if (dayIdx >= 0 && dayIdx < 7 && bucketIdx >= 0 && bucketIdx < 12) {
