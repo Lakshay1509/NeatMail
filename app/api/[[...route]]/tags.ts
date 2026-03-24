@@ -46,6 +46,7 @@ const app = new Hono()
         name: true,
         color: true,
         id: true,
+        description:true
       },
     });
 

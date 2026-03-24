@@ -228,6 +228,7 @@ const UserLabelSettings = () => {
 									>
 										{category.name}
 									</span>
+									<span className="text-sm text-gray-600 leading-tight">{category.description}</span>
 								</div>
 								<div>
 									<DropdownMenu >
