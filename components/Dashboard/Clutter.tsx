@@ -12,7 +12,7 @@ const Clutter = () => {
    const unsubscribeMutation = useUnsubscribeDomain();
 
   const handleUnsubscribe = (domain: string) => {
-    // TODO: Implement unsubscribe logic
+   
     unsubscribeMutation.mutateAsync({domain:domain});
   }
 

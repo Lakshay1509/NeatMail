@@ -36,7 +36,7 @@ const HeatMap = () => {
   // Starting at 08:00. Bucket 0 = 08-09, Bucket 1 = 10-11, ... Bucket 11 = 06-07.
   const buckets = Array(7).fill(0).map(() => Array(12).fill(0));
   let maxCount = 1; // avoid division by zero
-  
+
   // To find optimal focus time
   const bucketTotals = Array(12).fill(0);
 
@@ -45,12 +45,12 @@ const HeatMap = () => {
       // Assuming day_of_week is 0-6 where 0 is Monday (or 1-7). Modify if different.
       // If 1=Monday, 7=Sunday:
       const dayOfWeek = Number(item.day_of_week);
-      let dayIdx = dayOfWeek; 
+      let dayIdx = dayOfWeek;
       // Adjust standard 0=Sun, 1=Mon if needed, let's safely modulo and handle both cases
       // Try to map to 0=Mon, ..., 6=Sun
       if (dayOfWeek === 0) dayIdx = 6; // If 0 is Sunday, shift it to 6
       else dayIdx = dayOfWeek - 1; // If 1 is Monday, shift to 0
-      
+
       if (dayIdx < 0 || dayIdx > 6) dayIdx = 0; // fallback
 
       // Map hour (0-23) to bucket.
@@ -77,17 +77,17 @@ const HeatMap = () => {
   bucketTotals.forEach((total, idx) => {
     // Exclude night hours from "optimal focus time" if desired, assuming working hours 08:00 - 18:00 (buckets 0 to 4)
     if (idx <= 4 && total < minTraffic) {
-        minTraffic = total;
-        bestBucketIdx = idx;
+      minTraffic = total;
+      bestBucketIdx = idx;
     }
   });
 
   const bestStartTime = (8 + bestBucketIdx * 2) % 24;
   const bestEndTime = (bestStartTime + 2) % 24;
   const formatHour = (h: number) => {
-      const ampm = h >= 12 ? 'PM' : 'AM';
-      const hr = h % 12 || 12;
-      return `${hr} ${ampm}`;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const hr = h % 12 || 12;
+    return `${hr} ${ampm}`;
   };
 
   return (
@@ -97,10 +97,10 @@ const HeatMap = () => {
           <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Inbox Traffic Heatmap</h2>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Hourly arrival density for the last 7 days</p>
         </div>
-        {/* <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 px-4 py-2 rounded-xl text-sm font-medium">
+        <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 px-4 py-2 rounded-xl text-sm font-medium">
           <Lightbulb className="w-4 h-4" />
-          Optimal focus time: {formatHour(bestStartTime)} - {formatHour(bestEndTime)}
-        </div> */}
+          Best focus: {formatHour(bestStartTime)}-{formatHour(bestEndTime)}
+        </div>
       </div>
 
       <div className="flex">
