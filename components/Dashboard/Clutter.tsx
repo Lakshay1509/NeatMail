@@ -54,7 +54,7 @@ const Clutter = () => {
           >
             <div className="flex items-center gap-4">
               
-                <Avatar name={item.domain} size='35' variant="bauhaus"/>
+                <Avatar name={item.domain} size='35' variant="bauhaus" colors={["#222222","#ffe4c4"]}/>
               
               <div className="flex flex-col max-w-20 md:max-w-60 space-y-1">
                 <span className="font-semibold text-gray-900 text-sm truncate">{item.domain}</span>
