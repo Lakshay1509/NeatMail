@@ -41,8 +41,8 @@ const Clutter = () => {
           <h2 className="text-xl font-bold text-gray-900">Top Clutter Sources</h2>
           <p className="text-sm text-gray-500 mt-1">Domains impacting your attention span</p>
         </div>
-        <Link className="text-sm font-semibold text-indigo-700 hover:text-indigo-800 transition-colors pt-1 text-right" href='/unsubscribe'>
-          View all sources
+        <Link className="text-sm font-semibold text-gray-500 hover:text-gray-600 transition-colors pt-1 text-right" href='/unsubscribe'>
+          View all
         </Link>
       </div>
 

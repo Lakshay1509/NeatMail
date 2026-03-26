@@ -17,9 +17,9 @@ const Dashboard = () => {
 
     const getGreeting = () => {
         const hour = new Date().getHours();
-        if (hour < 12) return { text: "Good Morning", gradient: "from-indigo-900 via-sky-800 to-emerald-800" };
-        if (hour < 18) return { text: "Good Afternoon", gradient: "from-blue-900 via-violet-800 to-fuchsia-800" };
-        return { text: "Good Evening", gradient: "from-slate-800 via-purple-700 to-slate-800" };
+        if (hour < 12) return { text: "Good Morning"};
+        if (hour < 18) return { text: "Good Afternoon"};
+        return { text: "Good Evening"};
     };
 
     const greeting = getGreeting();
@@ -32,7 +32,7 @@ const Dashboard = () => {
                   
 
                     <div className="flex-1">
-                        <h1 className={`text-2xl font-bold  bg-gradient-to-r bg-clip-text text-transparent ${greeting.gradient}`}>
+                        <h1 className="text-2xl font-bold">
                             {greeting.text}, {user?.firstName || "User"}
                         </h1>
                         <p className="text-gray-500">
