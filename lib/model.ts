@@ -22,6 +22,19 @@ export interface ModelResponse{
   
 }
 
+export interface CorrectionRequest{
+  user_id:string,
+  subject:string,
+  body:string,
+  correct_label:string,
+  wrong_label?:string
+}
+
+export interface CorrectionResponse{
+  status:string,
+  message:string
+}
+
 
 
 export interface ApiErrorResponse {
@@ -58,6 +71,7 @@ export async function getModelResponse(
       throw new Error("user_id is required");
     }
 
+    console.log(request)
 
     const response = await apiClient.post<ModelResponse>(
       "/classify",
@@ -92,6 +106,52 @@ export async function getModelResponse(
     throw error instanceof Error
       ? error
       : new Error("Unknown error during getting model api");
+  }
+}
+
+
+export async function correctLabel(
+  request: CorrectionRequest,
+): Promise<CorrectionResponse> {
+  try {
+    if (!request.user_id) {
+      throw new Error("user_id is required");
+    }
+
+
+    const response = await apiClient.post<CorrectionResponse>(
+      "/correct",
+
+      request,
+    );
+
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError<ApiErrorResponse>;
+
+      if (axiosError.response) {
+        const errorMessage =
+          axiosError.response.data?.detail ||
+          axiosError.response.data?.message ||
+          axiosError.response.data?.error ||
+          `API error: ${axiosError.response.status}`;
+
+        throw new Error(errorMessage);
+      } else if (axiosError.request) {
+        throw new Error(
+          "No response from model-correction API. Please check if the service is running.",
+        );
+      } else {
+        throw new Error(`Request setup error: ${axiosError.message}`);
+      }
+    }
+
+    // Handle other errors
+    throw error instanceof Error
+      ? error
+      : new Error("Unknown error during getting model correction-api");
   }
 }
 
