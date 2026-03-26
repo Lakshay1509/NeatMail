@@ -105,7 +105,7 @@ export const processOutlookMailFn = inngest.createFunction(
           subject: subject,
           user_id: subscription.clerk_user_id,
           tags: tagsOfUser.map((t: any) => ({ name: t.tag.name, description: t.tag.description })),
-          sensitivity: draftsenstivity===null ? "if actionable" : draftsenstivity,
+          sensitivity: draftsenstivity || "if actionable",
         }
       );
     });

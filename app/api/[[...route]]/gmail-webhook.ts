@@ -256,7 +256,7 @@ const app = new Hono().post("/", async (ctx) => {
           subject: emailData.subject,
           user_id: emailData.userId,
           tags: tagsOfUser.map((t: any) => ({ name: t.tag.name, description: t.tag.description })),
-          sensitivity: draftsenstivity===null ? "if actionable" : draftsenstivity,
+          sensitivity: draftsenstivity || "if actionable",
         });
         labelName = classification.category;
         responseRequired = classification.response_required === true;
