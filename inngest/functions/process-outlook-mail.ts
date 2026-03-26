@@ -13,6 +13,7 @@ import {
 import { clerkClient } from "@clerk/nextjs/server";
 import { isMessageProcessed, markMessageProcessed } from "@/lib/redis";
 import { parseFromHeader } from "@/app/api/[[...route]]/gmail-webhook";
+import { getModelResponse } from "@/lib/model";
 
 export const processOutlookMailFn = inngest.createFunction(
   {
@@ -96,10 +97,16 @@ export const processOutlookMailFn = inngest.createFunction(
       return (await useGetUserDraftPreference(clerkUser.id)).senstivity
     })
 
-    const classification = await step.run("openai-called", async () => {
-      return classifyEmailOpenAI(
-        { subject, from, bodySnippet: body },
-        tagsOfUser,draftsenstivity ?? "if actionable"
+    const classification = await step.run("model-called", async () => {
+      return getModelResponse(
+        {
+          body: body,
+          from: from,
+          subject: subject,
+          user_id: subscription.clerk_user_id,
+          tags: tagsOfUser.map((t: any) => ({ name: t.tag.name, description: t.tag.description })),
+          sensitivity: draftsenstivity ?? "if actionable",
+        }
       );
     });
     const labelName = classification.category;

@@ -233,10 +233,10 @@ const app = new Hono().post("/", async (ctx) => {
       let labelName: string;
       let responseRequired = false;
       const hasMarketingTag = tagsOfUser.some(
-        (tag: any) => tag.tag.name === "Marketing",
+        (tag) => tag.tag.name === "Marketing",
       );
       const hasReadonlyTag = tagsOfUser.some(
-        (tag: any) => tag.tag.name === "Read only",
+        (tag) => tag.tag.name === "Read only",
       );
 
       if (
