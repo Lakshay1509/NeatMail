@@ -5,7 +5,7 @@ import { getGmailMessageBody } from "./gmail";
 export async function handleLabelCorrections(
   gmail: gmail_v1.Gmail,
   clerkUserId: string,
-  historyRecords: gmail_v1.Schema$History[]
+  historyRecords: gmail_v1.Schema$History[],
 ) {
   if (!historyRecords || historyRecords.length === 0) return;
 
@@ -46,7 +46,7 @@ export async function handleLabelCorrections(
   // Fetch user labels to filter out system labels and get localized names
   const labelsResponse = await gmail.users.labels.list({ userId: "me" });
   const userLabels = (labelsResponse.data.labels ?? []).filter(
-    (l) => l.type === "user"
+    (l) => l.type === "user",
   );
 
   const userLabelMap = new Map<string, string>();
@@ -91,23 +91,26 @@ export async function handleLabelCorrections(
       const bodySnippet = fullBody?.slice(0, 1000) ?? ""; // Capture large enough snippet for the API
 
       // Fire the correction API
-      await correctLabel({
-        user_id: clerkUserId,
-        subject,
-        body: bodySnippet,
-        correct_label,
-        wrong_label,
-      });
 
-      console.log(
-        `[Correction] Processed correction for msg ${messageId}: ${
-          wrong_label || "None"
-        } -> ${correct_label}`
-      );
+      if (correct_label && wrong_label) {
+        await correctLabel({
+          user_id: clerkUserId,
+          subject,
+          body: bodySnippet,
+          correct_label,
+          wrong_label,
+        });
+
+        console.log(
+          `[Correction] Processed correction for msg ${messageId}: ${
+            wrong_label || "None"
+          } -> ${correct_label}`,
+        );
+      }
     } catch (error) {
       console.error(
         `[Correction] Error processing correction for msg ${messageId}:`,
-        error
+        error,
       );
     }
   }
