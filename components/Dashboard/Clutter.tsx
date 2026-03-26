@@ -7,6 +7,7 @@ import Avatar from "boring-avatars";
 import { useUnsubscribeDomain } from "@/features/email/use-post-unsubscribe";
 import Link from "next/link";
 
+
 const Clutter = () => {
   const { data, isLoading, isError } = useGetClutter()
    const unsubscribeMutation = useUnsubscribeDomain();
@@ -43,6 +44,7 @@ const Clutter = () => {
         </div>
         <Link className="text-sm font-semibold text-gray-500 hover:text-gray-600 transition-colors pt-1 text-right" href='/unsubscribe'>
           View all
+          
         </Link>
       </div>
 
@@ -58,9 +60,9 @@ const Clutter = () => {
               
               <div className="flex flex-col max-w-20 md:max-w-60 space-y-1">
                 <span className="font-semibold text-gray-900 text-sm truncate">{item.domain}</span>
-                <span className="text-xs font-bold text-red-600 mt-0.5 tracking-wide">
-                  {item.unreadCount} UNREAD
-                </span>
+               <span className="text-xs font-medium text-gray-500 mt-0.5">
+  {item.unreadCount} unread
+</span>
               </div>
             </div>
             
