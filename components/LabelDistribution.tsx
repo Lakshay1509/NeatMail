@@ -39,6 +39,7 @@ export function LabelDistribution() {
                 className="h-2.5 rounded-full"
                 style={{
                   width: `${cat.percentage}%`,
+                  backgroundColor: '#000000'
                   
                 }}
               />
