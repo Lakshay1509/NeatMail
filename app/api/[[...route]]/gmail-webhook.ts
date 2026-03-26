@@ -26,6 +26,7 @@ import { Hono } from "hono";
 import { OAuth2Client } from "google-auth-library";
 import { buildContextAndDraft } from "@/context-engine/pipeline";
 import { IncomingEmail } from "@/context-engine/types";
+import { getModelResponse } from "@/lib/model";
 
 export function parseFromHeader(fromHeader: string): {
   senderName: string;
@@ -249,11 +250,14 @@ const app = new Hono().post("/", async (ctx) => {
       ) {
         labelName = "Read only";
       } else {
-        const classification = await classifyEmailOpenAI(
-          emailData,
-          tagsOfUser,
-          draftsenstivity ?? "if actionable",
-        );
+        const classification = await getModelResponse({
+          body: emailData.bodySnippet,
+          from: emailData.from,
+          subject: emailData.subject,
+          user_id: emailData.userId,
+          tags: tagsOfUser.map((t: any) => ({ name: t.tag.name, description: t.tag.description })),
+          sensitivity: draftsenstivity ?? "if actionable",
+        });
         labelName = classification.category;
         responseRequired = classification.response_required === true;
       }
