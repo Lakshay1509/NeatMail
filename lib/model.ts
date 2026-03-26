@@ -22,6 +22,8 @@ export interface ModelResponse{
   
 }
 
+
+
 export interface ApiErrorResponse {
   detail?: string;
   message?: string;
@@ -58,7 +60,7 @@ export async function getModelResponse(
 
 
     const response = await apiClient.post<ModelResponse>(
-      "/context",
+      "/classify",
 
       request,
     );
@@ -92,3 +94,4 @@ export async function getModelResponse(
       : new Error("Unknown error during getting model api");
   }
 }
+
