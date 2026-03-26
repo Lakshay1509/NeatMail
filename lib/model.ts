@@ -71,8 +71,6 @@ export async function getModelResponse(
       throw new Error("user_id is required");
     }
 
-    console.log(request)
-
     const response = await apiClient.post<ModelResponse>(
       "/classify",
 
@@ -118,6 +116,7 @@ export async function correctLabel(
       throw new Error("user_id is required");
     }
 
+    console.log(request)
 
     const response = await apiClient.post<CorrectionResponse>(
       "/correct",

@@ -27,6 +27,7 @@ import { OAuth2Client } from "google-auth-library";
 import { buildContextAndDraft } from "@/context-engine/pipeline";
 import { IncomingEmail } from "@/context-engine/types";
 import { getModelResponse } from "@/lib/model";
+import { handleLabelCorrections } from "@/lib/gmail-correction";
 
 export function parseFromHeader(fromHeader: string): {
   senderName: string;
@@ -144,6 +145,11 @@ const app = new Hono().post("/", async (ctx) => {
     }
 
     const historyRecords = history.data.history ?? [];
+
+    // Trigger label modifications endpoint asynchronously
+    handleLabelCorrections(gmail, clerkUserId, historyRecords).catch(e => 
+      console.error("Error running label correction handler:", e)
+    );
 
     for (const record of historyRecords) {
       
