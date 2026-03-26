@@ -1,3 +1,4 @@
+"use client"
 import { Mail, Home, MessageSquareDashed, Receipt, AlertCircle, Tag,Shredder } from "lucide-react"
 
 
@@ -14,6 +15,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 // Menu items.
 const items = [
@@ -53,6 +55,7 @@ const items = [
 
 export function AppSidebar() {
   const { isMobile, setOpenMobile } = useSidebar()
+  const pathname = usePathname()
 
   const handleLinkClick = () => {
     if (isMobile) {
@@ -67,16 +70,18 @@ export function AppSidebar() {
           <SidebarGroupLabel></SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {items.map((item) => {
+                const isActive = pathname === item.url || (item.url !== "/" && pathname.startsWith(item.url))
+                return (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className="h-12">
+                  <SidebarMenuButton asChild className={`h-12 ${isActive ? "bg-neutral-100 dark:bg-neutral-800 font-semibold" : ""}`}>
                     <Link href={item.url} onClick={handleLinkClick}>
                       <item.icon className="h-5! w-5!" />
                       <span className="text-base ">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ))}
+              )})}
 
             </SidebarMenu>
           </SidebarGroupContent>
