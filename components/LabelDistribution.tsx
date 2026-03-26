@@ -28,7 +28,7 @@ export function LabelDistribution() {
       </p>
 
       <div className="space-y-6">
-        {tags?.map((cat) => (
+        {tags?.map((cat, index) => (
           <div key={cat.label}>
             <div className="flex justify-between text-sm mb-2">
               <span className="font-medium text-gray-700">{cat.label}</span>
@@ -39,8 +39,7 @@ export function LabelDistribution() {
                 className="h-2.5 rounded-full"
                 style={{
                   width: `${cat.percentage}%`,
-                  backgroundColor: '#000000'
-                  
+                  backgroundColor: `rgba(79, 70, 229, ${[1, 0.75, 0.5, 0.25][index] || 0.1})`
                 }}
               />
             </div>

@@ -24,13 +24,14 @@ const HeatMap = () => {
   // Group data by day (1-7, assuming Monday is 1, or 0-6). Let's assume 0=Monday to 6=Sunday for mapping or adapt based on JS getDay (0=Sun). 
   // We'll normalize to 0=MON, 6=SUN.
   const getTrafficColor = (count: number, maxCount: number) => {
-    if (count === 0) return 'bg-neutral-100 dark:bg-neutral-900';
+    if (count === 0) return 'bg-slate-100 dark:bg-slate-800';
     const ratio = count / maxCount;
-    if (ratio < 0.25) return 'bg-neutral-200 dark:bg-neutral-800';
-    if (ratio < 0.5) return 'bg-neutral-400 dark:bg-neutral-600';
-    if (ratio < 0.75) return 'bg-neutral-600 dark:bg-neutral-400';
-    return 'bg-neutral-800 dark:bg-neutral-200';
+    if (ratio < 0.25) return 'bg-indigo-50 dark:bg-indigo-950';
+    if (ratio < 0.5) return 'bg-indigo-200 dark:bg-indigo-800';
+    if (ratio < 0.75) return 'bg-indigo-500 dark:bg-indigo-600';
+    return 'bg-indigo-700 dark:bg-indigo-500';
   };
+
 
   // Convert hours to 12 buckets (each bucket is 2 hours).
   // Starting at 08:00. Bucket 0 = 08-09, Bucket 1 = 10-11, ... Bucket 11 = 06-07.
@@ -97,7 +98,7 @@ const HeatMap = () => {
           <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Inbox Traffic Heatmap</h2>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Hourly arrival density for the last 7 days</p>
         </div>
-        <div className="flex items-center gap-2 bg-neutral-100 dark:bg-neutral-800/50 text-neutral-700 dark:text-neutral-300 px-4 py-2 rounded-xl text-sm font-medium">
+        <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 px-4 py-2 rounded-xl text-sm font-medium">
           <Lightbulb className="w-4 h-4" />
           Best focus: {formatHour(bestStartTime)}-{formatHour(bestEndTime)}
         </div>
@@ -146,11 +147,11 @@ const HeatMap = () => {
       {/* Legend */}
       <div className="flex items-center justify-end gap-2 mt-6">
         <span className="text-xs text-neutral-500 font-medium mr-2">LOW</span>
-        <div className="w-4 h-4 rounded bg-neutral-100 dark:bg-neutral-900" />
-        <div className="w-4 h-4 rounded bg-neutral-200 dark:bg-neutral-800" />
-        <div className="w-4 h-4 rounded bg-neutral-400 dark:bg-neutral-600" />
-        <div className="w-4 h-4 rounded bg-neutral-600 dark:bg-neutral-400" />
-        <div className="w-4 h-4 rounded bg-neutral-800 dark:bg-neutral-200" />
+        <div className="w-4 h-4 rounded bg-slate-100 dark:bg-slate-800" />
+        <div className="w-4 h-4 rounded bg-indigo-50 dark:bg-indigo-950" />
+        <div className="w-4 h-4 rounded bg-indigo-200 dark:bg-indigo-800" />
+        <div className="w-4 h-4 rounded bg-indigo-500 dark:bg-indigo-600" />
+        <div className="w-4 h-4 rounded bg-indigo-700 dark:bg-indigo-500" />
         <span className="text-xs text-neutral-500 font-medium ml-2">HIGH</span>
       </div>
     </div>
