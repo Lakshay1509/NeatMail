@@ -100,12 +100,12 @@ export const processOutlookMailFn = inngest.createFunction(
     const classification = await step.run("model-called", async () => {
       return getModelResponse(
         {
-          body: body,
+          bodySnippet: body,
           from: from,
           subject: subject,
           user_id: subscription.clerk_user_id,
           tags: tagsOfUser.map((t: any) => ({ name: t.tag.name, description: t.tag.description })),
-          sensitivity: draftsenstivity ?? "if actionable",
+          sensitivity: draftsenstivity===null ? "if actionable" : draftsenstivity,
         }
       );
     });

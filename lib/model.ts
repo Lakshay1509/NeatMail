@@ -7,7 +7,7 @@ export interface Tags{
 
 export interface ModelRequest{
   user_id:string,
-  body:string,
+  bodySnippet:string,
   subject:string,
   from:string
   tags : Tags[],
