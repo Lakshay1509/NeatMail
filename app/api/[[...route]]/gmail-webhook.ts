@@ -220,6 +220,7 @@ const app = new Hono().post("/", async (ctx) => {
           email.data.payload?.headers?.find((h) => h.name === "From")?.value ||
           "",
         bodySnippet: truncatedBody,
+        threadId: email.data.threadId || "",
       };
 
       // currentThreadId = String(emailData.threadId);
