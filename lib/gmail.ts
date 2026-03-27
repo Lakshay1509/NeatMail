@@ -166,15 +166,14 @@ export async function createGmailDraft(
   let originalSubject = subject;
   let fromEmail = "";
 
-  // 1. Get sender's email — required for the From header
   try {
     const profile = await gmail.users.getProfile({ userId: "me" });
     fromEmail = profile.data.emailAddress ?? "";
+    console.log("[DEBUG] fromEmail:", fromEmail);
   } catch (err) {
-    console.error("Failed to fetch Gmail profile", err);
+    console.error("[DEBUG] getProfile failed:", err);
   }
 
-  // 2. Fetch threading headers + original subject from the message being replied to
   try {
     const originalMessage = await gmail.users.messages.get({
       userId: "me",
@@ -183,24 +182,32 @@ export async function createGmailDraft(
       metadataHeaders: ["Message-ID", "References", "Subject"],
     });
     const headers = originalMessage.data.payload?.headers ?? [];
-    rfcMessageId = headers.find((h) => h.name?.toLowerCase() === "message-id")?.value ?? "";
-    references   = headers.find((h) => h.name?.toLowerCase() === "references")?.value ?? "";
+
+    console.log("[DEBUG] all fetched headers:", JSON.stringify(headers, null, 2));
+
+    rfcMessageId    = headers.find((h) => h.name?.toLowerCase() === "message-id")?.value ?? "";
+    references      = headers.find((h) => h.name?.toLowerCase() === "references")?.value ?? "";
     originalSubject = headers.find((h) => h.name?.toLowerCase() === "subject")?.value ?? subject;
+
+    console.log("[DEBUG] rfcMessageId (raw):", rfcMessageId);
+    console.log("[DEBUG] references (raw):", references);
+    console.log("[DEBUG] originalSubject:", originalSubject);
   } catch (err) {
-    console.error("Failed to fetch original message headers", err);
+    console.error("[DEBUG] messages.get failed:", err);
   }
 
-  // 3. Ensure Message-ID is wrapped in angle brackets (Gmail API sometimes strips them)
   if (rfcMessageId && !rfcMessageId.startsWith("<")) {
     rfcMessageId = `<${rfcMessageId}>`;
+    console.log("[DEBUG] rfcMessageId (after bracket fix):", rfcMessageId);
   }
 
-  // 4. Build reply subject — strip any existing Re: chain, add exactly one
   const cleanSubject = originalSubject.replace(/^(re:\s*)*/i, "").trim();
   const replySubject = `Re: ${cleanSubject}`;
   const utf8Subject  = `=?utf-8?B?${Buffer.from(replySubject).toString("base64")}?=`;
 
-  // 5. Build HTML body
+  console.log("[DEBUG] replySubject:", replySubject);
+  console.log("[DEBUG] threadId passed in:", threadId);
+
   const formattedBody      = draftBody.replace(/\n/g, "<br>");
   const formattedSignature = signature ? signature.replace(/\n/g, "<br>") : "";
   const htmlContent = `
@@ -210,14 +217,12 @@ export async function createGmailDraft(
     </div>
   `.trim();
 
-  // 6. Base64-encode the HTML body for clean MIME transport
   const encodedBody = Buffer.from(htmlContent).toString("base64");
 
-  // 7. Build MIME headers — RFC 2822 requires CRLF line endings
   const CRLF = "\r\n";
   const messageParts: string[] = [
     "MIME-Version: 1.0",
-    `From: ${fromEmail}`,      // ✅ Was missing — Gmail requires this
+    `From: ${fromEmail}`,
     `To: ${to}`,
     `Subject: ${utf8Subject}`,
   ];
@@ -225,16 +230,20 @@ export async function createGmailDraft(
   if (rfcMessageId) {
     messageParts.push(`In-Reply-To: ${rfcMessageId}`);
     messageParts.push(`References: ${references ? references + " " : ""}${rfcMessageId}`);
+  } else {
+    console.warn("[DEBUG] ⚠️ rfcMessageId is EMPTY — In-Reply-To and References will NOT be set. Threading will fail.");
   }
 
   messageParts.push(
     "Content-Type: text/html; charset=utf-8",
     "Content-Transfer-Encoding: base64",
-    "",           // blank line separating headers from body per RFC 2822
+    "",
     encodedBody,
   );
 
-  // 8. Join with CRLF (not \n) and URL-safe base64 encode the whole message
+  // Log the exact headers being sent (everything except the body)
+  console.log("[DEBUG] MIME headers being sent:\n" + messageParts.slice(0, -2).join("\n"));
+
   const raw = messageParts.join(CRLF);
   const encodedMessage = Buffer.from(raw)
     .toString("base64")
@@ -242,7 +251,6 @@ export async function createGmailDraft(
     .replace(/\//g, "_")
     .replace(/=+$/, "");
 
-  // 9. Create the draft, passing threadId so Gmail knows which thread to attach it to
   const draft = await gmail.users.drafts.create({
     userId: "me",
     requestBody: {
@@ -252,6 +260,11 @@ export async function createGmailDraft(
       },
     },
   });
+
+  console.log("[DEBUG] draft.id:", draft.data.id);
+  console.log("[DEBUG] draft.message.threadId (from response):", draft.data.message?.threadId);
+  console.log("[DEBUG] threadId we passed:", threadId);
+  console.log("[DEBUG] threadId match?", draft.data.message?.threadId === threadId);
 
   return draft.data;
 }
