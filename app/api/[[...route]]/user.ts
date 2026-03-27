@@ -63,6 +63,9 @@ const app = new Hono()
     const data = await db.email_tracked.count({
       where: {
         user_id: userId,
+        tag_id:{
+          not:null
+        },
         created_at: {
           gte: startOfMonth,
           lt: startOfNextMonth,
