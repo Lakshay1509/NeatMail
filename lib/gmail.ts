@@ -169,9 +169,8 @@ export async function createGmailDraft(
   try {
     const profile = await gmail.users.getProfile({ userId: "me" });
     fromEmail = profile.data.emailAddress ?? "";
-    console.log("[DEBUG] fromEmail:", fromEmail);
   } catch (err) {
-    console.error("[DEBUG] getProfile failed:", err);
+    console.error("getProfile failed:", err);
   }
 
   try {
@@ -183,30 +182,20 @@ export async function createGmailDraft(
     });
     const headers = originalMessage.data.payload?.headers ?? [];
 
-    console.log("[DEBUG] all fetched headers:", JSON.stringify(headers, null, 2));
-
     rfcMessageId    = headers.find((h) => h.name?.toLowerCase() === "message-id")?.value ?? "";
     references      = headers.find((h) => h.name?.toLowerCase() === "references")?.value ?? "";
     originalSubject = headers.find((h) => h.name?.toLowerCase() === "subject")?.value ?? subject;
-
-    console.log("[DEBUG] rfcMessageId (raw):", rfcMessageId);
-    console.log("[DEBUG] references (raw):", references);
-    console.log("[DEBUG] originalSubject:", originalSubject);
   } catch (err) {
-    console.error("[DEBUG] messages.get failed:", err);
+    console.error("messages.get failed:", err);
   }
 
   if (rfcMessageId && !rfcMessageId.startsWith("<")) {
     rfcMessageId = `<${rfcMessageId}>`;
-    console.log("[DEBUG] rfcMessageId (after bracket fix):", rfcMessageId);
   }
 
   const cleanSubject = originalSubject.replace(/^(re:\s*)*/i, "").trim();
   const replySubject = `Re: ${cleanSubject}`;
   const utf8Subject  = `=?utf-8?B?${Buffer.from(replySubject).toString("base64")}?=`;
-
-  console.log("[DEBUG] replySubject:", replySubject);
-  console.log("[DEBUG] threadId passed in:", threadId);
 
   const formattedBody      = draftBody.replace(/\n/g, "<br>");
   const formattedSignature = signature ? signature.replace(/\n/g, "<br>") : "";
@@ -230,8 +219,6 @@ export async function createGmailDraft(
   if (rfcMessageId) {
     messageParts.push(`In-Reply-To: ${rfcMessageId}`);
     messageParts.push(`References: ${references ? references + " " : ""}${rfcMessageId}`);
-  } else {
-    console.warn("[DEBUG] ⚠️ rfcMessageId is EMPTY — In-Reply-To and References will NOT be set. Threading will fail.");
   }
 
   messageParts.push(
@@ -240,9 +227,6 @@ export async function createGmailDraft(
     "",
     encodedBody,
   );
-
-  // Log the exact headers being sent (everything except the body)
-  console.log("[DEBUG] MIME headers being sent:\n" + messageParts.slice(0, -2).join("\n"));
 
   const raw = messageParts.join(CRLF);
   const encodedMessage = Buffer.from(raw)
@@ -260,11 +244,6 @@ export async function createGmailDraft(
       },
     },
   });
-
-  console.log("[DEBUG] draft.id:", draft.data.id);
-  console.log("[DEBUG] draft.message.threadId (from response):", draft.data.message?.threadId);
-  console.log("[DEBUG] threadId we passed:", threadId);
-  console.log("[DEBUG] threadId match?", draft.data.message?.threadId === threadId);
 
   return draft.data;
 }
