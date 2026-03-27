@@ -171,13 +171,12 @@ export async function createGmailDraft(
   `.trim();
 
   // Create RFC 2822 formatted message
-  const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString("base64")}?=`;
+  const subjectPrefix = subject.toLowerCase().startsWith("re:") ? "" : "Re: ";
+  const utf8Subject = `=?utf-8?B?${Buffer.from(subjectPrefix + subject).toString("base64")}?=`;
   const messageParts = [
     "MIME-Version: 1.0",
     `To: ${to}`,
-    `Subject: Re: ${utf8Subject}`,
-    `In-Reply-To: ${messageId}`,
-    `References: ${messageId}`,
+    `Subject: ${utf8Subject}`,
     "Content-Type: text/html; charset=utf-8",
     "Content-Transfer-Encoding: 7bit",
     "",
