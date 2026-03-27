@@ -159,7 +159,28 @@ export async function createGmailDraft(
   fontSize: number,
   signature: string | null,
 ) {
-  // Apply font styling and signature, converting newlines to <br> for HTML
+  const gmail = await getGmailClient(userId);
+
+  let rfcMessageId = "";
+  let references = "";
+  let originalSubject = subject;
+
+  try {
+    const originalMessage = await gmail.users.messages.get({
+      userId: "me",
+      id: messageId,
+      format: "metadata",
+      metadataHeaders: ["Message-ID", "References", "Subject"],
+    });
+    const headers = originalMessage.data.payload?.headers || [];
+    rfcMessageId = headers.find((h) => h.name?.toLowerCase() === "message-id")?.value || "";
+    references = headers.find((h) => h.name?.toLowerCase() === "references")?.value || "";
+    // Use the exact subject from the original message to guarantee a match
+    originalSubject = headers.find((h) => h.name?.toLowerCase() === "subject")?.value || subject;
+  } catch (err) {
+    console.error("Failed to fetch original message headers for threading", err);
+  }
+
   const formattedBody = draftBody.replace(/\n/g, "<br>");
   const formattedSignature = signature ? signature.replace(/\n/g, "<br>") : "";
 
@@ -170,22 +191,35 @@ export async function createGmailDraft(
     </div>
   `.trim();
 
-  // Create RFC 2822 formatted message
-  const subjectPrefix = subject.toLowerCase().startsWith("re:") ? "" : "Re: ";
-  const utf8Subject = `=?utf-8?B?${Buffer.from(subjectPrefix + subject).toString("base64")}?=`;
+  // Strip all leading "Re:" prefixes (any case/spacing), then add exactly one
+  const cleanSubject = originalSubject.replace(/^(re:\s*)*/i, "").trim();
+  const replySubject = `Re: ${cleanSubject}`;
+  const utf8Subject = `=?utf-8?B?${Buffer.from(replySubject).toString("base64")}?=`;
+
+  // ✅ RFC 2822 requires CRLF (\r\n) line endings — NOT \n
+  const CRLF = "\r\n";
+
   const messageParts = [
     "MIME-Version: 1.0",
     `To: ${to}`,
     `Subject: ${utf8Subject}`,
-    "Content-Type: text/html; charset=utf-8",
-    "Content-Transfer-Encoding: 7bit",
-    "",
-    htmlContent,
   ];
 
-  const gmail = await getGmailClient(userId);
+  if (rfcMessageId) {
+    messageParts.push(`In-Reply-To: ${rfcMessageId}`);
+    messageParts.push(`References: ${references ? references + " " : ""}${rfcMessageId}`);
+  }
 
-  const message = messageParts.join("\n");
+  messageParts.push(
+    "Content-Type: text/html; charset=utf-8",
+    "Content-Transfer-Encoding: quoted-printable",
+    "",       // blank line separates headers from body per RFC 2822
+    htmlContent,
+  );
+
+  // ✅ Join with CRLF, not \n
+  const message = messageParts.join(CRLF);
+
   const encodedMessage = Buffer.from(message)
     .toString("base64")
     .replace(/\+/g, "-")
