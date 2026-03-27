@@ -175,7 +175,6 @@ export async function createGmailDraft(
     const headers = originalMessage.data.payload?.headers || [];
     rfcMessageId = headers.find((h) => h.name?.toLowerCase() === "message-id")?.value || "";
     references = headers.find((h) => h.name?.toLowerCase() === "references")?.value || "";
-    // Use the exact subject from the original message to guarantee a match
     originalSubject = headers.find((h) => h.name?.toLowerCase() === "subject")?.value || subject;
   } catch (err) {
     console.error("Failed to fetch original message headers for threading", err);
@@ -191,12 +190,13 @@ export async function createGmailDraft(
     </div>
   `.trim();
 
-  // Strip all leading "Re:" prefixes (any case/spacing), then add exactly one
+  // Base64-encode the body so it's clean bytes — no CRLF issues in the body section
+  const encodedBody = Buffer.from(htmlContent).toString("base64");
+
   const cleanSubject = originalSubject.replace(/^(re:\s*)*/i, "").trim();
   const replySubject = `Re: ${cleanSubject}`;
   const utf8Subject = `=?utf-8?B?${Buffer.from(replySubject).toString("base64")}?=`;
 
-  // ✅ RFC 2822 requires CRLF (\r\n) line endings — NOT \n
   const CRLF = "\r\n";
 
   const messageParts = [
@@ -212,12 +212,11 @@ export async function createGmailDraft(
 
   messageParts.push(
     "Content-Type: text/html; charset=utf-8",
-    "Content-Transfer-Encoding: quoted-printable",
-    "",       // blank line separates headers from body per RFC 2822
-    htmlContent,
+    "Content-Transfer-Encoding: base64",  // ✅ declare base64
+    "",
+    encodedBody,                           // ✅ actual base64-encoded body
   );
 
-  // ✅ Join with CRLF, not \n
   const message = messageParts.join(CRLF);
 
   const encodedMessage = Buffer.from(message)
