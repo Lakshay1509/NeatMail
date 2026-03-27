@@ -29,6 +29,7 @@ model user_tokens {
   subscriptions              Subscription[]
   tag                        tag[]
   user_tags                  user_tags[]
+  telegram_integration       TelegramIntegration?
 
   @@schema("public")
 }
@@ -179,6 +180,17 @@ model draft_preference {
   enabled     Boolean     @default(true)
   timezone    String?      
   senstivity  String? 
+  user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+
+  @@schema("public")
+}
+
+model TelegramIntegration {
+  id          String      @id @default(uuid())
+  user_id     String      @unique
+  chat_id     String      // user's Telegram chat ID
+  
+  // rules      TelegramRule[] // Add this relation if you define a TelegramRule model
   user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
   @@schema("public")

@@ -391,7 +391,8 @@ export const ModelName = {
   Subscription: 'Subscription',
   PaymentHistory: 'PaymentHistory',
   Refund: 'Refund',
-  draft_preference: 'draft_preference'
+  draft_preference: 'draft_preference',
+  TelegramIntegration: 'TelegramIntegration'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -407,7 +408,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user_tokens" | "tag" | "user_tags" | "email_tracked" | "subscription" | "paymentHistory" | "refund" | "draft_preference"
+    modelProps: "user_tokens" | "tag" | "user_tags" | "email_tracked" | "subscription" | "paymentHistory" | "refund" | "draft_preference" | "telegramIntegration"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1003,6 +1004,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    TelegramIntegration: {
+      payload: Prisma.$TelegramIntegrationPayload<ExtArgs>
+      fields: Prisma.TelegramIntegrationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TelegramIntegrationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TelegramIntegrationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TelegramIntegrationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TelegramIntegrationPayload>
+        }
+        findFirst: {
+          args: Prisma.TelegramIntegrationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TelegramIntegrationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TelegramIntegrationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TelegramIntegrationPayload>
+        }
+        findMany: {
+          args: Prisma.TelegramIntegrationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TelegramIntegrationPayload>[]
+        }
+        create: {
+          args: Prisma.TelegramIntegrationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TelegramIntegrationPayload>
+        }
+        createMany: {
+          args: Prisma.TelegramIntegrationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TelegramIntegrationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TelegramIntegrationPayload>[]
+        }
+        delete: {
+          args: Prisma.TelegramIntegrationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TelegramIntegrationPayload>
+        }
+        update: {
+          args: Prisma.TelegramIntegrationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TelegramIntegrationPayload>
+        }
+        deleteMany: {
+          args: Prisma.TelegramIntegrationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TelegramIntegrationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TelegramIntegrationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TelegramIntegrationPayload>[]
+        }
+        upsert: {
+          args: Prisma.TelegramIntegrationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TelegramIntegrationPayload>
+        }
+        aggregate: {
+          args: Prisma.TelegramIntegrationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTelegramIntegration>
+        }
+        groupBy: {
+          args: Prisma.TelegramIntegrationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TelegramIntegrationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TelegramIntegrationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TelegramIntegrationCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1180,6 +1255,15 @@ export const Draft_preferenceScalarFieldEnum = {
 } as const
 
 export type Draft_preferenceScalarFieldEnum = (typeof Draft_preferenceScalarFieldEnum)[keyof typeof Draft_preferenceScalarFieldEnum]
+
+
+export const TelegramIntegrationScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  chat_id: 'chat_id'
+} as const
+
+export type TelegramIntegrationScalarFieldEnum = (typeof TelegramIntegrationScalarFieldEnum)[keyof typeof TelegramIntegrationScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1408,6 +1492,7 @@ export type GlobalOmitConfig = {
   paymentHistory?: Prisma.PaymentHistoryOmit
   refund?: Prisma.RefundOmit
   draft_preference?: Prisma.draft_preferenceOmit
+  telegramIntegration?: Prisma.TelegramIntegrationOmit
 }
 
 /* Types for Logging */

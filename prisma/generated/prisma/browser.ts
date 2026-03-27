@@ -57,3 +57,8 @@ export type Refund = Prisma.RefundModel
  * 
  */
 export type draft_preference = Prisma.draft_preferenceModel
+/**
+ * Model TelegramIntegration
+ * 
+ */
+export type TelegramIntegration = Prisma.TelegramIntegrationModel

@@ -58,7 +58,8 @@ export const ModelName = {
   Subscription: 'Subscription',
   PaymentHistory: 'PaymentHistory',
   Refund: 'Refund',
-  draft_preference: 'draft_preference'
+  draft_preference: 'draft_preference',
+  TelegramIntegration: 'TelegramIntegration'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -215,6 +216,15 @@ export const Draft_preferenceScalarFieldEnum = {
 } as const
 
 export type Draft_preferenceScalarFieldEnum = (typeof Draft_preferenceScalarFieldEnum)[keyof typeof Draft_preferenceScalarFieldEnum]
+
+
+export const TelegramIntegrationScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  chat_id: 'chat_id'
+} as const
+
+export type TelegramIntegrationScalarFieldEnum = (typeof TelegramIntegrationScalarFieldEnum)[keyof typeof TelegramIntegrationScalarFieldEnum]
 
 
 export const SortOrder = {
