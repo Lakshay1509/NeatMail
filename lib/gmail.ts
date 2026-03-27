@@ -164,7 +164,17 @@ export async function createGmailDraft(
   let rfcMessageId = "";
   let references = "";
   let originalSubject = subject;
+  let fromEmail = "";
 
+  // 1. Get sender's email — required for the From header
+  try {
+    const profile = await gmail.users.getProfile({ userId: "me" });
+    fromEmail = profile.data.emailAddress ?? "";
+  } catch (err) {
+    console.error("Failed to fetch Gmail profile", err);
+  }
+
+  // 2. Fetch threading headers + original subject from the message being replied to
   try {
     const originalMessage = await gmail.users.messages.get({
       userId: "me",
@@ -172,17 +182,27 @@ export async function createGmailDraft(
       format: "metadata",
       metadataHeaders: ["Message-ID", "References", "Subject"],
     });
-    const headers = originalMessage.data.payload?.headers || [];
-    rfcMessageId = headers.find((h) => h.name?.toLowerCase() === "message-id")?.value || "";
-    references = headers.find((h) => h.name?.toLowerCase() === "references")?.value || "";
-    originalSubject = headers.find((h) => h.name?.toLowerCase() === "subject")?.value || subject;
+    const headers = originalMessage.data.payload?.headers ?? [];
+    rfcMessageId = headers.find((h) => h.name?.toLowerCase() === "message-id")?.value ?? "";
+    references   = headers.find((h) => h.name?.toLowerCase() === "references")?.value ?? "";
+    originalSubject = headers.find((h) => h.name?.toLowerCase() === "subject")?.value ?? subject;
   } catch (err) {
-    console.error("Failed to fetch original message headers for threading", err);
+    console.error("Failed to fetch original message headers", err);
   }
 
-  const formattedBody = draftBody.replace(/\n/g, "<br>");
-  const formattedSignature = signature ? signature.replace(/\n/g, "<br>") : "";
+  // 3. Ensure Message-ID is wrapped in angle brackets (Gmail API sometimes strips them)
+  if (rfcMessageId && !rfcMessageId.startsWith("<")) {
+    rfcMessageId = `<${rfcMessageId}>`;
+  }
 
+  // 4. Build reply subject — strip any existing Re: chain, add exactly one
+  const cleanSubject = originalSubject.replace(/^(re:\s*)*/i, "").trim();
+  const replySubject = `Re: ${cleanSubject}`;
+  const utf8Subject  = `=?utf-8?B?${Buffer.from(replySubject).toString("base64")}?=`;
+
+  // 5. Build HTML body
+  const formattedBody      = draftBody.replace(/\n/g, "<br>");
+  const formattedSignature = signature ? signature.replace(/\n/g, "<br>") : "";
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; font-size: ${fontSize || 14}px; color: ${fontColor || "#000000"};">
       ${formattedBody}
@@ -190,17 +210,14 @@ export async function createGmailDraft(
     </div>
   `.trim();
 
-  // Base64-encode the body so it's clean bytes — no CRLF issues in the body section
+  // 6. Base64-encode the HTML body for clean MIME transport
   const encodedBody = Buffer.from(htmlContent).toString("base64");
 
-  const cleanSubject = originalSubject.replace(/^(re:\s*)*/i, "").trim();
-  const replySubject = `Re: ${cleanSubject}`;
-  const utf8Subject = `=?utf-8?B?${Buffer.from(replySubject).toString("base64")}?=`;
-
+  // 7. Build MIME headers — RFC 2822 requires CRLF line endings
   const CRLF = "\r\n";
-
-  const messageParts = [
+  const messageParts: string[] = [
     "MIME-Version: 1.0",
+    `From: ${fromEmail}`,      // ✅ Was missing — Gmail requires this
     `To: ${to}`,
     `Subject: ${utf8Subject}`,
   ];
@@ -212,19 +229,20 @@ export async function createGmailDraft(
 
   messageParts.push(
     "Content-Type: text/html; charset=utf-8",
-    "Content-Transfer-Encoding: base64",  // ✅ declare base64
-    "",
-    encodedBody,                           // ✅ actual base64-encoded body
+    "Content-Transfer-Encoding: base64",
+    "",           // blank line separating headers from body per RFC 2822
+    encodedBody,
   );
 
-  const message = messageParts.join(CRLF);
-
-  const encodedMessage = Buffer.from(message)
+  // 8. Join with CRLF (not \n) and URL-safe base64 encode the whole message
+  const raw = messageParts.join(CRLF);
+  const encodedMessage = Buffer.from(raw)
     .toString("base64")
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");
 
+  // 9. Create the draft, passing threadId so Gmail knows which thread to attach it to
   const draft = await gmail.users.drafts.create({
     userId: "me",
     requestBody: {
