@@ -134,6 +134,30 @@ export async function getTagsUser(id: string) {
   }
 }
 
+export async function getModelTagsUser(id: string) {
+  try {
+    const defaultTags = await db.tag.findMany({
+      where: { user_id: null },
+      select: { name: true, description: true }
+    });
+
+    const userTags = await db.user_tags.findMany({
+      where: { user_id: id },
+      include: { tag: { select: { name: true, description: true } } }
+    });
+
+    const combined = [...defaultTags, ...userTags.map(ut => ut.tag)];
+    
+    // remove duplicates by name
+    const uniqueTags = Array.from(new Map(combined.map(item => [item.name, item])).values());
+    
+    return uniqueTags;
+  } catch(error) {
+    console.error("Error getting possible model tags", error);
+    throw error;
+  }
+}
+
 export async function addMailtoDB(
   user_id: string,
   tag_id: string,

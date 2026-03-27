@@ -13,6 +13,7 @@ import {
   addMailtoDB,
   getLastHistoryId,
   getTagsUser,
+  getModelTagsUser,
   getUserByEmail,
   getUserSubscribed,
   labelColor,
@@ -233,6 +234,7 @@ const app = new Hono().post("/", async (ctx) => {
       // }
 
       const tagsOfUser = await getTagsUser(clerkUserId);
+      const modelTags = await getModelTagsUser(clerkUserId);
       const draftsenstivity = (await useGetUserDraftPreference(clerkUserId))
         .senstivity;
 
@@ -262,10 +264,17 @@ const app = new Hono().post("/", async (ctx) => {
           from: emailData.from,
           subject: emailData.subject,
           user_id: emailData.userId,
-          tags: tagsOfUser.map((t: any) => ({ name: t.tag.name, description: t.tag.description })),
+          tags: modelTags.map((t: any) => ({ name: t.name, description: t.description })),
           sensitivity: draftsenstivity || "if actionable",
         });
         labelName = classification.category;
+        
+        // Check if category is enabled by user
+        const isTagEnabled = tagsOfUser.some((t: any) => t.tag.name === labelName);
+        if (!isTagEnabled) {
+          labelName = "";
+        }
+        
         responseRequired = classification.response_required === true;
       }
 
