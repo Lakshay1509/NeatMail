@@ -91,6 +91,7 @@ Requirements:
 - Acknowledge the sender's message
 - Address the main point/question
 - Use professional tone
+- Keep the full reply under 120 words
 - Do NOT include: subject line, greetings like "Dear", signatures
 - Do NOT use markdown formatting (like **bold** or *italics*), output plain text only
 - Context : ${contextBlock}${relationshipInstruction}${topicInstruction}${behaviouralInstruction}
