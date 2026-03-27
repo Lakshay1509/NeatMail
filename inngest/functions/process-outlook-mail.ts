@@ -128,6 +128,10 @@ export const processOutlookMailFn = inngest.createFunction(
 
     let movedMessageId: string = messageId;
 
+    if(labelName.trim().length===0){
+       addMailtoDB(subscription.clerk_user_id, null, movedMessageId,from);
+    }
+
     if (labelName.trim().length > 0) {
       const tagProperties = await labelColor(
         labelName,

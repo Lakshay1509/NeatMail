@@ -283,6 +283,7 @@ const app = new Hono().post("/", async (ctx) => {
         responseRequired;
 
       if (labelName === "" && !shouldDraft) {
+        await addMailtoDB(clerkUserId, null, String(messageId),emailData.from);
         console.log(`No label assigned for message: ${messageId}`);
         continue;
       }

@@ -386,6 +386,11 @@ export type TagScalarRelationFilter = {
   isNot?: Prisma.tagWhereInput
 }
 
+export type TagNullableScalarRelationFilter = {
+  is?: Prisma.tagWhereInput | null
+  isNot?: Prisma.tagWhereInput | null
+}
+
 export type tagCreateNestedManyWithoutUser_tokensInput = {
   create?: Prisma.XOR<Prisma.tagCreateWithoutUser_tokensInput, Prisma.tagUncheckedCreateWithoutUser_tokensInput> | Prisma.tagCreateWithoutUser_tokensInput[] | Prisma.tagUncheckedCreateWithoutUser_tokensInput[]
   connectOrCreate?: Prisma.tagCreateOrConnectWithoutUser_tokensInput | Prisma.tagCreateOrConnectWithoutUser_tokensInput[]
@@ -448,10 +453,12 @@ export type tagCreateNestedOneWithoutEmail_trackedInput = {
   connect?: Prisma.tagWhereUniqueInput
 }
 
-export type tagUpdateOneRequiredWithoutEmail_trackedNestedInput = {
+export type tagUpdateOneWithoutEmail_trackedNestedInput = {
   create?: Prisma.XOR<Prisma.tagCreateWithoutEmail_trackedInput, Prisma.tagUncheckedCreateWithoutEmail_trackedInput>
   connectOrCreate?: Prisma.tagCreateOrConnectWithoutEmail_trackedInput
   upsert?: Prisma.tagUpsertWithoutEmail_trackedInput
+  disconnect?: Prisma.tagWhereInput | boolean
+  delete?: Prisma.tagWhereInput | boolean
   connect?: Prisma.tagWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.tagUpdateToOneWithWhereWithoutEmail_trackedInput, Prisma.tagUpdateWithoutEmail_trackedInput>, Prisma.tagUncheckedUpdateWithoutEmail_trackedInput>
 }

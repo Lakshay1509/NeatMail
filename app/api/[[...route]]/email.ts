@@ -176,6 +176,9 @@ const app = new Hono()
       by: ["tag_id"],
       where: {
         user_id: userId,
+        tag_id: {
+          not: null,
+        },
         created_at: {
           gte: startOfWeek,
           lte: now,
@@ -192,7 +195,9 @@ const app = new Hono()
       take: 4,
     });
 
-    const tagIds = topLabels.map((t) => t.tag_id);
+    const tagIds = topLabels
+      .map((t) => t.tag_id)
+      .filter((id): id is string => id !== null);
 
     const tags = await db.tag.findMany({
       where: {
@@ -207,10 +212,11 @@ const app = new Hono()
 
     const tagMap = new Map(
       tags.map((tag) => [tag.id, { name: tag.name, color: tag.color }]),
+
     );
 
     const labels = topLabels.map((item) => {
-      const meta = tagMap.get(item.tag_id);
+      const meta = tagMap.get(item.tag_id!);
 
       const count = item._count.tag_id;
       const percentage =
@@ -253,21 +259,23 @@ const app = new Hono()
       readData.map((r) => [r.domain, r._count.message_id]),
     );
 
-    const stats = await Promise.all(total.map(async (row) => {
-      const totalCount = row._count.message_id;
-      const readCount = readMap.get(row.domain) ?? 0;
-      const unreadCount = totalCount - readCount;
+    const stats = await Promise.all(
+      total.map(async (row) => {
+        const totalCount = row._count.message_id;
+        const readCount = readMap.get(row.domain) ?? 0;
+        const unreadCount = totalCount - readCount;
 
-      return {
-        domain: row.domain ? await decryptDomain(row.domain) : null,
-        rawDomain: row.domain,
-        total: totalCount,
-        read_count: readCount,
-        unread_count: unreadCount,
-        unread_percentage:
-          totalCount > 0 ? Math.round((unreadCount / totalCount) * 100) : 0,
-      };
-    }));
+        return {
+          domain: row.domain ? await decryptDomain(row.domain) : null,
+          rawDomain: row.domain,
+          total: totalCount,
+          read_count: readCount,
+          unread_count: unreadCount,
+          unread_percentage:
+            totalCount > 0 ? Math.round((unreadCount / totalCount) * 100) : 0,
+        };
+      }),
+    );
 
     return ctx.json(stats);
   })
@@ -290,13 +298,13 @@ const app = new Hono()
       const values = ctx.req.valid("json");
 
       const messageId = await db.email_tracked.findFirst({
-        where: { domain: values.domain ,user_id:userId },
+        where: { domain: values.domain, user_id: userId },
         select: {
           message_id: true,
         },
       });
 
-       const is_gmail = await db.user_tokens.findUnique({
+      const is_gmail = await db.user_tokens.findUnique({
         where: { clerk_user_id: userId },
         select: { is_gmail: true },
       });

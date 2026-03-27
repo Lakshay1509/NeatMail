@@ -160,7 +160,7 @@ export async function getModelTagsUser(id: string) {
 
 export async function addMailtoDB(
   user_id: string,
-  tag_id: string,
+  tag_id: string | null,
   message_id: string,
   domain: string | null,
 ) {
