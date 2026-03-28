@@ -117,14 +117,13 @@ export const processDraftGmail = inngest.createFunction(
       },
     );
 
-    await step.run("telegram-run", async () => {
-      await sendDraftNotification(userId, emailData.from, emailData.subject,draft,quickOptions);
-    });
+    let draft_id = "";
+    let drafted = false;
 
     if (draft.trim() !== "NO_REPLY_NEEDED" && draft.trim().length > 0) {
       if (is_gmail) {
-        await step.run("create-gmail-draft", async () => {
-          await createGmailDraft(
+        const createdGmailDraft = await step.run("create-gmail-draft", async () => {
+          return await createGmailDraft(
             userId,
             emailData.threadId,
             messageId,
@@ -136,10 +135,11 @@ export const processDraftGmail = inngest.createFunction(
             signature,
           );
         });
-        return { status: "success", drafted: true };
+        draft_id = createdGmailDraft?.id ?? "";
+        drafted = true;
       } else {
-        await step.run("create-outlook-draft", async () => {
-          await createOutlookDraft(
+        const createdOutlookDraft = await step.run("create-outlook-draft", async () => {
+          return await createOutlookDraft(
             userId,
             messageId,
             emailData.subject,
@@ -150,9 +150,15 @@ export const processDraftGmail = inngest.createFunction(
             signature,
           );
         });
+        draft_id = createdOutlookDraft?.id ?? "";
+        drafted = true;
       }
     }
 
-    return { status: "success", drafted: false };
+    await step.run("telegram-run", async () => {
+      await sendDraftNotification(userId, emailData.from, emailData.subject,draft,quickOptions,draft_id);
+    });
+
+    return { status: "success", drafted, draft_id };
   },
 );

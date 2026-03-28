@@ -10,18 +10,18 @@ datasource db {
 }
 
 model user_tokens {
-  clerk_user_id              String            @id @unique
-  email                      String            @unique
-  created_at                 DateTime          @default(now()) @db.Timestamp(6)
-  updated_at                 DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  clerk_user_id              String               @id @unique
+  email                      String               @unique
+  created_at                 DateTime             @default(now()) @db.Timestamp(6)
+  updated_at                 DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
   last_history_id            String?
-  watch_activated            Boolean           @default(false)
+  watch_activated            Boolean              @default(false)
   delete_at                  DateTime?
-  deleted_flag               Boolean           @default(false)
-  use_external_ai_processing Boolean           @default(true)
-  is_gmail                   Boolean           @default(true)
+  deleted_flag               Boolean              @default(false)
+  use_external_ai_processing Boolean              @default(true)
+  is_gmail                   Boolean              @default(true)
   outlook_id                 String?
-  is_folder                  Boolean           @default(false)
+  is_folder                  Boolean              @default(false)
   draft_preference           draft_preference?
   email_tracked              email_tracked[]
   payment_history            PaymentHistory[]
@@ -30,6 +30,7 @@ model user_tokens {
   tag                        tag[]
   user_tags                  user_tags[]
   telegram_integration       TelegramIntegration?
+  pending_drafts             telegramPendingDraft[]
 
   @@schema("public")
 }
@@ -68,7 +69,7 @@ model email_tracked {
   user_id     String
   tag_id      String?     @db.Uuid
   message_id  String      @unique
-  domain      String?    
+  domain      String?
   is_read     Boolean     @default(false) @map("isRead")
   created_at  DateTime    @default(now()) @db.Timestamptz(6)
   tag         tag?        @relation(fields: [tag_id], references: [id], onDelete: Cascade)
@@ -178,20 +179,33 @@ model draft_preference {
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
   enabled     Boolean     @default(true)
-  timezone    String?      
-  senstivity  String? 
+  timezone    String?
+  senstivity  String?
   user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
   @@schema("public")
 }
 
 model TelegramIntegration {
-  id          String      @id @default(uuid())
-  user_id     String      @unique
-  chat_id     String      // user's Telegram chat ID
-  
+  id      String @id @default(uuid())
+  user_id String @unique
+  chat_id String @unique
+
   // rules      TelegramRule[] // Add this relation if you define a TelegramRule model
   user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+
+  @@schema("public")
+}
+
+model telegramPendingDraft {
+  id              String      @id @default(uuid())
+  user_id         String
+  telegram_msg_id Int
+  draft_id        String
+  quick_options   String[] 
+  awaiting_custom Boolean     @default(false)
+  created_at      DateTime    @default(now()) @db.Timestamptz(6)
+  user_tokens     user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
   @@schema("public")
 }

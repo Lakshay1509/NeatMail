@@ -17,7 +17,7 @@ export async function sendTelegramMessage(chatId: string, text: string) {
   }
 }
 
-function escapeHtml(text: string): string {
+export function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -48,7 +48,8 @@ export async function sendDraftNotification(
   senderEmail: string,
   emailSubject: string,
   draftReply: string,      // the AI-generated draft content
-  quickOptions: string[]   // e.g. ["Yes, 3am works!", "No, let's reschedule", "Not available"]
+  quickOptions: string[],   // e.g. ["Yes, 3am works!", "No, let's reschedule", "Not available"]
+  draft_id:string
 ) {
 
   const data = await db.telegramIntegration.findUnique({
@@ -62,15 +63,15 @@ export async function sendDraftNotification(
     `✏️ <b>Draft reply:</b>\n<i>${escapeHtml(draftReply)}</i>`;
 
   // Build inline keyboard: quick options + custom
-  const optionButtons = quickOptions.map((opt) => ([{
+  const optionButtons = quickOptions.map((opt,i) => ([{
     text: opt,
-    callback_data: opt.substring(0, 64),
+    callback_data: `send:${draft_id}:${i}`,
   }]));
 
   const keyboard = [
     ...optionButtons,
-    // [{ text: "✏️ Send custom reply", callback_data: `custom:${gmailDraftId}` }],
-    // [{ text: "🗑️ Discard draft", callback_data: `discard:${gmailDraftId}` }],
+    [{ text: "✏️ Send custom reply", callback_data: `custom:${draft_id}` }],
+    [{ text: "🗑️ Discard draft", callback_data: `discard:${draft_id}` }],
   ];
 
   const res = await fetch(
@@ -92,5 +93,15 @@ export async function sendDraftNotification(
     console.error("Telegram send error:", json);
     return;
   }
+
+  await db.telegramPendingDraft.create({
+    data:{
+      user_id:userId,
+      telegram_msg_id:json.result.message_id,
+      draft_id:draft_id,
+      quick_options: quickOptions,
+    }
+
+  })
 
 }

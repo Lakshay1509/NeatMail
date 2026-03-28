@@ -392,7 +392,8 @@ export const ModelName = {
   PaymentHistory: 'PaymentHistory',
   Refund: 'Refund',
   draft_preference: 'draft_preference',
-  TelegramIntegration: 'TelegramIntegration'
+  TelegramIntegration: 'TelegramIntegration',
+  telegramPendingDraft: 'telegramPendingDraft'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -408,7 +409,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user_tokens" | "tag" | "user_tags" | "email_tracked" | "subscription" | "paymentHistory" | "refund" | "draft_preference" | "telegramIntegration"
+    modelProps: "user_tokens" | "tag" | "user_tags" | "email_tracked" | "subscription" | "paymentHistory" | "refund" | "draft_preference" | "telegramIntegration" | "telegramPendingDraft"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1078,6 +1079,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    telegramPendingDraft: {
+      payload: Prisma.$telegramPendingDraftPayload<ExtArgs>
+      fields: Prisma.telegramPendingDraftFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.telegramPendingDraftFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$telegramPendingDraftPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.telegramPendingDraftFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$telegramPendingDraftPayload>
+        }
+        findFirst: {
+          args: Prisma.telegramPendingDraftFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$telegramPendingDraftPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.telegramPendingDraftFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$telegramPendingDraftPayload>
+        }
+        findMany: {
+          args: Prisma.telegramPendingDraftFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$telegramPendingDraftPayload>[]
+        }
+        create: {
+          args: Prisma.telegramPendingDraftCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$telegramPendingDraftPayload>
+        }
+        createMany: {
+          args: Prisma.telegramPendingDraftCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.telegramPendingDraftCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$telegramPendingDraftPayload>[]
+        }
+        delete: {
+          args: Prisma.telegramPendingDraftDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$telegramPendingDraftPayload>
+        }
+        update: {
+          args: Prisma.telegramPendingDraftUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$telegramPendingDraftPayload>
+        }
+        deleteMany: {
+          args: Prisma.telegramPendingDraftDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.telegramPendingDraftUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.telegramPendingDraftUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$telegramPendingDraftPayload>[]
+        }
+        upsert: {
+          args: Prisma.telegramPendingDraftUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$telegramPendingDraftPayload>
+        }
+        aggregate: {
+          args: Prisma.TelegramPendingDraftAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTelegramPendingDraft>
+        }
+        groupBy: {
+          args: Prisma.telegramPendingDraftGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TelegramPendingDraftGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.telegramPendingDraftCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TelegramPendingDraftCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1264,6 +1339,19 @@ export const TelegramIntegrationScalarFieldEnum = {
 } as const
 
 export type TelegramIntegrationScalarFieldEnum = (typeof TelegramIntegrationScalarFieldEnum)[keyof typeof TelegramIntegrationScalarFieldEnum]
+
+
+export const TelegramPendingDraftScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  telegram_msg_id: 'telegram_msg_id',
+  draft_id: 'draft_id',
+  quick_options: 'quick_options',
+  awaiting_custom: 'awaiting_custom',
+  created_at: 'created_at'
+} as const
+
+export type TelegramPendingDraftScalarFieldEnum = (typeof TelegramPendingDraftScalarFieldEnum)[keyof typeof TelegramPendingDraftScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1493,6 +1581,7 @@ export type GlobalOmitConfig = {
   refund?: Prisma.RefundOmit
   draft_preference?: Prisma.draft_preferenceOmit
   telegramIntegration?: Prisma.TelegramIntegrationOmit
+  telegramPendingDraft?: Prisma.telegramPendingDraftOmit
 }
 
 /* Types for Logging */

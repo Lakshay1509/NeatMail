@@ -179,12 +179,12 @@ export type TelegramIntegrationOrderByWithRelationInput = {
 export type TelegramIntegrationWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   user_id?: string
+  chat_id?: string
   AND?: Prisma.TelegramIntegrationWhereInput | Prisma.TelegramIntegrationWhereInput[]
   OR?: Prisma.TelegramIntegrationWhereInput[]
   NOT?: Prisma.TelegramIntegrationWhereInput | Prisma.TelegramIntegrationWhereInput[]
-  chat_id?: Prisma.StringFilter<"TelegramIntegration"> | string
   user_tokens?: Prisma.XOR<Prisma.User_tokensScalarRelationFilter, Prisma.user_tokensWhereInput>
-}, "id" | "user_id">
+}, "id" | "user_id" | "chat_id">
 
 export type TelegramIntegrationOrderByWithAggregationInput = {
   id?: Prisma.SortOrder

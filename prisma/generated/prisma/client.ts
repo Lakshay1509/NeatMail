@@ -84,3 +84,8 @@ export type draft_preference = Prisma.draft_preferenceModel
  * 
  */
 export type TelegramIntegration = Prisma.TelegramIntegrationModel
+/**
+ * Model telegramPendingDraft
+ * 
+ */
+export type telegramPendingDraft = Prisma.telegramPendingDraftModel

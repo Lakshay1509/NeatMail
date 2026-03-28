@@ -59,7 +59,8 @@ export const ModelName = {
   PaymentHistory: 'PaymentHistory',
   Refund: 'Refund',
   draft_preference: 'draft_preference',
-  TelegramIntegration: 'TelegramIntegration'
+  TelegramIntegration: 'TelegramIntegration',
+  telegramPendingDraft: 'telegramPendingDraft'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -225,6 +226,19 @@ export const TelegramIntegrationScalarFieldEnum = {
 } as const
 
 export type TelegramIntegrationScalarFieldEnum = (typeof TelegramIntegrationScalarFieldEnum)[keyof typeof TelegramIntegrationScalarFieldEnum]
+
+
+export const TelegramPendingDraftScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  telegram_msg_id: 'telegram_msg_id',
+  draft_id: 'draft_id',
+  quick_options: 'quick_options',
+  awaiting_custom: 'awaiting_custom',
+  created_at: 'created_at'
+} as const
+
+export type TelegramPendingDraftScalarFieldEnum = (typeof TelegramPendingDraftScalarFieldEnum)[keyof typeof TelegramPendingDraftScalarFieldEnum]
 
 
 export const SortOrder = {
