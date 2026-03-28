@@ -64,6 +64,7 @@ export async function sendDraftNotification(
   // Build inline keyboard: quick options + custom
   const optionButtons = quickOptions.map((opt) => ([{
     text: opt,
+    callback_data: opt.substring(0, 64),
   }]));
 
   const keyboard = [
