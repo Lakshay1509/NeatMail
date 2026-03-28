@@ -47,7 +47,7 @@ const items = [
 
   {
     title: 'Integrations',
-    url: "/integration",
+    url: "/integrations",
     icon: Workflow
 
   }
