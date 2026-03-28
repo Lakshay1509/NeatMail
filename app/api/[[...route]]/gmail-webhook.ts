@@ -29,6 +29,7 @@ import { buildContextAndDraft } from "@/context-engine/pipeline";
 import { IncomingEmail } from "@/context-engine/types";
 import { getModelResponse } from "@/lib/model";
 import { handleLabelCorrections } from "@/lib/gmail-correction";
+import { checkAndForwardToTelegram } from "@/lib/telegram";
 
 export function parseFromHeader(fromHeader: string): {
   senderName: string;
@@ -332,6 +333,10 @@ const app = new Hono().post("/", async (ctx) => {
             continue;
           }
           throw err;
+        }
+
+        if(labelName==='Action Needed' || labelName==='Pending Response'){
+          await checkAndForwardToTelegram(clerkUserId,emailData.from,emailData.subject,emailData.bodySnippet)
         }
 
         await addMailtoDB(clerkUserId, colourofLabel.id, String(messageId),emailData.from);
