@@ -42,7 +42,11 @@ export async function checkAndForwardToTelegram(
     (tagName === "Action Needed" || tagName === "Pending Response") &&
     data.forward_important_mails
   ) {
-    const message = `📧 <b>New email from ${escapeHtml(senderEmail)}</b>\n\n<b>${escapeHtml(emailSubject)}</b>\n\n${escapeHtml(emailSnippet)}`;
+    const message = `📧 <b>New Email</b>\n` +
+      `<b>From:</b> ${escapeHtml(senderEmail)}\n` +
+      `<b>Subject:</b> ${escapeHtml(emailSubject)}\n` +
+      `<b>Category:</b> <i>${escapeHtml(tagName)}</i>\n\n` +
+      `<b>Preview:</b>\n${escapeHtml(emailSnippet)}`;
 
     await sendTelegramMessage(data.chat_id, message);
   } else {
@@ -57,7 +61,11 @@ export async function checkAndForwardToTelegram(
       return;
     }
 
-    const message = `📧 <b>New email from ${escapeHtml(senderEmail)}</b>\n\n<b>${escapeHtml(emailSubject)}</b>\n\n${escapeHtml(emailSnippet)}`;
+    const message = `📧 <b>New Email</b>\n` +
+      `<b>From:</b> ${escapeHtml(senderEmail)}\n` +
+      `<b>Subject:</b> ${escapeHtml(emailSubject)}\n` +
+      `<b>Category:</b> <i>${escapeHtml(tagName)}</i>\n\n` +
+      `<b>Preview:</b>\n${escapeHtml(emailSnippet)}`;
 
     await sendTelegramMessage(data.chat_id, message);
   }
