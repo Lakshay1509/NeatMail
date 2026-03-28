@@ -2,18 +2,26 @@ import { db } from "./prisma";
 
 // lib/telegram.ts
 export async function sendTelegramMessage(chatId: string, text: string) {
-  await fetch(
+  const res = await fetch(
     `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: "HTML",
-      }),
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
     }
   );
+
+  const json = await res.json();
+  if (!json.ok) {
+    console.error("Telegram API error:", JSON.stringify(json));
+  }
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 export async function checkAndForwardToTelegram(
@@ -22,23 +30,13 @@ export async function checkAndForwardToTelegram(
   emailSubject: string,
   emailSnippet: string
 ) {
-
-  console.log("telegram fn called")
   const data = await db.telegramIntegration.findUnique({
-    where: { user_id: userId }
+    where: { user_id: userId },
   });
 
-  console.log("data",data)
+  if (!data || !data.chat_id) return;
 
-  // Skip if telegram not enabled
-  if (!data || !data.chat_id) {
-    return;
-  }
+  const message = `📧 <b>New email from ${escapeHtml(senderEmail)}</b>\n\n<b>${escapeHtml(emailSubject)}</b>\n\n${escapeHtml(emailSnippet)}`;
 
-  const message = `📧 <b>New email from ${senderEmail}</b>\n\n<b>${emailSubject}</b>\n\n${emailSnippet}`;
-
-  console.log(message)
-  console.log("sending message")
-  
   await sendTelegramMessage(data.chat_id, message);
 }
