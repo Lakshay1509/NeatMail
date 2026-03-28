@@ -6,6 +6,7 @@ import { IncomingEmail } from "@/context-engine/types";
 import { clerkClient } from "@clerk/nextjs/server";
 import { getDraftContext } from "@/lib/draft";
 import { createOutlookDraft, getOutlookMessageBody } from "@/lib/outlook";
+import { sendDraftNotification } from "@/lib/telegram";
 
 export const processDraftGmail = inngest.createFunction(
   { id: "process-draft-gmail" },
@@ -18,7 +19,7 @@ export const processDraftGmail = inngest.createFunction(
       senderEmail,
       messageId,
       tokenData,
-      is_gmail
+      is_gmail,
     } = event.data;
 
     const draftPreference = await step.run("get-draft-preference", async () => {
@@ -37,42 +38,43 @@ export const processDraftGmail = inngest.createFunction(
       return user.fullName;
     });
 
-    let fullEmailBody=""
+    let fullEmailBody = "";
 
-    if(is_gmail){
-
-    fullEmailBody = await step.run("get-full-email-body", async () => {
-      try {
-        return await getGmailMessageBody(userId, messageId);
-      } catch (error) {
-        console.error("Failed to fetch full Gmail body, using snippet fallback", {
-          userId,
-          messageId,
-          error,
-        });
-        return emailData.bodySnippet;
-      }
-    });
-    }
-
-    else{
+    if (is_gmail) {
       fullEmailBody = await step.run("get-full-email-body", async () => {
-      try {
-        return await getOutlookMessageBody(userId, messageId);
-      } catch (error) {
-        console.error("Failed to fetch full Outlook body, using snippet fallback", {
-          userId,
-          messageId,
-          error,
-        });
-        return emailData.bodySnippet;
-      }
-    });
-
+        try {
+          return await getGmailMessageBody(userId, messageId);
+        } catch (error) {
+          console.error(
+            "Failed to fetch full Gmail body, using snippet fallback",
+            {
+              userId,
+              messageId,
+              error,
+            },
+          );
+          return emailData.bodySnippet;
+        }
+      });
+    } else {
+      fullEmailBody = await step.run("get-full-email-body", async () => {
+        try {
+          return await getOutlookMessageBody(userId, messageId);
+        } catch (error) {
+          console.error(
+            "Failed to fetch full Outlook body, using snippet fallback",
+            {
+              userId,
+              messageId,
+              error,
+            },
+          );
+          return emailData.bodySnippet;
+        }
+      });
     }
 
     const incomingEmail: IncomingEmail = {
-  
       userId: userId,
       subject: emailData.subject,
       body: fullEmailBody,
@@ -82,74 +84,75 @@ export const processDraftGmail = inngest.createFunction(
     };
 
     const response = await step.run("model-called", async () => {
-          const modelResult = await getDraftContext({
-            user_id: userId,
-            subject: emailData.subject,
-            sender_email:senderEmail,
-            body: fullEmailBody,
-            token:tokenData,
-            timezone:draftPreference.timezone ?? 'UTC',
-            is_gmail:is_gmail,
-          });
-          return modelResult
-        });
-
-    
-
-    const draftBody = await step.run("build-context-and-draft", async () => {
-      const { draft } = await buildContextAndDraft(
-        incomingEmail,
-        is_gmail,
-        draftPreference.timezone ?? 'UTC', 
-        draftPrompt,
-        clerkUserFullName,
-        response.relationship_context.description,
-        response.topic_context.description,
-        response.behavioural_context.description,
-        response.intent,
-        response.keywords,
-        response.mentionedDates
-
-        
-      );
-      return draft;
+      const modelResult = await getDraftContext({
+        user_id: userId,
+        subject: emailData.subject,
+        sender_email: senderEmail,
+        body: fullEmailBody,
+        token: tokenData,
+        timezone: draftPreference.timezone ?? "UTC",
+        is_gmail: is_gmail,
+      });
+      return modelResult;
     });
 
-    if (draftBody.trim() !== "NO_REPLY_NEEDED" && draftBody.trim().length > 0) {
-      if(is_gmail){
-      await step.run("create-gmail-draft", async () => {
-        await createGmailDraft(
-          userId,
-          emailData.threadId,
-          messageId,
-          emailData.subject,
-          emailData.from,
-          draftBody,
-          fontColor,
-          fontSize,
-          signature
+    const {draft,quickOptions} = await step.run(
+      "build-context-and-draft",
+      async () => {
+        const { draft, quickOptions } = await buildContextAndDraft(
+          incomingEmail,
+          is_gmail,
+          draftPreference.timezone ?? "UTC",
+          draftPrompt,
+          clerkUserFullName,
+          response.relationship_context.description,
+          response.topic_context.description,
+          response.behavioural_context.description,
+          response.intent,
+          response.keywords,
+          response.mentionedDates,
         );
-      });
-      return { status: "success", drafted: true };
-    }
-    else{
-      await step.run("create-outlook-draft",async()=>{
-        await createOutlookDraft(
 
-          userId,
-          messageId,
-          emailData.subject,
-          emailData.from,
-          draftBody,
-          fontColor,
-          fontSize,
-          signature
+        return { draft, quickOptions };
+      },
+    );
 
-        )
-      })
-    }
+    await step.run("telegram-run", async () => {
+      await sendDraftNotification(userId, emailData.from, emailData.subject,draft,quickOptions);
+    });
+
+    if (draft.trim() !== "NO_REPLY_NEEDED" && draft.trim().length > 0) {
+      if (is_gmail) {
+        await step.run("create-gmail-draft", async () => {
+          await createGmailDraft(
+            userId,
+            emailData.threadId,
+            messageId,
+            emailData.subject,
+            emailData.from,
+            draft,
+            fontColor,
+            fontSize,
+            signature,
+          );
+        });
+        return { status: "success", drafted: true };
+      } else {
+        await step.run("create-outlook-draft", async () => {
+          await createOutlookDraft(
+            userId,
+            messageId,
+            emailData.subject,
+            emailData.from,
+            draft,
+            fontColor,
+            fontSize,
+            signature,
+          );
+        });
+      }
     }
 
     return { status: "success", drafted: false };
-  }
+  },
 );

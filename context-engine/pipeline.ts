@@ -39,7 +39,7 @@ export async function buildContextAndDraft(
   mentionedDates: { raw: string; iso: string }[],
   
 
-): Promise<{ draft: string; contextSummary: string }> {
+): Promise<{ draft: string; contextSummary: string; quickOptions: string[] }> {
 
   const assembler = new ContextAssembler()
 
@@ -84,7 +84,7 @@ Check if email is:
 - Newsletter (contains: "unsubscribe", "manage preferences")
 - System message (From contains: "no-reply", "automated", "system")
 
-If ANY above is true → Output exactly: "NO_REPLY_NEEDED"
+If ANY above is true → Output exactly: "NO_REPLY_NEEDED" with no quick options
 
 STEP 2: REPLY GENERATION (only if Step 1 is false)
 Requirements:
@@ -97,13 +97,28 @@ Requirements:
 - Context : ${contextBlock}${relationshipInstruction}${topicInstruction}${behaviouralInstruction}
 - Start directly with response ${customInstructions}, ${userNameInstruction}
 
+STEP 3: QUICK OPTIONS
+Generate 3 quick reply options that the user can use to respond. These should be:
+- Contextual to the email content
+- Short and actionable (5-15 words each)
+- Diverse (cover different possible responses)
+- Professional
+
 INPUT EMAIL:
 From: ${email.senderName}
 Subject: ${email.subject}
 Body: ${email.body}
 
-OUTPUT:
-[Your reply text OR "NO_REPLY_NEEDED"]`;
+OUTPUT FORMAT:
+DRAFT:
+[Your reply text OR "NO_REPLY_NEEDED"]
+
+QUICK_OPTIONS:
+[Option 1]
+[Option 2]
+[Option 3]`;
+
+
 
   // 4. Generate draft
   const completion = await openai.chat.completions.create({
@@ -112,7 +127,7 @@ OUTPUT:
     {
       role: "system",
       content:
-        `You are a professional email assistant. Use the provided context to write an accurate, natural reply. Do not mention that you checked any external apps.You output either 'NO_REPLY_NEEDED' or a concise reply. Nothing else.`
+        `You are a professional email assistant. Use the provided context to write an accurate, natural reply. Do not mention that you checked any external apps. Output the draft and 3 quick options in the specified format.`
     },
     {
       role: "user",
@@ -121,10 +136,23 @@ OUTPUT:
   ]
 });
 
-const draft = completion.choices?.[0]?.message?.content ?? "";
+const response = completion.choices?.[0]?.message?.content ?? "";
+
+// Parse response to extract draft and quick options
+const draftMatch = response.match(/DRAFT:\s*([\s\S]*?)(?=QUICK_OPTIONS:|$)/);
+const draft = draftMatch ? draftMatch[1].trim() : "";
+
+const optionsMatch = response.match(/QUICK_OPTIONS:\s*([\s\S]*?)$/);
+const quickOptionsText = optionsMatch ? optionsMatch[1].trim() : "";
+const quickOptions = quickOptionsText
+  .split("\n")
+  .map(line => line.replace(/^[-•*]\s*/, "").trim())
+  .filter(line => line.length > 0)
+  .slice(0, 3);
 
   return {
     draft,
     contextSummary: contextBlock,
+    quickOptions,
   }
 }
