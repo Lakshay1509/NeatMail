@@ -124,6 +124,10 @@ function extractBodyFromPart(part: any): string[] {
 
   if (part.mimeType === "text/plain" && part.body?.data) {
     text.push(decodeGmailBase64Url(part.body.data));
+  } else if (part.mimeType === "text/html" && part.body?.data) {
+    // Decode and strip HTML tags
+    const htmlContent = decodeGmailBase64Url(part.body.data);
+    text.push(htmlContent.replace(/<[^>]*>?/gm, "").trim());
   }
 
   if (Array.isArray(part.parts)) {
