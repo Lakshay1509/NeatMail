@@ -70,8 +70,8 @@ export async function sendDraftNotification(
 
   const keyboard = [
     ...optionButtons,
-    [{ text: "✏️ Send custom reply", callback_data: `custom:${draft_id}` }],
-    [{ text: "🗑️ Discard draft", callback_data: `discard:${draft_id}` }],
+    [{ text: "Send custom reply", callback_data: `custom:${draft_id}` }],
+    [{ text: "Discard draft", callback_data: `discard:${draft_id}` }],
   ];
 
   const res = await fetch(

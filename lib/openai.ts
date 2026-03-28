@@ -192,7 +192,6 @@ Return the updated text as a JSON object.`
     model: "gpt-5-mini",
     messages,
     response_format: { type: "json_object" },
-    temperature: 0,
   });
 
   const content = completion.choices[0]?.message?.content;
