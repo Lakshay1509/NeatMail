@@ -131,8 +131,24 @@ function extractBodyFromPart(part: any): string[] {
   }
 
   if (Array.isArray(part.parts)) {
-    for (const child of part.parts) {
-      text.push(...extractBodyFromPart(child));
+    if (part.mimeType === "multipart/alternative") {
+      const plainPart = part.parts.find((p: any) => p.mimeType === "text/plain");
+      if (plainPart) {
+        text.push(...extractBodyFromPart(plainPart));
+      } else {
+        const htmlPart = part.parts.find((p: any) => p.mimeType === "text/html");
+        if (htmlPart) {
+          text.push(...extractBodyFromPart(htmlPart));
+        } else {
+          for (const child of part.parts) {
+            text.push(...extractBodyFromPart(child));
+          }
+        }
+      }
+    } else {
+      for (const child of part.parts) {
+        text.push(...extractBodyFromPart(child));
+      }
     }
   }
 
