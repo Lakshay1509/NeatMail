@@ -42,7 +42,7 @@ export async function checkAndForwardToTelegram(
     where:{
       user_id:userId,
       AND:[
-        {domain:senderEmail},
+        {domain:senderEmail.trim()},
         {tag_id:tagId}
       ]
     }

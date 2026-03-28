@@ -28,18 +28,24 @@ export type TelegramIntegrationMinAggregateOutputType = {
   id: string | null
   user_id: string | null
   chat_id: string | null
+  forward_important_mails: boolean | null
+  forward_draft_for_confirmation: boolean | null
 }
 
 export type TelegramIntegrationMaxAggregateOutputType = {
   id: string | null
   user_id: string | null
   chat_id: string | null
+  forward_important_mails: boolean | null
+  forward_draft_for_confirmation: boolean | null
 }
 
 export type TelegramIntegrationCountAggregateOutputType = {
   id: number
   user_id: number
   chat_id: number
+  forward_important_mails: number
+  forward_draft_for_confirmation: number
   _all: number
 }
 
@@ -48,18 +54,24 @@ export type TelegramIntegrationMinAggregateInputType = {
   id?: true
   user_id?: true
   chat_id?: true
+  forward_important_mails?: true
+  forward_draft_for_confirmation?: true
 }
 
 export type TelegramIntegrationMaxAggregateInputType = {
   id?: true
   user_id?: true
   chat_id?: true
+  forward_important_mails?: true
+  forward_draft_for_confirmation?: true
 }
 
 export type TelegramIntegrationCountAggregateInputType = {
   id?: true
   user_id?: true
   chat_id?: true
+  forward_important_mails?: true
+  forward_draft_for_confirmation?: true
   _all?: true
 }
 
@@ -139,6 +151,8 @@ export type TelegramIntegrationGroupByOutputType = {
   id: string
   user_id: string
   chat_id: string
+  forward_important_mails: boolean
+  forward_draft_for_confirmation: boolean
   _count: TelegramIntegrationCountAggregateOutputType | null
   _min: TelegramIntegrationMinAggregateOutputType | null
   _max: TelegramIntegrationMaxAggregateOutputType | null
@@ -166,6 +180,8 @@ export type TelegramIntegrationWhereInput = {
   id?: Prisma.StringFilter<"TelegramIntegration"> | string
   user_id?: Prisma.StringFilter<"TelegramIntegration"> | string
   chat_id?: Prisma.StringFilter<"TelegramIntegration"> | string
+  forward_important_mails?: Prisma.BoolFilter<"TelegramIntegration"> | boolean
+  forward_draft_for_confirmation?: Prisma.BoolFilter<"TelegramIntegration"> | boolean
   user_tokens?: Prisma.XOR<Prisma.User_tokensScalarRelationFilter, Prisma.user_tokensWhereInput>
 }
 
@@ -173,6 +189,8 @@ export type TelegramIntegrationOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   chat_id?: Prisma.SortOrder
+  forward_important_mails?: Prisma.SortOrder
+  forward_draft_for_confirmation?: Prisma.SortOrder
   user_tokens?: Prisma.user_tokensOrderByWithRelationInput
 }
 
@@ -183,6 +201,8 @@ export type TelegramIntegrationWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.TelegramIntegrationWhereInput | Prisma.TelegramIntegrationWhereInput[]
   OR?: Prisma.TelegramIntegrationWhereInput[]
   NOT?: Prisma.TelegramIntegrationWhereInput | Prisma.TelegramIntegrationWhereInput[]
+  forward_important_mails?: Prisma.BoolFilter<"TelegramIntegration"> | boolean
+  forward_draft_for_confirmation?: Prisma.BoolFilter<"TelegramIntegration"> | boolean
   user_tokens?: Prisma.XOR<Prisma.User_tokensScalarRelationFilter, Prisma.user_tokensWhereInput>
 }, "id" | "user_id" | "chat_id">
 
@@ -190,6 +210,8 @@ export type TelegramIntegrationOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   chat_id?: Prisma.SortOrder
+  forward_important_mails?: Prisma.SortOrder
+  forward_draft_for_confirmation?: Prisma.SortOrder
   _count?: Prisma.TelegramIntegrationCountOrderByAggregateInput
   _max?: Prisma.TelegramIntegrationMaxOrderByAggregateInput
   _min?: Prisma.TelegramIntegrationMinOrderByAggregateInput
@@ -202,11 +224,15 @@ export type TelegramIntegrationScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"TelegramIntegration"> | string
   user_id?: Prisma.StringWithAggregatesFilter<"TelegramIntegration"> | string
   chat_id?: Prisma.StringWithAggregatesFilter<"TelegramIntegration"> | string
+  forward_important_mails?: Prisma.BoolWithAggregatesFilter<"TelegramIntegration"> | boolean
+  forward_draft_for_confirmation?: Prisma.BoolWithAggregatesFilter<"TelegramIntegration"> | boolean
 }
 
 export type TelegramIntegrationCreateInput = {
   id?: string
   chat_id: string
+  forward_important_mails?: boolean
+  forward_draft_for_confirmation?: boolean
   user_tokens: Prisma.user_tokensCreateNestedOneWithoutTelegram_integrationInput
 }
 
@@ -214,11 +240,15 @@ export type TelegramIntegrationUncheckedCreateInput = {
   id?: string
   user_id: string
   chat_id: string
+  forward_important_mails?: boolean
+  forward_draft_for_confirmation?: boolean
 }
 
 export type TelegramIntegrationUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   chat_id?: Prisma.StringFieldUpdateOperationsInput | string
+  forward_important_mails?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  forward_draft_for_confirmation?: Prisma.BoolFieldUpdateOperationsInput | boolean
   user_tokens?: Prisma.user_tokensUpdateOneRequiredWithoutTelegram_integrationNestedInput
 }
 
@@ -226,23 +256,31 @@ export type TelegramIntegrationUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   chat_id?: Prisma.StringFieldUpdateOperationsInput | string
+  forward_important_mails?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  forward_draft_for_confirmation?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type TelegramIntegrationCreateManyInput = {
   id?: string
   user_id: string
   chat_id: string
+  forward_important_mails?: boolean
+  forward_draft_for_confirmation?: boolean
 }
 
 export type TelegramIntegrationUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   chat_id?: Prisma.StringFieldUpdateOperationsInput | string
+  forward_important_mails?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  forward_draft_for_confirmation?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type TelegramIntegrationUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   user_id?: Prisma.StringFieldUpdateOperationsInput | string
   chat_id?: Prisma.StringFieldUpdateOperationsInput | string
+  forward_important_mails?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  forward_draft_for_confirmation?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type TelegramIntegrationNullableScalarRelationFilter = {
@@ -254,18 +292,24 @@ export type TelegramIntegrationCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   chat_id?: Prisma.SortOrder
+  forward_important_mails?: Prisma.SortOrder
+  forward_draft_for_confirmation?: Prisma.SortOrder
 }
 
 export type TelegramIntegrationMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   chat_id?: Prisma.SortOrder
+  forward_important_mails?: Prisma.SortOrder
+  forward_draft_for_confirmation?: Prisma.SortOrder
 }
 
 export type TelegramIntegrationMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   user_id?: Prisma.SortOrder
   chat_id?: Prisma.SortOrder
+  forward_important_mails?: Prisma.SortOrder
+  forward_draft_for_confirmation?: Prisma.SortOrder
 }
 
 export type TelegramIntegrationCreateNestedOneWithoutUser_tokensInput = {
@@ -303,11 +347,15 @@ export type TelegramIntegrationUncheckedUpdateOneWithoutUser_tokensNestedInput =
 export type TelegramIntegrationCreateWithoutUser_tokensInput = {
   id?: string
   chat_id: string
+  forward_important_mails?: boolean
+  forward_draft_for_confirmation?: boolean
 }
 
 export type TelegramIntegrationUncheckedCreateWithoutUser_tokensInput = {
   id?: string
   chat_id: string
+  forward_important_mails?: boolean
+  forward_draft_for_confirmation?: boolean
 }
 
 export type TelegramIntegrationCreateOrConnectWithoutUser_tokensInput = {
@@ -329,11 +377,15 @@ export type TelegramIntegrationUpdateToOneWithWhereWithoutUser_tokensInput = {
 export type TelegramIntegrationUpdateWithoutUser_tokensInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   chat_id?: Prisma.StringFieldUpdateOperationsInput | string
+  forward_important_mails?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  forward_draft_for_confirmation?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type TelegramIntegrationUncheckedUpdateWithoutUser_tokensInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   chat_id?: Prisma.StringFieldUpdateOperationsInput | string
+  forward_important_mails?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  forward_draft_for_confirmation?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 
@@ -342,6 +394,8 @@ export type TelegramIntegrationSelect<ExtArgs extends runtime.Types.Extensions.I
   id?: boolean
   user_id?: boolean
   chat_id?: boolean
+  forward_important_mails?: boolean
+  forward_draft_for_confirmation?: boolean
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["telegramIntegration"]>
 
@@ -349,6 +403,8 @@ export type TelegramIntegrationSelectCreateManyAndReturn<ExtArgs extends runtime
   id?: boolean
   user_id?: boolean
   chat_id?: boolean
+  forward_important_mails?: boolean
+  forward_draft_for_confirmation?: boolean
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["telegramIntegration"]>
 
@@ -356,6 +412,8 @@ export type TelegramIntegrationSelectUpdateManyAndReturn<ExtArgs extends runtime
   id?: boolean
   user_id?: boolean
   chat_id?: boolean
+  forward_important_mails?: boolean
+  forward_draft_for_confirmation?: boolean
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["telegramIntegration"]>
 
@@ -363,9 +421,11 @@ export type TelegramIntegrationSelectScalar = {
   id?: boolean
   user_id?: boolean
   chat_id?: boolean
+  forward_important_mails?: boolean
+  forward_draft_for_confirmation?: boolean
 }
 
-export type TelegramIntegrationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "chat_id", ExtArgs["result"]["telegramIntegration"]>
+export type TelegramIntegrationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "user_id" | "chat_id" | "forward_important_mails" | "forward_draft_for_confirmation", ExtArgs["result"]["telegramIntegration"]>
 export type TelegramIntegrationInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user_tokens?: boolean | Prisma.user_tokensDefaultArgs<ExtArgs>
 }
@@ -385,6 +445,8 @@ export type $TelegramIntegrationPayload<ExtArgs extends runtime.Types.Extensions
     id: string
     user_id: string
     chat_id: string
+    forward_important_mails: boolean
+    forward_draft_for_confirmation: boolean
   }, ExtArgs["result"]["telegramIntegration"]>
   composites: {}
 }
@@ -812,6 +874,8 @@ export interface TelegramIntegrationFieldRefs {
   readonly id: Prisma.FieldRef<"TelegramIntegration", 'String'>
   readonly user_id: Prisma.FieldRef<"TelegramIntegration", 'String'>
   readonly chat_id: Prisma.FieldRef<"TelegramIntegration", 'String'>
+  readonly forward_important_mails: Prisma.FieldRef<"TelegramIntegration", 'Boolean'>
+  readonly forward_draft_for_confirmation: Prisma.FieldRef<"TelegramIntegration", 'Boolean'>
 }
     
 

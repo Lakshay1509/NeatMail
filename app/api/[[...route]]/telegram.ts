@@ -91,6 +91,56 @@ const app = new Hono()
 
   })
 
+  .get('/prefernces',async(ctx)=>{
+
+    const { userId } = await auth();
+
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const data = await db.telegramIntegration.findMany({
+        where:{user_id:userId}
+      })
+
+      return ctx.json({data},200);
+
+  })
+
+  .post('/prefernces',zValidator("json",
+    z.object({
+      fwd_imp_mails:z.boolean(),
+      fwd_draft:z.boolean()
+    })
+  ),async(ctx)=>{
+
+     const { userId } = await auth();
+
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const values = ctx.req.valid("json");
+
+      const data = await db.telegramIntegration.update({
+        where:{user_id:userId},
+        data:{
+          forward_draft_for_confirmation:values.fwd_draft,
+          forward_important_mails:values.fwd_imp_mails
+        }
+      })
+
+
+      if(!data){
+        return ctx.json({error:"Error updating prefernces"},500);
+      }
+
+      return ctx.json({data},200)
+
+
+
+  })
+
   .post(
     "/rules",
     zValidator(

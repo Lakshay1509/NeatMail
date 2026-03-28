@@ -189,10 +189,12 @@ model draft_preference {
 }
 
 model TelegramIntegration {
-  id      String @id @default(uuid())
-  user_id String @unique
-  chat_id String @unique
-  user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+  id                              String @id @default(uuid())
+  user_id                         String @unique
+  chat_id                         String @unique
+  forward_important_mails         Boolean @default(false)
+  forward_draft_for_confirmation  Boolean @default(false)
+  user_tokens                     user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
   @@schema("public")
 }

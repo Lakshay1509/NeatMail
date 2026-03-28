@@ -1410,7 +1410,9 @@ export type Draft_preferenceScalarFieldEnum = (typeof Draft_preferenceScalarFiel
 export const TelegramIntegrationScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
-  chat_id: 'chat_id'
+  chat_id: 'chat_id',
+  forward_important_mails: 'forward_important_mails',
+  forward_draft_for_confirmation: 'forward_draft_for_confirmation'
 } as const
 
 export type TelegramIntegrationScalarFieldEnum = (typeof TelegramIntegrationScalarFieldEnum)[keyof typeof TelegramIntegrationScalarFieldEnum]
