@@ -1,4 +1,4 @@
-import { sendGmailDraft, updateGmailDraft } from "@/lib/gmail";
+import { deleteGmailDraft, sendGmailDraft, updateGmailDraft } from "@/lib/gmail";
 import { applyCorrectionsToText } from "@/lib/openai";
 import { db } from "@/lib/prisma";
 import { escapeHtml, sendTelegramMessage } from "@/lib/telegram";
@@ -260,7 +260,7 @@ const app = new Hono()
             " <b>Type your custom reply</b> ",
           );
         } else if (action === "discard") {
-          // await deleteGmailDraft(pending.user_id, gmailDraftId);
+          await deleteGmailDraft(pending.user_id, draft_id);
           await editMessageText(
             chatId,
             message.message_id,

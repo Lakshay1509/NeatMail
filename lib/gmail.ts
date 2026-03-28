@@ -549,4 +549,13 @@ export async function sendGmailDraft(userId: string, draftId: string) {
   return response.data;
 }
 
+export async function deleteGmailDraft(userId: string, draftId: string) {
+  const gmail = await getGmailClient(userId);
 
+  await gmail.users.drafts.delete({
+    userId: "me",
+    id: draftId,
+  });
+
+  return { success: true };
+}
