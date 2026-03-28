@@ -83,7 +83,7 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 					<DialogHeader>
 					
 					<DialogDescription className="text-base mt-2">
-						We will organize your emails using the categories below to keep you focused on what's important. You can later add more in the settings.
+						We will organize your emails using the categories below to keep you focused on what's important. We recommend selecting atleast 5-6 categories.
 					</DialogDescription>
 				</DialogHeader>
 

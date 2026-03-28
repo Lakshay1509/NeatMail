@@ -13,7 +13,6 @@ import {
   addMailtoDB,
   getLastHistoryId,
   getTagsUser,
-  getModelTagsUser,
   getUserByEmail,
   getUserSubscribed,
   labelColor,
@@ -25,8 +24,6 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { google } from "googleapis";
 import { Hono } from "hono";
 import { OAuth2Client } from "google-auth-library";
-import { buildContextAndDraft } from "@/context-engine/pipeline";
-import { IncomingEmail } from "@/context-engine/types";
 import { getModelResponse } from "@/lib/model";
 import { handleLabelCorrections } from "@/lib/gmail-correction";
 import { checkAndForwardToTelegram } from "@/lib/telegram";
@@ -235,7 +232,6 @@ const app = new Hono().post("/", async (ctx) => {
       // }
 
       const tagsOfUser = await getTagsUser(clerkUserId);
-      const modelTags = await getModelTagsUser(clerkUserId);
       const draftsenstivity = (await useGetUserDraftPreference(clerkUserId))
         .senstivity;
 
@@ -265,17 +261,11 @@ const app = new Hono().post("/", async (ctx) => {
           from: emailData.from,
           subject: emailData.subject,
           user_id: emailData.userId,
-          tags: modelTags.map((t: any) => ({ name: t.name, description: t.description })),
+          tags: tagsOfUser.map((t) => ({ name: t.tag.name, description: t.tag.description ?? '' })),
           sensitivity: draftsenstivity || "if actionable",
         });
         labelName = classification.category;
-        
-        // Check if category is enabled by user
-        const isTagEnabled = tagsOfUser.some((t: any) => t.tag.name === labelName);
-        if (!isTagEnabled) {
-          labelName = "";
-        }
-        
+  
         responseRequired = classification.response_required === true;
       }
 

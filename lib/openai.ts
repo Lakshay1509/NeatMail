@@ -165,7 +165,7 @@ export async function applyCorrectionsToText(oldText: string, corrections: strin
   const messages = [
     {
       role: "system" as const,
-      content: `You are a text editing assistant. Your task is to apply the provided corrections to the old text and return the strictly modified new text.
+      content: `You are a text editing assistant. Your task is to apply the provided corrections to the original text and return the revised version. Preserve the original tone and relationship between the parties, modifying only what is necessary to incorporate the corrections.
 Output MUST be a valid JSON object in the exact following format:
 {
   "new_string": "the fully updated text"
@@ -189,7 +189,7 @@ Return the updated text as a JSON object.`
   ];
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-5-mini",
     messages,
     response_format: { type: "json_object" },
     temperature: 0,

@@ -5,7 +5,6 @@ import {
   addMailtoDB,
   labelColor,
   useGetUserDraftPreference,
-  getModelTagsUser,
 } from "@/lib/supabase";
 import {
   classifyEmail as classifyEmailOpenAI,
@@ -98,9 +97,6 @@ export const processOutlookMailFn = inngest.createFunction(
       return (await useGetUserDraftPreference(clerkUser.id)).senstivity
     })
 
-    const modelTags = await step.run("get-model-tags", async () => {
-      return getModelTagsUser(subscription.clerk_user_id);
-    });
 
     const classification = await step.run("model-called", async () => {
       return getModelResponse(
@@ -109,7 +105,7 @@ export const processOutlookMailFn = inngest.createFunction(
           from: from,
           subject: subject,
           user_id: subscription.clerk_user_id,
-          tags: modelTags.map((t: any) => ({ name: t.name, description: t.description })),
+          tags: tagsOfUser.map((t) => ({ name: t.tag.name, description: t.tag.description ?? '' })),
           sensitivity: draftsenstivity || "if actionable",
         }
       );
@@ -117,11 +113,7 @@ export const processOutlookMailFn = inngest.createFunction(
     
     let labelName = classification.category;
     
-    // Check if category is enabled by user
-    const isTagEnabled = tagsOfUser.some((t: any) => t.tag.name === labelName);
-    if (!isTagEnabled) {
-      labelName = "";
-    }
+    
 
     const shouldDraft =
         (labelName === "Pending Response" || labelName === "Action Needed"  ) && classification.response_required;
