@@ -28,13 +28,29 @@ export async function checkAndForwardToTelegram(
   userId: string,
   senderEmail: string,
   emailSubject: string,
-  emailSnippet: string
+  emailSnippet: string,
+  tagId:string
 ) {
   const data = await db.telegramIntegration.findUnique({
     where: { user_id: userId },
   });
 
   if (!data || !data.chat_id) return;
+
+
+  const match = await db.integrationRules.findMany({
+    where:{
+      user_id:userId,
+      AND:[
+        {domain:senderEmail},
+        {tag_id:tagId}
+      ]
+    }
+  })
+
+  if(match.length===0){
+    return;
+  }
 
   const message = `📧 <b>New email from ${escapeHtml(senderEmail)}</b>\n\n<b>${escapeHtml(emailSubject)}</b>\n\n${escapeHtml(emailSnippet)}`;
 

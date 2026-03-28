@@ -201,6 +201,7 @@ export type tagWhereInput = {
   email_tracked?: Prisma.Email_trackedListRelationFilter
   user_tokens?: Prisma.XOR<Prisma.User_tokensNullableScalarRelationFilter, Prisma.user_tokensWhereInput> | null
   user_tags?: Prisma.User_tagsListRelationFilter
+  integration_rules?: Prisma.IntegrationRulesListRelationFilter
 }
 
 export type tagOrderByWithRelationInput = {
@@ -214,6 +215,7 @@ export type tagOrderByWithRelationInput = {
   email_tracked?: Prisma.email_trackedOrderByRelationAggregateInput
   user_tokens?: Prisma.user_tokensOrderByWithRelationInput
   user_tags?: Prisma.user_tagsOrderByRelationAggregateInput
+  integration_rules?: Prisma.integrationRulesOrderByRelationAggregateInput
 }
 
 export type tagWhereUniqueInput = Prisma.AtLeast<{
@@ -231,6 +233,7 @@ export type tagWhereUniqueInput = Prisma.AtLeast<{
   email_tracked?: Prisma.Email_trackedListRelationFilter
   user_tokens?: Prisma.XOR<Prisma.User_tokensNullableScalarRelationFilter, Prisma.user_tokensWhereInput> | null
   user_tags?: Prisma.User_tagsListRelationFilter
+  integration_rules?: Prisma.IntegrationRulesListRelationFilter
 }, "id" | "name_user_id">
 
 export type tagOrderByWithAggregationInput = {
@@ -269,6 +272,7 @@ export type tagCreateInput = {
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutTagInput
   user_tokens?: Prisma.user_tokensCreateNestedOneWithoutTagInput
   user_tags?: Prisma.user_tagsCreateNestedManyWithoutTagInput
+  integration_rules?: Prisma.integrationRulesCreateNestedManyWithoutTagInput
 }
 
 export type tagUncheckedCreateInput = {
@@ -281,6 +285,7 @@ export type tagUncheckedCreateInput = {
   description?: string | null
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutTagInput
   user_tags?: Prisma.user_tagsUncheckedCreateNestedManyWithoutTagInput
+  integration_rules?: Prisma.integrationRulesUncheckedCreateNestedManyWithoutTagInput
 }
 
 export type tagUpdateInput = {
@@ -293,6 +298,7 @@ export type tagUpdateInput = {
   email_tracked?: Prisma.email_trackedUpdateManyWithoutTagNestedInput
   user_tokens?: Prisma.user_tokensUpdateOneWithoutTagNestedInput
   user_tags?: Prisma.user_tagsUpdateManyWithoutTagNestedInput
+  integration_rules?: Prisma.integrationRulesUpdateManyWithoutTagNestedInput
 }
 
 export type tagUncheckedUpdateInput = {
@@ -305,6 +311,7 @@ export type tagUncheckedUpdateInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutTagNestedInput
   user_tags?: Prisma.user_tagsUncheckedUpdateManyWithoutTagNestedInput
+  integration_rules?: Prisma.integrationRulesUncheckedUpdateManyWithoutTagNestedInput
 }
 
 export type tagCreateManyInput = {
@@ -463,6 +470,20 @@ export type tagUpdateOneWithoutEmail_trackedNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.tagUpdateToOneWithWhereWithoutEmail_trackedInput, Prisma.tagUpdateWithoutEmail_trackedInput>, Prisma.tagUncheckedUpdateWithoutEmail_trackedInput>
 }
 
+export type tagCreateNestedOneWithoutIntegration_rulesInput = {
+  create?: Prisma.XOR<Prisma.tagCreateWithoutIntegration_rulesInput, Prisma.tagUncheckedCreateWithoutIntegration_rulesInput>
+  connectOrCreate?: Prisma.tagCreateOrConnectWithoutIntegration_rulesInput
+  connect?: Prisma.tagWhereUniqueInput
+}
+
+export type tagUpdateOneRequiredWithoutIntegration_rulesNestedInput = {
+  create?: Prisma.XOR<Prisma.tagCreateWithoutIntegration_rulesInput, Prisma.tagUncheckedCreateWithoutIntegration_rulesInput>
+  connectOrCreate?: Prisma.tagCreateOrConnectWithoutIntegration_rulesInput
+  upsert?: Prisma.tagUpsertWithoutIntegration_rulesInput
+  connect?: Prisma.tagWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.tagUpdateToOneWithWhereWithoutIntegration_rulesInput, Prisma.tagUpdateWithoutIntegration_rulesInput>, Prisma.tagUncheckedUpdateWithoutIntegration_rulesInput>
+}
+
 export type tagCreateWithoutUser_tokensInput = {
   id?: string
   name: string
@@ -472,6 +493,7 @@ export type tagCreateWithoutUser_tokensInput = {
   description?: string | null
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutTagInput
   user_tags?: Prisma.user_tagsCreateNestedManyWithoutTagInput
+  integration_rules?: Prisma.integrationRulesCreateNestedManyWithoutTagInput
 }
 
 export type tagUncheckedCreateWithoutUser_tokensInput = {
@@ -483,6 +505,7 @@ export type tagUncheckedCreateWithoutUser_tokensInput = {
   description?: string | null
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutTagInput
   user_tags?: Prisma.user_tagsUncheckedCreateNestedManyWithoutTagInput
+  integration_rules?: Prisma.integrationRulesUncheckedCreateNestedManyWithoutTagInput
 }
 
 export type tagCreateOrConnectWithoutUser_tokensInput = {
@@ -533,6 +556,7 @@ export type tagCreateWithoutUser_tagsInput = {
   description?: string | null
   email_tracked?: Prisma.email_trackedCreateNestedManyWithoutTagInput
   user_tokens?: Prisma.user_tokensCreateNestedOneWithoutTagInput
+  integration_rules?: Prisma.integrationRulesCreateNestedManyWithoutTagInput
 }
 
 export type tagUncheckedCreateWithoutUser_tagsInput = {
@@ -544,6 +568,7 @@ export type tagUncheckedCreateWithoutUser_tagsInput = {
   outlook_preset?: string | null
   description?: string | null
   email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutTagInput
+  integration_rules?: Prisma.integrationRulesUncheckedCreateNestedManyWithoutTagInput
 }
 
 export type tagCreateOrConnectWithoutUser_tagsInput = {
@@ -571,6 +596,7 @@ export type tagUpdateWithoutUser_tagsInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email_tracked?: Prisma.email_trackedUpdateManyWithoutTagNestedInput
   user_tokens?: Prisma.user_tokensUpdateOneWithoutTagNestedInput
+  integration_rules?: Prisma.integrationRulesUpdateManyWithoutTagNestedInput
 }
 
 export type tagUncheckedUpdateWithoutUser_tagsInput = {
@@ -582,6 +608,7 @@ export type tagUncheckedUpdateWithoutUser_tagsInput = {
   outlook_preset?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutTagNestedInput
+  integration_rules?: Prisma.integrationRulesUncheckedUpdateManyWithoutTagNestedInput
 }
 
 export type tagCreateWithoutEmail_trackedInput = {
@@ -593,6 +620,7 @@ export type tagCreateWithoutEmail_trackedInput = {
   description?: string | null
   user_tokens?: Prisma.user_tokensCreateNestedOneWithoutTagInput
   user_tags?: Prisma.user_tagsCreateNestedManyWithoutTagInput
+  integration_rules?: Prisma.integrationRulesCreateNestedManyWithoutTagInput
 }
 
 export type tagUncheckedCreateWithoutEmail_trackedInput = {
@@ -604,6 +632,7 @@ export type tagUncheckedCreateWithoutEmail_trackedInput = {
   outlook_preset?: string | null
   description?: string | null
   user_tags?: Prisma.user_tagsUncheckedCreateNestedManyWithoutTagInput
+  integration_rules?: Prisma.integrationRulesUncheckedCreateNestedManyWithoutTagInput
 }
 
 export type tagCreateOrConnectWithoutEmail_trackedInput = {
@@ -631,6 +660,7 @@ export type tagUpdateWithoutEmail_trackedInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   user_tokens?: Prisma.user_tokensUpdateOneWithoutTagNestedInput
   user_tags?: Prisma.user_tagsUpdateManyWithoutTagNestedInput
+  integration_rules?: Prisma.integrationRulesUpdateManyWithoutTagNestedInput
 }
 
 export type tagUncheckedUpdateWithoutEmail_trackedInput = {
@@ -641,6 +671,71 @@ export type tagUncheckedUpdateWithoutEmail_trackedInput = {
   user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   outlook_preset?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  user_tags?: Prisma.user_tagsUncheckedUpdateManyWithoutTagNestedInput
+  integration_rules?: Prisma.integrationRulesUncheckedUpdateManyWithoutTagNestedInput
+}
+
+export type tagCreateWithoutIntegration_rulesInput = {
+  id?: string
+  name: string
+  created_at?: Date | string
+  color: string
+  outlook_preset?: string | null
+  description?: string | null
+  email_tracked?: Prisma.email_trackedCreateNestedManyWithoutTagInput
+  user_tokens?: Prisma.user_tokensCreateNestedOneWithoutTagInput
+  user_tags?: Prisma.user_tagsCreateNestedManyWithoutTagInput
+}
+
+export type tagUncheckedCreateWithoutIntegration_rulesInput = {
+  id?: string
+  name: string
+  created_at?: Date | string
+  color: string
+  user_id?: string | null
+  outlook_preset?: string | null
+  description?: string | null
+  email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutTagInput
+  user_tags?: Prisma.user_tagsUncheckedCreateNestedManyWithoutTagInput
+}
+
+export type tagCreateOrConnectWithoutIntegration_rulesInput = {
+  where: Prisma.tagWhereUniqueInput
+  create: Prisma.XOR<Prisma.tagCreateWithoutIntegration_rulesInput, Prisma.tagUncheckedCreateWithoutIntegration_rulesInput>
+}
+
+export type tagUpsertWithoutIntegration_rulesInput = {
+  update: Prisma.XOR<Prisma.tagUpdateWithoutIntegration_rulesInput, Prisma.tagUncheckedUpdateWithoutIntegration_rulesInput>
+  create: Prisma.XOR<Prisma.tagCreateWithoutIntegration_rulesInput, Prisma.tagUncheckedCreateWithoutIntegration_rulesInput>
+  where?: Prisma.tagWhereInput
+}
+
+export type tagUpdateToOneWithWhereWithoutIntegration_rulesInput = {
+  where?: Prisma.tagWhereInput
+  data: Prisma.XOR<Prisma.tagUpdateWithoutIntegration_rulesInput, Prisma.tagUncheckedUpdateWithoutIntegration_rulesInput>
+}
+
+export type tagUpdateWithoutIntegration_rulesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  color?: Prisma.StringFieldUpdateOperationsInput | string
+  outlook_preset?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email_tracked?: Prisma.email_trackedUpdateManyWithoutTagNestedInput
+  user_tokens?: Prisma.user_tokensUpdateOneWithoutTagNestedInput
+  user_tags?: Prisma.user_tagsUpdateManyWithoutTagNestedInput
+}
+
+export type tagUncheckedUpdateWithoutIntegration_rulesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  color?: Prisma.StringFieldUpdateOperationsInput | string
+  user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  outlook_preset?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutTagNestedInput
   user_tags?: Prisma.user_tagsUncheckedUpdateManyWithoutTagNestedInput
 }
 
@@ -662,6 +757,7 @@ export type tagUpdateWithoutUser_tokensInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email_tracked?: Prisma.email_trackedUpdateManyWithoutTagNestedInput
   user_tags?: Prisma.user_tagsUpdateManyWithoutTagNestedInput
+  integration_rules?: Prisma.integrationRulesUpdateManyWithoutTagNestedInput
 }
 
 export type tagUncheckedUpdateWithoutUser_tokensInput = {
@@ -673,6 +769,7 @@ export type tagUncheckedUpdateWithoutUser_tokensInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutTagNestedInput
   user_tags?: Prisma.user_tagsUncheckedUpdateManyWithoutTagNestedInput
+  integration_rules?: Prisma.integrationRulesUncheckedUpdateManyWithoutTagNestedInput
 }
 
 export type tagUncheckedUpdateManyWithoutUser_tokensInput = {
@@ -692,11 +789,13 @@ export type tagUncheckedUpdateManyWithoutUser_tokensInput = {
 export type TagCountOutputType = {
   email_tracked: number
   user_tags: number
+  integration_rules: number
 }
 
 export type TagCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   email_tracked?: boolean | TagCountOutputTypeCountEmail_trackedArgs
   user_tags?: boolean | TagCountOutputTypeCountUser_tagsArgs
+  integration_rules?: boolean | TagCountOutputTypeCountIntegration_rulesArgs
 }
 
 /**
@@ -723,6 +822,13 @@ export type TagCountOutputTypeCountUser_tagsArgs<ExtArgs extends runtime.Types.E
   where?: Prisma.user_tagsWhereInput
 }
 
+/**
+ * TagCountOutputType without action
+ */
+export type TagCountOutputTypeCountIntegration_rulesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.integrationRulesWhereInput
+}
+
 
 export type tagSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -735,6 +841,7 @@ export type tagSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   email_tracked?: boolean | Prisma.tag$email_trackedArgs<ExtArgs>
   user_tokens?: boolean | Prisma.tag$user_tokensArgs<ExtArgs>
   user_tags?: boolean | Prisma.tag$user_tagsArgs<ExtArgs>
+  integration_rules?: boolean | Prisma.tag$integration_rulesArgs<ExtArgs>
   _count?: boolean | Prisma.TagCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["tag"]>
 
@@ -775,6 +882,7 @@ export type tagInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   email_tracked?: boolean | Prisma.tag$email_trackedArgs<ExtArgs>
   user_tokens?: boolean | Prisma.tag$user_tokensArgs<ExtArgs>
   user_tags?: boolean | Prisma.tag$user_tagsArgs<ExtArgs>
+  integration_rules?: boolean | Prisma.tag$integration_rulesArgs<ExtArgs>
   _count?: boolean | Prisma.TagCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type tagIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -790,6 +898,7 @@ export type $tagPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
     email_tracked: Prisma.$email_trackedPayload<ExtArgs>[]
     user_tokens: Prisma.$user_tokensPayload<ExtArgs> | null
     user_tags: Prisma.$user_tagsPayload<ExtArgs>[]
+    integration_rules: Prisma.$integrationRulesPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1196,6 +1305,7 @@ export interface Prisma__tagClient<T, Null = never, ExtArgs extends runtime.Type
   email_tracked<T extends Prisma.tag$email_trackedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.tag$email_trackedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$email_trackedPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   user_tokens<T extends Prisma.tag$user_tokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.tag$user_tokensArgs<ExtArgs>>): Prisma.Prisma__user_tokensClient<runtime.Types.Result.GetResult<Prisma.$user_tokensPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   user_tags<T extends Prisma.tag$user_tagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.tag$user_tagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$user_tagsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  integration_rules<T extends Prisma.tag$integration_rulesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.tag$integration_rulesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$integrationRulesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1692,6 +1802,30 @@ export type tag$user_tagsArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   distinct?: Prisma.User_tagsScalarFieldEnum | Prisma.User_tagsScalarFieldEnum[]
+}
+
+/**
+ * tag.integration_rules
+ */
+export type tag$integration_rulesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the integrationRules
+   */
+  select?: Prisma.integrationRulesSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the integrationRules
+   */
+  omit?: Prisma.integrationRulesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.integrationRulesInclude<ExtArgs> | null
+  where?: Prisma.integrationRulesWhereInput
+  orderBy?: Prisma.integrationRulesOrderByWithRelationInput | Prisma.integrationRulesOrderByWithRelationInput[]
+  cursor?: Prisma.integrationRulesWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.IntegrationRulesScalarFieldEnum | Prisma.IntegrationRulesScalarFieldEnum[]
 }
 
 /**

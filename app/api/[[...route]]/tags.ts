@@ -5,7 +5,7 @@ import { zValidator } from "@hono/zod-validator";
 import z from "zod/v3";
 import { colors, outlook_colors } from "@/lib/colors";
 import { getGmailClient } from "@/lib/gmail";
-import { deleteOutlookTag } from "@/lib/outlook";
+
 
 
 const app = new Hono()
@@ -24,6 +24,7 @@ const app = new Hono()
         tag: {
           select: {
             name: true,
+            id:true
           },
         },
       },

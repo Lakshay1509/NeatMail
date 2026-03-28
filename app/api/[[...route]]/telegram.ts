@@ -3,7 +3,9 @@ import { applyCorrectionsToText } from "@/lib/openai";
 import { db } from "@/lib/prisma";
 import { escapeHtml, sendTelegramMessage } from "@/lib/telegram";
 import { auth } from "@clerk/nextjs/server";
+import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import z from "zod";
 
 async function answerCallbackQuery(callbackQueryId: string) {
   await fetch(
@@ -74,6 +76,66 @@ const app = new Hono()
     return ctx.json({ data }, 200);
   })
 
+  .get('/rules',async(ctx)=>{
+    const { userId } = await auth();
+
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const data = await db.integrationRules.findMany({
+        where:{user_id:userId}
+      })
+
+      return ctx.json({data},200);
+
+  })
+
+  .post(
+    "/rules",
+    zValidator(
+      "json",
+      z
+        .array(
+          z.object({
+            domain: z.string(),
+            tag_id: z.string(),
+          }),
+        )
+        .min(1)
+        .max(10),
+    ),
+    async (ctx) => {
+      const { userId } = await auth();
+
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const values = ctx.req.valid("json");
+
+      const data = await db.$transaction([
+        db.integrationRules.deleteMany({
+          where: { user_id: userId },
+        }),
+
+        db.integrationRules.createMany({
+          data: values.map((v) => ({
+            domain: v.domain,
+            tag_id: v.tag_id,
+            user_id: userId,
+          })),
+        }),
+      ]);
+
+      if(!data){
+        return ctx.json({error:"Error creating rules"},500);
+      }
+
+      return ctx.json({success:true},200);
+    },
+  )
+
   .post("/webhook", async (ctx) => {
     const body = await ctx.req.json();
     const message = body.message;
@@ -98,7 +160,7 @@ const app = new Hono()
 
         await sendTelegramMessage(
           chatId,
-          "✅ NeatMail connected! You'll receive email alerts here.",
+          "NeatMail connected! You'll receive email alerts here.",
         );
 
         return ctx.json({ success: true }, 200);
@@ -145,7 +207,7 @@ const app = new Hono()
           await editMessageText(
             chatId,
             message.message_id,
-            "✏️ <b>Type your custom reply</b> and send it here:",
+            " <b>Type your custom reply</b> ",
           );
         } else if (action === "discard") {
           // await deleteGmailDraft(pending.user_id, gmailDraftId);

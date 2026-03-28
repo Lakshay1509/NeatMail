@@ -393,7 +393,8 @@ export const ModelName = {
   Refund: 'Refund',
   draft_preference: 'draft_preference',
   TelegramIntegration: 'TelegramIntegration',
-  telegramPendingDraft: 'telegramPendingDraft'
+  telegramPendingDraft: 'telegramPendingDraft',
+  integrationRules: 'integrationRules'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -409,7 +410,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user_tokens" | "tag" | "user_tags" | "email_tracked" | "subscription" | "paymentHistory" | "refund" | "draft_preference" | "telegramIntegration" | "telegramPendingDraft"
+    modelProps: "user_tokens" | "tag" | "user_tags" | "email_tracked" | "subscription" | "paymentHistory" | "refund" | "draft_preference" | "telegramIntegration" | "telegramPendingDraft" | "integrationRules"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1153,6 +1154,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    integrationRules: {
+      payload: Prisma.$integrationRulesPayload<ExtArgs>
+      fields: Prisma.integrationRulesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.integrationRulesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationRulesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.integrationRulesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationRulesPayload>
+        }
+        findFirst: {
+          args: Prisma.integrationRulesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationRulesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.integrationRulesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationRulesPayload>
+        }
+        findMany: {
+          args: Prisma.integrationRulesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationRulesPayload>[]
+        }
+        create: {
+          args: Prisma.integrationRulesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationRulesPayload>
+        }
+        createMany: {
+          args: Prisma.integrationRulesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.integrationRulesCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationRulesPayload>[]
+        }
+        delete: {
+          args: Prisma.integrationRulesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationRulesPayload>
+        }
+        update: {
+          args: Prisma.integrationRulesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationRulesPayload>
+        }
+        deleteMany: {
+          args: Prisma.integrationRulesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.integrationRulesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.integrationRulesUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationRulesPayload>[]
+        }
+        upsert: {
+          args: Prisma.integrationRulesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$integrationRulesPayload>
+        }
+        aggregate: {
+          args: Prisma.IntegrationRulesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateIntegrationRules>
+        }
+        groupBy: {
+          args: Prisma.integrationRulesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.IntegrationRulesGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.integrationRulesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.IntegrationRulesCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1352,6 +1427,18 @@ export const TelegramPendingDraftScalarFieldEnum = {
 } as const
 
 export type TelegramPendingDraftScalarFieldEnum = (typeof TelegramPendingDraftScalarFieldEnum)[keyof typeof TelegramPendingDraftScalarFieldEnum]
+
+
+export const IntegrationRulesScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  domain: 'domain',
+  tag_id: 'tag_id',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type IntegrationRulesScalarFieldEnum = (typeof IntegrationRulesScalarFieldEnum)[keyof typeof IntegrationRulesScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1582,6 +1669,7 @@ export type GlobalOmitConfig = {
   draft_preference?: Prisma.draft_preferenceOmit
   telegramIntegration?: Prisma.TelegramIntegrationOmit
   telegramPendingDraft?: Prisma.telegramPendingDraftOmit
+  integrationRules?: Prisma.integrationRulesOmit
 }
 
 /* Types for Logging */

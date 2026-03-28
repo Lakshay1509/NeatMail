@@ -1,5 +1,5 @@
 "use client"
-import { Mail, Home, MessageSquareDashed, Receipt, AlertCircle, Tag,Shredder } from "lucide-react"
+import { Mail, Home, MessageSquareDashed, Receipt, AlertCircle, Tag,Shredder, Workflow } from "lucide-react"
 
 
 import {
@@ -44,6 +44,13 @@ const items = [
     url: "/settings/draft-preference",
     icon: MessageSquareDashed
   },
+
+  {
+    title: 'Integrations',
+    url: "/integration",
+    icon: Workflow
+
+  }
   // {
   //   title: "Privacy",
   //   url: "/settings/privacy",

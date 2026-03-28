@@ -4,6 +4,7 @@ import { useDeleteTelegramIntegration } from "@/features/telegram/use-delete-tel
 import { useGetTelegramEnabled } from "@/features/telegram/use-get-telegram-enabled"
 import { Switch } from "@/components/ui/switch"
 import { useUser } from "@clerk/nextjs";
+import Rules from "./Rules";
 
 const TelegramIcon = ({ className }: { className?: string }) => (
   <svg
@@ -33,7 +34,7 @@ export const TelegramCard = () => {
     }
 
   return (
-    <div className="flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm shadow-black/5 w-full max-w-md">
+    <div className="flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm shadow-black/5 w-full max-w-full">
       <div className="flex items-center justify-between p-6">
         <div className="flex items-center space-x-4">
           <TelegramIcon className="w-10 h-10 text-[#2AABEE]" />
@@ -56,6 +57,11 @@ export const TelegramCard = () => {
       <div className="px-6 pb-6 text-sm text-muted-foreground">
         Enable Telegram integration to receive instant notifications and manage alerts directly in your chats.
       </div>
+      {data?.enabled && (
+        <div className="px-6 pb-6 border-t pt-6">
+          <Rules />
+        </div>
+      )}
     </div>
   )
 }

@@ -31,6 +31,7 @@ model user_tokens {
   user_tags                  user_tags[]
   telegram_integration       TelegramIntegration?
   pending_drafts             telegramPendingDraft[]
+  integration_rules          integrationRules[]
 
   @@schema("public")
 }
@@ -39,13 +40,14 @@ model tag {
   id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name           String
   created_at     DateTime        @default(now()) @db.Timestamptz(6)
-  color          String
-  user_id        String?
-  outlook_preset String?
-  description    String?
-  email_tracked  email_tracked[]
-  user_tokens    user_tokens?    @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
-  user_tags      user_tags[]
+  color            String
+  user_id          String?
+  outlook_preset   String?
+  description      String?
+  email_tracked    email_tracked[]
+  user_tokens      user_tokens?    @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+  user_tags        user_tags[]
+  integration_rules integrationRules[]
 
   @@unique([name, user_id])
   @@schema("public")
@@ -190,8 +192,6 @@ model TelegramIntegration {
   id      String @id @default(uuid())
   user_id String @unique
   chat_id String @unique
-
-  // rules      TelegramRule[] // Add this relation if you define a TelegramRule model
   user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
   @@schema("public")
@@ -207,5 +207,24 @@ model telegramPendingDraft {
   created_at      DateTime    @default(now()) @db.Timestamptz(6)
   user_tokens     user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
+  @@schema("public")
+}
+
+
+model integrationRules {
+  id             String      @id @default(uuid())
+  user_id        String
+  domain         String
+  tag_id         String      @db.Uuid
+  created_at     DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user_tokens    user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+  tag            tag         @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, domain], map: "idx_integration_rules_user_domain")
+  @@index([user_id], map: "idx_integration_rules_user_id")
+  @@index([tag_id], map: "idx_integration_rules_tag_id")
+  @@index([domain], map: "idx_integration_rules_domain")
+  @@map("integration_rules")
   @@schema("public")
 }

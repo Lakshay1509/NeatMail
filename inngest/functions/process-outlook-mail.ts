@@ -14,6 +14,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { isMessageProcessed, markMessageProcessed } from "@/lib/redis";
 import { parseFromHeader } from "@/app/api/[[...route]]/gmail-webhook";
 import { getModelResponse } from "@/lib/model";
+import { checkAndForwardToTelegram } from "@/lib/telegram";
 
 export const processOutlookMailFn = inngest.createFunction(
   {
@@ -202,6 +203,8 @@ export const processOutlookMailFn = inngest.createFunction(
         }
       });
       addMailtoDB(subscription.clerk_user_id, tagProperties.id, movedMessageId,from);
+
+      checkAndForwardToTelegram(subscription.clerk_user_id,from,subject,body,tagProperties.id)
     }
 
     if (shouldDraft) {
