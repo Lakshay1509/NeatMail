@@ -325,10 +325,10 @@ const app = new Hono().post("/", async (ctx) => {
           throw err;
         }
 
-        if(labelName==='Action Needed' || labelName==='Pending Response'){
+        
           const {senderEmail } = parseFromHeader(emailData.from);
           await checkAndForwardToTelegram(clerkUserId,senderEmail,emailData.subject,emailData.bodySnippet,colourofLabel.id)
-        }
+        
 
         await addMailtoDB(clerkUserId, colourofLabel.id, String(messageId),emailData.from);
       }
