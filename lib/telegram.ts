@@ -8,7 +8,7 @@ export async function sendTelegramMessage(chatId: string, text: string) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
-    }
+    },
   );
 
   const json = await res.json();
@@ -29,7 +29,8 @@ export async function checkAndForwardToTelegram(
   senderEmail: string,
   emailSubject: string,
   emailSnippet: string,
-  tagId:string
+  tagId: string,
+  tagName: string,
 ) {
   const data = await db.telegramIntegration.findUnique({
     where: { user_id: userId },
@@ -37,24 +38,29 @@ export async function checkAndForwardToTelegram(
 
   if (!data || !data.chat_id) return;
 
+  if (
+    (tagName === "Action Needed" || tagName === "Pending Response") &&
+    data.forward_important_mails
+  ) {
+    const message = `📧 <b>New email from ${escapeHtml(senderEmail)}</b>\n\n<b>${escapeHtml(emailSubject)}</b>\n\n${escapeHtml(emailSnippet)}`;
 
-  const match = await db.integrationRules.findMany({
-    where:{
-      user_id:userId,
-      AND:[
-        {domain:senderEmail.trim()},
-        {tag_id:tagId}
-      ]
+    await sendTelegramMessage(data.chat_id, message);
+  } else {
+    const match = await db.integrationRules.findMany({
+      where: {
+        user_id: userId,
+        AND: [{ domain: senderEmail.trim() }, { tag_id: tagId }],
+      },
+    });
+
+    if (match.length === 0) {
+      return;
     }
-  })
 
-  if(match.length===0){
-    return;
+    const message = `📧 <b>New email from ${escapeHtml(senderEmail)}</b>\n\n<b>${escapeHtml(emailSubject)}</b>\n\n${escapeHtml(emailSnippet)}`;
+
+    await sendTelegramMessage(data.chat_id, message);
   }
-
-  const message = `📧 <b>New email from ${escapeHtml(senderEmail)}</b>\n\n<b>${escapeHtml(emailSubject)}</b>\n\n${escapeHtml(emailSnippet)}`;
-
-  await sendTelegramMessage(data.chat_id, message);
 }
 
 // lib/telegram.ts
@@ -63,13 +69,12 @@ export async function sendDraftNotification(
   userId: string,
   senderEmail: string,
   emailSubject: string,
-  draftReply: string,      // the AI-generated draft content
-  quickOptions: string[],   // e.g. ["Yes, 3am works!", "No, let's reschedule", "Not available"]
-  draft_id:string
+  draftReply: string, // the AI-generated draft content
+  quickOptions: string[], // e.g. ["Yes, 3am works!", "No, let's reschedule", "Not available"]
+  draft_id: string,
 ) {
-
   const data = await db.telegramIntegration.findUnique({
-    where: { user_id: userId },
+    where: { user_id: userId ,forward_draft_for_confirmation:true},
   });
 
   if (!data || !data.chat_id) return;
@@ -79,10 +84,12 @@ export async function sendDraftNotification(
     `✏️ <b>Draft reply:</b>\n<i>${escapeHtml(draftReply)}</i>`;
 
   // Build inline keyboard: quick options + custom
-  const optionButtons = quickOptions.map((opt,i) => ([{
-    text: opt,
-    callback_data: `send:${draft_id}:${i}`,
-  }]));
+  const optionButtons = quickOptions.map((opt, i) => [
+    {
+      text: opt,
+      callback_data: `send:${draft_id}:${i}`,
+    },
+  ]);
 
   const keyboard = [
     ...optionButtons,
@@ -101,7 +108,7 @@ export async function sendDraftNotification(
         parse_mode: "HTML",
         reply_markup: { inline_keyboard: keyboard },
       }),
-    }
+    },
   );
 
   const json = await res.json();
@@ -111,13 +118,11 @@ export async function sendDraftNotification(
   }
 
   await db.telegramPendingDraft.create({
-    data:{
-      user_id:userId,
-      telegram_msg_id:json.result.message_id,
-      draft_id:draft_id,
+    data: {
+      user_id: userId,
+      telegram_msg_id: json.result.message_id,
+      draft_id: draft_id,
       quick_options: quickOptions,
-    }
-
-  })
-
+    },
+  });
 }

@@ -327,7 +327,7 @@ const app = new Hono().post("/", async (ctx) => {
 
         
           const {senderEmail } = parseFromHeader(emailData.from);
-          await checkAndForwardToTelegram(clerkUserId,senderEmail,emailData.subject,emailData.bodySnippet,colourofLabel.id)
+          await checkAndForwardToTelegram(clerkUserId,senderEmail,emailData.subject,emailData.bodySnippet,colourofLabel.id,colourofLabel.name)
         
 
         await addMailtoDB(clerkUserId, colourofLabel.id, String(messageId),emailData.from);

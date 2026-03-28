@@ -204,7 +204,7 @@ export const processOutlookMailFn = inngest.createFunction(
       });
       addMailtoDB(subscription.clerk_user_id, tagProperties.id, movedMessageId,from);
 
-      checkAndForwardToTelegram(subscription.clerk_user_id,from,subject,body,tagProperties.id)
+      checkAndForwardToTelegram(subscription.clerk_user_id,from,subject,body,tagProperties.id,tagProperties.name)
     }
 
     if (shouldDraft) {

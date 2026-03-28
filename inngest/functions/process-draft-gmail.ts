@@ -137,6 +137,7 @@ export const processDraftGmail = inngest.createFunction(
         });
         draft_id = createdGmailDraft?.id ?? "";
         drafted = true;
+
       } else {
         const createdOutlookDraft = await step.run("create-outlook-draft", async () => {
           return await createOutlookDraft(
@@ -156,7 +157,9 @@ export const processDraftGmail = inngest.createFunction(
     }
 
     await step.run("telegram-run", async () => {
+      if(is_gmail){
       await sendDraftNotification(userId, emailData.from, emailData.subject,draft,quickOptions,draft_id);
+      }
     });
 
     return { status: "success", drafted, draft_id };
