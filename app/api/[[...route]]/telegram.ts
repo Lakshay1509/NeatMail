@@ -210,7 +210,7 @@ const app = new Hono()
 
         await sendTelegramMessage(
           chatId,
-          "NeatMail connected! You'll receive email alerts here.",
+          "NeatMail connected successfully! You'll now receive email alerts here. Refresh the dashboard to see the updated status."
         );
 
         return ctx.json({ success: true }, 200);
