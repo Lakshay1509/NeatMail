@@ -19,7 +19,7 @@ const isPublicApiRoute = createRouteMatcher([
   '/api/inngest/:path*',
   '/api/outlook/:path*',
   '/api/email/all',
-  '/api/telegram/:path*'
+  '/api/telegram/webhook*'
 ]);
 
 const isGmailWebhook = createRouteMatcher([
