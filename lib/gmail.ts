@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import { clerkClient } from "@clerk/nextjs/server";
 import { extractUnsubscribeLinkFromBodyGmail } from "./unsubscribe";
+import { applyCorrectionsToText } from "./openai";
 
 export async function getGmailClient(userId: string) {
   try {
@@ -446,3 +447,102 @@ export async function unsubscribeFromEmail(userId: string, messageId: string) {
     throw error;
   }
 }
+
+export async function updateGmailDraft(
+  userId: string,
+  draftId: string,
+  text: string,
+) {
+  const gmail = await getGmailClient(userId);
+
+  const draft = await gmail.users.drafts.get({
+    userId: "me",
+    id: draftId,
+    format: "full",
+  });
+
+  const headers = draft.data.message?.payload?.headers || [];
+  const threadId = draft.data.message?.threadId;
+  const oldDraftBody = extractBodyFromPart(draft.data.message?.payload).join("\n").trim();
+  console.log(oldDraftBody);
+
+  const newDraft = await applyCorrectionsToText(oldDraftBody,text);
+
+
+  const to =
+    headers.find((h) => h.name?.toLowerCase() === "to")?.value || "";
+  const fromEmail =
+    headers.find((h) => h.name?.toLowerCase() === "from")?.value || "";
+  const subject =
+    headers.find((h) => h.name?.toLowerCase() === "subject")?.value || "";
+  const inReplyTo =
+    headers.find((h) => h.name?.toLowerCase() === "in-reply-to")?.value || "";
+  const references =
+    headers.find((h) => h.name?.toLowerCase() === "references")?.value || "";
+
+  const formattedBody = newDraft.replace(/\n/g, "<br>");
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; font-size: 14px; color: #000000;">
+      ${formattedBody}
+    </div>
+  `.trim();
+
+  const encodedBody = Buffer.from(htmlContent).toString("base64");
+
+  const CRLF = "\r\n";
+  const messageParts: string[] = [
+    "MIME-Version: 1.0",
+    `From: ${fromEmail}`,
+    `To: ${to}`,
+    `Subject: ${subject}`,
+  ];
+
+  if (inReplyTo) {
+    messageParts.push(`In-Reply-To: ${inReplyTo}`);
+  }
+  if (references) {
+    messageParts.push(`References: ${references}`);
+  }
+
+  messageParts.push(
+    "Content-Type: text/html; charset=utf-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    encodedBody,
+  );
+
+  const raw = messageParts.join(CRLF);
+  const encodedMessage = Buffer.from(raw)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
+  const updatedDraft = await gmail.users.drafts.update({
+    userId: "me",
+    id: draftId,
+    requestBody: {
+      message: {
+        raw: encodedMessage,
+        threadId: threadId ,
+      },
+    },
+  });
+
+  return updatedDraft.data;
+}
+
+export async function sendGmailDraft(userId: string, draftId: string) {
+  const gmail = await getGmailClient(userId);
+
+  const response = await gmail.users.drafts.send({
+    userId: "me",
+    requestBody: {
+      id: draftId,
+    },
+  });
+
+  return response.data;
+}
+
+

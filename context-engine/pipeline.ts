@@ -100,7 +100,7 @@ Requirements:
 STEP 3: QUICK OPTIONS
 Generate 3 quick reply options that the user can use to respond. These should be:
 - Contextual to the email content
-- Short and actionable (5-15 words each)
+- Short and actionable (5-15 words each max)
 - Diverse (cover different possible responses)
 - Professional
 

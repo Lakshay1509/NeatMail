@@ -1,3 +1,5 @@
+import { sendGmailDraft, updateGmailDraft } from "@/lib/gmail";
+import { applyCorrectionsToText } from "@/lib/openai";
 import { db } from "@/lib/prisma";
 import { escapeHtml, sendTelegramMessage } from "@/lib/telegram";
 import { auth } from "@clerk/nextjs/server";
@@ -126,8 +128,8 @@ const app = new Hono()
 
         if (action === "send") {
           // Update draft with chosen option text, then send
-          // await updateGmailDraft(pending.user_id, gmailDraftId, customText);
-          // await sendGmailDraft(pending.user_id, gmailDraftId);
+          await updateGmailDraft(pending.user_id, draft_id, customText);
+          await sendGmailDraft(pending.user_id, draft_id);
           await editMessageText(
             chatId,
             message.message_id,
@@ -170,8 +172,8 @@ const app = new Hono()
         });
 
         if (pending) {
-          // await updateGmailDraft(pending.user_id, pending.gmail_draft_id, text);
-          // await sendGmailDraft(pending.user_id, pending.gmail_draft_id);
+          await updateGmailDraft(pending.user_id, pending.draft_id, text);
+          await sendGmailDraft(pending.user_id, pending.draft_id);
           await db.telegramPendingDraft.delete({ where: { id: pending.id } });
 
           await sendTelegramMessage(chatId, `✅ Custom reply sent!`);

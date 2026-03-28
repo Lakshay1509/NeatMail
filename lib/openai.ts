@@ -160,3 +160,48 @@ Return only valid JSON with fields: category, response_required.`,
     throw new Error("Invalid JSON response from OpenAI");
   }
 }
+
+export async function applyCorrectionsToText(oldText: string, corrections: string): Promise<string> {
+  const messages = [
+    {
+      role: "system" as const,
+      content: `You are a text editing assistant. Your task is to apply the provided corrections to the old text and return the strictly modified new text.
+Output MUST be a valid JSON object in the exact following format:
+{
+  "new_string": "the fully updated text"
+}
+Do not include any other text, markdown formatting, or explanations.`
+    },
+    {
+      role: "user" as const,
+      content: `Please apply the following corrections to the old text.
+
+<old_text>
+${oldText}
+</old_text>
+
+<corrections>
+${corrections}
+</corrections>
+
+Return the updated text as a JSON object.`
+    }
+  ];
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages,
+    response_format: { type: "json_object" },
+    temperature: 0,
+  });
+
+  const content = completion.choices[0]?.message?.content;
+  if (!content) throw new Error("No response from OpenAI");
+
+  try {
+    const json = JSON.parse(content);
+    return json.new_string || "";
+  } catch {
+    throw new Error("Invalid JSON response from OpenAI");
+  }
+}
