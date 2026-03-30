@@ -35,8 +35,11 @@ ENV PATH=$BUN_INSTALL/bin:$PATH
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-ENV NODE_OPTIONS="--max-old-space-size=4096"
+# Safe for a 4GB VPS shared with Coolify + OS + other services.
+# Build uses ~1.5GB peak; leaves headroom for everything else.
+ENV NODE_OPTIONS="--max-old-space-size=1536"
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV GENERATE_SOURCEMAP=false
 
 # === Build-time Public Env Variables ===
 ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
@@ -74,6 +77,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
 ENV HOSTNAME="0.0.0.0"
+# Cap runtime heap at 768MB — safe for a 4GB VPS with other services running
+ENV NODE_OPTIONS="--max-old-space-size=768"
 
 # Copy Prisma schema and generated client (Prisma 7 generates to prisma/generated/prisma)
 COPY --from=builder /app/prisma ./prisma

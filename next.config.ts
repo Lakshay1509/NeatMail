@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Skip type-checking during Docker builds on the VPS.
+  // tsc spawns a separate worker that consumes ~1.5GB RAM — fatal on a 4GB machine.
+  // Run `tsc --noEmit` locally or in CI (GitHub Actions) instead.
+  typescript: { ignoreBuildErrors: true },
   async headers() {
     return [
       {
