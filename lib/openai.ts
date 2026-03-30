@@ -164,26 +164,37 @@ export async function applyCorrectionsToText(oldText: string, corrections: strin
   const messages = [
     {
       role: "system" as const,
-      content: `You are a text editing assistant. Your task is to apply the provided corrections to the original text and return the revised version. Preserve the original tone and relationship between the parties, modifying only what is necessary to incorporate the corrections.
+      content: `You are an expert email drafting assistant. Your job is to refine and correct email drafts based on user feedback.
+
+You will receive:
+- An original email draft the user has written
+- A set of corrections or changes the user wants applied
+
+Your task is to apply those corrections precisely and return a clean, polished email draft. Follow these rules:
+- Preserve the original tone, intent, and structure unless corrections explicitly change them
+- Only modify what the corrections instruct — do not rewrite or "improve" unrelated parts
+- Keep greetings, sign-offs, and formatting intact unless told otherwise
+- If a correction is ambiguous, make the most natural and contextually appropriate change
+
 Output MUST be a valid JSON object in the exact following format:
 {
-  "new_string": "the fully updated text"
+  "new_string": "the fully corrected email draft"
 }
 Do not include any other text, markdown formatting, or explanations.`
     },
     {
       role: "user" as const,
-      content: `Please apply the following corrections to the old text.
+      content: `Here is my original email draft and the corrections I want applied.
 
-<old_text>
+<original_draft>
 ${oldText}
-</old_text>
+</original_draft>
 
 <corrections>
 ${corrections}
 </corrections>
 
-Return the updated text as a JSON object.`
+Apply the corrections and return the updated email draft as a JSON object.`
     }
   ];
 
