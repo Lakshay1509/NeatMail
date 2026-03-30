@@ -44,8 +44,6 @@ export default clerkMiddleware(async (auth, req) => {
   logger.info({
     method: req.method,
     path: req.nextUrl.pathname,
-    ip: req.headers.get("x-forwarded-for"),
-    userAgent: req.headers.get("user-agent"),
   });
 
   const { userId } = await auth();
