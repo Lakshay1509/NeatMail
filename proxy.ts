@@ -6,6 +6,7 @@ import {
   routeLimiter, 
   getIdentifier 
 } from '@/lib/rate-limit';
+import { logger } from '@/lib/logger';
 
 const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)'
@@ -38,6 +39,15 @@ const isClerkInternalRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
+
+
+  logger.info({
+    method: req.method,
+    path: req.nextUrl.pathname,
+    ip: req.headers.get("x-forwarded-for"),
+    userAgent: req.headers.get("user-agent"),
+  });
+
   const { userId } = await auth();
   const identifier = getIdentifier(req, userId);
   
