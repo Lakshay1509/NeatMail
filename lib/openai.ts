@@ -1,20 +1,19 @@
 import OpenAI from "openai";
 
-// const endpoint = process.env.AZURE_ENDPOINT!;
-// const deploymentName = "gpt-4.1-mini";
-// const apiKey = process.env.AZURE_API_KEY!;
+const endpoint = process.env.AZURE_ENDPOINT!;
+const apiKey = process.env.AZURE_API_KEY!;
 
-// const openai = new OpenAI({
-//   baseURL: endpoint,
-//   apiKey,
+const openai = new OpenAI({
+  baseURL: endpoint,
+  apiKey,
 
-// });
+});
 
 //You can use normal openai endpoint by uncommenting this- we use azure by default
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+// const openai = new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY!,
+// });
 
 export type UserTag = {
   tag: {
