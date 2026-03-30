@@ -36,35 +36,35 @@ jobs:
         run: bun prisma migrate deploy
 
   build-check:
-  name: TypeScript & Build Check
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v4
+    name: TypeScript & Build Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-    - uses: oven-sh/setup-bun@v2
-      with:
-        bun-version: latest
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
-    - uses: actions/cache@v4
-      with:
-        path: ~/.bun/install/cache
-        key: ${{ runner.os }}-bun-${{ hashFiles('bun.lockb') }}
-        restore-keys: ${{ runner.os }}-bun-
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lockb') }}
+          restore-keys: ${{ runner.os }}-bun-
 
-    - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile
 
-    - name: Type check
-      run: bunx tsc --noEmit
+      - name: Type check
+        run: bunx tsc --noEmit
 
-    - name: Build
-      env:
-        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-        NEXT_PUBLIC_CLERK_SIGN_IN_URL: ${{ secrets.NEXT_PUBLIC_CLERK_SIGN_IN_URL }}
-        NEXT_PUBLIC_CLERK_SIGN_UP_URL: ${{ secrets.NEXT_PUBLIC_CLERK_SIGN_UP_URL }}
-        NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        DIRECT_URL: ${{ secrets.DIRECT_URL }}
-        UPSTASH_REDIS_URL: ${{ secrets.UPSTASH_REDIS_URL }}
-        UPSTASH_REDIS_TOKEN: ${{ secrets.UPSTASH_REDIS_TOKEN }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      run: bun run build
+      - name: Build
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_CLERK_SIGN_IN_URL: ${{ secrets.NEXT_PUBLIC_CLERK_SIGN_IN_URL }}
+          NEXT_PUBLIC_CLERK_SIGN_UP_URL: ${{ secrets.NEXT_PUBLIC_CLERK_SIGN_UP_URL }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          UPSTASH_REDIS_URL: ${{ secrets.UPSTASH_REDIS_URL }}
+          UPSTASH_REDIS_TOKEN: ${{ secrets.UPSTASH_REDIS_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: bun run build
