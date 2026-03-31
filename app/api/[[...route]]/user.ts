@@ -497,7 +497,7 @@ const app = new Hono()
 
      const tokenResponse = await client.users.getUserOauthAccessToken(
           userId,
-          "microsoft",
+          "google",
         );
 
     return ctx.json({tokenResponse},200);

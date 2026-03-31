@@ -85,7 +85,7 @@ const app = new Hono()
       });
 
       // Detect country from Vercel's geo header and pick the right product
-      const country = ctx.req.header("x-vercel-ip-country") ?? "";
+      const country = ctx.req.header("cf-ipcountry") ?? "";
       const productId =
         country === "IN"
           ? process.env.DODO_PRODUCT_ID_INDIA

@@ -54,7 +54,7 @@ const Dashboard = () => {
                         <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">
                             Emails labelled this month
                         </p>
-                        <p className="text-3xl font-semibold text-gray-900 mt-1">
+                        <p className="text-2xl font-semibold text-gray-900 mt-1">
                             {isLoading ? "..." : data?.data || 0}
                         </p>
                     </div>
@@ -84,7 +84,7 @@ const Dashboard = () => {
                         <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">
                             Avg emails / day
                         </p>
-                        <p className="text-3xl font-semibold text-gray-900 mt-1">
+                        <p className="text-2xl font-semibold text-gray-900 mt-1">
                             {Math.ceil((data?.data ?? 0) / 30)}
                         </p>
                     </div>
