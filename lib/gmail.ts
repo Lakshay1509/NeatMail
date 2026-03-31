@@ -3,6 +3,17 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { extractUnsubscribeLinkFromBodyGmail } from "./unsubscribe";
 import { applyCorrectionsToText } from "./openai";
 
+export function stripQuotedReply(texts: string[]): string[] {
+  return texts.map((text) => {
+    // Remove quoted lines starting with >
+    text = text.replace(/^>.*$/gm, "");
+
+    // Remove "On ... wrote:" and everything after
+    text = text.replace(/On .* wrote:[\s\S]*$/, "");
+
+    return text.trim();
+  });
+}
 export async function getGmailClient(userId: string) {
   try {
     const client = await clerkClient();
@@ -152,7 +163,8 @@ function extractBodyFromPart(part: any): string[] {
     }
   }
 
-  return text;
+  return stripQuotedReply(text)
+
 }
 
 export async function getGmailMessageBody(userId: string, messageId: string) {
