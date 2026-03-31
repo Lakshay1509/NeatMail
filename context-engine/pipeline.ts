@@ -88,18 +88,23 @@ Goal:
 Generate a neutral, minimal draft reply that a human assistant might write. 
 Do not assume missing details. If specific information is required, leave a clear placeholder.
 
+STEP 2: REPLY GENERATION (only if Step 1 is false)
+
 Requirements:
-- Acknowledge the sender's message
-- Address the main point/question in a neutral way
-- If information is missing, use placeholders like [DETAIL], [DATE], [LINK], [PERSON]
-- Avoid making commitments or promises
-- Use a professional and neutral tone
-- Keep the reply under 120 words
-- Output plain text only
-- Do NOT include subject line
-- Do NOT include greetings like "Dear"
-- Do NOT include signatures
-- Do NOT use markdown formatting
+
+* Acknowledge the sender's message
+* Address the main point or question
+* Match the tone, formality, and writing style used earlier in the email thread
+* Use wording consistent with the ongoing conversation so the reply feels natural within the thread
+* If information is missing, keep the response neutral without inventing details
+* Do not introduce new topics that were not mentioned in the thread
+* Keep the reply concise and relevant to the discussion
+* Keep the full reply under 120 words
+* Do NOT include a subject line
+* Do NOT include greetings like "Dear"
+* Do NOT include signatures
+* Output plain text only
+
 
 Context:
 History with user: ${retrieved_history}
