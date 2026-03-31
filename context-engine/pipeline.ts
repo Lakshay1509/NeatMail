@@ -31,9 +31,8 @@ export async function buildContextAndDraft(
   timezone: string,
   draftPrompt: string | null,
   user_name: string | null,
-  relationship_context:string|null,
-  topic_context:string|null,
-  behavioural_context:string|null,
+  retrieved_history: Record<string, any>[],
+  thread_context: Record<string, any>[] | null,
   intent:         EmailIntent,
   keywords:       string[],
   mentionedDates: { raw: string; iso: string }[],
@@ -72,9 +71,6 @@ export async function buildContextAndDraft(
   
   const customInstructions = draftPrompt ? `\n- Follow these custom instructions from the user: "${draftPrompt}"` : "";
   const userNameInstruction = user_name ? `\n- The user's name is ${user_name}. Keep this in mind and reply on their behalf.` : "";
-  const relationshipInstruction = relationship_context ? `\n- Relationship context (how to address them): ${relationship_context}` : "";
-  const topicInstruction = topic_context ? `\n- Topic context (what this is about): ${topic_context}` : "";
-  const behaviouralInstruction = behavioural_context ? `\n- Behavioural context (tone and style): ${behavioural_context}` : "";
 
   const prompt = `You are an email reply generator. Follow these rules strictly:
 
@@ -87,15 +83,33 @@ Check if email is:
 If ANY above is true → Output exactly: "NO_REPLY_NEEDED" with no quick options
 
 STEP 2: REPLY GENERATION (only if Step 1 is false)
+
+Goal:
+Generate a neutral, minimal draft reply that a human assistant might write. 
+Do not assume missing details. If specific information is required, leave a clear placeholder.
+
 Requirements:
 - Acknowledge the sender's message
-- Address the main point/question
-- Use professional tone
-- Keep the full reply under 120 words
-- Do NOT include: subject line, greetings like "Dear", signatures
-- Do NOT use markdown formatting (like **bold** or *italics*), output plain text only
-- Context : ${contextBlock}${relationshipInstruction}${topicInstruction}${behaviouralInstruction}
-- Start directly with response ${customInstructions}, ${userNameInstruction}
+- Address the main point/question in a neutral way
+- If information is missing, use placeholders like [DETAIL], [DATE], [LINK], [PERSON]
+- Avoid making commitments or promises
+- Use a professional and neutral tone
+- Keep the reply under 120 words
+- Output plain text only
+- Do NOT include subject line
+- Do NOT include greetings like "Dear"
+- Do NOT include signatures
+- Do NOT use markdown formatting
+
+Context:
+History with user: ${retrieved_history}
+Ongoing thread context: ${thread_context}
+
+Start directly with the response.
+
+Additional instructions:
+${customInstructions}
+${userNameInstruction}
 
 STEP 3: QUICK OPTIONS
 Generate 3 quick reply options that the user can use to respond. These should be:

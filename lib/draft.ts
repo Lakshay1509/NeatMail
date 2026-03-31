@@ -16,14 +16,12 @@ export interface Context{
 }
 
 export interface DraftContextResponse{
-  relationship_context:Context,
-  topic_context:Context,
-  behavioural_context:Context,
-  overall_relevance:number,
-  is_relevant:boolean,
-  vectors_upserted:number,
-  user_namespace:string,
+  user_id : string,
   sender_email:string,
+  retrieved_history: Record<string, any>[],
+  vectors_matched: number,
+  history_synced: number,
+  thread_context: Record<string, any>[] | null,
   keywords:       string[],
   mentionedDates: { raw: string; iso: string }[],
   intent:         EmailIntent
