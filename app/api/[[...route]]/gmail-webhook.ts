@@ -361,8 +361,11 @@ const app = new Hono().post("/", async (ctx) => {
     await updateHistoryId(emailAddress, String(newHistoryId), true);
 
     return ctx.json({ success: true }, 200);
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ Error processing webhook:", error);
+    if (error?.errors) {
+      console.error("❌ Detailed errors:", JSON.stringify(error.errors, null, 2));
+    }
     if (currentMessageId) {
       await unmarkMessageProcessed(currentMessageId);
     }
