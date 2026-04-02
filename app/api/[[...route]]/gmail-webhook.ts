@@ -367,10 +367,6 @@ const app = new Hono().post("/", async (ctx) => {
     return ctx.json({ success: true }, 200);
   } catch (error: any) {
     console.error(`❌ Error processing webhook for user: ${errorUserId} (${errorEmail})`);
-    console.error("❌ Error details:", error);
-    if (error?.errors) {
-      console.error("❌ Detailed errors:", JSON.stringify(error.errors, null, 2));
-    }
     if (currentMessageId) {
       await unmarkMessageProcessed(currentMessageId);
     }
@@ -380,7 +376,7 @@ const app = new Hono().post("/", async (ctx) => {
 
     return ctx.json(
       { success: false, error: "Processing failed of webhook" },
-      500,
+      200,
     );
   }
 });
