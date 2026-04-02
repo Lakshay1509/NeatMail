@@ -49,6 +49,8 @@ const authClient = new OAuth2Client();
 
 const app = new Hono().post("/", async (ctx) => {
   let currentMessageId: string | null = null;
+  let errorUserId: string | null = null;
+  let errorEmail: string | null = null;
   // let currentThreadId: string | null = null;
 
   try {
@@ -83,6 +85,7 @@ const app = new Hono().post("/", async (ctx) => {
     const notification = JSON.parse(decodedData);
 
     const { emailAddress, historyId: newHistoryId } = notification;
+    errorEmail = emailAddress;
 
     const user = await getUserByEmail(emailAddress);
 
@@ -98,6 +101,7 @@ const app = new Hono().post("/", async (ctx) => {
     }
 
     const clerkUserId = user.clerk_user_id;
+    errorUserId = clerkUserId;
 
     const client = await clerkClient();
 
@@ -362,7 +366,8 @@ const app = new Hono().post("/", async (ctx) => {
 
     return ctx.json({ success: true }, 200);
   } catch (error: any) {
-    console.error("❌ Error processing webhook:", error);
+    console.error(`❌ Error processing webhook for user: ${errorUserId} (${errorEmail})`);
+    console.error("❌ Error details:", error);
     if (error?.errors) {
       console.error("❌ Detailed errors:", JSON.stringify(error.errors, null, 2));
     }
