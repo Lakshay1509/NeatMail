@@ -367,6 +367,23 @@ const app = new Hono().post("/", async (ctx) => {
     return ctx.json({ success: true }, 200);
   } catch (error: any) {
     console.error(`❌ Error processing webhook for user: ${errorUserId} (${errorEmail})`);
+    console.error("❌ Error Message:", error.message || String(error));
+
+    if (error.clerkError) {
+      console.error("❌ Clerk API Error details:", JSON.stringify({
+        status: error.status,
+        code: error.code,
+        clerkTraceId: error.clerkTraceId,
+        errors: error.errors
+      }, null, 2));
+    } else if (error.errors) {
+      console.error("❌ Detailed errors payload:", JSON.stringify(error.errors, null, 2));
+    } else if (error.stack) {
+      console.error("❌ Stack trace:", error.stack);
+    } else {
+      console.error("❌ Error Object:", error);
+    }
+
     if (currentMessageId) {
       await unmarkMessageProcessed(currentMessageId);
     }
