@@ -20,6 +20,7 @@ export const processDraftGmail = inngest.createFunction(
       messageId,
       tokenData,
       is_gmail,
+
     } = event.data;
 
     const draftPreference = await step.run("get-draft-preference", async () => {
@@ -92,6 +93,7 @@ export const processDraftGmail = inngest.createFunction(
         token: tokenData,
         timezone: draftPreference.timezone ?? "UTC",
         is_gmail: is_gmail,
+        threadId:emailData.threadId
       });
       return modelResult;
     });

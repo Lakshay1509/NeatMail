@@ -90,6 +90,7 @@ export const processOutlookMailFn = inngest.createFunction(
     const from: string = mail.from?.emailAddress?.address ?? "";
     const subject: string = mail.subject ?? "";
     const body: string = mail.body?.content ?? "";
+    const threadId: string = mail.conversationId ?? messageId;
 
     const client = await clerkClient();
     const clerkUser = await client.users.getUser(subscription.clerk_user_id);
@@ -229,6 +230,7 @@ export const processOutlookMailFn = inngest.createFunction(
           subject: subject,
           from: from,
           bodySnippet: body,
+          threadId: threadId,
         };
 
         const { senderName, senderEmail } = parseFromHeader(emailData.from);
