@@ -49,7 +49,7 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Card 1 */}
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 relative overflow-hidden flex flex-col justify-between">
-                    <div className="absolute left-0 top-3 bottom-3 w-1 bg-indigo-500 rounded-r-md"></div>
+                    
                     <div>
                         <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">
                             Emails labelled this month
