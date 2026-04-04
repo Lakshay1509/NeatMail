@@ -63,7 +63,7 @@ export const SubscriptionModal = ({
     },
     {
       icon: Tag,
-      title: "Gmail labeling integration",
+      title: "Gmail/Outlook labeling integration",
       desc: "Label your emails directly to your Gmail interface.",
     },
     {
