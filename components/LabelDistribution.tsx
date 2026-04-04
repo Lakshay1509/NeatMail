@@ -5,6 +5,13 @@ import { useGetUserTagsWeek } from "@/features/email/use-get-user-tagsThisWeek";
 export function LabelDistribution() {
   const { data: tags, isLoading } = useGetUserTagsWeek();
 
+  const distributionColors = [
+    "#0c5c49",
+    "#1ea97f",
+    "#5dc8a8",
+    "#bfe8d8",
+  ];
+
 
 
   if (isLoading) {
@@ -39,7 +46,7 @@ export function LabelDistribution() {
                 className="h-2.5 rounded-full"
                 style={{
                   width: `${cat.percentage}%`,
-                  backgroundColor: `rgba(79, 70, 229, ${[1, 0.75, 0.5, 0.25][index] || 0.1})`
+                  backgroundColor: distributionColors[index] || "#e8f5f1",
                 }}
               />
             </div>
