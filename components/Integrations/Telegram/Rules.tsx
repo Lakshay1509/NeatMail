@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, Loader2, Save, ChevronDown, ChevronUp } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { useGetUserIsGmail } from "@/features/user/use-get-user-isGmail";
 
 type Rule = {
   domain: string;
@@ -22,6 +23,7 @@ const Rules = () => {
     const { data: rulesData, isLoading: rulesLoading, isError } = useGetTelegramRules();
     const { data: prefsResponse, isLoading: prefsLoading } = useGetTelegramPreferences();
     const { data: tagData, isLoading: tagsLoading } = useGetUserTags();
+    const {data:isGmailData}= useGetUserIsGmail();
     
     const mutation = useAddRulesTelegram();
     const mutationPrefs = usePostTelegramPreferences();
@@ -105,7 +107,7 @@ const Rules = () => {
                             disabled={mutationPrefs.isPending} 
                         />
                     </div>
-                    <div className="flex items-center justify-between">
+                    {isGmailData?.is_gmail===true && <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                             <Label className="text-base font-medium">Review AI Drafts</Label>
                             <p className="text-sm text-muted-foreground">Get AI-generated drafts sent to Telegram for review before sending.</p>
@@ -115,7 +117,7 @@ const Rules = () => {
                             onCheckedChange={handleToggleFwdDraft} 
                             disabled={mutationPrefs.isPending} 
                         />
-                    </div>
+                    </div>}
                 </div>
             </div>
 
