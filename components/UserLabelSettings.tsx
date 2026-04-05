@@ -22,6 +22,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
 import CreateLabel from "./CreateLabel";
 import UpdateFolderPrefernce from "./UpdateFolderPrefernce";
+import LabelsNotInGmail from "./LabelsNotInGmail";
 
 
 
@@ -197,7 +198,10 @@ const UserLabelSettings = () => {
 							Labels made by you for your personlized workflow!
 						</p>
 					</div>
+					<div className="flex flex-row space-x-2">
 					<CreateLabel enabled={subData?.subscribed ? subData.subscribed : false}/>
+					<LabelsNotInGmail />
+					</div>
 
 				</div>
 
