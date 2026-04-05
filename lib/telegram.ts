@@ -17,6 +17,64 @@ export async function sendTelegramMessage(chatId: string, text: string) {
   }
 }
 
+export async function sendDraftConfirmationMessage(
+  chatId: string,
+  draftId: string,
+  draftReply: string,
+  options?: {
+    senderEmail?: string;
+    emailSubject?: string;
+    preface?: string;
+  },
+) {
+  const parts: string[] = [];
+
+  if (options?.senderEmail) {
+    parts.push(`📧 <b>New email from ${escapeHtml(options.senderEmail)}</b>`);
+  }
+
+  if (options?.emailSubject) {
+    parts.push(`<b>${escapeHtml(options.emailSubject)}</b>`);
+  }
+
+  if (options?.preface) {
+    parts.push(`<b>${escapeHtml(options.preface)}</b>`);
+  }
+
+  parts.push(`<b>Drafted reply :</b>\n<i>${escapeHtml(draftReply)}</i>`);
+  parts.push("Choose what to do next:");
+
+  const res = await fetch(
+    `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: parts.join("\n\n"),
+        parse_mode: "HTML",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: "Send", callback_data: `send:${draftId}` },
+              { text: "Discard", callback_data: `discard:${draftId}` },
+              { text: "Edit", callback_data: `edit:${draftId}` },
+            ],
+          ],
+        },
+      }),
+    },
+  );
+
+  const json = await res.json();
+  if (!json.ok) {
+    console.error("Telegram send error:", JSON.stringify(json));
+    return null;
+  }
+
+  return json.result.message_id as number;
+}
+
 export function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
@@ -82,55 +140,39 @@ export async function sendDraftNotification(
   draft_id: string,
 ) {
   const data = await db.telegramIntegration.findUnique({
-    where: { user_id: userId ,forward_draft_for_confirmation:true},
+    where: { user_id: userId },
   });
 
-  if (!data || !data.chat_id) return;
-  const message =
-    `📧 <b>New email from ${escapeHtml(senderEmail)}</b>\n` +
-    `<b>${escapeHtml(emailSubject)}</b>\n\n` +
-    `✏️ <b>Draft reply:</b>\n<i>${escapeHtml(draftReply)}</i>`;
+  if (!data || !data.chat_id || !data.forward_draft_for_confirmation) {
+    return;
+  }
 
-  // Build inline keyboard: quick options + custom
-  const optionButtons = quickOptions.map((opt, i) => [
+  const messageId = await sendDraftConfirmationMessage(
+    data.chat_id,
+    draft_id,
+    draftReply,
     {
-      text: opt,
-      callback_data: `send:${draft_id}:${i}`,
-    },
-  ]);
-
-  const keyboard = [
-    ...optionButtons,
-    [{ text: "Send custom reply", callback_data: `custom:${draft_id}` }],
-    [{ text: "Discard draft", callback_data: `discard:${draft_id}` }],
-  ];
-
-  const res = await fetch(
-    `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: data.chat_id,
-        text: message,
-        parse_mode: "HTML",
-        reply_markup: { inline_keyboard: keyboard },
-      }),
+      senderEmail,
+      emailSubject,
     },
   );
 
-  const json = await res.json();
-  if (!json.ok) {
-    console.error("Telegram send error:", json);
-    return;
-  }
+  if (!messageId) return;
+
+  await db.telegramPendingDraft.deleteMany({
+    where: {
+      user_id: userId,
+      draft_id,
+    },
+  });
 
   await db.telegramPendingDraft.create({
     data: {
       user_id: userId,
-      telegram_msg_id: json.result.message_id,
+      telegram_msg_id: messageId,
       draft_id: draft_id,
       quick_options: quickOptions,
+      awaiting_custom: false,
     },
   });
 }

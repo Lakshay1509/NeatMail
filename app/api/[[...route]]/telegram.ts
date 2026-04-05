@@ -1,7 +1,9 @@
 import { deleteGmailDraft, sendGmailDraft, updateGmailDraft } from "@/lib/gmail";
-import { applyCorrectionsToText } from "@/lib/openai";
 import { db } from "@/lib/prisma";
-import { escapeHtml, sendTelegramMessage } from "@/lib/telegram";
+import {
+  sendDraftConfirmationMessage,
+  sendTelegramMessage,
+} from "@/lib/telegram";
 import { auth } from "@clerk/nextjs/server";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
@@ -171,7 +173,7 @@ const app = new Hono()
 
         db.integrationRules.createMany({
           data: values.map((v) => ({
-            domain: v.domain,
+            domain: v.domain.trim(),
             tag_id: v.tag_id,
             user_id: userId,
           })),
@@ -222,34 +224,41 @@ const app = new Hono()
 
         await answerCallbackQuery(id); // acknowledge button tap immediately
 
-        const [action, draft_id, ...rest] = data.split(":");
-        const customText = rest.join(":"); // in case text has colons
+        const integration = await db.telegramIntegration.findUnique({
+          where: { chat_id: chatId },
+        });
+
+        if (!integration) {
+          return ctx.json({ ok: true }, 200);
+        }
+
+        const [action, draft_id] = String(data).split(":");
 
         const pending = await db.telegramPendingDraft.findFirst({
-          where: { draft_id: draft_id },
+          where: {
+            draft_id,
+            user_id: integration.user_id,
+          },
         });
 
         if (!pending) {
           await editMessageText(
             chatId,
             message.message_id,
-            "⚠️ Draft not found or already handled.",
+            "Draft not found or already handled.",
           );
           return ctx.json({ ok: true }, 200);
         }
 
         if (action === "send") {
-          // Update draft with chosen option text, then send
-          await updateGmailDraft(pending.user_id, draft_id, customText);
           await sendGmailDraft(pending.user_id, draft_id);
           await editMessageText(
             chatId,
             message.message_id,
-            `✅ Reply sent: "<i>${escapeHtml(customText)}</i>"`,
+            "Reply sent.",
           );
           await db.telegramPendingDraft.delete({ where: { id: pending.id } });
-        } else if (action === "custom") {
-          // Ask user to type their reply — store state
+        } else if (action === "edit" || action === "custom") {
           await db.telegramPendingDraft.update({
             where: { id: pending.id },
             data: { awaiting_custom: true },
@@ -257,14 +266,14 @@ const app = new Hono()
           await editMessageText(
             chatId,
             message.message_id,
-            " <b>Type your custom reply</b> ",
+            "<b>Type your edited reply.</b>\n\nI will send it back for confirmation.",
           );
         } else if (action === "discard") {
           await deleteGmailDraft(pending.user_id, draft_id);
           await editMessageText(
             chatId,
             message.message_id,
-            "🗑️ Draft discarded.",
+            " Draft discarded.",
           );
           await db.telegramPendingDraft.delete({ where: { id: pending.id } });
         }
@@ -273,6 +282,8 @@ const app = new Hono()
       if (body.message?.text) {
         const chatId = String(body.message.chat.id);
         const text = body.message.text;
+
+        await sendTelegramMessage(chatId,"Re-writing draft hold on....")
 
         const integration = await db.telegramIntegration.findUnique({
           where: { chat_id: chatId },
@@ -284,11 +295,40 @@ const app = new Hono()
         });
 
         if (pending) {
-          await updateGmailDraft(pending.user_id, pending.draft_id, text);
-          await sendGmailDraft(pending.user_id, pending.draft_id);
-          await db.telegramPendingDraft.delete({ where: { id: pending.id } });
+          const updatedText = text.trim();
 
-          await sendTelegramMessage(chatId, `✅ Custom reply sent!`);
+          if (!updatedText) {
+            await sendTelegramMessage(chatId, "⚠️ Empty reply is not allowed.");
+            return ctx.json({ ok: true }, 200);
+          }
+
+          const updatedDraft = await updateGmailDraft(
+            pending.user_id,
+            pending.draft_id,
+            updatedText,
+          );
+
+          const confirmationMessageId = await sendDraftConfirmationMessage(
+            chatId,
+            pending.draft_id,
+            updatedDraft.text,
+            { preface: "Draft updated" },
+          );
+
+          await db.telegramPendingDraft.update({
+            where: { id: pending.id },
+            data: {
+              awaiting_custom: false,
+              telegram_msg_id: confirmationMessageId ?? pending.telegram_msg_id,
+            },
+          });
+
+          if (!confirmationMessageId) {
+            await sendTelegramMessage(
+              chatId,
+              "⚠️ Could not send the confirmation card. Please tap edit again.",
+            );
+          }
         }
       }
 

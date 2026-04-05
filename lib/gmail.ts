@@ -496,7 +496,6 @@ export async function updateGmailDraft(
   const headers = draft.data.message?.payload?.headers || [];
   const threadId = draft.data.message?.threadId;
   const oldDraftBody = extractBodyFromPart(draft.data.message?.payload).join("\n").trim();
-  console.log(oldDraftBody);
 
   const newDraft = await applyCorrectionsToText(oldDraftBody,text);
 
@@ -561,7 +560,10 @@ export async function updateGmailDraft(
     },
   });
 
-  return updatedDraft.data;
+  return {
+    data: updatedDraft.data,
+    text: newDraft,
+  };
 }
 
 export async function sendGmailDraft(userId: string, draftId: string) {
