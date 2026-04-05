@@ -20,7 +20,6 @@ export const processDraftGmail = inngest.createFunction(
       messageId,
       tokenData,
       is_gmail,
-
     } = event.data;
 
     const draftPreference = await step.run("get-draft-preference", async () => {
@@ -93,12 +92,12 @@ export const processDraftGmail = inngest.createFunction(
         token: tokenData,
         timezone: draftPreference.timezone ?? "UTC",
         is_gmail: is_gmail,
-        threadId:emailData.threadId
+        threadId: emailData.threadId,
       });
       return modelResult;
     });
 
-    const {draft,quickOptions} = await step.run(
+    const { draft, quickOptions } = await step.run(
       "build-context-and-draft",
       async () => {
         const { draft, quickOptions } = await buildContextAndDraft(
@@ -123,43 +122,57 @@ export const processDraftGmail = inngest.createFunction(
 
     if (draft.trim() !== "NO_REPLY_NEEDED" && draft.trim().length > 0) {
       if (is_gmail) {
-        const createdGmailDraft = await step.run("create-gmail-draft", async () => {
-          return await createGmailDraft(
-            userId,
-            emailData.threadId,
-            messageId,
-            emailData.subject,
-            emailData.from,
-            draft,
-            fontColor,
-            fontSize,
-            signature,
-          );
-        });
+        const createdGmailDraft = await step.run(
+          "create-gmail-draft",
+          async () => {
+            return await createGmailDraft(
+              userId,
+              emailData.threadId,
+              messageId,
+              emailData.subject,
+              emailData.from,
+              draft,
+              fontColor,
+              fontSize,
+              signature,
+            );
+          },
+        );
         draft_id = createdGmailDraft?.id ?? "";
         drafted = true;
-
       } else {
-        const createdOutlookDraft = await step.run("create-outlook-draft", async () => {
-          return await createOutlookDraft(
-            userId,
-            messageId,
-            emailData.subject,
-            emailData.from,
-            draft,
-            fontColor,
-            fontSize,
-            signature,
-          );
-        });
+        const createdOutlookDraft = await step.run(
+          "create-outlook-draft",
+          async () => {
+            return await createOutlookDraft(
+              userId,
+              messageId,
+              emailData.subject,
+              emailData.from,
+              draft,
+              fontColor,
+              fontSize,
+              signature,
+            );
+          },
+        );
         draft_id = createdOutlookDraft?.id ?? "";
         drafted = true;
       }
     }
 
     await step.run("telegram-run", async () => {
-      if(is_gmail){
-      await sendDraftNotification(userId, emailData.from, emailData.subject,draft,quickOptions,draft_id);
+      if (draft.trim() !== "NO_REPLY_NEEDED" && draft.trim().length > 0) {
+        if (is_gmail) {
+          await sendDraftNotification(
+            userId,
+            emailData.from,
+            emailData.subject,
+            draft,
+            quickOptions,
+            draft_id,
+          );
+        }
       }
     });
 
