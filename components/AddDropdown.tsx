@@ -10,8 +10,10 @@ import { Button } from "@/components/ui/button"
 import { Plus, RefreshCw, Tag } from "lucide-react"
 import CreateLabel from "./CreateLabel"
 import LabelsNotInGmail from "./LabelsNotInGmail"
+import { useGetUserSubscribed } from "@/features/user/use-get-subscribed"
 
 export default function AddDropdown() {
+  const { data: subData } = useGetUserSubscribed();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -33,11 +35,11 @@ export default function AddDropdown() {
 
         {/* Create Label Component */}
         <DropdownMenuItem
-          
+          onSelect={(e) => e.preventDefault()}
           className="gap-2"
         >
          
-          {/* <CreateLabel /> */}
+          <CreateLabel enabled={subData?.subscribed ? subData.subscribed : false} />
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

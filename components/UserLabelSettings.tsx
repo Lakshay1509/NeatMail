@@ -23,6 +23,7 @@ import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
 import CreateLabel from "./CreateLabel";
 import UpdateFolderPrefernce from "./UpdateFolderPrefernce";
 import LabelsNotInGmail from "./LabelsNotInGmail";
+import { useGetUserIsGmail } from "@/features/user/use-get-user-isGmail";
 
 
 
@@ -33,6 +34,7 @@ const UserLabelSettings = () => {
 	const { data: customData, isLoading: customLoading, isError: customError } = useGetCustomTags();
 	const { data: watchData, isLoading: watchLoading } = useGetUserWatch();
 	const { data: subData } = useGetUserSubscribed();
+	const {data:isGmailData}= useGetUserIsGmail();
 
 
 	const mutation = addTagstoUser();
@@ -105,7 +107,7 @@ const UserLabelSettings = () => {
 		<div className="w-full max-w-full">
 
 
-			<div className="flex items-start justify-between">
+			<div className="flex flex-row items-start justify-between gap-4">
 				<div>
 					<h2 className="text-lg font-semibold text-gray-900 mb-2">Monitor Inbox</h2>
 					<p className="text-gray-600 text-sm md:text-base max-w-2xl">
@@ -191,7 +193,7 @@ const UserLabelSettings = () => {
 					</div>
 				</div>
 
-				<div className="mb-8 flex flex-row items-center justify-between space-x-2">
+				<div className="mb-8 flex flex-col md:flex-row md:items-center items-start justify-between gap-4 md:space-x-2">
 					<div>
 						<h2 className="text-lg font-semibold text-gray-900 mb-2">Custom Labels</h2>
 						<p className="text-gray-600 text-sm md:text-base">
@@ -199,8 +201,8 @@ const UserLabelSettings = () => {
 						</p>
 					</div>
 					<div className="flex flex-row space-x-2">
-					<CreateLabel enabled={subData?.subscribed ? subData.subscribed : false}/>
-					<LabelsNotInGmail />
+						<CreateLabel enabled={subData?.subscribed ? subData.subscribed : false}/>
+						{isGmailData?.is_gmail===true && <LabelsNotInGmail />}
 					</div>
 
 				</div>

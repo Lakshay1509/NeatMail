@@ -331,6 +331,33 @@ const app = new Hono()
     return ctx.json({ data }, 200);
   })
 
+  .get('/isGmail',async(ctx)=>{
+    const { userId } = await auth();
+
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const data = await db.user_tokens.findUnique({
+        where:{clerk_user_id:userId},
+        select:{
+          is_gmail:true
+        }
+      })
+
+      if(!data){
+        return ctx.json({error:"Error fetching is-gmail data for user"},500);
+      }
+
+      if(data.is_gmail===true){
+        return ctx.json({is_gmail:true},200);
+      }
+
+      return ctx.json({is_gmail:false},200);
+
+
+  })
+
   .put(
     "/privacy",
     zValidator(
