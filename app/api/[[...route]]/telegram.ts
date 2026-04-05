@@ -252,9 +252,13 @@ const app = new Hono()
 
         if (action === "send") {
           await sendGmailDraft(pending.user_id, draft_id);
-          await editMessageText(
+          // await editMessageText(
+          //   chatId,
+          //   message.message_id,
+          //   "Reply sent.",
+          // );
+          await sendTelegramMessage(
             chatId,
-            message.message_id,
             "Reply sent.",
           );
           await db.telegramPendingDraft.delete({ where: { id: pending.id } });
@@ -263,9 +267,14 @@ const app = new Hono()
             where: { id: pending.id },
             data: { awaiting_custom: true },
           });
-          await editMessageText(
+
+          // await editMessageText(
+          //   chatId,
+          //   message.message_id,
+          //   "<b>Type your edited reply.</b>\n\nI will send it back for confirmation.",
+          // );
+          await sendTelegramMessage(
             chatId,
-            message.message_id,
             "<b>Type your edited reply.</b>\n\nI will send it back for confirmation.",
           );
         } else if (action === "discard") {
