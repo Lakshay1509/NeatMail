@@ -75,23 +75,23 @@ const app = new Hono().post("/webhook", async (ctx) => {
     return ctx.json({ success: true, message: "User created" }, 200);
   }
 
-  if (eventType === "user.updated") {
-    const { id, email_addresses } = evt.data;
-    const data = await db.user_tokens.upsert({
-      where: { clerk_user_id: id },
-      update: { email: email_addresses[0]?.email_address },
-      create: {
-        clerk_user_id: id,
-        email: email_addresses[0]?.email_address,
-      },
-    });
+  // if (eventType === "user.updated") {
+  //   const { id, email_addresses } = evt.data;
+  //   const data = await db.user_tokens.upsert({
+  //     where: { clerk_user_id: id },
+  //     update: { email: email_addresses[0]?.email_address },
+  //     create: {
+  //       clerk_user_id: id,
+  //       email: email_addresses[0]?.email_address,
+  //     },
+  //   });
 
-    if (!data) {
-      return ctx.json({ error: "Error updating user" }, 500);
-    }
+  //   if (!data) {
+  //     return ctx.json({ error: "Error updating user" }, 500);
+  //   }
 
-    return ctx.json({ success: true, message: "User updated" }, 200);
-  }
+  //   return ctx.json({ success: true, message: "User updated" }, 200);
+  // }
 
   // if (eventType === "user.deleted") {
   //   const { id: clerkUserId } = evt.data;
