@@ -209,7 +209,7 @@ const Billing = () => {
             </Button>
           )}
 
-          {data?.subscribed === true && !data.cancel_at_next_billing_date && (
+          {data?.subscribed === true && data.freeTrial===true && (
             <Button
               className="w-full md:w-auto px-4 py-2 text-sm font-medium text-white rounded-md  transaction-colors"
               onClick={handlebilling}
