@@ -259,6 +259,7 @@ export type IntegrationRulesScalarFieldEnum = (typeof IntegrationRulesScalarFiel
 
 export const AllowedTokenScalarFieldEnum = {
   id: 'id',
+  email: 'email',
   token: 'token',
   is_used: 'is_used'
 } as const

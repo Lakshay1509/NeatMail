@@ -7,6 +7,9 @@ import { QueryProviders } from "@/providers/QueryProvider";
 import { Toaster } from "sonner";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ConditionalSidebar } from "@/components/ConditionalSidebar";
+import { currentUser } from "@clerk/nextjs/server";
+import { db } from "@/lib/prisma";
+import { AccessDeniedAlert } from "@/components/AccessDeniedAlert";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -49,11 +52,33 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  let user = null;
+  try {
+    user = await currentUser();
+  } catch (error) {
+    // If Clerk throws 404 because the user was deleted but session cookie remains
+    console.error("Clerk currentUser error:", error);
+  }
+
+  let isAuthorized = true;
+
+  if (user) {
+    const email = user.emailAddresses[0]?.emailAddress;
+    if (email) {
+      const allowedUser = await db.allowedToken.findUnique({
+        where: { email }
+      });
+      if (!allowedUser) {
+        isAuthorized = false;
+      }
+    }
+  }
+
   return (
     <ClerkProvider>
       <html lang="en">
@@ -65,8 +90,14 @@ export default function RootLayout({
               <ConditionalSidebar />
               <main className="w-full">
                 <Toaster richColors theme="light" />
-                <Navbar />
-                {children}
+                {!isAuthorized ? (
+                  <AccessDeniedAlert />
+                ) : (
+                  <>
+                    <Navbar />
+                    {children}
+                  </>
+                )}
               </main>
             </SidebarProvider>
           </QueryProviders>

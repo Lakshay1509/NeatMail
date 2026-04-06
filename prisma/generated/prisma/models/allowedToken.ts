@@ -26,18 +26,21 @@ export type AggregateAllowedToken = {
 
 export type AllowedTokenMinAggregateOutputType = {
   id: string | null
+  email: string | null
   token: string | null
   is_used: boolean | null
 }
 
 export type AllowedTokenMaxAggregateOutputType = {
   id: string | null
+  email: string | null
   token: string | null
   is_used: boolean | null
 }
 
 export type AllowedTokenCountAggregateOutputType = {
   id: number
+  email: number
   token: number
   is_used: number
   _all: number
@@ -46,18 +49,21 @@ export type AllowedTokenCountAggregateOutputType = {
 
 export type AllowedTokenMinAggregateInputType = {
   id?: true
+  email?: true
   token?: true
   is_used?: true
 }
 
 export type AllowedTokenMaxAggregateInputType = {
   id?: true
+  email?: true
   token?: true
   is_used?: true
 }
 
 export type AllowedTokenCountAggregateInputType = {
   id?: true
+  email?: true
   token?: true
   is_used?: true
   _all?: true
@@ -137,6 +143,7 @@ export type allowedTokenGroupByArgs<ExtArgs extends runtime.Types.Extensions.Int
 
 export type AllowedTokenGroupByOutputType = {
   id: string
+  email: string
   token: string
   is_used: boolean
   _count: AllowedTokenCountAggregateOutputType | null
@@ -164,27 +171,31 @@ export type allowedTokenWhereInput = {
   OR?: Prisma.allowedTokenWhereInput[]
   NOT?: Prisma.allowedTokenWhereInput | Prisma.allowedTokenWhereInput[]
   id?: Prisma.StringFilter<"allowedToken"> | string
+  email?: Prisma.StringFilter<"allowedToken"> | string
   token?: Prisma.StringFilter<"allowedToken"> | string
   is_used?: Prisma.BoolFilter<"allowedToken"> | boolean
 }
 
 export type allowedTokenOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  email?: Prisma.SortOrder
   token?: Prisma.SortOrder
   is_used?: Prisma.SortOrder
 }
 
 export type allowedTokenWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  email?: string
   token?: string
   AND?: Prisma.allowedTokenWhereInput | Prisma.allowedTokenWhereInput[]
   OR?: Prisma.allowedTokenWhereInput[]
   NOT?: Prisma.allowedTokenWhereInput | Prisma.allowedTokenWhereInput[]
   is_used?: Prisma.BoolFilter<"allowedToken"> | boolean
-}, "id" | "token">
+}, "id" | "email" | "token">
 
 export type allowedTokenOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  email?: Prisma.SortOrder
   token?: Prisma.SortOrder
   is_used?: Prisma.SortOrder
   _count?: Prisma.allowedTokenCountOrderByAggregateInput
@@ -197,66 +208,77 @@ export type allowedTokenScalarWhereWithAggregatesInput = {
   OR?: Prisma.allowedTokenScalarWhereWithAggregatesInput[]
   NOT?: Prisma.allowedTokenScalarWhereWithAggregatesInput | Prisma.allowedTokenScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"allowedToken"> | string
+  email?: Prisma.StringWithAggregatesFilter<"allowedToken"> | string
   token?: Prisma.StringWithAggregatesFilter<"allowedToken"> | string
   is_used?: Prisma.BoolWithAggregatesFilter<"allowedToken"> | boolean
 }
 
 export type allowedTokenCreateInput = {
   id?: string
+  email: string
   token: string
   is_used?: boolean
 }
 
 export type allowedTokenUncheckedCreateInput = {
   id?: string
+  email: string
   token: string
   is_used?: boolean
 }
 
 export type allowedTokenUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
   token?: Prisma.StringFieldUpdateOperationsInput | string
   is_used?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type allowedTokenUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
   token?: Prisma.StringFieldUpdateOperationsInput | string
   is_used?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type allowedTokenCreateManyInput = {
   id?: string
+  email: string
   token: string
   is_used?: boolean
 }
 
 export type allowedTokenUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
   token?: Prisma.StringFieldUpdateOperationsInput | string
   is_used?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type allowedTokenUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
   token?: Prisma.StringFieldUpdateOperationsInput | string
   is_used?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type allowedTokenCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  email?: Prisma.SortOrder
   token?: Prisma.SortOrder
   is_used?: Prisma.SortOrder
 }
 
 export type allowedTokenMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  email?: Prisma.SortOrder
   token?: Prisma.SortOrder
   is_used?: Prisma.SortOrder
 }
 
 export type allowedTokenMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  email?: Prisma.SortOrder
   token?: Prisma.SortOrder
   is_used?: Prisma.SortOrder
 }
@@ -265,35 +287,40 @@ export type allowedTokenMinOrderByAggregateInput = {
 
 export type allowedTokenSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  email?: boolean
   token?: boolean
   is_used?: boolean
 }, ExtArgs["result"]["allowedToken"]>
 
 export type allowedTokenSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  email?: boolean
   token?: boolean
   is_used?: boolean
 }, ExtArgs["result"]["allowedToken"]>
 
 export type allowedTokenSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  email?: boolean
   token?: boolean
   is_used?: boolean
 }, ExtArgs["result"]["allowedToken"]>
 
 export type allowedTokenSelectScalar = {
   id?: boolean
+  email?: boolean
   token?: boolean
   is_used?: boolean
 }
 
-export type allowedTokenOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "token" | "is_used", ExtArgs["result"]["allowedToken"]>
+export type allowedTokenOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "token" | "is_used", ExtArgs["result"]["allowedToken"]>
 
 export type $allowedTokenPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "allowedToken"
   objects: {}
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    email: string
     token: string
     is_used: boolean
   }, ExtArgs["result"]["allowedToken"]>
@@ -720,6 +747,7 @@ export interface Prisma__allowedTokenClient<T, Null = never, ExtArgs extends run
  */
 export interface allowedTokenFieldRefs {
   readonly id: Prisma.FieldRef<"allowedToken", 'String'>
+  readonly email: Prisma.FieldRef<"allowedToken", 'String'>
   readonly token: Prisma.FieldRef<"allowedToken", 'String'>
   readonly is_used: Prisma.FieldRef<"allowedToken", 'Boolean'>
 }

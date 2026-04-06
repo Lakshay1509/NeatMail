@@ -31,7 +31,7 @@ export async function checkUserEmail(email: string) {
     if (!email) return { valid: false, message: "Email is required" };
 
     try {
-        const user = await db.user_tokens.findUnique({
+        const user = await db.allowedToken.findUnique({
             where: { email: email }
         });
 

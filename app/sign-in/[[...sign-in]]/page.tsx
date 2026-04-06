@@ -9,12 +9,19 @@ export default async function SignInPage(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const searchParams = await props.searchParams;
+  const params = await props.params;
+  const signInPath = params['sign-in'] as string[] | undefined;
+  
   const accessToken = searchParams.accessToken as string | undefined;
   
   let validToken = false;
   let tokenMessage = "";
 
-  if (accessToken) {
+  // If user is inside a specific Clerk authentication step (like /sso-callback)
+  // we must instantly render the <SignIn /> component to let Clerk process it.
+  if (signInPath && signInPath.length > 0) {
+    validToken = true;
+  } else if (accessToken) {
     const res = await checkInviteToken(accessToken);
     validToken = res.valid;
     if (!validToken) {
