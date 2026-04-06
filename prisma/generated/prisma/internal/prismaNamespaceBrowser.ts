@@ -61,7 +61,8 @@ export const ModelName = {
   draft_preference: 'draft_preference',
   TelegramIntegration: 'TelegramIntegration',
   telegramPendingDraft: 'telegramPendingDraft',
-  integrationRules: 'integrationRules'
+  integrationRules: 'integrationRules',
+  allowedUsers: 'allowedUsers'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -254,6 +255,14 @@ export const IntegrationRulesScalarFieldEnum = {
 } as const
 
 export type IntegrationRulesScalarFieldEnum = (typeof IntegrationRulesScalarFieldEnum)[keyof typeof IntegrationRulesScalarFieldEnum]
+
+
+export const AllowedUsersScalarFieldEnum = {
+  id: 'id',
+  email: 'email'
+} as const
+
+export type AllowedUsersScalarFieldEnum = (typeof AllowedUsersScalarFieldEnum)[keyof typeof AllowedUsersScalarFieldEnum]
 
 
 export const SortOrder = {

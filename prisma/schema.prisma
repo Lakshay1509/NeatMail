@@ -230,3 +230,10 @@ model integrationRules {
   @@map("integration_rules")
   @@schema("public")
 }
+
+model allowedUsers{
+  id             String      @id @default(uuid())
+  email          String      @unique
+  @@schema("public")
+  
+}

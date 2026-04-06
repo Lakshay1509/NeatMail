@@ -94,3 +94,8 @@ export type telegramPendingDraft = Prisma.telegramPendingDraftModel
  * 
  */
 export type integrationRules = Prisma.integrationRulesModel
+/**
+ * Model allowedUsers
+ * 
+ */
+export type allowedUsers = Prisma.allowedUsersModel

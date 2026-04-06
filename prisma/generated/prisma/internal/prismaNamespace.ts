@@ -394,7 +394,8 @@ export const ModelName = {
   draft_preference: 'draft_preference',
   TelegramIntegration: 'TelegramIntegration',
   telegramPendingDraft: 'telegramPendingDraft',
-  integrationRules: 'integrationRules'
+  integrationRules: 'integrationRules',
+  allowedUsers: 'allowedUsers'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -410,7 +411,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user_tokens" | "tag" | "user_tags" | "email_tracked" | "subscription" | "paymentHistory" | "refund" | "draft_preference" | "telegramIntegration" | "telegramPendingDraft" | "integrationRules"
+    modelProps: "user_tokens" | "tag" | "user_tags" | "email_tracked" | "subscription" | "paymentHistory" | "refund" | "draft_preference" | "telegramIntegration" | "telegramPendingDraft" | "integrationRules" | "allowedUsers"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1228,6 +1229,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    allowedUsers: {
+      payload: Prisma.$allowedUsersPayload<ExtArgs>
+      fields: Prisma.allowedUsersFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.allowedUsersFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.allowedUsersFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>
+        }
+        findFirst: {
+          args: Prisma.allowedUsersFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.allowedUsersFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>
+        }
+        findMany: {
+          args: Prisma.allowedUsersFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>[]
+        }
+        create: {
+          args: Prisma.allowedUsersCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>
+        }
+        createMany: {
+          args: Prisma.allowedUsersCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.allowedUsersCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>[]
+        }
+        delete: {
+          args: Prisma.allowedUsersDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>
+        }
+        update: {
+          args: Prisma.allowedUsersUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>
+        }
+        deleteMany: {
+          args: Prisma.allowedUsersDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.allowedUsersUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.allowedUsersUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>[]
+        }
+        upsert: {
+          args: Prisma.allowedUsersUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>
+        }
+        aggregate: {
+          args: Prisma.AllowedUsersAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAllowedUsers>
+        }
+        groupBy: {
+          args: Prisma.allowedUsersGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AllowedUsersGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.allowedUsersCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AllowedUsersCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1441,6 +1516,14 @@ export const IntegrationRulesScalarFieldEnum = {
 } as const
 
 export type IntegrationRulesScalarFieldEnum = (typeof IntegrationRulesScalarFieldEnum)[keyof typeof IntegrationRulesScalarFieldEnum]
+
+
+export const AllowedUsersScalarFieldEnum = {
+  id: 'id',
+  email: 'email'
+} as const
+
+export type AllowedUsersScalarFieldEnum = (typeof AllowedUsersScalarFieldEnum)[keyof typeof AllowedUsersScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1672,6 +1755,7 @@ export type GlobalOmitConfig = {
   telegramIntegration?: Prisma.TelegramIntegrationOmit
   telegramPendingDraft?: Prisma.telegramPendingDraftOmit
   integrationRules?: Prisma.integrationRulesOmit
+  allowedUsers?: Prisma.allowedUsersOmit
 }
 
 /* Types for Logging */
