@@ -1,27 +1,45 @@
 <div align="center">
   <h1>NeatMail</h1>
   <p><strong>Your Inbox Deserves Better</strong></p>
-   <p>AI-powered email automation that labels your Gmail and Outlook messages automatically and drafts intelligent responses.</p>
+  <p>AI-powered email automation that labels your Gmail and Outlook messages automatically and drafts intelligent responses.</p>
   
   <p>
     <a href="https://www.neatmail.tech">Website</a> •
     <a href="#features">Features</a> •
     <a href="#getting-started">Getting Started</a> •
     <a href="#deployment">Deployment</a> •
-      <a href="#tech-stack">Tech Stack</a>
+    <a href="#tech-stack">Tech Stack</a>
   </p>
 
-  ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-  ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
-  ![Next.js](https://img.shields.io/badge/Next.js-16.1-black)
-  ![React](https://img.shields.io/badge/React-19.2-blue)
+  <p>
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" />
+    <img src="https://img.shields.io/badge/TypeScript-5.0-blue" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/Next.js-16.1-black" alt="Next.js" />
+    <img src="https://img.shields.io/badge/React-19.2-blue" alt="React" />
+  </p>
 </div>
+
+---
+
+## 📖 Table of Contents
+
+- [What is NeatMail?](#-what-is-neatmail)
+- [Features](#-features)
+- [Getting Started](#-getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+- [Architecture](#-architecture)
+- [Tech Stack](#-tech-stack)
+- [Configuration](#-configuration)
+- [Deployment](#-deployment)
+- [Contributing](#-contributing)
+- [License](#-license)
 
 ---
 
 ## 🎯 What is NeatMail?
 
-NeatMail is an intelligent email management platform that automatically organizes your Gmail and Outlook inboxes in real-time. No complicated setup, no manual sorting - just clean, organized emails labeled exactly where you need them.
+NeatMail is an intelligent email management platform that automatically organizes your Gmail and Outlook inboxes in real-time. No complicated setup, no manual sorting—just clean, organized emails labeled exactly where you need them.
 
 ### The Problem
 - Drowning in emails with no structure
@@ -40,362 +58,120 @@ NeatMail watches your inbox 24/7 and:
 
 ## ✨ Features
 
-### 🏷️ Smart Email Labeling
-- **Preset Categories**: Action Needed, Pending Response, Automated Alerts, Event Updates, Discussion, Read Only, Resolved, Marketing
-- **Custom Labels**: Create personalized labels with custom colors
-- **Direct Gmail & Outlook Integration**: Labels/categories appear instantly in your mailbox interface
-- **95%+ Confidence Threshold**: Only labels when AI is highly confident
-
-### 🤖 AI Draft Responses
-- Automatically detects emails requiring responses
-- Generates contextual draft replies in your tone
-- Creates drafts directly in Gmail and Outlook for easy editing and sending
-- Skips automated/newsletter emails intelligently
-
-### 📊 Analytics Dashboard
-- Weekly email trends visualization
-- Real-time tracking of labeled emails
-- Sender, subject, and label insights
-- Date-based filtering and search
-
-### 🔐 Security & Privacy
-- OAuth 2.0 authentication via Clerk
-- Minimal permission scope (read metadata, labels/categories, drafts)
-- No email content storage
-- Row-level security with Prisma
+- **🏷️ Smart Email Labeling**: Automatically categorizes emails with a 95%+ confidence threshold.
+- **🤖 AI Draft Responses**: Contextual draft replies generated in your tone.
+- **📊 Analytics Dashboard**: Weekly email trends visualization and insights.
+- **🔐 Security & Privacy**: Minimal permission scope, no email content storage, row-level security.
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 20+ and npm/yarn/pnpm
+- Node.js 20+ and npm/yarn/pnpm/bun
 - PostgreSQL database
-- Redis instance
-- Google Cloud Project with Gmail API enabled (for Gmail)
-- Microsoft Entra app registration with Microsoft Graph Mail permissions (for Outlook)
-- Clerk account for authentication
-- OpenAI API key
-- DodoPay account (payment processing)
+- Redis instance (e.g., Upstash)
+- Application credentials (Google Cloud, Microsoft Entra, Clerk, OpenAI)
 
 ### Installation
 
 1. **Clone the repository**
-```bash
-git clone https://github.com/Lakshay1509/NeatMail.git
-cd neatmail
-```
+   ```bash
+   git clone https://github.com/Lakshay1509/NeatMail.git
+   cd neatmail
+   ```
 
 2. **Install dependencies**
-```bash
-bun install
-#or
-npm install
-# or
-pnpm install
-```
+   ```bash
+   bun install
+   ```
 
 3. **Set up environment variables**
-
-Create a `.env.local` file:
-
-```env
-# Database
-DATABASE_URL="postgresql://..."
-DIRECT_URL="postgresql://..."
-
-# Clerk Authentication
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
-CLERK_SECRET_KEY=
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-CLERK_WEBHOOK_SECRET=
-
-# OpenAI
-OPENAI_API_KEY=
-
-#If using Azure
-AZURE_ENDPOINT=
-AZURE_API_KEY=
-
-# Gmail Webhook
-GMAIL_WEBHOOK_TOPIC=projects/your-project/topics/gmail-notifications
-
-#Gmail service account
-GMAIL_SERVICE_ACCOUNT=
-
-# Redis
-UPSTASH_REDIS_URL=
-UPSTASH_REDIS_TOKEN=
-
-# Payment (DodoPay)
-DODO_API=
-DODO_WEBHOOK_SECRET=
-DODO_PRODUCT_ID_INDIA=
-DODO_PRODUCT_ID_GLOBAL=
-DODO_WEB_URL=
-
-#API URL
-NEXT_PUBLIC_API_URL=http://localhost:3000
-
-#Cron Secret
-CRON_SECRET=
-
-#INNGEST
-INNGEST_EVENT_KEY=
-INNGEST_SIGNING_KEY=
-
-#Classification URL
-CLASSIFICATION_API_URL=
-CLASSIFICATION_API_BEARER_TOKEN=
-
-# App Configuration
-NODE_ENV=development
-
-```
+   Copy the example environment file and fill in your credentials:
+   ```bash
+   cp .env.example .env.local
+   ```
 
 4. **Set up the database**
-```bash
-bunx prisma generate
-bunx prisma db push
-```
-
+   ```bash
+   bunx prisma db push
+   bunx prisma generate
+   
+   ```
 
 5. **Run the development server**
-```bash
-bun run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+   ```bash
+   bun run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
 ---
 
 ## 🏗️ Architecture
 
-### System Flow
-
 ```mermaid
 graph LR
-   A[Gmail / Outlook] -->|Push Notification| B[Google Pub/Sub / Graph Subscription]
-    B -->|Webhook| C[NeatMail API]
+   A[Gmail / Outlook] -->|Push Notification| B[Google Pub/Sub / Graph]
+   B -->|Webhook| C[NeatMail API]
    C -->|Fetch Email| A
    C -->|Classify| D[OpenAI]
-    D -->|Label Name| C
-   C -->|Apply Label/Category| A
-    C -->|Generate Draft| D
-    D -->|Draft Content| C
-    C -->|Create Draft| A
-    C -->|Store Metadata| E[(PostgreSQL)]
-    C -->|Deduplication| F[(Redis)]
+   D -->|Label Name| C
+   C -->|Apply Label| A
+   C -->|Generate Draft| D
+   D -->|Draft Content| C
+   C -->|Create Draft| A
+   C -->|Store Metadata| E[(PostgreSQL)]
+   C -->|Deduplication| F[(Redis)]
 ```
-
-### Key Components
-
-- **Next.js 16** - Frontend & API routes
-- **Hono** - Lightweight API framework
-- **Prisma** - Type-safe ORM
-- **Gmail API / Microsoft Graph API** - Email operations
-- **OpenAI GPT-4** - Email classification & draft generation
-- **Clerk** - Authentication & OAuth management
-- **Redis** - Message deduplication
-- **Google Pub/Sub** - Real-time webhook delivery
 
 ---
 
 ## 📦 Tech Stack
 
-### Frontend
-- **Framework**: Next.js 16.1.1 (App Router)
-- **Language**: TypeScript 5.x
-- **UI Library**: React 19.2.3
-- **Styling**: Tailwind CSS 4.x
-- **UI Components**: Radix UI, shadcn/ui
-- **Charts**: Recharts 3.6.0
-- **State Management**: TanStack Query 5.90.16 (React Query)
-- **Forms**: React Hook Form 7.71.1 + Zod 4.3.5
-
-### Backend
-- **API**: Hono.js 4.11.3
-- **Database**: PostgreSQL
-- **ORM**: Prisma 7.2.0 with Prisma Adapter PG
-- **Cache**: Redis (Upstash Redis 1.36.0)
-- **Authentication**: Clerk 6.36.5
-- **Payments**: DodoPay 2.14.1
-- **Webhooks**: Svix 1.84.1
-
-### AI & Integrations
-- **Draft Generation**: OpenAI 6.15.0 (GPT-4 Mini)
-- **Classification**: OpenAI 6.15.0 (GPT-4 Mini)
-- **Email APIs**: Google APIs 169.0.0 (Gmail API), Microsoft Graph API (Outlook)
-- **Webhooks**: Google Cloud Pub/Sub
-
-### Infrastructure
-- **Hosting**: Vercel (recommended)
-- **Database**: Neon/Supabase PostgreSQL
-- **Redis**: Upstash Redis
-- **Monitoring**: Vercel Analytics
-
----
-
-## 🌐 Deployment
-
-### Deploy to Vercel
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/neatmail)
-
-1. Click the button above or manually:
-```bash
-npm install -g vercel
-vercel
-```
-
-2. Configure environment variables in Vercel dashboard
-
-3. Set up Google Cloud Pub/Sub webhook:
-   - Create a Pub/Sub topic
-   - Add your Vercel domain as webhook endpoint
-   - Grant Gmail API permissions
-
-### Database Migration
-```bash
-npx prisma migrate deploy
-```
+- **Frontend**: Next.js 16.1.1, React 19, Tailwind CSS 4, shadcn/ui, TanStack Query
+- **Backend**: Hono.js, Prisma, PostgreSQL, Redis (Upstash), Clerk, Inngest
+- **AI**: OpenAI GPT-4 Mini
+- **Integrations**: Google APIs, Microsoft Graph API, DodoPay, Svix
 
 ---
 
 ## 🔧 Configuration
 
-### Gmail API Setup
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Create a new project
-3. Enable Gmail API
-4. Create OAuth 2.0 credentials
-5. Add authorized redirect URIs (Clerk callback)
-6. Create a Pub/Sub topic for webhooks
-
-### Outlook API Setup
-
-1. Go to [Azure Portal](https://portal.azure.com)
-2. Open **Microsoft Entra ID** → **App registrations** → **New registration**
-3. Add redirect URIs used by your auth provider (Clerk callback)
-4. Add Microsoft Graph delegated permissions (for example):
-   - `Mail.Read`
-   - `Mail.ReadWrite`
-   - `Mail.Send`
-   - `offline_access`
-5. Grant admin consent if required by your tenant policy
-6. Configure subscription/webhook notifications for mailbox events
-
-### Clerk Setup
-
-1. Create a Clerk application
-2. Enable Google OAuth provider
-3. Add required Gmail scopes:
-   - `https://www.googleapis.com/auth/gmail.modify`
-   - `https://www.googleapis.com/auth/gmail.compose`
-   - `https://www.googleapis.com/auth/gmail.readonly`
-4. Configure webhook endpoints if needed
-
-### Payment Setup (DodoPay)
-
-1. Create a DodoPay account
-2. Create a subscription product
-3. Configure webhook endpoints for subscription events
-4. Add webhook secret to environment variables
+Please refer to the code comments and our documentation for detailed setup instructions regarding Gmail API, Outlook API, and Clerk. Webhooks play a central role, so ensure your Google Cloud Pub/Sub and Clerk webhook endpoints are correctly configured.
 
 ---
 
-### Docker Support
+## 🌐 Deployment
 
-1. **Configure Environment**
-   Fill in the `.env.build` file with your credentials (ensure no empty lines or comments):
-   ```env
-   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
-   NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-   NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-   NEXT_PUBLIC_API_URL=http://localhost:8080
-   DATABASE_URL=...
-   DIRECT_URL=...
-   UPSTASH_REDIS_URL=...
-   UPSTASH_REDIS_TOKEN=...
-   OPENAI_API_KEY=...
-   ```
+NeatMail is optimized for Vercel. 
 
-2. **Build Image**
-   Build the container image using `podman` (or docker), passing the variables as build arguments:
-   ```bash
-   podman build \
-     $(sed 's/^/--build-arg /' .env.build) \
-     -t neatmail .
-   ```
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Lakshay1509/NeatMail)
 
-3. **Run Container**
-   Run the container passing the environment variables:
-   ```bash
-   podman run -p 8080:8080 --env-file .env.local neatmail
-
-<!-- ## 📂 Project Structure
-
-```
-
-
-``` -->
-
-### Key Directories
-
-- **`/app`** - Next.js 16 App Router with route groups for auth and dashboard
-- **`/components`** - Reusable React components including shadcn/ui primitives
-- **`/features`** - Custom React Query hooks organized by feature domain
-- **`/lib`** - Core utilities for Gmail, OpenAI, Prisma, Redis integrations
-- **`/prisma`** - Database schema with multi-schema support and generated client
-- **`/types`** - Shared TypeScript interfaces and type definitions
+1. Deploy to Vercel and configure environment variables.
+2. Run database migrations: `npx prisma migrate deploy`
+3. Configure your webhooks (Pub/Sub, Clerk, DodoPay) to point to your new domain.
 
 ---
 
 ## 🤝 Contributing
 
-We love contributions! Here's how you can help:
+We welcome contributions! 
 
-1. **Fork the repository**
-2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
-3. **Commit changes** (`git commit -m 'Add amazing feature'`)
-4. **Push to branch** (`git push origin feature/amazing-feature`)
-5. **Open a Pull Request**
-
-### Development Guidelines
-- Follow TypeScript best practices
-- Write meaningful commit messages
-- Add tests for new features
-- Update documentation as needed
-- Ensure code passes linting (`npm run lint`)
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ---
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- [Next.js](https://nextjs.org/) - React framework
-- [Clerk](https://clerk.com/) - Authentication
-- [OpenAI](https://openai.com/) - AI models
-- [Prisma](https://www.prisma.io/) - Database ORM
-- [shadcn/ui](https://ui.shadcn.com/) - UI components
-
----
-
-## 📧 Support
-
-- **Website**: [neatmail.tech](https://www.neatmail.tech)
-- **Issues**: [GitHub Issues](https://github.com/Lakshay1509/NeatMail/issues)
-- **Email**:  help.neatmail@gmail.com
+Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
 <div align="center">
   <p>Built with ❤️ by the NeatMail team</p>
+  <p><a href="https://www.neatmail.tech">neatmail.tech</a></p>
 </div>
