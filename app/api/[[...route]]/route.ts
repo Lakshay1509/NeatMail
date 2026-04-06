@@ -13,6 +13,7 @@ import draftPreference from './draft-preference'
 import outlook from './outlook'
 import telegram from './telegram'
 import stats from './stats'
+import allowed from './allowed'
 
 
 export const runtime = "nodejs";
@@ -34,6 +35,7 @@ const routes = app
     .route('/outlook',outlook)
     .route('/stats',stats)
     .route('/telegram',telegram)
+    .route('/allowed',allowed)
 
 
 

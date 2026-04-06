@@ -231,9 +231,10 @@ model integrationRules {
   @@schema("public")
 }
 
-model allowedUsers{
+model allowedToken{
   id             String      @id @default(uuid())
-  email          String      @unique
+  token          String      @unique
+  is_used        Boolean     @default(false)   
   @@schema("public")
   
 }

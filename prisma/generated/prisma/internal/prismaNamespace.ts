@@ -395,7 +395,7 @@ export const ModelName = {
   TelegramIntegration: 'TelegramIntegration',
   telegramPendingDraft: 'telegramPendingDraft',
   integrationRules: 'integrationRules',
-  allowedUsers: 'allowedUsers'
+  allowedToken: 'allowedToken'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -411,7 +411,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user_tokens" | "tag" | "user_tags" | "email_tracked" | "subscription" | "paymentHistory" | "refund" | "draft_preference" | "telegramIntegration" | "telegramPendingDraft" | "integrationRules" | "allowedUsers"
+    modelProps: "user_tokens" | "tag" | "user_tags" | "email_tracked" | "subscription" | "paymentHistory" | "refund" | "draft_preference" | "telegramIntegration" | "telegramPendingDraft" | "integrationRules" | "allowedToken"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1229,77 +1229,77 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    allowedUsers: {
-      payload: Prisma.$allowedUsersPayload<ExtArgs>
-      fields: Prisma.allowedUsersFieldRefs
+    allowedToken: {
+      payload: Prisma.$allowedTokenPayload<ExtArgs>
+      fields: Prisma.allowedTokenFieldRefs
       operations: {
         findUnique: {
-          args: Prisma.allowedUsersFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload> | null
+          args: Prisma.allowedTokenFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedTokenPayload> | null
         }
         findUniqueOrThrow: {
-          args: Prisma.allowedUsersFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>
+          args: Prisma.allowedTokenFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedTokenPayload>
         }
         findFirst: {
-          args: Prisma.allowedUsersFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload> | null
+          args: Prisma.allowedTokenFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedTokenPayload> | null
         }
         findFirstOrThrow: {
-          args: Prisma.allowedUsersFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>
+          args: Prisma.allowedTokenFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedTokenPayload>
         }
         findMany: {
-          args: Prisma.allowedUsersFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>[]
+          args: Prisma.allowedTokenFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedTokenPayload>[]
         }
         create: {
-          args: Prisma.allowedUsersCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>
+          args: Prisma.allowedTokenCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedTokenPayload>
         }
         createMany: {
-          args: Prisma.allowedUsersCreateManyArgs<ExtArgs>
+          args: Prisma.allowedTokenCreateManyArgs<ExtArgs>
           result: BatchPayload
         }
         createManyAndReturn: {
-          args: Prisma.allowedUsersCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>[]
+          args: Prisma.allowedTokenCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedTokenPayload>[]
         }
         delete: {
-          args: Prisma.allowedUsersDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>
+          args: Prisma.allowedTokenDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedTokenPayload>
         }
         update: {
-          args: Prisma.allowedUsersUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>
+          args: Prisma.allowedTokenUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedTokenPayload>
         }
         deleteMany: {
-          args: Prisma.allowedUsersDeleteManyArgs<ExtArgs>
+          args: Prisma.allowedTokenDeleteManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateMany: {
-          args: Prisma.allowedUsersUpdateManyArgs<ExtArgs>
+          args: Prisma.allowedTokenUpdateManyArgs<ExtArgs>
           result: BatchPayload
         }
         updateManyAndReturn: {
-          args: Prisma.allowedUsersUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>[]
+          args: Prisma.allowedTokenUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedTokenPayload>[]
         }
         upsert: {
-          args: Prisma.allowedUsersUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedUsersPayload>
+          args: Prisma.allowedTokenUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$allowedTokenPayload>
         }
         aggregate: {
-          args: Prisma.AllowedUsersAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateAllowedUsers>
+          args: Prisma.AllowedTokenAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAllowedToken>
         }
         groupBy: {
-          args: Prisma.allowedUsersGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AllowedUsersGroupByOutputType>[]
+          args: Prisma.allowedTokenGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AllowedTokenGroupByOutputType>[]
         }
         count: {
-          args: Prisma.allowedUsersCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AllowedUsersCountAggregateOutputType> | number
+          args: Prisma.allowedTokenCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AllowedTokenCountAggregateOutputType> | number
         }
       }
     }
@@ -1518,12 +1518,13 @@ export const IntegrationRulesScalarFieldEnum = {
 export type IntegrationRulesScalarFieldEnum = (typeof IntegrationRulesScalarFieldEnum)[keyof typeof IntegrationRulesScalarFieldEnum]
 
 
-export const AllowedUsersScalarFieldEnum = {
+export const AllowedTokenScalarFieldEnum = {
   id: 'id',
-  email: 'email'
+  token: 'token',
+  is_used: 'is_used'
 } as const
 
-export type AllowedUsersScalarFieldEnum = (typeof AllowedUsersScalarFieldEnum)[keyof typeof AllowedUsersScalarFieldEnum]
+export type AllowedTokenScalarFieldEnum = (typeof AllowedTokenScalarFieldEnum)[keyof typeof AllowedTokenScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1755,7 +1756,7 @@ export type GlobalOmitConfig = {
   telegramIntegration?: Prisma.TelegramIntegrationOmit
   telegramPendingDraft?: Prisma.telegramPendingDraftOmit
   integrationRules?: Prisma.integrationRulesOmit
-  allowedUsers?: Prisma.allowedUsersOmit
+  allowedToken?: Prisma.allowedTokenOmit
 }
 
 /* Types for Logging */
