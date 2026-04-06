@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Infinity, Sparkles, Sliders, Tag, Loader2, Settings } from "lucide-react";
+import { toast } from "sonner";
 
 interface SubscriptionModalProps {
   open: boolean;
@@ -32,7 +33,7 @@ export const SubscriptionModal = ({
     setError("");
 
     try {
-      const response = await fetch("/api/checkout", {
+      const response = await fetch("/api/freeTrial/activate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -43,9 +44,11 @@ export const SubscriptionModal = ({
       const data = await response.json();
 
       if (response.ok) {
-        window.location.href = data.url;
-      } else {
+        toast.success("Free trial activated successfully")
+         window.location.reload()
 
+      } else {
+        toast.error(data.error)
         setError(data.error || "Something went wrong");
       }
     } catch (err) {
@@ -138,7 +141,7 @@ export const SubscriptionModal = ({
               </>
             ) : (
               <>
-                Join Now (14-day free trial)
+                Join Now (7-day free trial)
                 <ArrowRight className="ml-2 h-4 w-4" />
               </>
 

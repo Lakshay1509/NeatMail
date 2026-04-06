@@ -21,6 +21,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "NeatMail - Your Inbox Deserves Better | Mail Automation Platform",
   description: "Label your emails directly into Gmail with AI-powered assistance. Stay organized with personalized labels and automated responses.",

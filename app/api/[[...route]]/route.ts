@@ -13,6 +13,7 @@ import draftPreference from './draft-preference'
 import outlook from './outlook'
 import telegram from './telegram'
 import stats from './stats'
+import freeTrial from './freeTrial'
 
 
 
@@ -35,6 +36,7 @@ const routes = app
     .route('/outlook',outlook)
     .route('/stats',stats)
     .route('/telegram',telegram)
+    .route('/freeTrial',freeTrial)
 
 
 

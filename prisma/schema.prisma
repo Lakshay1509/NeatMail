@@ -10,18 +10,18 @@ datasource db {
 }
 
 model user_tokens {
-  clerk_user_id              String               @id @unique
-  email                      String               @unique
-  created_at                 DateTime             @default(now()) @db.Timestamp(6)
-  updated_at                 DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  clerk_user_id              String                 @id @unique
+  email                      String                 @unique
+  created_at                 DateTime               @default(now()) @db.Timestamp(6)
+  updated_at                 DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
   last_history_id            String?
-  watch_activated            Boolean              @default(false)
+  watch_activated            Boolean                @default(false)
   delete_at                  DateTime?
-  deleted_flag               Boolean              @default(false)
-  use_external_ai_processing Boolean              @default(true)
-  is_gmail                   Boolean              @default(true)
+  deleted_flag               Boolean                @default(false)
+  use_external_ai_processing Boolean                @default(true)
+  is_gmail                   Boolean                @default(true)
   outlook_id                 String?
-  is_folder                  Boolean              @default(false)
+  is_folder                  Boolean                @default(false)
   draft_preference           draft_preference?
   email_tracked              email_tracked[]
   payment_history            PaymentHistory[]
@@ -32,21 +32,22 @@ model user_tokens {
   telegram_integration       TelegramIntegration?
   pending_drafts             telegramPendingDraft[]
   integration_rules          integrationRules[]
+  free_trial                 free_trial?
 
   @@schema("public")
 }
 
 model tag {
-  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name           String
-  created_at     DateTime        @default(now()) @db.Timestamptz(6)
-  color            String
-  user_id          String?
-  outlook_preset   String?
-  description      String?
-  email_tracked    email_tracked[]
-  user_tokens      user_tokens?    @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
-  user_tags        user_tags[]
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String
+  created_at        DateTime           @default(now()) @db.Timestamptz(6)
+  color             String
+  user_id           String?
+  outlook_preset    String?
+  description       String?
+  email_tracked     email_tracked[]
+  user_tokens       user_tokens?       @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+  user_tags         user_tags[]
   integration_rules integrationRules[]
 
   @@unique([name, user_id])
@@ -189,12 +190,12 @@ model draft_preference {
 }
 
 model TelegramIntegration {
-  id                              String @id @default(uuid())
-  user_id                         String @unique
-  chat_id                         String @unique
-  forward_important_mails         Boolean @default(false)
-  forward_draft_for_confirmation  Boolean @default(false)
-  user_tokens                     user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+  id                             String      @id @default(uuid())
+  user_id                        String      @unique
+  chat_id                        String      @unique
+  forward_important_mails        Boolean     @default(false)
+  forward_draft_for_confirmation Boolean     @default(false)
+  user_tokens                    user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
   @@schema("public")
 }
@@ -204,7 +205,7 @@ model telegramPendingDraft {
   user_id         String
   telegram_msg_id Int
   draft_id        String
-  quick_options   String[] 
+  quick_options   String[]
   awaiting_custom Boolean     @default(false)
   created_at      DateTime    @default(now()) @db.Timestamptz(6)
   user_tokens     user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
@@ -212,16 +213,15 @@ model telegramPendingDraft {
   @@schema("public")
 }
 
-
 model integrationRules {
-  id             String      @id @default(uuid())
-  user_id        String
-  domain         String
-  tag_id         String      @db.Uuid
-  created_at     DateTime    @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
-  user_tokens    user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
-  tag            tag         @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+  id          String      @id @default(uuid())
+  user_id     String
+  domain      String
+  tag_id      String      @db.Uuid
+  created_at  DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+  tag         tag         @relation(fields: [tag_id], references: [id], onDelete: Cascade)
 
   @@unique([user_id, domain], map: "idx_integration_rules_user_domain")
   @@index([user_id], map: "idx_integration_rules_user_id")
@@ -231,11 +231,37 @@ model integrationRules {
   @@schema("public")
 }
 
-model allowedToken{
-  id             String      @id @default(uuid())
-  email          String      @unique
-  token          String      @unique
-  is_used        Boolean     @default(false)   
+model allowedToken {
+  id      String  @id @default(uuid())
+  email   String  @unique
+  token   String  @unique
+  is_used Boolean @default(false)
+
   @@schema("public")
-  
+}
+
+enum trial_status {
+  ACTIVE
+  EXPIRED
+  CONVERTED
+  CHURNED
+
+  @@schema("public")
+}
+
+model free_trial {
+  id               String       @id @default(uuid())
+  user_id          String       @unique
+  email            String       @unique
+  started_at       DateTime     @default(now()) @db.Timestamptz(6)
+  expires_at       DateTime     @db.Timestamptz(6)
+  status           trial_status @default(ACTIVE)
+  converted_at     DateTime?    @db.Timestamptz(6)
+  reminder_sent_at DateTime?    @db.Timestamptz(6)
+  created_at       DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+
+  @@schema("public")
 }

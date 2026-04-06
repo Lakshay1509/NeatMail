@@ -395,7 +395,8 @@ export const ModelName = {
   TelegramIntegration: 'TelegramIntegration',
   telegramPendingDraft: 'telegramPendingDraft',
   integrationRules: 'integrationRules',
-  allowedToken: 'allowedToken'
+  allowedToken: 'allowedToken',
+  free_trial: 'free_trial'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -411,7 +412,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user_tokens" | "tag" | "user_tags" | "email_tracked" | "subscription" | "paymentHistory" | "refund" | "draft_preference" | "telegramIntegration" | "telegramPendingDraft" | "integrationRules" | "allowedToken"
+    modelProps: "user_tokens" | "tag" | "user_tags" | "email_tracked" | "subscription" | "paymentHistory" | "refund" | "draft_preference" | "telegramIntegration" | "telegramPendingDraft" | "integrationRules" | "allowedToken" | "free_trial"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1303,6 +1304,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    free_trial: {
+      payload: Prisma.$free_trialPayload<ExtArgs>
+      fields: Prisma.free_trialFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.free_trialFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$free_trialPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.free_trialFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$free_trialPayload>
+        }
+        findFirst: {
+          args: Prisma.free_trialFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$free_trialPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.free_trialFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$free_trialPayload>
+        }
+        findMany: {
+          args: Prisma.free_trialFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$free_trialPayload>[]
+        }
+        create: {
+          args: Prisma.free_trialCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$free_trialPayload>
+        }
+        createMany: {
+          args: Prisma.free_trialCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.free_trialCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$free_trialPayload>[]
+        }
+        delete: {
+          args: Prisma.free_trialDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$free_trialPayload>
+        }
+        update: {
+          args: Prisma.free_trialUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$free_trialPayload>
+        }
+        deleteMany: {
+          args: Prisma.free_trialDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.free_trialUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.free_trialUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$free_trialPayload>[]
+        }
+        upsert: {
+          args: Prisma.free_trialUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$free_trialPayload>
+        }
+        aggregate: {
+          args: Prisma.Free_trialAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFree_trial>
+        }
+        groupBy: {
+          args: Prisma.free_trialGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Free_trialGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.free_trialCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Free_trialCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1528,6 +1603,22 @@ export const AllowedTokenScalarFieldEnum = {
 export type AllowedTokenScalarFieldEnum = (typeof AllowedTokenScalarFieldEnum)[keyof typeof AllowedTokenScalarFieldEnum]
 
 
+export const Free_trialScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  email: 'email',
+  started_at: 'started_at',
+  expires_at: 'expires_at',
+  status: 'status',
+  converted_at: 'converted_at',
+  reminder_sent_at: 'reminder_sent_at',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Free_trialScalarFieldEnum = (typeof Free_trialScalarFieldEnum)[keyof typeof Free_trialScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1635,6 +1726,20 @@ export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'J
  * Reference to a field of type 'QueryMode'
  */
 export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
+ * Reference to a field of type 'trial_status'
+ */
+export type Enumtrial_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'trial_status'>
+    
+
+
+/**
+ * Reference to a field of type 'trial_status[]'
+ */
+export type ListEnumtrial_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'trial_status[]'>
     
 
 
@@ -1758,6 +1863,7 @@ export type GlobalOmitConfig = {
   telegramPendingDraft?: Prisma.telegramPendingDraftOmit
   integrationRules?: Prisma.integrationRulesOmit
   allowedToken?: Prisma.allowedTokenOmit
+  free_trial?: Prisma.free_trialOmit
 }
 
 /* Types for Logging */

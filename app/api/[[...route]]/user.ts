@@ -83,36 +83,48 @@ const app = new Hono()
       return ctx.json({ error: "Unauthorized" }, 401);
     }
 
-    const data = await db.subscription.findFirst({
-      where: { clerkUserId: userId },
-      select: {
-        cancelAtNextBillingDate: true,
-        nextBillingDate: true,
-        status: true,
-      },
-      orderBy: { updatedAt: "desc" },
-    });
-
-    if (!data) {
-      return ctx.json(
-        {
-          success: false,
-          subscribed: false,
+    const [data, freeTrial] = await Promise.all([
+      db.subscription.findFirst({
+        where: { clerkUserId: userId },
+        select: {
+          cancelAtNextBillingDate: true,
+          nextBillingDate: true,
+          status: true,
         },
-        200,
-      );
+        orderBy: { updatedAt: "desc" },
+      }),
+      db.free_trial.findUnique({
+        where: { user_id: userId }
+      })
+    ])
+
+    const hasActiveTrial = freeTrial &&
+      freeTrial.status === 'ACTIVE' &&
+      freeTrial.expires_at > new Date()
+
+    if (!data && !hasActiveTrial) {
+      return ctx.json({ success: false, subscribed: false }, 200);
     }
 
-    return ctx.json(
-      {
+    if (!data && hasActiveTrial) {
+      return ctx.json({
         success: true,
-        subscribed: data.status === "active" ? true : false,
-        status: data.status,
-        next_billing_date: data.nextBillingDate,
-        cancel_at_next_billing_date: data.cancelAtNextBillingDate,
-      },
-      200,
-    );
+        subscribed: true,
+        status: 'trial',
+        next_billing_date: freeTrial.expires_at,
+        cancel_at_next_billing_date: null,
+        freeTrial:true
+      }, 200);
+    }
+
+    return ctx.json({
+      success: true,
+      subscribed: data!.status === "active",
+      status: data!.status,
+      next_billing_date: data!.nextBillingDate,
+      cancel_at_next_billing_date: data!.cancelAtNextBillingDate,
+      freeTrial:false
+    }, 200);
   })
 
   .get("/payments", async (ctx) => {

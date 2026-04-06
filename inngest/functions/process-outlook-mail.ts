@@ -3,6 +3,7 @@ import { inngest } from "@/lib/inngest";
 import { db } from "@/lib/prisma";
 import {
   addMailtoDB,
+  getUserSubscribed,
   labelColor,
   useGetUserDraftPreference,
 } from "@/lib/supabase";
@@ -38,6 +39,8 @@ export const processOutlookMailFn = inngest.createFunction(
       return isMessageProcessed(messageId);
     });
 
+    
+
     if (alreadyProcessed) {
       console.log(`Skipping duplicate Outlook message: ${messageId}`);
       return { skipped: true, reason: "duplicate" };
@@ -58,6 +61,14 @@ export const processOutlookMailFn = inngest.createFunction(
     if (!subscription) {
       console.warn("No subscription found for subscriptionId:", subscriptionId);
       return { skipped: true };
+    }
+
+    const activeSubcription = await step.run("active-subscription",async()=>{
+      return await getUserSubscribed(subscription.clerk_user_id)
+    })
+
+    if(activeSubcription.subscribed===false){
+      return {skipped:true, reason:'not subscribed'}
     }
 
     const mail = await step.run("fetch-mail", async () => {

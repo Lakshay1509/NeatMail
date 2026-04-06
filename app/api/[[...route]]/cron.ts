@@ -85,31 +85,49 @@ const app = new Hono()
     }
 
     try {
-      const activeSubscriptions = await db.subscription.findMany({
-        where: {
-          status: "active",
-          user_tokens: {
-            deleted_flag: false,
+      const [activeSubscriptions, activeTrials] = await Promise.all([
+        db.subscription.findMany({
+          where: {
+            status: "active",
+            user_tokens: { deleted_flag: false },
           },
-        },
-        select: {
-          dodoSubscriptionId: true,
-          customerEmail: true,
-          user_tokens: {
-            select: {
-              clerk_user_id: true,
-              is_gmail: true,
+          select: {
+            dodoSubscriptionId: true,
+            customerEmail: true,
+            user_tokens: {
+              select: {
+                clerk_user_id: true,
+                is_gmail: true,
+              },
             },
           },
-        },
-      });
+        }),
+        db.free_trial.findMany({
+          where: {
+            status: "ACTIVE",
+            expires_at: { gt: new Date() },
+            user_tokens: { deleted_flag: false },
+          },
+          select: {
+            user_id: true,
+            email: true,
+            user_tokens: {
+              select: {
+                clerk_user_id: true,
+                is_gmail: true,
+              },
+            },
+          },
+        }),
+      ]);
 
       const results = {
-        total: activeSubscriptions.length,
+        total: activeSubscriptions.length + activeTrials.length,
         successful: 0,
         failed: 0,
         errors: [] as string[],
       };
+      
 
       for (const sub of activeSubscriptions) {
         try {
@@ -138,6 +156,38 @@ const app = new Hono()
           );
           console.error(
             `❌ Watch renewal failed for ${sub.customerEmail}:`,
+            error,
+          );
+        }
+      }
+
+       for (const sub of activeTrials) {
+        try {
+          if (sub.user_tokens.is_gmail === true) {
+            const response = await activateWatch(sub.user_tokens.clerk_user_id);
+
+            await updateHistoryId(sub.email, response.history_id, true);
+
+            results.successful++;
+            console.log(`✅ Watch renewed for: ${sub.email}`);
+          } else {
+            const response = await createOutlookSubscription(
+              sub.user_tokens.clerk_user_id,
+            );
+            await updateOutlookId(sub.email, response.id, true);
+
+            results.successful++;
+            console.log(`✅ Watch renewed outlook for: ${sub.email}`);
+          }
+        } catch (error) {
+          results.failed++;
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          results.errors.push(
+            `Failed to renew watch for ${sub.email}: ${errorMessage}`,
+          );
+          console.error(
+            `❌ Watch renewal failed for ${sub.email}:`,
             error,
           );
         }
@@ -193,7 +243,6 @@ const app = new Hono()
 
       for (const sub of subscriptions) {
         try {
-
           const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
           const startOfNextMonth = new Date(
@@ -212,11 +261,11 @@ const app = new Hono()
             },
           });
 
-           const client = await clerkClient();
+          const client = await clerkClient();
           const clerkUser = await client.users.getUser(sub.clerkUserId);
 
           await autosend.emails.send({
-            from: { email: "subscription@mail.neatmail.app", name:"NeatMail" },
+            from: { email: "subscription@mail.neatmail.app", name: "NeatMail" },
             to: { email: sub.customerEmail },
             subject: "Quick reminder: Your NeatMail plan ends soon",
             templateId: "A-06b8aaad61bd8c3afc94",
@@ -227,7 +276,10 @@ const app = new Hono()
             },
           });
         } catch (error) {
-          console.error(`Failed to send reminder to ${sub.customerEmail}:`, error);
+          console.error(
+            `Failed to send reminder to ${sub.customerEmail}:`,
+            error,
+          );
         }
       }
 
@@ -239,6 +291,45 @@ const app = new Hono()
       });
     } catch (error) {
       console.error("Send reminder cron job error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      return ctx.json(
+        {
+          error: "Internal server error",
+          details: errorMessage,
+        },
+        500,
+      );
+    }
+  })
+  .get("/deactivate-trials", async (ctx) => {
+    const authHeader = ctx.req.header("x-authorization");
+    const expectedToken = `Bearer ${process.env.CRON_SECRET}`;
+
+    if (authHeader !== expectedToken) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    try {
+      const result = await db.free_trial.updateMany({
+        where: {
+          status: "ACTIVE",
+          expires_at: { lte: new Date() },
+        },
+        data: {
+          status: "EXPIRED",
+        },
+      });
+
+      console.log(result.count)
+
+      return ctx.json({
+        message: "Free trial deactivation completed",
+        timestamp: new Date().toISOString(),
+        deactivatedCount: result.count,
+      });
+    } catch (error) {
+      console.error("Deactivate free trials cron job error:", error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       return ctx.json(

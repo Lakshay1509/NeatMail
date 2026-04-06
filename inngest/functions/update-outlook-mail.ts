@@ -1,7 +1,7 @@
 import { getGraphClient } from "@/lib/outlook";
 import { inngest } from "@/lib/inngest";
 import { db } from "@/lib/prisma";
-import { updateMessageStatus } from "@/lib/supabase";
+import { getUserSubscribed, updateMessageStatus } from "@/lib/supabase";
 import { handleOutlookLabelCorrection } from "@/lib/outlook-correction";
 
 export const updateOutlookMailFn = inngest.createFunction(
@@ -29,6 +29,14 @@ export const updateOutlookMailFn = inngest.createFunction(
       console.warn("No subscription found for subscriptionId:", subscriptionId);
       return { skipped: true };
     }
+
+    const activeSubcription = await step.run("active-subscription",async()=>{
+          return await getUserSubscribed(subscription.clerk_user_id)
+        })
+    
+        if(activeSubcription.subscribed===false){
+          return {skipped:true, reason:'not subscribed'}
+        }
 
     const messageData = await step.run("fetch-message-data", async () => {
       try {

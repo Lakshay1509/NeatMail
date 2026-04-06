@@ -1,7 +1,7 @@
 import { activateWatch, deactivateWatch } from "@/lib/gmail";
 import { createOutlookSubscription, deleteOutlookSubscription } from "@/lib/outlook";
 import { db } from "@/lib/prisma";
-import { updateHistoryId, updateOutlookId } from "@/lib/supabase";
+import { getUserSubscribed, updateHistoryId, updateOutlookId } from "@/lib/supabase";
 import { auth} from "@clerk/nextjs/server";
 import { Hono } from "hono";
 
@@ -14,14 +14,8 @@ const app = new Hono()
         return ctx.json({ error: "Unauthorized" }, 401);
       }
 
-      const subscription = await db.subscription.findFirst({
-        where: {
-          clerkUserId: userId,
-          status: "active",
-        },
-      });
-
-      if (!subscription) {
+      const subscription = await getUserSubscribed(userId)
+      if (subscription.subscribed===false) {
         return ctx.json({ error: "No active subscription" }, 403);
       }
 

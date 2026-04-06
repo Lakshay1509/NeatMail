@@ -72,17 +72,7 @@ const app = new Hono()
         }
       }
 
-      // Check if trial was already taken (any successful payment with 0 amount OR any subscription created)
-      const trialTaken = await db.paymentHistory.findFirst({
-        where: {
-          clerkUserId: userId,
-          amount: 0,
-          status: "succeeded",
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      });
+      
 
       // Detect country from Vercel's geo header and pick the right product
       const country = ctx.req.header("cf-ipcountry") ?? "";
@@ -107,7 +97,7 @@ const app = new Hono()
           },
         ],
         subscription_data: {
-          trial_period_days: trialTaken ? 0 : 14,
+          trial_period_days: 0,
         },
         customer: {
           email: emailAddress,

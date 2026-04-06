@@ -248,6 +248,7 @@ export type user_tokensWhereInput = {
   telegram_integration?: Prisma.XOR<Prisma.TelegramIntegrationNullableScalarRelationFilter, Prisma.TelegramIntegrationWhereInput> | null
   pending_drafts?: Prisma.TelegramPendingDraftListRelationFilter
   integration_rules?: Prisma.IntegrationRulesListRelationFilter
+  free_trial?: Prisma.XOR<Prisma.Free_trialNullableScalarRelationFilter, Prisma.free_trialWhereInput> | null
 }
 
 export type user_tokensOrderByWithRelationInput = {
@@ -273,6 +274,7 @@ export type user_tokensOrderByWithRelationInput = {
   telegram_integration?: Prisma.TelegramIntegrationOrderByWithRelationInput
   pending_drafts?: Prisma.telegramPendingDraftOrderByRelationAggregateInput
   integration_rules?: Prisma.integrationRulesOrderByRelationAggregateInput
+  free_trial?: Prisma.free_trialOrderByWithRelationInput
 }
 
 export type user_tokensWhereUniqueInput = Prisma.AtLeast<{
@@ -301,6 +303,7 @@ export type user_tokensWhereUniqueInput = Prisma.AtLeast<{
   telegram_integration?: Prisma.XOR<Prisma.TelegramIntegrationNullableScalarRelationFilter, Prisma.TelegramIntegrationWhereInput> | null
   pending_drafts?: Prisma.TelegramPendingDraftListRelationFilter
   integration_rules?: Prisma.IntegrationRulesListRelationFilter
+  free_trial?: Prisma.XOR<Prisma.Free_trialNullableScalarRelationFilter, Prisma.free_trialWhereInput> | null
 }, "clerk_user_id" | "clerk_user_id" | "email">
 
 export type user_tokensOrderByWithAggregationInput = {
@@ -362,6 +365,7 @@ export type user_tokensCreateInput = {
   telegram_integration?: Prisma.TelegramIntegrationCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensUncheckedCreateInput = {
@@ -387,6 +391,7 @@ export type user_tokensUncheckedCreateInput = {
   telegram_integration?: Prisma.TelegramIntegrationUncheckedCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesUncheckedCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialUncheckedCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensUpdateInput = {
@@ -412,6 +417,7 @@ export type user_tokensUpdateInput = {
   telegram_integration?: Prisma.TelegramIntegrationUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensUncheckedUpdateInput = {
@@ -437,6 +443,7 @@ export type user_tokensUncheckedUpdateInput = {
   telegram_integration?: Prisma.TelegramIntegrationUncheckedUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUncheckedUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUncheckedUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensCreateManyInput = {
@@ -701,6 +708,20 @@ export type user_tokensUpdateOneRequiredWithoutIntegration_rulesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.user_tokensUpdateToOneWithWhereWithoutIntegration_rulesInput, Prisma.user_tokensUpdateWithoutIntegration_rulesInput>, Prisma.user_tokensUncheckedUpdateWithoutIntegration_rulesInput>
 }
 
+export type user_tokensCreateNestedOneWithoutFree_trialInput = {
+  create?: Prisma.XOR<Prisma.user_tokensCreateWithoutFree_trialInput, Prisma.user_tokensUncheckedCreateWithoutFree_trialInput>
+  connectOrCreate?: Prisma.user_tokensCreateOrConnectWithoutFree_trialInput
+  connect?: Prisma.user_tokensWhereUniqueInput
+}
+
+export type user_tokensUpdateOneRequiredWithoutFree_trialNestedInput = {
+  create?: Prisma.XOR<Prisma.user_tokensCreateWithoutFree_trialInput, Prisma.user_tokensUncheckedCreateWithoutFree_trialInput>
+  connectOrCreate?: Prisma.user_tokensCreateOrConnectWithoutFree_trialInput
+  upsert?: Prisma.user_tokensUpsertWithoutFree_trialInput
+  connect?: Prisma.user_tokensWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.user_tokensUpdateToOneWithWhereWithoutFree_trialInput, Prisma.user_tokensUpdateWithoutFree_trialInput>, Prisma.user_tokensUncheckedUpdateWithoutFree_trialInput>
+}
+
 export type user_tokensCreateWithoutTagInput = {
   clerk_user_id: string
   email: string
@@ -723,6 +744,7 @@ export type user_tokensCreateWithoutTagInput = {
   telegram_integration?: Prisma.TelegramIntegrationCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensUncheckedCreateWithoutTagInput = {
@@ -747,6 +769,7 @@ export type user_tokensUncheckedCreateWithoutTagInput = {
   telegram_integration?: Prisma.TelegramIntegrationUncheckedCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesUncheckedCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialUncheckedCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensCreateOrConnectWithoutTagInput = {
@@ -787,6 +810,7 @@ export type user_tokensUpdateWithoutTagInput = {
   telegram_integration?: Prisma.TelegramIntegrationUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensUncheckedUpdateWithoutTagInput = {
@@ -811,6 +835,7 @@ export type user_tokensUncheckedUpdateWithoutTagInput = {
   telegram_integration?: Prisma.TelegramIntegrationUncheckedUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUncheckedUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUncheckedUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensCreateWithoutUser_tagsInput = {
@@ -835,6 +860,7 @@ export type user_tokensCreateWithoutUser_tagsInput = {
   telegram_integration?: Prisma.TelegramIntegrationCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensUncheckedCreateWithoutUser_tagsInput = {
@@ -859,6 +885,7 @@ export type user_tokensUncheckedCreateWithoutUser_tagsInput = {
   telegram_integration?: Prisma.TelegramIntegrationUncheckedCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesUncheckedCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialUncheckedCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensCreateOrConnectWithoutUser_tagsInput = {
@@ -899,6 +926,7 @@ export type user_tokensUpdateWithoutUser_tagsInput = {
   telegram_integration?: Prisma.TelegramIntegrationUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensUncheckedUpdateWithoutUser_tagsInput = {
@@ -923,6 +951,7 @@ export type user_tokensUncheckedUpdateWithoutUser_tagsInput = {
   telegram_integration?: Prisma.TelegramIntegrationUncheckedUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUncheckedUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUncheckedUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensCreateWithoutEmail_trackedInput = {
@@ -947,6 +976,7 @@ export type user_tokensCreateWithoutEmail_trackedInput = {
   telegram_integration?: Prisma.TelegramIntegrationCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensUncheckedCreateWithoutEmail_trackedInput = {
@@ -971,6 +1001,7 @@ export type user_tokensUncheckedCreateWithoutEmail_trackedInput = {
   telegram_integration?: Prisma.TelegramIntegrationUncheckedCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesUncheckedCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialUncheckedCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensCreateOrConnectWithoutEmail_trackedInput = {
@@ -1011,6 +1042,7 @@ export type user_tokensUpdateWithoutEmail_trackedInput = {
   telegram_integration?: Prisma.TelegramIntegrationUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensUncheckedUpdateWithoutEmail_trackedInput = {
@@ -1035,6 +1067,7 @@ export type user_tokensUncheckedUpdateWithoutEmail_trackedInput = {
   telegram_integration?: Prisma.TelegramIntegrationUncheckedUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUncheckedUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUncheckedUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensCreateWithoutSubscriptionsInput = {
@@ -1059,6 +1092,7 @@ export type user_tokensCreateWithoutSubscriptionsInput = {
   telegram_integration?: Prisma.TelegramIntegrationCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensUncheckedCreateWithoutSubscriptionsInput = {
@@ -1083,6 +1117,7 @@ export type user_tokensUncheckedCreateWithoutSubscriptionsInput = {
   telegram_integration?: Prisma.TelegramIntegrationUncheckedCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesUncheckedCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialUncheckedCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensCreateOrConnectWithoutSubscriptionsInput = {
@@ -1123,6 +1158,7 @@ export type user_tokensUpdateWithoutSubscriptionsInput = {
   telegram_integration?: Prisma.TelegramIntegrationUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensUncheckedUpdateWithoutSubscriptionsInput = {
@@ -1147,6 +1183,7 @@ export type user_tokensUncheckedUpdateWithoutSubscriptionsInput = {
   telegram_integration?: Prisma.TelegramIntegrationUncheckedUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUncheckedUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUncheckedUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensCreateWithoutPayment_historyInput = {
@@ -1171,6 +1208,7 @@ export type user_tokensCreateWithoutPayment_historyInput = {
   telegram_integration?: Prisma.TelegramIntegrationCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensUncheckedCreateWithoutPayment_historyInput = {
@@ -1195,6 +1233,7 @@ export type user_tokensUncheckedCreateWithoutPayment_historyInput = {
   telegram_integration?: Prisma.TelegramIntegrationUncheckedCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesUncheckedCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialUncheckedCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensCreateOrConnectWithoutPayment_historyInput = {
@@ -1235,6 +1274,7 @@ export type user_tokensUpdateWithoutPayment_historyInput = {
   telegram_integration?: Prisma.TelegramIntegrationUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensUncheckedUpdateWithoutPayment_historyInput = {
@@ -1259,6 +1299,7 @@ export type user_tokensUncheckedUpdateWithoutPayment_historyInput = {
   telegram_integration?: Prisma.TelegramIntegrationUncheckedUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUncheckedUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUncheckedUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensCreateWithoutRefundsInput = {
@@ -1283,6 +1324,7 @@ export type user_tokensCreateWithoutRefundsInput = {
   telegram_integration?: Prisma.TelegramIntegrationCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensUncheckedCreateWithoutRefundsInput = {
@@ -1307,6 +1349,7 @@ export type user_tokensUncheckedCreateWithoutRefundsInput = {
   telegram_integration?: Prisma.TelegramIntegrationUncheckedCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesUncheckedCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialUncheckedCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensCreateOrConnectWithoutRefundsInput = {
@@ -1347,6 +1390,7 @@ export type user_tokensUpdateWithoutRefundsInput = {
   telegram_integration?: Prisma.TelegramIntegrationUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensUncheckedUpdateWithoutRefundsInput = {
@@ -1371,6 +1415,7 @@ export type user_tokensUncheckedUpdateWithoutRefundsInput = {
   telegram_integration?: Prisma.TelegramIntegrationUncheckedUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUncheckedUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUncheckedUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensCreateWithoutDraft_preferenceInput = {
@@ -1395,6 +1440,7 @@ export type user_tokensCreateWithoutDraft_preferenceInput = {
   telegram_integration?: Prisma.TelegramIntegrationCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensUncheckedCreateWithoutDraft_preferenceInput = {
@@ -1419,6 +1465,7 @@ export type user_tokensUncheckedCreateWithoutDraft_preferenceInput = {
   telegram_integration?: Prisma.TelegramIntegrationUncheckedCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesUncheckedCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialUncheckedCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensCreateOrConnectWithoutDraft_preferenceInput = {
@@ -1459,6 +1506,7 @@ export type user_tokensUpdateWithoutDraft_preferenceInput = {
   telegram_integration?: Prisma.TelegramIntegrationUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensUncheckedUpdateWithoutDraft_preferenceInput = {
@@ -1483,6 +1531,7 @@ export type user_tokensUncheckedUpdateWithoutDraft_preferenceInput = {
   telegram_integration?: Prisma.TelegramIntegrationUncheckedUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUncheckedUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUncheckedUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensCreateWithoutTelegram_integrationInput = {
@@ -1507,6 +1556,7 @@ export type user_tokensCreateWithoutTelegram_integrationInput = {
   user_tags?: Prisma.user_tagsCreateNestedManyWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensUncheckedCreateWithoutTelegram_integrationInput = {
@@ -1531,6 +1581,7 @@ export type user_tokensUncheckedCreateWithoutTelegram_integrationInput = {
   user_tags?: Prisma.user_tagsUncheckedCreateNestedManyWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedCreateNestedManyWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesUncheckedCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialUncheckedCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensCreateOrConnectWithoutTelegram_integrationInput = {
@@ -1571,6 +1622,7 @@ export type user_tokensUpdateWithoutTelegram_integrationInput = {
   user_tags?: Prisma.user_tagsUpdateManyWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensUncheckedUpdateWithoutTelegram_integrationInput = {
@@ -1595,6 +1647,7 @@ export type user_tokensUncheckedUpdateWithoutTelegram_integrationInput = {
   user_tags?: Prisma.user_tagsUncheckedUpdateManyWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedUpdateManyWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUncheckedUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUncheckedUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensCreateWithoutPending_draftsInput = {
@@ -1619,6 +1672,7 @@ export type user_tokensCreateWithoutPending_draftsInput = {
   user_tags?: Prisma.user_tagsCreateNestedManyWithoutUser_tokensInput
   telegram_integration?: Prisma.TelegramIntegrationCreateNestedOneWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensUncheckedCreateWithoutPending_draftsInput = {
@@ -1643,6 +1697,7 @@ export type user_tokensUncheckedCreateWithoutPending_draftsInput = {
   user_tags?: Prisma.user_tagsUncheckedCreateNestedManyWithoutUser_tokensInput
   telegram_integration?: Prisma.TelegramIntegrationUncheckedCreateNestedOneWithoutUser_tokensInput
   integration_rules?: Prisma.integrationRulesUncheckedCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialUncheckedCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensCreateOrConnectWithoutPending_draftsInput = {
@@ -1683,6 +1738,7 @@ export type user_tokensUpdateWithoutPending_draftsInput = {
   user_tags?: Prisma.user_tagsUpdateManyWithoutUser_tokensNestedInput
   telegram_integration?: Prisma.TelegramIntegrationUpdateOneWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensUncheckedUpdateWithoutPending_draftsInput = {
@@ -1707,6 +1763,7 @@ export type user_tokensUncheckedUpdateWithoutPending_draftsInput = {
   user_tags?: Prisma.user_tagsUncheckedUpdateManyWithoutUser_tokensNestedInput
   telegram_integration?: Prisma.TelegramIntegrationUncheckedUpdateOneWithoutUser_tokensNestedInput
   integration_rules?: Prisma.integrationRulesUncheckedUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUncheckedUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensCreateWithoutIntegration_rulesInput = {
@@ -1731,6 +1788,7 @@ export type user_tokensCreateWithoutIntegration_rulesInput = {
   user_tags?: Prisma.user_tagsCreateNestedManyWithoutUser_tokensInput
   telegram_integration?: Prisma.TelegramIntegrationCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensUncheckedCreateWithoutIntegration_rulesInput = {
@@ -1755,6 +1813,7 @@ export type user_tokensUncheckedCreateWithoutIntegration_rulesInput = {
   user_tags?: Prisma.user_tagsUncheckedCreateNestedManyWithoutUser_tokensInput
   telegram_integration?: Prisma.TelegramIntegrationUncheckedCreateNestedOneWithoutUser_tokensInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedCreateNestedManyWithoutUser_tokensInput
+  free_trial?: Prisma.free_trialUncheckedCreateNestedOneWithoutUser_tokensInput
 }
 
 export type user_tokensCreateOrConnectWithoutIntegration_rulesInput = {
@@ -1795,6 +1854,7 @@ export type user_tokensUpdateWithoutIntegration_rulesInput = {
   user_tags?: Prisma.user_tagsUpdateManyWithoutUser_tokensNestedInput
   telegram_integration?: Prisma.TelegramIntegrationUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUpdateOneWithoutUser_tokensNestedInput
 }
 
 export type user_tokensUncheckedUpdateWithoutIntegration_rulesInput = {
@@ -1819,6 +1879,123 @@ export type user_tokensUncheckedUpdateWithoutIntegration_rulesInput = {
   user_tags?: Prisma.user_tagsUncheckedUpdateManyWithoutUser_tokensNestedInput
   telegram_integration?: Prisma.TelegramIntegrationUncheckedUpdateOneWithoutUser_tokensNestedInput
   pending_drafts?: Prisma.telegramPendingDraftUncheckedUpdateManyWithoutUser_tokensNestedInput
+  free_trial?: Prisma.free_trialUncheckedUpdateOneWithoutUser_tokensNestedInput
+}
+
+export type user_tokensCreateWithoutFree_trialInput = {
+  clerk_user_id: string
+  email: string
+  created_at?: Date | string
+  updated_at?: Date | string
+  last_history_id?: string | null
+  watch_activated?: boolean
+  delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  is_gmail?: boolean
+  outlook_id?: string | null
+  is_folder?: boolean
+  draft_preference?: Prisma.draft_preferenceCreateNestedOneWithoutUser_tokensInput
+  email_tracked?: Prisma.email_trackedCreateNestedManyWithoutUser_tokensInput
+  payment_history?: Prisma.PaymentHistoryCreateNestedManyWithoutUser_tokensInput
+  refunds?: Prisma.RefundCreateNestedManyWithoutUser_tokensInput
+  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUser_tokensInput
+  tag?: Prisma.tagCreateNestedManyWithoutUser_tokensInput
+  user_tags?: Prisma.user_tagsCreateNestedManyWithoutUser_tokensInput
+  telegram_integration?: Prisma.TelegramIntegrationCreateNestedOneWithoutUser_tokensInput
+  pending_drafts?: Prisma.telegramPendingDraftCreateNestedManyWithoutUser_tokensInput
+  integration_rules?: Prisma.integrationRulesCreateNestedManyWithoutUser_tokensInput
+}
+
+export type user_tokensUncheckedCreateWithoutFree_trialInput = {
+  clerk_user_id: string
+  email: string
+  created_at?: Date | string
+  updated_at?: Date | string
+  last_history_id?: string | null
+  watch_activated?: boolean
+  delete_at?: Date | string | null
+  deleted_flag?: boolean
+  use_external_ai_processing?: boolean
+  is_gmail?: boolean
+  outlook_id?: string | null
+  is_folder?: boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedCreateNestedOneWithoutUser_tokensInput
+  email_tracked?: Prisma.email_trackedUncheckedCreateNestedManyWithoutUser_tokensInput
+  payment_history?: Prisma.PaymentHistoryUncheckedCreateNestedManyWithoutUser_tokensInput
+  refunds?: Prisma.RefundUncheckedCreateNestedManyWithoutUser_tokensInput
+  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUser_tokensInput
+  tag?: Prisma.tagUncheckedCreateNestedManyWithoutUser_tokensInput
+  user_tags?: Prisma.user_tagsUncheckedCreateNestedManyWithoutUser_tokensInput
+  telegram_integration?: Prisma.TelegramIntegrationUncheckedCreateNestedOneWithoutUser_tokensInput
+  pending_drafts?: Prisma.telegramPendingDraftUncheckedCreateNestedManyWithoutUser_tokensInput
+  integration_rules?: Prisma.integrationRulesUncheckedCreateNestedManyWithoutUser_tokensInput
+}
+
+export type user_tokensCreateOrConnectWithoutFree_trialInput = {
+  where: Prisma.user_tokensWhereUniqueInput
+  create: Prisma.XOR<Prisma.user_tokensCreateWithoutFree_trialInput, Prisma.user_tokensUncheckedCreateWithoutFree_trialInput>
+}
+
+export type user_tokensUpsertWithoutFree_trialInput = {
+  update: Prisma.XOR<Prisma.user_tokensUpdateWithoutFree_trialInput, Prisma.user_tokensUncheckedUpdateWithoutFree_trialInput>
+  create: Prisma.XOR<Prisma.user_tokensCreateWithoutFree_trialInput, Prisma.user_tokensUncheckedCreateWithoutFree_trialInput>
+  where?: Prisma.user_tokensWhereInput
+}
+
+export type user_tokensUpdateToOneWithWhereWithoutFree_trialInput = {
+  where?: Prisma.user_tokensWhereInput
+  data: Prisma.XOR<Prisma.user_tokensUpdateWithoutFree_trialInput, Prisma.user_tokensUncheckedUpdateWithoutFree_trialInput>
+}
+
+export type user_tokensUpdateWithoutFree_trialInput = {
+  clerk_user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUpdateOneWithoutUser_tokensNestedInput
+  email_tracked?: Prisma.email_trackedUpdateManyWithoutUser_tokensNestedInput
+  payment_history?: Prisma.PaymentHistoryUpdateManyWithoutUser_tokensNestedInput
+  refunds?: Prisma.RefundUpdateManyWithoutUser_tokensNestedInput
+  subscriptions?: Prisma.SubscriptionUpdateManyWithoutUser_tokensNestedInput
+  tag?: Prisma.tagUpdateManyWithoutUser_tokensNestedInput
+  user_tags?: Prisma.user_tagsUpdateManyWithoutUser_tokensNestedInput
+  telegram_integration?: Prisma.TelegramIntegrationUpdateOneWithoutUser_tokensNestedInput
+  pending_drafts?: Prisma.telegramPendingDraftUpdateManyWithoutUser_tokensNestedInput
+  integration_rules?: Prisma.integrationRulesUpdateManyWithoutUser_tokensNestedInput
+}
+
+export type user_tokensUncheckedUpdateWithoutFree_trialInput = {
+  clerk_user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  last_history_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  watch_activated?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  delete_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  deleted_flag?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  use_external_ai_processing?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  is_gmail?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  outlook_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_folder?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  draft_preference?: Prisma.draft_preferenceUncheckedUpdateOneWithoutUser_tokensNestedInput
+  email_tracked?: Prisma.email_trackedUncheckedUpdateManyWithoutUser_tokensNestedInput
+  payment_history?: Prisma.PaymentHistoryUncheckedUpdateManyWithoutUser_tokensNestedInput
+  refunds?: Prisma.RefundUncheckedUpdateManyWithoutUser_tokensNestedInput
+  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUser_tokensNestedInput
+  tag?: Prisma.tagUncheckedUpdateManyWithoutUser_tokensNestedInput
+  user_tags?: Prisma.user_tagsUncheckedUpdateManyWithoutUser_tokensNestedInput
+  telegram_integration?: Prisma.TelegramIntegrationUncheckedUpdateOneWithoutUser_tokensNestedInput
+  pending_drafts?: Prisma.telegramPendingDraftUncheckedUpdateManyWithoutUser_tokensNestedInput
+  integration_rules?: Prisma.integrationRulesUncheckedUpdateManyWithoutUser_tokensNestedInput
 }
 
 
@@ -1938,6 +2115,7 @@ export type user_tokensSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   telegram_integration?: boolean | Prisma.user_tokens$telegram_integrationArgs<ExtArgs>
   pending_drafts?: boolean | Prisma.user_tokens$pending_draftsArgs<ExtArgs>
   integration_rules?: boolean | Prisma.user_tokens$integration_rulesArgs<ExtArgs>
+  free_trial?: boolean | Prisma.user_tokens$free_trialArgs<ExtArgs>
   _count?: boolean | Prisma.User_tokensCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user_tokens"]>
 
@@ -1998,6 +2176,7 @@ export type user_tokensInclude<ExtArgs extends runtime.Types.Extensions.Internal
   telegram_integration?: boolean | Prisma.user_tokens$telegram_integrationArgs<ExtArgs>
   pending_drafts?: boolean | Prisma.user_tokens$pending_draftsArgs<ExtArgs>
   integration_rules?: boolean | Prisma.user_tokens$integration_rulesArgs<ExtArgs>
+  free_trial?: boolean | Prisma.user_tokens$free_trialArgs<ExtArgs>
   _count?: boolean | Prisma.User_tokensCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type user_tokensIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -2016,6 +2195,7 @@ export type $user_tokensPayload<ExtArgs extends runtime.Types.Extensions.Interna
     telegram_integration: Prisma.$TelegramIntegrationPayload<ExtArgs> | null
     pending_drafts: Prisma.$telegramPendingDraftPayload<ExtArgs>[]
     integration_rules: Prisma.$integrationRulesPayload<ExtArgs>[]
+    free_trial: Prisma.$free_trialPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     clerk_user_id: string
@@ -2434,6 +2614,7 @@ export interface Prisma__user_tokensClient<T, Null = never, ExtArgs extends runt
   telegram_integration<T extends Prisma.user_tokens$telegram_integrationArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user_tokens$telegram_integrationArgs<ExtArgs>>): Prisma.Prisma__TelegramIntegrationClient<runtime.Types.Result.GetResult<Prisma.$TelegramIntegrationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   pending_drafts<T extends Prisma.user_tokens$pending_draftsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user_tokens$pending_draftsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$telegramPendingDraftPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   integration_rules<T extends Prisma.user_tokens$integration_rulesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user_tokens$integration_rulesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$integrationRulesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  free_trial<T extends Prisma.user_tokens$free_trialArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user_tokens$free_trialArgs<ExtArgs>>): Prisma.Prisma__free_trialClient<runtime.Types.Result.GetResult<Prisma.$free_trialPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3090,6 +3271,25 @@ export type user_tokens$integration_rulesArgs<ExtArgs extends runtime.Types.Exte
   take?: number
   skip?: number
   distinct?: Prisma.IntegrationRulesScalarFieldEnum | Prisma.IntegrationRulesScalarFieldEnum[]
+}
+
+/**
+ * user_tokens.free_trial
+ */
+export type user_tokens$free_trialArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the free_trial
+   */
+  select?: Prisma.free_trialSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the free_trial
+   */
+  omit?: Prisma.free_trialOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.free_trialInclude<ExtArgs> | null
+  where?: Prisma.free_trialWhereInput
 }
 
 /**

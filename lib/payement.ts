@@ -92,7 +92,7 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
   }
 }
 
-async function handleWatchActivation(
+export async function handleWatchActivation(
   userId: string,
 ): Promise<void> {
    const getUserIsGmailData = await getUserIsGmail(userId);
@@ -133,7 +133,7 @@ async function handleWatchActivation(
   }
 }
 
-async function handleWatchDeactivation(userId:string): Promise<void> {
+export async function handleWatchDeactivation(userId:string): Promise<void> {
   try {
 
     const isGmail = (await getUserIsGmail(userId)).isGmail;

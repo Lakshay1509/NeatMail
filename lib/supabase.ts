@@ -172,32 +172,53 @@ export async function addMailtoDB(
 
 export async function getUserSubscribed(userId: string) {
   try {
-    const data = await db.subscription.findFirst({
-      where: { clerkUserId: userId },
-      select: {
-        cancelAtNextBillingDate: true,
-        nextBillingDate: true,
-        status: true,
-      },
-      orderBy: { updatedAt: "desc" },
-    });
+    const [data, freeTrial] = await Promise.all([
+      db.subscription.findFirst({
+        where: { clerkUserId: userId },
+        select: {
+          cancelAtNextBillingDate: true,
+          nextBillingDate: true,
+          status: true,
+        },
+        orderBy: { updatedAt: "desc" },
+      }),
+      db.free_trial.findUnique({
+        where: { user_id: userId }
+      })
+    ])
 
-    if (!data) {
-      return {
-        success: false,
-        subscribed: false,
-      };
+    const hasActiveTrial = freeTrial &&
+      freeTrial.status === 'ACTIVE' &&
+      freeTrial.expires_at > new Date()
+
+    if (!data && !hasActiveTrial) {
+      return { success: false, subscribed: false }
     }
 
+    // on trial but no paid subscription
+    if (!data && hasActiveTrial) {
+      return {
+        success: true,
+        subscribed: true,
+        status: 'trial',
+        next_billing_date: freeTrial.expires_at,
+        cancel_at_next_billing_date: null,
+        freeTrial:true
+      }
+    }
+
+    // paid subscription
     return {
       success: true,
-      subscribed: data.status === "active" ? true : false,
-      status: data.status,
-      next_billing_date: data.nextBillingDate,
-      cancel_at_next_billing_date: data.cancelAtNextBillingDate,
-    };
+      subscribed: data?.status === "active",
+      status: data?.status,
+      next_billing_date: data?.nextBillingDate,
+      cancel_at_next_billing_date: data?.cancelAtNextBillingDate,
+      freeTrial:false
+    }
+
   } catch (error) {
-    console.error("Erro getting subscribed data");
+    console.error("Error getting subscribed data");
     throw error;
   }
 }

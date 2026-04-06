@@ -307,6 +307,23 @@ export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedIntNullableFilter<$PrismaModel>
 }
 
+export type Enumtrial_statusFilter<$PrismaModel = never> = {
+  equals?: $Enums.trial_status | Prisma.Enumtrial_statusFieldRefInput<$PrismaModel>
+  in?: $Enums.trial_status[] | Prisma.ListEnumtrial_statusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.trial_status[] | Prisma.ListEnumtrial_statusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumtrial_statusFilter<$PrismaModel> | $Enums.trial_status
+}
+
+export type Enumtrial_statusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.trial_status | Prisma.Enumtrial_statusFieldRefInput<$PrismaModel>
+  in?: $Enums.trial_status[] | Prisma.ListEnumtrial_statusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.trial_status[] | Prisma.ListEnumtrial_statusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumtrial_statusWithAggregatesFilter<$PrismaModel> | $Enums.trial_status
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumtrial_statusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumtrial_statusFilter<$PrismaModel>
+}
+
 export type NestedStringFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel>
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
@@ -580,6 +597,23 @@ export type NestedFloatNullableFilter<$PrismaModel = never> = {
   gt?: number | Prisma.FloatFieldRefInput<$PrismaModel>
   gte?: number | Prisma.FloatFieldRefInput<$PrismaModel>
   not?: Prisma.NestedFloatNullableFilter<$PrismaModel> | number | null
+}
+
+export type NestedEnumtrial_statusFilter<$PrismaModel = never> = {
+  equals?: $Enums.trial_status | Prisma.Enumtrial_statusFieldRefInput<$PrismaModel>
+  in?: $Enums.trial_status[] | Prisma.ListEnumtrial_statusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.trial_status[] | Prisma.ListEnumtrial_statusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumtrial_statusFilter<$PrismaModel> | $Enums.trial_status
+}
+
+export type NestedEnumtrial_statusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.trial_status | Prisma.Enumtrial_statusFieldRefInput<$PrismaModel>
+  in?: $Enums.trial_status[] | Prisma.ListEnumtrial_statusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.trial_status[] | Prisma.ListEnumtrial_statusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumtrial_statusWithAggregatesFilter<$PrismaModel> | $Enums.trial_status
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumtrial_statusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumtrial_statusFilter<$PrismaModel>
 }
 
 

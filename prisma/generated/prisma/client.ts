@@ -99,3 +99,8 @@ export type integrationRules = Prisma.integrationRulesModel
  * 
  */
 export type allowedToken = Prisma.allowedTokenModel
+/**
+ * Model free_trial
+ * 
+ */
+export type free_trial = Prisma.free_trialModel
