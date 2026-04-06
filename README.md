@@ -4,7 +4,7 @@
   <p>AI-powered email automation that labels your Gmail and Outlook messages automatically and drafts intelligent responses.</p>
   
   <p>
-    <a href="https://www.neatmail.tech">Website</a> •
+    <a href="https://www.neatmail.app">Website</a> •
     <a href="#features">Features</a> •
     <a href="#getting-started">Getting Started</a> •
     <a href="#deployment">Deployment</a> •
@@ -173,5 +173,5 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 <div align="center">
   <p>Built with ❤️ by the NeatMail team</p>
-  <p><a href="https://www.neatmail.tech">neatmail.tech</a></p>
+  <p><a href="https://www.neatmail.app">neatmail.app</a></p>
 </div>

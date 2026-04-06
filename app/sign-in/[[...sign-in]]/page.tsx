@@ -40,7 +40,7 @@ export default async function SignInPage(props: {
           <p className="text-xs text-center text-muted-foreground px-4">
             By signing up, you agree with our{" "}
           
-            <a href="https://www.neatmail.tech/privacy" className="underline underline-offset-4 hover:text-primary">
+            <a href="https://www.neatmail.app/privacy" className="underline underline-offset-4 hover:text-primary">
               Privacy Policy
             </a>.
           </p>

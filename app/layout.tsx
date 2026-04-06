@@ -32,10 +32,10 @@ export const metadata: Metadata = {
     type: "website",
     title: "NeatMail - Your Inbox Deserves Better",
     description: "Label your emails directly into Gmail with AI-powered assistance. Stay organized with personalized labels and automated responses.",
-    url: "https://neatmail.tech",
+    url: "https://neatmail.app",
     images: [
       {
-        url: "https://neatmail.tech/og.webp",
+        url: "https://neatmail.app/og.webp",
         width: 1200,
         height: 630,
       }
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     description: "Label your emails directly into Gmail with AI-powered assistance. Stay organized with personalized labels and automated responses.",
   },
   alternates: {
-    canonical: "https://neatmail.tech",
+    canonical: "https://neatmail.app",
   },
   icons: {
     icon: "/favicon.ico",
