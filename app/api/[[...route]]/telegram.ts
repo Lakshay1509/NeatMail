@@ -154,7 +154,6 @@ const app = new Hono()
             tag_id: z.string(),
           }),
         )
-        .min(1)
         .max(10),
     ),
     async (ctx) => {

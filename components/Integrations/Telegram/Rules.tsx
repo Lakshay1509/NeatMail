@@ -37,7 +37,7 @@ const ruleSchema = z.object({
 });
 
 const formSchema = z.object({
-    rules: z.array(ruleSchema).min(1, "Add at least one rule").max(10, "You can add up to 10 rules"),
+    rules: z.array(ruleSchema).max(10, "You can add up to 10 rules"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -58,7 +58,7 @@ const Rules = () => {
         },
     });
 
-    const { fields, append, remove } = useFieldArray({
+    const { fields, append, remove, replace } = useFieldArray({
         control: form.control,
         name: "rules",
     });
@@ -81,8 +81,19 @@ const Rules = () => {
         append({ domain: "", tag_id: "" });
     };
 
-    const handleRemoveRule = (index: number) => {
+    const handleRemoveRule = async (index: number) => {
+        const currentRules = form.getValues("rules");
+        const nextRules = currentRules.filter((_, idx) => idx !== index);
+
+        // Optimistically update the form, then persist to the backend.
         remove(index);
+
+        try {
+            await mutation.mutateAsync(nextRules);
+        } catch {
+            // Roll back local state when persistence fails.
+            replace(currentRules);
+        }
     };
 
     const handleSave = async (values: FormValues) => {
@@ -240,6 +251,7 @@ const Rules = () => {
                                             variant="destructive" 
                                             size="icon" 
                                             onClick={() => handleRemoveRule(idx)}
+                                            disabled={mutation.isPending}
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </Button>

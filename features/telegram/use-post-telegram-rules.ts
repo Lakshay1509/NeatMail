@@ -19,7 +19,7 @@ export const useAddRulesTelegram = () => {
      
       if(!response.ok){
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to add telegram rules");
+        throw new Error(errorData.error || "Failed to save telegram rules");
       }
 
         return response.json();
@@ -27,12 +27,12 @@ export const useAddRulesTelegram = () => {
 
     onSuccess:()=>{
         query.invalidateQueries({queryKey:['user-telegram-rules']})
-        toast.success("Telegram rules added successfully!")
+      toast.success("Telegram rules saved successfully!")
     },
    
     onError: (error) => {
       console.log(error);
-      toast.error(error ? String(error.message) : "Failed to add telegram rules");
+      toast.error(error ? String(error.message) : "Failed to save telegram rules");
     },
   });
 };
