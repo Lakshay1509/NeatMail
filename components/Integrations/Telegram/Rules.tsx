@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useEffect } from "react";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { useGetUserTags } from "@/features/tags/use-get-user-tags";
 import { useGetTelegramRules } from "@/features/telegram/use-get-telegram-rules"
 import { useAddRulesTelegram } from "@/features/telegram/use-post-telegram-rules";
@@ -14,10 +17,30 @@ import { Plus, Trash2, Loader2, Save, ChevronDown, ChevronUp } from "lucide-reac
 import { Label } from "@/components/ui/label";
 import { useGetUserIsGmail } from "@/features/user/use-get-user-isGmail";
 
-type Rule = {
-  domain: string;
-  tag_id: string;
+const isValidSender = (value: string) => {
+    const trimmed = value.trim();
+
+    // Allow either a full sender email or a plain domain.
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const domainRegex = /^(?!-)(?:[a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,63}$/;
+
+    return emailRegex.test(trimmed) || domainRegex.test(trimmed);
 };
+
+const ruleSchema = z.object({
+    domain: z
+        .string()
+        .trim()
+        .min(1, "Sender email or domain is required")
+        .refine(isValidSender, "Enter a valid sender email or domain"),
+    tag_id: z.string().trim().min(1, "Tag is required"),
+});
+
+const formSchema = z.object({
+    rules: z.array(ruleSchema).min(1, "Add at least one rule").max(10, "You can add up to 10 rules"),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 const Rules = () => {
     const { data: rulesData, isLoading: rulesLoading, isError } = useGetTelegramRules();
@@ -27,42 +50,43 @@ const Rules = () => {
     
     const mutation = useAddRulesTelegram();
     const mutationPrefs = usePostTelegramPreferences();
-    
-    const [rules, setRules] = useState<Rule[]>([]);
+
+    const form = useForm<FormValues>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            rules: [],
+        },
+    });
+
+    const { fields, append, remove } = useFieldArray({
+        control: form.control,
+        name: "rules",
+    });
+
     const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
         if (rulesData?.data) {
-            setRules(rulesData.data);
+            form.reset({
+                rules: rulesData.data.map((rule) => ({
+                    domain: rule.domain ?? "",
+                    tag_id: rule.tag_id ?? "",
+                })),
+            });
         }
-    }, [rulesData]);
+    }, [rulesData, form]);
 
     const handleAddRule = () => {
-        if (rules.length >= 10) return;
-        setRules([...rules, { domain: "", tag_id: "" }]);
+        if (fields.length >= 10) return;
+        append({ domain: "", tag_id: "" });
     };
 
     const handleRemoveRule = (index: number) => {
-        const newRules = [...rules];
-        newRules.splice(index, 1);
-        setRules(newRules);
+        remove(index);
     };
 
-    const handleDomainChange = (index: number, value: string) => {
-        const newRules = [...rules];
-        newRules[index].domain = value;
-        setRules(newRules);
-    };
-
-    const handleTagChange = (index: number, value: string) => {
-        const newRules = [...rules];
-        newRules[index].tag_id = value;
-        setRules(newRules);
-    };
-
-    const handleSave = () => {
-        const validRules = rules.filter(r => r.domain.trim() !== "" && r.tag_id !== "");
-        mutation.mutateAsync(validRules);
+    const handleSave = async (values: FormValues) => {
+        await mutation.mutateAsync(values.rules);
     };
 
     const isLoading = rulesLoading || tagsLoading || prefsLoading;
@@ -142,7 +166,7 @@ const Rules = () => {
                                     e.stopPropagation();
                                     handleAddRule();
                                 }}
-                                disabled={rules.length >= 10}
+                                disabled={fields.length >= 10}
                             >
                                 <Plus className="h-4 w-4 mr-2" />
                                 Add Rule
@@ -157,39 +181,62 @@ const Rules = () => {
                 </div>
 
                 {isOpen && (
-                    <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                        {rules.length === 0 ? (
+                    <form className="pt-2 animate-in fade-in slide-in-from-top-2 duration-200" onSubmit={form.handleSubmit(handleSave)}>
+                        {fields.length === 0 ? (
                             <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
                                 No rules configured. Click Add Rule to create one.
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                {rules.map((rule, idx) => (
-                                    <div key={idx} className="flex items-end gap-3">
+                                {fields.map((field, idx) => (
+                                    <div key={field.id} className="flex items-end gap-3">
                                         <div className="flex-1 space-y-1">
-                                            <Label className="text-xs">Sender Domain</Label>
-                                            <Input 
-                                                placeholder="e.g. notifications@domain.com" 
-                                                value={rule.domain} 
-                                                onChange={(e) => handleDomainChange(idx, e.target.value)}
+                                            <Label className="text-xs">Sender Email or Domain</Label>
+                                            <Controller
+                                                control={form.control}
+                                                name={`rules.${idx}.domain`}
+                                                render={({ field: domainField }) => (
+                                                    <Input
+                                                        placeholder="e.g. notifications@domain.com or domain.com"
+                                                        value={domainField.value}
+                                                        onChange={domainField.onChange}
+                                                    />
+                                                )}
                                             />
+                                            {form.formState.errors.rules?.[idx]?.domain?.message && (
+                                                <span className="text-xs text-red-500">
+                                                    {form.formState.errors.rules[idx]?.domain?.message}
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="flex-1 space-y-1">
                                             <Label className="text-xs">Tag</Label>
-                                            <Select value={rule.tag_id} onValueChange={(val) => handleTagChange(idx, val)}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select a tag" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {tags.map((t: any) => (
-                                                        <SelectItem key={t.tag.id} value={t.tag.id}>
-                                                            {t.tag.name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            <Controller
+                                                control={form.control}
+                                                name={`rules.${idx}.tag_id`}
+                                                render={({ field: tagField }) => (
+                                                    <Select value={tagField.value} onValueChange={tagField.onChange}>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select a tag" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {tags.map((t: any) => (
+                                                                <SelectItem key={t.tag.id} value={t.tag.id}>
+                                                                    {t.tag.name}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                )}
+                                            />
+                                            {form.formState.errors.rules?.[idx]?.tag_id?.message && (
+                                                <span className="text-xs text-red-500">
+                                                    {form.formState.errors.rules[idx]?.tag_id?.message}
+                                                </span>
+                                            )}
                                         </div>
                                         <Button 
+                                            type="button"
                                             variant="destructive" 
                                             size="icon" 
                                             onClick={() => handleRemoveRule(idx)}
@@ -201,11 +248,12 @@ const Rules = () => {
                             </div>
                         )}
 
+                        {form.formState.errors.rules?.message && (
+                            <p className="pt-3 text-xs text-red-500">{form.formState.errors.rules.message}</p>
+                        )}
+
                         <div className="flex justify-end pt-6">
-                            <Button 
-                                onClick={handleSave} 
-                                disabled={mutation.isPending || rules.length === 0}
-                            >
+                            <Button type="submit" disabled={mutation.isPending}>
                                 {mutation.isPending ? (
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                 ) : (
@@ -214,7 +262,7 @@ const Rules = () => {
                                 Save Rules
                             </Button>
                         </div>
-                    </div>
+                    </form>
                 )}
             </div>
         </div>

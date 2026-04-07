@@ -44,16 +44,13 @@ const app = new Hono().post("/webhook", async (ctx) => {
     const is_gmail = provider === "oauth_google";
     
 
-    const updateData = await db.allowedToken.update({
+    await db.allowedToken.update({
       where:{email:email_addresses[0]?.email_address},
       data:{
         is_used:true
       }
     })
 
-    if(!updateData){
-      return ctx.json({error:"User access token not found"},200) //sending 200 to prevent retry and delete later
-    }
 
     const data = await db.user_tokens.upsert({
       where: { clerk_user_id: id },
