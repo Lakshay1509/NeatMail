@@ -200,7 +200,7 @@ const Rules = () => {
                         ) : (
                             <div className="space-y-4">
                                 {fields.map((field, idx) => (
-                                    <div key={field.id} className="flex items-end gap-3">
+                                    <div key={field.id} className="flex items-start gap-3">
                                         <div className="flex-1 space-y-1">
                                             <Label className="text-xs">Sender Email or Domain</Label>
                                             <Controller
@@ -214,11 +214,9 @@ const Rules = () => {
                                                     />
                                                 )}
                                             />
-                                            {form.formState.errors.rules?.[idx]?.domain?.message && (
-                                                <span className="text-xs text-red-500">
-                                                    {form.formState.errors.rules[idx]?.domain?.message}
-                                                </span>
-                                            )}
+                                            <p className="min-h-4 text-xs text-red-500">
+                                                {form.formState.errors.rules?.[idx]?.domain?.message ?? ""}
+                                            </p>
                                         </div>
                                         <div className="flex-1 space-y-1">
                                             <Label className="text-xs">Tag</Label>
@@ -240,11 +238,9 @@ const Rules = () => {
                                                     </Select>
                                                 )}
                                             />
-                                            {form.formState.errors.rules?.[idx]?.tag_id?.message && (
-                                                <span className="text-xs text-red-500">
-                                                    {form.formState.errors.rules[idx]?.tag_id?.message}
-                                                </span>
-                                            )}
+                                            <p className="min-h-4 text-xs text-red-500">
+                                                {form.formState.errors.rules?.[idx]?.tag_id?.message ?? ""}
+                                            </p>
                                         </div>
                                         <Button 
                                             type="button"
