@@ -43,13 +43,16 @@ const app = new Hono().post("/webhook", async (ctx) => {
     const provider = external_accounts?.[0]?.provider ?? "";
     const is_gmail = provider === "oauth_google";
     
-
+    try{
     await db.allowedToken.update({
       where:{email:email_addresses[0]?.email_address},
       data:{
         is_used:true
       }
-    })
+    })}
+    catch(error){
+     console.log(error)
+    }
 
 
     const data = await db.user_tokens.upsert({
