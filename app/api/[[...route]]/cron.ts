@@ -5,7 +5,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { activateWatch } from "@/lib/gmail";
 import { updateHistoryId, updateOutlookId } from "@/lib/supabase";
 import { createOutlookSubscription } from "@/lib/outlook";
-import { Autosend } from "autosendjs";
+import { Resend } from "resend";
 
 const app = new Hono()
   .get("/delete-user", async (ctx) => {
@@ -127,7 +127,6 @@ const app = new Hono()
         failed: 0,
         errors: [] as string[],
       };
-      
 
       for (const sub of activeSubscriptions) {
         try {
@@ -161,7 +160,7 @@ const app = new Hono()
         }
       }
 
-       for (const sub of activeTrials) {
+      for (const sub of activeTrials) {
         try {
           if (sub.user_tokens.is_gmail === true) {
             const response = await activateWatch(sub.user_tokens.clerk_user_id);
@@ -186,10 +185,7 @@ const app = new Hono()
           results.errors.push(
             `Failed to renew watch for ${sub.email}: ${errorMessage}`,
           );
-          console.error(
-            `❌ Watch renewal failed for ${sub.email}:`,
-            error,
-          );
+          console.error(`❌ Watch renewal failed for ${sub.email}:`, error);
         }
       }
 
@@ -219,17 +215,12 @@ const app = new Hono()
       return ctx.json({ error: "Unauthorized" }, 401);
     }
 
+    const now = new Date();
+    const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
     try {
-      const now = new Date();
-      const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-
-      const autosend = new Autosend(process.env.AUTOSEND_API_KEY!, {
-        baseUrl: "https://api.autosend.com/v1",
-        timeout: 30000,
-        maxRetries: 3,
-        debug: false,
-      });
-
       const subscriptions = await db.subscription.findMany({
         where: {
           status: "active",
@@ -238,6 +229,7 @@ const app = new Hono()
             lt: in24Hours,
           },
           cancelAtNextBillingDate: true,
+          user_tokens: { deleted_flag: false },
         },
       });
 
@@ -264,20 +256,81 @@ const app = new Hono()
           const client = await clerkClient();
           const clerkUser = await client.users.getUser(sub.clerkUserId);
 
-          await autosend.emails.send({
-            from: { email: "subscription@mail.neatmail.app", name: "NeatMail" },
-            to: { email: sub.customerEmail },
-            subject: "Quick reminder: Your NeatMail plan ends soon",
-            templateId: "A-06b8aaad61bd8c3afc94",
-            dynamicData: {
-              firstName: clerkUser.fullName ?? "",
-              last30DaysCount: data,
-              renewalLink: "https://dashboard.neatmail.app/billing",
+          await resend.emails.send({
+            to: sub.customerEmail,
+            template: {
+              id: "subscription-renewal-reminder",
+              variables: {
+                firstName: clerkUser.fullName ?? "User",
+                last30DaysCount: String(data),
+                renewalLink: "https://dashboard.neatmail.app/billing",
+              },
             },
           });
         } catch (error) {
           console.error(
-            `Failed to send reminder to ${sub.customerEmail}:`,
+            `Failed to send subscription reminder to ${sub.customerEmail}:`,
+            error,
+          );
+        }
+      }
+
+      const freeTrial = await db.free_trial.findMany({
+        where: {
+          status: "ACTIVE",
+          expires_at: {
+            gte: now,
+            lt: in24Hours,
+          },
+          user_tokens: { deleted_flag: false },
+        },
+        select: {
+          user_id: true,
+          user_tokens: {
+            select: {
+              email: true,
+            },
+          },
+        },
+      });
+
+      for (const sub of freeTrial) {
+        try {
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+          const startOfNextMonth = new Date(
+            now.getFullYear(),
+            now.getMonth() + 1,
+            1,
+          );
+
+          const data = await db.email_tracked.count({
+            where: {
+              user_id: sub.user_id,
+              created_at: {
+                gte: startOfMonth,
+                lt: startOfNextMonth,
+              },
+            },
+          });
+
+          const client = await clerkClient();
+          const clerkUser = await client.users.getUser(sub.user_id);
+
+          await resend.emails.send({
+            to: sub.user_tokens.email,
+            template: {
+              id: "free-trial-renewal-reminder",
+              variables: {
+                firstName: clerkUser.fullName ?? "User",
+                last30DaysCount: String(data),
+                renewalLink: "https://dashboard.neatmail.app/billing",
+              },
+            },
+          });
+        } catch (error) {
+          console.error(
+            `Failed to send free trial  reminder to ${sub.user_tokens.email}:`,
             error,
           );
         }
@@ -286,8 +339,7 @@ const app = new Hono()
       return ctx.json({
         message: "Reminder check completed",
         timestamp: now.toISOString(),
-        total: subscriptions.length,
-        subscriptions,
+        total: subscriptions.length + freeTrial.length,
       });
     } catch (error) {
       console.error("Send reminder cron job error:", error);
@@ -310,23 +362,83 @@ const app = new Hono()
       return ctx.json({ error: "Unauthorized" }, 401);
     }
 
+     const resend = new Resend(process.env.RESEND_API_KEY);
+     const now = new Date();
+
     try {
-      const result = await db.free_trial.updateMany({
-        where: {
-          status: "ACTIVE",
-          expires_at: { lte: new Date() },
-        },
-        data: {
-          status: "EXPIRED",
-        },
+      const [trials, result] = await db.$transaction(async (tx) => {
+        const trials = await tx.free_trial.findMany({
+          where: {
+            status: "ACTIVE",
+            expires_at: { lte: new Date() },
+          },
+          select: {
+            user_id: true,
+            user_tokens: {
+              select: { email: true },
+            },
+          },
+        });
+
+        const count = await tx.free_trial.updateMany({
+          where: {
+            status: "ACTIVE",
+            expires_at: { lte: new Date() },
+          },
+          data: { status: "EXPIRED" },
+        });
+
+        return [trials, count];
       });
 
-      console.log(result.count)
+      for(const trial of trials){
+
+        try{
+        const client = await clerkClient();
+        const clerkUser = await client.users.getUser(trial.user_id);
+
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+          const startOfNextMonth = new Date(
+            now.getFullYear(),
+            now.getMonth() + 1,
+            1,
+          );
+
+          const data = await db.email_tracked.count({
+            where: {
+              user_id: trial.user_id,
+              created_at: {
+                gte: startOfMonth,
+                lt: startOfNextMonth,
+              },
+            },
+          });
+
+
+
+        await resend.emails.send({
+            to: trial.user_tokens.email,
+            template: {
+              id: "free-trial-ended",
+              variables: {
+                firstName: clerkUser.fullName ?? "User",
+                last30DaysCount: String(data),
+                renewalLink: "https://dashboard.neatmail.app/billing",
+              },
+            },
+          });
+        }catch(error){
+          console.error(
+            `Failed to send free trial  reminder to ${trial.user_tokens.email}:`,
+            error,
+          );
+        }
+      }
 
       return ctx.json({
         message: "Free trial deactivation completed",
         timestamp: new Date().toISOString(),
-        deactivatedCount: result.count,
       });
     } catch (error) {
       console.error("Deactivate free trials cron job error:", error);
