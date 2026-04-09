@@ -200,8 +200,11 @@ const Rules = () => {
                         ) : (
                             <div className="space-y-4">
                                 {fields.map((field, idx) => (
-                                    <div key={field.id} className="flex items-start gap-3">
-                                        <div className="flex-1 space-y-1">
+                                    <div
+                                        key={field.id}
+                                        className="grid grid-cols-1 gap-3 rounded-md border p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-start sm:border-0 sm:p-0"
+                                    >
+                                        <div className="space-y-1">
                                             <Label className="text-xs">Sender Email or Domain</Label>
                                             <Controller
                                                 control={form.control}
@@ -218,7 +221,7 @@ const Rules = () => {
                                                 {form.formState.errors.rules?.[idx]?.domain?.message ?? ""}
                                             </p>
                                         </div>
-                                        <div className="flex-1 space-y-1">
+                                        <div className="space-y-1">
                                             <Label className="text-xs">Tag</Label>
                                             <Controller
                                                 control={form.control}
@@ -246,6 +249,7 @@ const Rules = () => {
                                             type="button"
                                             variant="destructive" 
                                             size="icon" 
+                                            className="h-10 w-10 justify-self-end self-end sm:mt-6 sm:self-start"
                                             onClick={() => handleRemoveRule(idx)}
                                             disabled={mutation.isPending}
                                         >
