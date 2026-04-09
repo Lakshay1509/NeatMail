@@ -247,9 +247,9 @@ const Rules = () => {
                                         </div>
                                         <Button 
                                             type="button"
-                                            variant="destructive" 
+                                            variant="ghost" 
                                             size="icon" 
-                                            className="h-10 w-10 justify-self-end self-end sm:mt-6 sm:self-start"
+                                            className="h-10 w-10 justify-self-end self-end text-red-500 hover:bg-transparent hover:text-red-600 sm:mt-6 sm:self-start"
                                             onClick={() => handleRemoveRule(idx)}
                                             disabled={mutation.isPending}
                                         >
