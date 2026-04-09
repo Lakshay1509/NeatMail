@@ -3,15 +3,16 @@ import {client} from "@/lib/hono"
 import { useUser } from "@clerk/nextjs";
 
 
-export const useGetTimeSaved = ()=>{
+export const useGetUserMailsThisMonth = ()=>{
+
     const {user} = useUser()
     const query = useQuery({
         enabled : !!user,
-        queryKey: ["user-time-saved"],
+        queryKey: ["user-mail-month"],
         queryFn: async ()=>{
-            const response = await client.api.stats["time-saved"].$get();
+            const response = await client.api.stats.mailsThisMonth.$get();
 
-            if(!response.ok) throw new Error("failed to get time saved stats");
+            if(!response.ok) throw new Error("failed to get data");
 
             const data = await response.json();
 

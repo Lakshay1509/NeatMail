@@ -1,6 +1,6 @@
 'use client'
 
-import { useGetUserMailsThisMonth } from "@/features/user/use-get-mail-thisMonth"
+import { useGetUserMailsThisMonth } from "@/features/stats/use-get-mail-thisMonth"
 import { useUser } from "@clerk/nextjs"
 import { ArrowUpRight, Mail } from "lucide-react"
 import { EmailTrendsChart } from "./EmailTrendsChart"

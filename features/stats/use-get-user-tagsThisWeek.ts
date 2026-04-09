@@ -3,16 +3,15 @@ import {client} from "@/lib/hono"
 import { useUser } from "@clerk/nextjs";
 
 
-export const useGetUserMailsThisMonth = ()=>{
-
+export const useGetUserTagsWeek = ()=>{
     const {user} = useUser()
     const query = useQuery({
         enabled : !!user,
-        queryKey: ["user-mail-month"],
+        queryKey: ["user-tags-week"],
         queryFn: async ()=>{
-            const response = await client.api.user.mailsThisMonth.$get();
+            const response = await client.api.stats.labelsThisWeek.$get();;
 
-            if(!response.ok) throw new Error("failed to get data");
+            if(!response.ok) throw new Error("failed to get labels");
 
             const data = await response.json();
 

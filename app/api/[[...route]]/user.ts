@@ -46,36 +46,6 @@ const app = new Hono()
     return ctx.json({ data }, 200);
   })
 
-  .get("/mailsThisMonth", async (ctx) => {
-    const { userId } = await auth();
-
-    if (!userId) {
-      return ctx.json({ error: "Unauthorized" }, 401);
-    }
-
-    const now = new Date();
-
-    const startOfPeriod = new Date(now);
-    startOfPeriod.setDate(startOfPeriod.getDate() - 30);
-
-    const endOfPeriod = new Date(now);
-
-    const data = await db.email_tracked.count({
-      where: {
-        user_id: userId,
-        tag_id: {
-          not: null,
-        },
-        created_at: {
-          gte: startOfPeriod,
-          lt: endOfPeriod,
-        },
-      },
-    });
-
-    return ctx.json({ data }, 200);
-  })
-
   .get("/subscription", async (ctx) => {
     const { userId } = await auth();
 

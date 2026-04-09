@@ -46,81 +46,123 @@ const app = new Hono()
     },200);
   })
 
-  // 2. Category Engagement (Read Rate by Category)
-  .get("/category-engagement", async (ctx) => {
+  .get("/labelsThisWeek", async (ctx) => {
     const { userId } = await auth();
+
     if (!userId) {
-      return ctx.json({ error: "Unuathorized" }, 401);
+      return ctx.json({ error: "Unauthorized" }, 401);
     }
 
-    // Fetch read vs unread counts grouped by tag
-    const stats = await db.email_tracked.groupBy({
-      by: ["tag_id", "is_read"],
-      where: { user_id: userId },
-      _count: { message_id: true },
-    });
+    const now = new Date();
 
-    // Fetch tag details to enrich the response
-    const tags = await db.tag.findMany({
-     where: {
-        OR: [{ user_id: userId }, { user_id: null }],
+    const day = now.getUTCDay(); // 0 = Sunday
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+
+    const startOfWeek = new Date(now);
+    startOfWeek.setUTCDate(now.getUTCDate() + diffToMonday);
+    startOfWeek.setUTCHours(0, 0, 0, 0);
+
+    const totalThisWeek = await db.email_tracked.count({
+      where: {
+        user_id: userId,
+        created_at: {
+          gte: startOfWeek,
+          lte: now,
+        },
       },
-      select: { id: true, name: true, color: true },
     });
 
-    // Calculate read rates per tag
-    const engagement = tags.map((tag) => {
-      const readCount =
-        stats.find((s) => s.tag_id === tag.id && s.is_read)?._count
-          .message_id || 0;
-      const unreadCount =
-        stats.find((s) => s.tag_id === tag.id && !s.is_read)?._count
-          .message_id || 0;
-      const total = readCount + unreadCount;
+    const topLabels = await db.email_tracked.groupBy({
+      by: ["tag_id"],
+      where: {
+        user_id: userId,
+        tag_id: {
+          not: null,
+        },
+        created_at: {
+          gte: startOfWeek,
+          lte: now,
+        },
+      },
+      _count: {
+        tag_id: true,
+      },
+      orderBy: {
+        _count: {
+          tag_id: "desc",
+        },
+      },
+      take: 4,
+    });
+
+    const tagIds = topLabels
+      .map((t) => t.tag_id)
+      .filter((id): id is string => id !== null);
+
+    const tags = await db.tag.findMany({
+      where: {
+        id: { in: tagIds },
+      },
+      select: {
+        id: true,
+        name: true,
+        color: true,
+      },
+    });
+
+    const tagMap = new Map(
+      tags.map((tag) => [tag.id, { name: tag.name, color: tag.color }]),
+
+    );
+
+    const labels = topLabels.map((item) => {
+      const meta = tagMap.get(item.tag_id!);
+
+      const count = item._count.tag_id;
+      const percentage =
+        totalThisWeek > 0
+          ? Number(((count / totalThisWeek) * 100).toFixed(1))
+          : 0;
 
       return {
-        tagId: tag.id,
-        name: tag.name,
-        color: tag.color,
-        readCount,
-        unreadCount,
-        total,
-        readRate: total > 0 ? ((readCount / total) * 100).toFixed(1) : 0,
+        label: meta?.name,
+        count,
+        percentage,
+        color: meta?.color,
       };
     });
 
-    return ctx.json({ engagement },200);
+    return ctx.json(labels);
   })
-
-  // 3. Estimated "Time Saved" by AI (The ROI Metric)
-  .get("/time-saved", async (ctx) => {
-    const { userId } = await auth();
-    if (!userId) {
-      return ctx.json({ error: "Unuathorized" }, 401);
-    }
-
-    // Assumption: Each email processed/labeled by AI saves about 5 seconds of manual sorting
-    const SECONDS_SAVED_PER_EMAIL = 5;
-
-    const totalProcessed = await db.email_tracked.count({
-      where: { user_id: userId },
-    });
-
-    const totalSecondsSaved = totalProcessed * SECONDS_SAVED_PER_EMAIL;
-
-    // Format into easily consumable metrics for the frontend
-    const hours = Math.floor(totalSecondsSaved / 3600);
-    const minutes = Math.floor((totalSecondsSaved % 3600) / 60);
-
-    return ctx.json({
-      totalEmailsProcessed: totalProcessed,
-      estimatedTimeSaved: {
-        hours,
-        minutes,
-        totalSeconds: totalSecondsSaved,
-      },
-    },200);
-  })
+    .get("/mailsThisMonth", async (ctx) => {
+      const { userId } = await auth();
+  
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+  
+      const now = new Date();
+  
+      const startOfPeriod = new Date(now);
+      startOfPeriod.setDate(startOfPeriod.getDate() - 30);
+  
+      const endOfPeriod = new Date(now);
+  
+      const data = await db.email_tracked.count({
+        where: {
+          user_id: userId,
+          tag_id: {
+            not: null,
+          },
+          created_at: {
+            gte: startOfPeriod,
+            lt: endOfPeriod,
+          },
+        },
+      });
+  
+      return ctx.json({ data }, 200);
+    })
 
   // 4. Inbox Traffic / Focus Heatmap (Activity by Day & Hour)
   .get("/traffic-heatmap", async (ctx) => {

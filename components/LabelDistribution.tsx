@@ -1,6 +1,6 @@
 "use client";
 
-import { useGetUserTagsWeek } from "@/features/email/use-get-user-tagsThisWeek";
+import { useGetUserTagsWeek } from "@/features/stats/use-get-user-tagsThisWeek";
 
 export function LabelDistribution() {
   const { data: tags, isLoading } = useGetUserTagsWeek();
