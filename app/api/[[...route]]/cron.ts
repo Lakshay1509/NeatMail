@@ -235,20 +235,17 @@ const app = new Hono()
 
       for (const sub of subscriptions) {
         try {
-          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          const startOfPeriod = new Date(now);
+          startOfPeriod.setDate(startOfPeriod.getDate() - 30);
 
-          const startOfNextMonth = new Date(
-            now.getFullYear(),
-            now.getMonth() + 1,
-            1,
-          );
+          const endOfPeriod = new Date(now);
 
           const data = await db.email_tracked.count({
             where: {
               user_id: sub.clerkUserId,
               created_at: {
-                gte: startOfMonth,
-                lt: startOfNextMonth,
+                gte: startOfPeriod,
+                lt: endOfPeriod,
               },
             },
           });
@@ -296,20 +293,17 @@ const app = new Hono()
 
       for (const sub of freeTrial) {
         try {
-          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          const startOfPeriod = new Date(now);
+          startOfPeriod.setDate(startOfPeriod.getDate() - 30);
 
-          const startOfNextMonth = new Date(
-            now.getFullYear(),
-            now.getMonth() + 1,
-            1,
-          );
+          const endOfPeriod = new Date(now);
 
           const data = await db.email_tracked.count({
             where: {
               user_id: sub.user_id,
               created_at: {
-                gte: startOfMonth,
-                lt: startOfNextMonth,
+                gte: startOfPeriod,
+                lt: endOfPeriod,
               },
             },
           });
@@ -362,8 +356,8 @@ const app = new Hono()
       return ctx.json({ error: "Unauthorized" }, 401);
     }
 
-     const resend = new Resend(process.env.RESEND_API_KEY);
-     const now = new Date();
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const now = new Date();
 
     try {
       const [trials, result] = await db.$transaction(async (tx) => {
@@ -391,13 +385,12 @@ const app = new Hono()
         return [trials, count];
       });
 
-      for(const trial of trials){
+      for (const trial of trials) {
+        try {
+          const client = await clerkClient();
+          const clerkUser = await client.users.getUser(trial.user_id);
 
-        try{
-        const client = await clerkClient();
-        const clerkUser = await client.users.getUser(trial.user_id);
-
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
           const startOfNextMonth = new Date(
             now.getFullYear(),
@@ -415,9 +408,7 @@ const app = new Hono()
             },
           });
 
-
-
-        await resend.emails.send({
+          await resend.emails.send({
             to: trial.user_tokens.email,
             template: {
               id: "free-trial-ended",
@@ -428,7 +419,7 @@ const app = new Hono()
               },
             },
           });
-        }catch(error){
+        } catch (error) {
           console.error(
             `Failed to send free trial  reminder to ${trial.user_tokens.email}:`,
             error,

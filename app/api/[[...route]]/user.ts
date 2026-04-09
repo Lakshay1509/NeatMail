@@ -7,7 +7,7 @@ import z, { boolean } from "zod";
 
 const app = new Hono()
 
-  .get('/default',async(ctx)=>{
+  .get("/default", async (ctx) => {
     const { userId } = await auth();
 
     if (!userId) {
@@ -23,7 +23,6 @@ const app = new Hono()
     }
 
     return ctx.json({ data }, 200);
-
   })
 
   .get("/watch", async (ctx) => {
@@ -56,19 +55,20 @@ const app = new Hono()
 
     const now = new Date();
 
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfPeriod = new Date(now);
+    startOfPeriod.setDate(startOfPeriod.getDate() - 30);
 
-    const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const endOfPeriod = new Date(now);
 
     const data = await db.email_tracked.count({
       where: {
         user_id: userId,
-        tag_id:{
-          not:null
+        tag_id: {
+          not: null,
         },
         created_at: {
-          gte: startOfMonth,
-          lt: startOfNextMonth,
+          gte: startOfPeriod,
+          lt: endOfPeriod,
         },
       },
     });
@@ -94,37 +94,44 @@ const app = new Hono()
         orderBy: { updatedAt: "desc" },
       }),
       db.free_trial.findUnique({
-        where: { user_id: userId }
-      })
-    ])
+        where: { user_id: userId },
+      }),
+    ]);
 
-    const hasActiveTrial = freeTrial &&
-      freeTrial.status === 'ACTIVE' &&
-      freeTrial.expires_at > new Date()
+    const hasActiveTrial =
+      freeTrial &&
+      freeTrial.status === "ACTIVE" &&
+      freeTrial.expires_at > new Date();
 
     if (!data && !hasActiveTrial) {
       return ctx.json({ success: false, subscribed: false }, 200);
     }
 
     if (!data && hasActiveTrial) {
-      return ctx.json({
-        success: true,
-        subscribed: true,
-        status: 'trial',
-        next_billing_date: freeTrial.expires_at,
-        cancel_at_next_billing_date: null,
-        freeTrial:true
-      }, 200);
+      return ctx.json(
+        {
+          success: true,
+          subscribed: true,
+          status: "trial",
+          next_billing_date: freeTrial.expires_at,
+          cancel_at_next_billing_date: null,
+          freeTrial: true,
+        },
+        200,
+      );
     }
 
-    return ctx.json({
-      success: true,
-      subscribed: data!.status === "active",
-      status: data!.status,
-      next_billing_date: data!.nextBillingDate,
-      cancel_at_next_billing_date: data!.cancelAtNextBillingDate,
-      freeTrial:false
-    }, 200);
+    return ctx.json(
+      {
+        success: true,
+        subscribed: data!.status === "active",
+        status: data!.status,
+        next_billing_date: data!.nextBillingDate,
+        cancel_at_next_billing_date: data!.cancelAtNextBillingDate,
+        freeTrial: false,
+      },
+      200,
+    );
   })
 
   .get("/payments", async (ctx) => {
@@ -343,31 +350,29 @@ const app = new Hono()
     return ctx.json({ data }, 200);
   })
 
-  .get('/isGmail',async(ctx)=>{
+  .get("/isGmail", async (ctx) => {
     const { userId } = await auth();
 
-      if (!userId) {
-        return ctx.json({ error: "Unauthorized" }, 401);
-      }
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
 
-      const data = await db.user_tokens.findUnique({
-        where:{clerk_user_id:userId},
-        select:{
-          is_gmail:true
-        }
-      })
+    const data = await db.user_tokens.findUnique({
+      where: { clerk_user_id: userId },
+      select: {
+        is_gmail: true,
+      },
+    });
 
-      if(!data){
-        return ctx.json({error:"Error fetching is-gmail data for user"},500);
-      }
+    if (!data) {
+      return ctx.json({ error: "Error fetching is-gmail data for user" }, 500);
+    }
 
-      if(data.is_gmail===true){
-        return ctx.json({is_gmail:true},200);
-      }
+    if (data.is_gmail === true) {
+      return ctx.json({ is_gmail: true }, 200);
+    }
 
-      return ctx.json({is_gmail:false},200);
-
-
+    return ctx.json({ is_gmail: false }, 200);
   })
 
   .put(
@@ -402,39 +407,37 @@ const app = new Hono()
     },
   )
 
-  .put('update/moveToFolder', zValidator(
-        "json",
-        z.object({
-          confirm:z.boolean()
-        }),
-      ),async(ctx)=>{
+  .put(
+    "update/moveToFolder",
+    zValidator(
+      "json",
+      z.object({
+        confirm: z.boolean(),
+      }),
+    ),
+    async (ctx) => {
+      const { userId } = await auth();
 
-    const { userId } = await auth();
-
-    if (!userId) {
-      return ctx.json({ error: "Unauthorized" }, 401);
-    }
-
-    const values = ctx.req.valid("json");
-
-    const data = await db.user_tokens.update({
-      where:{clerk_user_id:userId},
-      data:{
-        is_folder:values.confirm
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
       }
-    })
 
-    if(!data){
-      return ctx.json({error:"Error updating user prefernce"},500);
-    }
+      const values = ctx.req.valid("json");
 
-    return ctx.json({data},200)
+      const data = await db.user_tokens.update({
+        where: { clerk_user_id: userId },
+        data: {
+          is_folder: values.confirm,
+        },
+      });
 
+      if (!data) {
+        return ctx.json({ error: "Error updating user prefernce" }, 500);
+      }
 
-
-
-
-  })
+      return ctx.json({ data }, 200);
+    },
+  )
 
   .put("/delete/:status", async (ctx) => {
     const { userId } = await auth();
@@ -521,10 +524,9 @@ const app = new Hono()
   })
 
   //this route is for dev purpose only
-  .get('/token',async(ctx)=>{
-
-    if(process.env.NODE_ENV!=='development'){
-      return ctx.json({error:"Not a dev env"},500);
+  .get("/token", async (ctx) => {
+    if (process.env.NODE_ENV !== "development") {
+      return ctx.json({ error: "Not a dev env" }, 500);
     }
 
     const { userId } = await auth();
@@ -534,14 +536,12 @@ const app = new Hono()
     }
     const client = await clerkClient();
 
-     const tokenResponse = await client.users.getUserOauthAccessToken(
-          userId,
-          "google",
-        );
+    const tokenResponse = await client.users.getUserOauthAccessToken(
+      userId,
+      "google",
+    );
 
-    return ctx.json({tokenResponse},200);
-
-
-  })
+    return ctx.json({ tokenResponse }, 200);
+  });
 
 export default app;
