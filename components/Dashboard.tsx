@@ -2,10 +2,7 @@
 
 import { useGetUserMailsThisMonth } from "@/features/stats/use-get-mail-thisMonth"
 import { useUser } from "@clerk/nextjs"
-import { ArrowUpRight, Mail } from "lucide-react"
-import { EmailTrendsChart } from "./EmailTrendsChart"
 import { LabelDistribution } from "./LabelDistribution"
-import TrackedEmail from "./TrackedEmail"
 import Clutter from "./Dashboard/Clutter"
 import HeatMap from "./Dashboard/HeatMap"
 
