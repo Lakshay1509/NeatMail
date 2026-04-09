@@ -99,6 +99,7 @@ export const processOutlookMailFn = inngest.createFunction(
     }
 
     const from: string = mail.from?.emailAddress?.address ?? "";
+    const senderName :string = mail.from?.emailAddress?.name ?? "";
     const subject: string = mail.subject ?? "";
     const body: string = mail.body?.content ?? "";
     const threadId: string = mail.conversationId ?? messageId;
@@ -244,7 +245,7 @@ export const processOutlookMailFn = inngest.createFunction(
           threadId: threadId,
         };
 
-        const { senderName, senderEmail } = parseFromHeader(emailData.from);
+        
         await inngest.send({
           name: "email/process.draft",
           data: {
@@ -254,7 +255,7 @@ export const processOutlookMailFn = inngest.createFunction(
               receivedAt: new Date().toISOString(),
             },
             senderName: senderName,
-            senderEmail: senderEmail,
+            senderEmail: from,
             messageId: movedMessageId,
             tokenData: accessToken,
             is_gmail: false,
