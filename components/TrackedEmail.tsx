@@ -6,7 +6,6 @@ import { CATEGORIES } from "./EmailCategorizationModal";
 import Image from "next/image";
 import Link from "next/link";
 import { useGetCustomTags } from "@/features/tags/use-get-custom-tag";
-import { Star } from "lucide-react";
 import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
 
 interface Props {

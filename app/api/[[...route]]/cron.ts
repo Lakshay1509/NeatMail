@@ -360,7 +360,7 @@ const app = new Hono()
     const now = new Date();
 
     try {
-      const [trials, result] = await db.$transaction(async (tx) => {
+      const [trials] = await db.$transaction(async (tx) => {
         const trials = await tx.free_trial.findMany({
           where: {
             status: "ACTIVE",

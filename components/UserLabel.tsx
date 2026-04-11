@@ -45,7 +45,7 @@ const UserLabel = () => {
         <PermissionsModal
             open={showPermissions}
             onOpenChange={setShowPermissions}
-            missingScopes={scopesData?.missingScopes}
+            
         />
         {showSubscription && <WelcomeDialog />}
         <EmailCategorizationModal 

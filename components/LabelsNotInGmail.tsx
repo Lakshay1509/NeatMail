@@ -137,7 +137,6 @@ const LabelsNotInGmail = () => {
               {selectedNames.map((name) => {
                 const value = descriptions[name] ?? "";
                 const trimmedLength = value.trim().length;
-                const valid = isDescriptionValid(value);
                 const inputId = `sync-description-${name.toLowerCase().replace(/\s+/g, '-')}`;
 
                 return (

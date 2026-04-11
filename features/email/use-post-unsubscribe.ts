@@ -9,7 +9,6 @@ type RequestType = InferRequestType<
 >['json'];
 
 export const useUnsubscribeDomain = () => {
-  const query = useQueryClient();
   return useMutation<ResponseType, Error, RequestType>({
     mutationFn: async (json) => {
       const response = await client.api.email.unsubscribe['$post']({

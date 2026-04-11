@@ -1,4 +1,4 @@
-import { createOutlookDraft, getGraphClient } from "@/lib/outlook";
+import { getGraphClient } from "@/lib/outlook";
 import { inngest } from "@/lib/inngest";
 import { db } from "@/lib/prisma";
 import {
@@ -7,13 +7,8 @@ import {
   labelColor,
   useGetUserDraftPreference,
 } from "@/lib/supabase";
-import {
-  classifyEmail as classifyEmailOpenAI,
-  
-} from "@/lib/openai";
 import { clerkClient } from "@clerk/nextjs/server";
 import { isMessageProcessed, markMessageProcessed } from "@/lib/redis";
-import { parseFromHeader } from "@/app/api/[[...route]]/gmail-webhook";
 import { getModelResponse } from "@/lib/model";
 import { checkAndForwardToTelegram } from "@/lib/telegram";
 
@@ -125,7 +120,7 @@ export const processOutlookMailFn = inngest.createFunction(
       );
     });
     
-    let labelName = classification.category;
+    const labelName = classification.category;
     
     
 

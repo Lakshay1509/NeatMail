@@ -3,7 +3,6 @@ import {
   RefundPayload,
   SubscriptionPayload,
 } from "@/types/dodo";
-import { Prisma } from "@/prisma/generated/prisma/client";
 import { db } from "./prisma";
 import { activateWatch, deactivateWatch } from "./gmail";
 import {

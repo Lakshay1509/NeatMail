@@ -2,8 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
-import { useGetUserWallet } from "@/features/user/use-get-wallet";
-import { AlertTriangle, Check, Wallet } from "lucide-react";
+import { AlertTriangle, Check} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import CanTakeFreeTrial from "./CanTakeFreeTrial";

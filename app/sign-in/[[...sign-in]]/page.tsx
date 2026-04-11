@@ -1,6 +1,4 @@
-import { SignIn } from '@clerk/nextjs'
 import Image from 'next/image'
-import Link from 'next/link'
 import { checkInviteToken } from '../actions'
 import { SignInOrInvite } from '../SignInOrInvite'
 

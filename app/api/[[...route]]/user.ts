@@ -3,7 +3,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { Hono } from "hono";
 import { getDodoPayments } from "./checkout";
 import { zValidator } from "@hono/zod-validator";
-import z, { boolean } from "zod";
+import z from "zod";
 
 const app = new Hono()
 

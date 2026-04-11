@@ -1,4 +1,4 @@
-import { decryptDomain, encryptDomain } from "@/lib/encode";
+import { decryptDomain} from "@/lib/encode";
 import { getLabelledMails, unsubscribeFromEmail } from "@/lib/gmail";
 import {
   getLabelledMailsOutlook,

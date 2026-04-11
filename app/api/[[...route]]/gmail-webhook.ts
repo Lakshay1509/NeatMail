@@ -1,6 +1,5 @@
 import { inngest } from "@/lib/inngest";
-import { createGmailDraft, getGmailMessageBody } from "@/lib/gmail";
-import { classifyEmail as classifyEmailOpenAI } from "@/lib/openai";
+import { getGmailMessageBody } from "@/lib/gmail";
 import {
   isMessageProcessed,
   // isThreadProcessed,

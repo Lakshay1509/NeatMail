@@ -10,18 +10,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AlertTriangle } from "lucide-react";
-import { SignOutButton, useUser } from "@clerk/nextjs";
+import { SignOutButton} from "@clerk/nextjs";
 
 interface PermissionsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  missingScopes?: string[];
 }
 
 export function PermissionsModal({
   open,
   onOpenChange,
-  missingScopes = [],
 }: PermissionsModalProps) {
   
 

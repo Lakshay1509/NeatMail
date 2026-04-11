@@ -22,7 +22,6 @@ export const SubscriptionModal = ({
   open,
   onOpenChange,
 }: SubscriptionModalProps) => {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 

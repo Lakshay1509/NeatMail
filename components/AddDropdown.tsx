@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { Plus, RefreshCw, Tag } from "lucide-react"
+import { Plus} from "lucide-react"
 import CreateLabel from "./CreateLabel"
 import LabelsNotInGmail from "./LabelsNotInGmail"
 import { useGetUserSubscribed } from "@/features/user/use-get-subscribed"
