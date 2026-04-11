@@ -453,7 +453,7 @@ const app = new Hono()
           if (!response.ok) {
             throw new Error("Failed to cancel Dodo subscription");
           }
-        } catch (err) {
+        } catch (_err) {
           return ctx.json({ error: "Error deleting dodo subscription" }, 500);
           // Continue - user deletion should not be blocked
         }

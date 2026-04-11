@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -50,7 +49,7 @@ export const SubscriptionModal = ({
         toast.error(data.error)
         setError(data.error || "Something went wrong");
       }
-    } catch (err) {
+    } catch (_err) {
       setError("Network error. Please try again.");
     } finally {
       setIsLoading(false);

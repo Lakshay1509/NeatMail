@@ -1,5 +1,5 @@
 "use client"
-import { Mail, Home, MessageSquareDashed, Receipt, AlertCircle, Tag,Shredder, Workflow } from "lucide-react"
+import { Home, MessageSquareDashed, Receipt, AlertCircle, Tag,Shredder, Workflow } from "lucide-react"
 
 
 import {

@@ -31,7 +31,7 @@ const Billing = () => {
       } else {
         setError(data.error || "Something went wrong");
       }
-    } catch (err) {
+    } catch (_err) {
       setError("Network error. Please try again.");
     } finally {
       setIsLoading(false);

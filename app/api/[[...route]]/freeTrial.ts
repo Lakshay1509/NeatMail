@@ -43,7 +43,7 @@ const app = new Hono()
 
       await handleWatchActivation(userId);
       return ctx.json({ message: "Free trial started" }, 200);
-    } catch (error) {
+    } catch (_error) {
       return ctx.json({ error: "Error starting free trial" }, 500);
     }
   })

@@ -177,9 +177,9 @@ const app = new Hono()
           );
           return ctx.json(response, 200);
         }
-      } catch (error: any) {
+      } catch (_error) {
         return ctx.json(
-          { error: error.message || "Error unsubscribing from this domain" },
+          { error: "Error unsubscribing from this domain" },
           500,
         );
       }

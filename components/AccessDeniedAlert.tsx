@@ -27,12 +27,6 @@ export function AccessDeniedAlert() {
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    if (countdown === 0) {
-      handleDenial();
-    }
-  }, [countdown]);
-
   const handleDenial = async () => {
     toast.error("Removing unauthorized account...");
     try {
@@ -43,6 +37,14 @@ export function AccessDeniedAlert() {
     }
     router.push("/sign-in");
   };
+
+  useEffect(() => {
+    if (countdown === 0) {
+      handleDenial();
+    }
+  }, [countdown]);
+
+  
 
   return (
     <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex items-center justify-center">
