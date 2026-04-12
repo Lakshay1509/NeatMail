@@ -1,5 +1,6 @@
 import { deleteGmailDraft, sendGmailDraft, updateGmailDraft } from "@/lib/gmail";
 import { db } from "@/lib/prisma";
+import { handleTelegramQuery } from "@/lib/openai";
 import {
   sendDraftConfirmationMessage,
   sendTelegramMessage,
@@ -291,8 +292,6 @@ const app = new Hono()
         const chatId = String(body.message.chat.id);
         const text = body.message.text;
 
-        await sendTelegramMessage(chatId,"Re-writing draft hold on....")
-
         const integration = await db.telegramIntegration.findUnique({
           where: { chat_id: chatId },
         });
@@ -303,6 +302,8 @@ const app = new Hono()
         });
 
         if (pending) {
+          await sendTelegramMessage(chatId, "Re-writing draft hold on....");
+          
           const updatedText = text.trim();
 
           if (!updatedText) {
@@ -336,6 +337,15 @@ const app = new Hono()
               chatId,
               "⚠️ Could not send the confirmation card. Please tap edit again.",
             );
+          }
+        } else {
+          try {
+            await sendTelegramMessage(chatId, "Searching and thinking...");
+            const answer = await handleTelegramQuery(text, integration.user_id);
+            await sendTelegramMessage(chatId, answer);
+          } catch (error) {
+            console.error("Agent Error:", error);
+            await sendTelegramMessage(chatId, "⚠️ Sorry, I encountered an error processing your request.");
           }
         }
       }

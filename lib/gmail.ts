@@ -589,3 +589,50 @@ export async function deleteGmailDraft(userId: string, draftId: string) {
 
   return { success: true };
 }
+
+
+export async function searchGmail(
+  userId: string,
+  query: string,
+  maxResults = 10
+){
+  const gmail = await getGmailClient(userId);
+ 
+  const listRes = await gmail.users.messages.list({
+    userId: "me",
+    q: query,
+    maxResults,
+  });
+ 
+  const messages = listRes.data.messages ?? [];
+  if (messages.length === 0) return [];
+ 
+  // Fetch metadata for each message in parallel
+  const detailed = await Promise.all(
+    messages.map(async (msg) => {
+      const res = await gmail.users.messages.get({
+        userId: "me",
+        id: msg.id!,
+        format: "metadata",
+        metadataHeaders: ["Subject", "From", "To", "Date"],
+      });
+ 
+      const headers = res.data.payload?.headers ?? [];
+      const get = (name: string) =>
+        headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())
+          ?.value ?? "";
+ 
+      return {
+        id: msg.id!,
+        threadId: msg.threadId!,
+        subject: get("Subject"),
+        from: get("From"),
+        to: get("To"),
+        date: get("Date"),
+        snippet: res.data.snippet ?? "",
+      }
+    })
+  );
+ 
+  return detailed;
+}
