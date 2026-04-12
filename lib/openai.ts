@@ -157,7 +157,7 @@ export async function handleTelegramQuery(
   // Agentic loop — max 5 iterations
   for (let i = 0; i < 5; i++) {
     const response = await openai.chat.completions.create({
-      model: "gpt-5.4-mini", // was "gpt-4o"
+      model: "gpt-5-mini", // was "gpt-4o"
       tools: TOOLS,
       tool_choice: "auto",
       messages,
