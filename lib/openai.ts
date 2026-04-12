@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { getGmailMessageBody, searchGmail } from "./gmail";
+import { redis } from "./redis";
 
 const endpoint = process.env.AZURE_ENDPOINT!;
 const apiKey = process.env.AZURE_API_KEY!;
@@ -149,9 +150,30 @@ export async function handleTelegramQuery(
   userQuery: string,
   userId: string,
 ): Promise<string> {
+  const redisKey = `telegram:history:${userId}`;
+  let history: OpenAI.Chat.ChatCompletionMessageParam[] = [];
+  
+  try {
+    const rawHistory = await redis.get(redisKey);
+    if (typeof rawHistory === "string") {
+      history = JSON.parse(rawHistory);
+    } else if (Array.isArray(rawHistory)) {
+      history = rawHistory;
+    }
+  } catch (err) {
+    console.error("Error fetching chat history from Redis:", err);
+  }
+
+  history.push({ role: "user", content: userQuery });
+
+  // Keep only the last 10 messages (sliding window) to save context window and Redis space
+  if (history.length > 10) {
+    history = history.slice(history.length - 10);
+  }
+
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: SYSTEM_PROMPT },
-    { role: "user", content: userQuery },
+    ...history,
   ];
 
   // Agentic loop — max 5 iterations
@@ -168,7 +190,18 @@ export async function handleTelegramQuery(
 
     // No tool calls → model is done, return the answer
     if (!message.tool_calls || message.tool_calls.length === 0) {
-      return message.content ?? "No answer generated.";
+      const finalAnswer = message.content ?? "No answer generated.";
+      
+      try {
+        // Append assistant response to history and save to Redis with 1 hour TTL (3600 seconds)
+        history.push({ role: "assistant", content: finalAnswer });
+        if (history.length > 10) history = history.slice(history.length - 10);
+        await redis.setex(redisKey, 3600, JSON.stringify(history));
+      } catch (err) {
+        console.error("Error saving chat history to Redis:", err);
+      }
+
+      return finalAnswer;
     }
 
     // Process every tool call in this turn
