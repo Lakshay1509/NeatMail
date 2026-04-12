@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { getGmailMessageBody, searchGmail } from "./gmail";
 import { redis } from "./redis";
+import { escapeHtml } from "./telegram";
 
 const endpoint = process.env.AZURE_ENDPOINT!;
 const apiKey = process.env.AZURE_API_KEY!;
@@ -201,7 +202,7 @@ export async function handleTelegramQuery(
         console.error("Error saving chat history to Redis:", err);
       }
 
-      return finalAnswer;
+      return escapeHtml(finalAnswer);
     }
 
     // Process every tool call in this turn
