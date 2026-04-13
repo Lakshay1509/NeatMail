@@ -1,5 +1,10 @@
 import OpenAI from "openai";
-import { getGmailMessageBody, searchGmail } from "./gmail";
+import {
+  getGmailMessageBody,
+  searchGmail,
+  sendGmailDraft,
+  updateGmailDraft,
+} from "./gmail";
 import { redis } from "./redis";
 import { escapeHtml } from "./telegram";
 
@@ -125,6 +130,48 @@ Only call this for IDs returned by search_gmail.`,
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "edit_draft",
+      description: `Edit an existing Gmail draft using natural-language corrections.
+Use this when the user wants to revise a draft before sending.
+Returns the updated draft text.`,
+      parameters: {
+        type: "object",
+        properties: {
+          draft_id: {
+            type: "string",
+            description: "Gmail draft ID to edit",
+          },
+          changes: {
+            type: "string",
+            description:
+              "User-requested corrections to apply to the current draft text",
+          },
+        },
+        required: ["draft_id", "changes"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_draft",
+      description: `Send an existing Gmail draft immediately.
+Use only when the user explicitly confirms they want to send it.`,
+      parameters: {
+        type: "object",
+        properties: {
+          draft_id: {
+            type: "string",
+            description: "Gmail draft ID to send",
+          },
+        },
+        required: ["draft_id"],
+      },
+    },
+  },
 ];
 
 const SYSTEM_PROMPT = `You are an intelligent Gmail assistant inside a Telegram bot.
@@ -133,7 +180,9 @@ When the user asks about their emails:
 1. Decide the best Gmail search query to answer it
 2. Call search_gmail with that query
 3. If you need the full content of a specific email, call get_email_content
-4. Answer concisely — the user is on Telegram, keep it short
+4. For draft revisions, call edit_draft with draft_id and changes
+5. For sending a confirmed draft, call send_draft with draft_id
+6. Answer concisely — the user is on Telegram, keep it short
  
 Rules:
 - Use Gmail search operators precisely
@@ -141,6 +190,8 @@ Rules:
 - For payments/invoices: subject:(payment OR invoice OR receipt OR order)
 - For client questions: search by their name or email domain
 - Never fabricate email content
+- Never send a draft unless the user clearly asks to send it
+- If a draft action is requested but draft_id is missing, ask for it
 - If nothing is found after 2 searches, say so clearly
  
 Today's date: ${new Date().toISOString().split("T")[0]}`;
@@ -209,10 +260,11 @@ export async function handleTelegramQuery(
     for (const toolCall of message.tool_calls) {
       if (toolCall.type !== "function") continue;
 
-      const args = JSON.parse(toolCall.function.arguments);
       let resultContent: string;
 
       try {
+        const args = JSON.parse(toolCall.function.arguments);
+
         if (toolCall.function.name === "search_gmail") {
           const results = await searchGmail(
             userId,
@@ -226,6 +278,49 @@ export async function handleTelegramQuery(
         } else if (toolCall.function.name === "get_email_content") {
           const email = await getGmailMessageBody(userId, args.message_id);
           resultContent = JSON.stringify(email, null, 2);
+        } else if (toolCall.function.name === "edit_draft") {
+          const draftId =
+            typeof args.draft_id === "string" ? args.draft_id.trim() : "";
+          const changes =
+            typeof args.changes === "string" ? args.changes.trim() : "";
+
+          if (!draftId) {
+            throw new Error("draft_id is required to edit a draft.");
+          }
+
+          if (!changes) {
+            throw new Error("changes is required to edit a draft.");
+          }
+
+          const updatedDraft = await updateGmailDraft(userId, draftId, changes);
+          resultContent = JSON.stringify(
+            {
+              success: true,
+              draft_id: draftId,
+              updated_text: updatedDraft.text,
+            },
+            null,
+            2,
+          );
+        } else if (toolCall.function.name === "send_draft") {
+          const draftId =
+            typeof args.draft_id === "string" ? args.draft_id.trim() : "";
+
+          if (!draftId) {
+            throw new Error("draft_id is required to send a draft.");
+          }
+
+          const sentMessage = await sendGmailDraft(userId, draftId);
+          resultContent = JSON.stringify(
+            {
+              success: true,
+              draft_id: draftId,
+              message_id: sentMessage.id ?? null,
+              thread_id: sentMessage.threadId ?? null,
+            },
+            null,
+            2,
+          );
         } else {
           resultContent = `Unknown tool: ${toolCall.function.name}`;
         }
