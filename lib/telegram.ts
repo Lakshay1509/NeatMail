@@ -17,6 +17,49 @@ export async function sendTelegramMessage(chatId: string, text: string) {
   }
 }
 
+export async function sendTelegramDocument(
+  chatId: string,
+  options: {
+    fileName: string;
+    fileDataBase64: string;
+    mimeType?: string;
+    caption?: string;
+  },
+) {
+  const binary = Buffer.from(options.fileDataBase64, "base64");
+  const formData = new FormData();
+
+  formData.append("chat_id", chatId);
+
+  if (options.caption) {
+    formData.append("caption", options.caption);
+  }
+
+  formData.append(
+    "document",
+    new Blob([binary], {
+      type: options.mimeType ?? "application/octet-stream",
+    }),
+    options.fileName,
+  );
+
+  const res = await fetch(
+    `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendDocument`,
+    {
+      method: "POST",
+      body: formData,
+    },
+  );
+
+  const json = await res.json();
+  if (!json.ok) {
+    console.error("Telegram sendDocument error:", JSON.stringify(json));
+    return false;
+  }
+
+  return true;
+}
+
 export async function sendDraftConfirmationMessage(
   chatId: string,
   draftId: string,

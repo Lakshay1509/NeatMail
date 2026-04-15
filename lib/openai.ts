@@ -1,12 +1,14 @@
 import OpenAI from "openai";
 import {
+  downloadAttachment,
+  getAttachment,
   getGmailMessageBody,
   searchGmail,
   sendGmailDraft,
   updateGmailDraft,
 } from "./gmail";
 import { redis } from "./redis";
-import { escapeHtml } from "./telegram";
+import { escapeHtml, sendTelegramDocument } from "./telegram";
 
 const endpoint = process.env.AZURE_ENDPOINT!;
 const apiKey = process.env.AZURE_API_KEY!;
@@ -133,6 +135,52 @@ Only call this for IDs returned by search_gmail.`,
   {
     type: "function",
     function: {
+      name: "list_email_attachments",
+      description: `List all downloadable attachments for a Gmail message.
+Use this after search_gmail to inspect files attached to a specific email.
+Returns filename, mime type, size, message_id and attachment_id.`,
+      parameters: {
+        type: "object",
+        properties: {
+          message_id: {
+            type: "string",
+            description: "Gmail message ID from search results",
+          },
+        },
+        required: ["message_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "send_attachment_to_telegram",
+      description: `Send a specific Gmail attachment directly to the current Telegram chat.
+Use this only after list_email_attachments returns attachment_id and message_id.
+Call this when the user asks to send/download/share a document or file.`,
+      parameters: {
+        type: "object",
+        properties: {
+          message_id: {
+            type: "string",
+            description: "Gmail message ID that contains the attachment",
+          },
+          attachment_id: {
+            type: "string",
+            description: "Attachment ID returned by list_email_attachments",
+          },
+          caption: {
+            type: "string",
+            description: "Optional short caption to include in Telegram",
+          },
+        },
+        required: ["message_id", "attachment_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "edit_draft",
       description: `Edit an existing Gmail draft using natural-language corrections.
 Use this when the user wants to revise a draft before sending.
@@ -180,15 +228,18 @@ When the user asks about their emails:
 1. Decide the best Gmail search query to answer it
 2. Call search_gmail with that query
 3. If you need the full content of a specific email, call get_email_content
-4. For draft revisions, call edit_draft with draft_id and changes
-5. For sending a confirmed draft, call send_draft with draft_id
-6. Answer concisely — the user is on Telegram, keep it short
+4. If user asks for files/docs/attachments, call list_email_attachments for candidate emails
+5. When the user wants the file in Telegram, call send_attachment_to_telegram
+6. For draft revisions, call edit_draft with draft_id and changes
+7. For sending a confirmed draft, call send_draft with draft_id
+8. Answer concisely — the user is on Telegram, keep it short
  
 Rules:
 - Use Gmail search operators precisely
 - If the first search returns nothing, retry with a broader query
 - For payments/invoices: subject:(payment OR invoice OR receipt OR order)
 - For client questions: search by their name or email domain
+- For attachment requests, prioritize the newest matching email, list its attachments, then send the most relevant file
 - Never fabricate email content
 - Never send a draft unless the user clearly asks to send it
 - If a draft action is requested but draft_id is missing, ask for it
@@ -201,6 +252,7 @@ Today's date: ${new Date().toISOString().split("T")[0]}`;
 export async function handleTelegramQuery(
   userQuery: string,
   userId: string,
+  chatId: string,
 ): Promise<string> {
   const redisKey = `telegram:history:${userId}`;
   let history: OpenAI.Chat.ChatCompletionMessageParam[] = [];
@@ -278,6 +330,79 @@ export async function handleTelegramQuery(
         } else if (toolCall.function.name === "get_email_content") {
           const email = await getGmailMessageBody(userId, args.message_id);
           resultContent = JSON.stringify(email, null, 2);
+        } else if (toolCall.function.name === "list_email_attachments") {
+          const messageId =
+            typeof args.message_id === "string" ? args.message_id.trim() : "";
+
+          if (!messageId) {
+            throw new Error("message_id is required to list attachments.");
+          }
+
+          const attachments = await getAttachment(userId, messageId);
+          resultContent =
+            attachments.length === 0
+              ? "No downloadable attachments found for this email."
+              : JSON.stringify(
+                attachments.map((attachment) => ({
+                  message_id: attachment.messageId,
+                  attachment_id: attachment.attachmentId,
+                  filename: attachment.filename,
+                  mime_type: attachment.mimeType,
+                  size_bytes: attachment.size,
+                })),
+                null,
+                2,
+              );
+        } else if (toolCall.function.name === "send_attachment_to_telegram") {
+          const messageId =
+            typeof args.message_id === "string" ? args.message_id.trim() : "";
+          const attachmentId =
+            typeof args.attachment_id === "string"
+              ? args.attachment_id.trim()
+              : "";
+          const caption =
+            typeof args.caption === "string" ? args.caption.trim() : "";
+
+          if (!messageId) {
+            throw new Error("message_id is required to send an attachment.");
+          }
+
+          if (!attachmentId) {
+            throw new Error("attachment_id is required to send an attachment.");
+          }
+
+          const attachments = await getAttachment(userId, messageId);
+          const selectedAttachment = attachments.find(
+            (attachment) => attachment.attachmentId === attachmentId,
+          );
+
+          if (!selectedAttachment) {
+            throw new Error("Attachment not found for this email.");
+          }
+
+          const attachmentBase64 = await downloadAttachment(
+            userId,
+            messageId,
+            attachmentId,
+          );
+
+          const sent = await sendTelegramDocument(chatId, {
+            fileName: selectedAttachment.filename || "attachment",
+            fileDataBase64: attachmentBase64,
+            mimeType: selectedAttachment.mimeType,
+            caption: caption || undefined,
+          });
+
+          resultContent = JSON.stringify(
+            {
+              success: sent,
+              message_id: messageId,
+              attachment_id: attachmentId,
+              filename: selectedAttachment.filename,
+            },
+            null,
+            2,
+          );
         } else if (toolCall.function.name === "edit_draft") {
           const draftId =
             typeof args.draft_id === "string" ? args.draft_id.trim() : "";

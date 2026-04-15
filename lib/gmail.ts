@@ -3,6 +3,17 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { extractUnsubscribeLinkFromBodyGmail } from "./unsubscribe";
 import { applyCorrectionsToText } from "./openai";
 
+interface Attachment {
+  filename: string;
+  mimeType: string;
+  size: number;
+  attachmentId: string;
+  messageId: string;
+  data?: string; // base64 encoded
+}
+
+const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+
 export function stripQuotedReply(texts: string[]): string[] {
   return texts.map((text) => {
     // Remove quoted lines starting with >
@@ -635,4 +646,71 @@ export async function searchGmail(
   );
  
   return detailed;
+}
+
+export async function getAttachment(userId:string,messageId:string) {
+
+  const gmail = await getGmailClient(userId);
+  const res = await gmail.users.messages.get({
+    userId: "me",
+    id: messageId,
+    format: "full",
+  });
+
+  const parts = res.data.payload?.parts || [];
+  const attachments: Attachment[] = [];
+
+  function extractParts(parts: any[]) {
+    for (const part of parts) {
+      if (part.parts) {
+        extractParts(part.parts); // nested multipart
+      }
+
+      const body = part.body;
+      const filename = part.filename;
+
+      if (filename && body?.attachmentId) {
+        const size = body.size || 0;
+
+        if (size <= MAX_SIZE_BYTES) {
+          attachments.push({
+            filename,
+            mimeType: part.mimeType || "application/octet-stream",
+            size,
+            attachmentId: body.attachmentId,
+            messageId,
+          });
+        } else {
+          console.log(
+            `⏭️  Skipping "${filename}" — ${(size / 1024 / 1024).toFixed(1)} MB exceeds 50 MB limit`
+          );
+        }
+      }
+    }
+  }
+
+  extractParts(parts);
+  return attachments;  
+
+}
+
+export async function downloadAttachment(
+  userId:string,
+  messageId: string,
+  attachmentId: string
+): Promise<string> {
+
+
+   const gmail = await getGmailClient(userId);
+
+
+  const res = await gmail.users.messages.attachments.get({
+    userId: "me",
+    messageId,
+    id: attachmentId,
+  });
+
+  // Gmail returns URL-safe base64; convert to standard base64
+  const data = res.data.data || "";
+  return data.replace(/-/g, "+").replace(/_/g, "/");
 }

@@ -341,7 +341,11 @@ const app = new Hono()
         } else {
           try {
             await sendTelegramMessage(chatId, "Searching and thinking...");
-            const answer = await handleTelegramQuery(text, integration.user_id);
+            const answer = await handleTelegramQuery(
+              text,
+              integration.user_id,
+              chatId,
+            );
             await sendTelegramMessage(chatId, answer);
           } catch (error) {
             console.error("Agent Error:", error);
