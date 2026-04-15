@@ -363,6 +363,19 @@ export async function handleTelegramQuery(
           const caption =
             typeof args.caption === "string" ? args.caption.trim() : "";
 
+          console.log("[send_attachment_to_telegram] args received:", {
+            message_id: args.message_id,
+            attachment_id: args.attachment_id,
+            caption: args.caption,
+          });
+          console.log("[send_attachment_to_telegram] parsed:", {
+            messageId,
+            attachmentId,
+            caption,
+            userId,
+            chatId,
+          });
+
           if (!messageId) {
             throw new Error("message_id is required to send an attachment.");
           }
@@ -372,12 +385,20 @@ export async function handleTelegramQuery(
           }
 
           const attachments = await getAttachment(userId, messageId);
+          console.log("[send_attachment_to_telegram] attachments fetched for messageId", messageId, ":", JSON.stringify(attachments, null, 2));
+          console.log("[send_attachment_to_telegram] looking for attachmentId:", JSON.stringify(attachmentId));
+          console.log("[send_attachment_to_telegram] available attachmentIds:", attachments.map(a => JSON.stringify(a.attachmentId)));
+
           const selectedAttachment = attachments.find(
             (attachment) => attachment.attachmentId === attachmentId,
           );
 
+          console.log("[send_attachment_to_telegram] selectedAttachment:", selectedAttachment ?? "NOT FOUND");
+
           if (!selectedAttachment) {
-            throw new Error("Attachment not found for this email.");
+            throw new Error(
+              `Attachment not found for this email. messageId=${messageId}, attachmentId=${attachmentId}, available=${JSON.stringify(attachments.map(a => ({ id: a.attachmentId, file: a.filename })))}`
+            );
           }
 
           const attachmentBase64 = await downloadAttachment(
@@ -385,6 +406,7 @@ export async function handleTelegramQuery(
             messageId,
             attachmentId,
           );
+          console.log("[send_attachment_to_telegram] downloaded base64 length:", attachmentBase64.length);
 
           const sent = await sendTelegramDocument(chatId, {
             fileName: selectedAttachment.filename || "attachment",
@@ -392,6 +414,7 @@ export async function handleTelegramQuery(
             mimeType: selectedAttachment.mimeType,
             caption: caption || undefined,
           });
+          console.log("[send_attachment_to_telegram] sendTelegramDocument result:", sent);
 
           resultContent = JSON.stringify(
             {

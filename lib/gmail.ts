@@ -650,6 +650,7 @@ export async function searchGmail(
 
 export async function getAttachment(userId:string,messageId:string) {
 
+  console.log("[getAttachment] called with messageId:", messageId, "userId:", userId);
   const gmail = await getGmailClient(userId);
   const res = await gmail.users.messages.get({
     userId: "me",
@@ -657,11 +658,28 @@ export async function getAttachment(userId:string,messageId:string) {
     format: "full",
   });
 
-  const parts = res.data.payload?.parts || [];
+  const payload = res.data.payload;
+  console.log("[getAttachment] payload mimeType:", payload?.mimeType);
+  console.log("[getAttachment] top-level parts count:", payload?.parts?.length ?? 0);
+
+  // Check if attachment is directly on payload.body (flat message — no parts array)
+  if (payload?.body?.attachmentId) {
+    console.log("[getAttachment] ⚠️ attachment found directly on payload.body (flat structure):", payload.body.attachmentId);
+  }
+
+  const parts = payload?.parts || [];
   const attachments: Attachment[] = [];
 
   function extractParts(parts: any[]) {
     for (const part of parts) {
+      console.log("[getAttachment] inspecting part:", {
+        filename: part.filename,
+        mimeType: part.mimeType,
+        attachmentId: part.body?.attachmentId,
+        size: part.body?.size,
+        hasNestedParts: !!part.parts,
+      });
+
       if (part.parts) {
         extractParts(part.parts); // nested multipart
       }
@@ -690,6 +708,7 @@ export async function getAttachment(userId:string,messageId:string) {
   }
 
   extractParts(parts);
+  console.log("[getAttachment] total attachments found:", attachments.length, attachments.map(a => ({ id: a.attachmentId, file: a.filename })));
   return attachments;  
 
 }
