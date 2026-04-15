@@ -97,10 +97,23 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
+            <SidebarMenuButton asChild className="h-12">
+              <Link
+                href="https://forms.baytix.net/forms/neatmail-feedback-form-8fc4565d"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleLinkClick}
+              >
+                <MessageSquareDashed className="h-4! w-4!" />
+                <span className="text-sm">Feedback</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
             <SidebarMenuButton asChild className="h-12 text-red-600 hover:text-red-700">
               <Link href="/danger" onClick={handleLinkClick}>
-                <AlertCircle className="!h-4 !w-4" />
-                <span className="text-sm">Delete Account</span>
+                <AlertCircle className="h-4! w-4!" />
+                <span className="text-sm">Danger Zone</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
