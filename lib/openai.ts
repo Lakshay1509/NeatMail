@@ -356,7 +356,7 @@ export async function handleTelegramQuery(
         } else if (toolCall.function.name === "send_attachment_to_telegram") {
           const messageId =
             typeof args.message_id === "string" ? args.message_id.trim() : "";
-          const attachmentId =
+          const staleAttachmentId =
             typeof args.attachment_id === "string"
               ? args.attachment_id.trim()
               : "";
@@ -368,43 +368,37 @@ export async function handleTelegramQuery(
             attachment_id: args.attachment_id,
             caption: args.caption,
           });
-          console.log("[send_attachment_to_telegram] parsed:", {
-            messageId,
-            attachmentId,
-            caption,
-            userId,
-            chatId,
-          });
 
           if (!messageId) {
             throw new Error("message_id is required to send an attachment.");
           }
 
-          if (!attachmentId) {
+          if (!staleAttachmentId) {
             throw new Error("attachment_id is required to send an attachment.");
           }
 
+          // Always re-fetch attachments to get fresh IDs.
+          // Gmail attachment IDs rotate between API calls, so the ID the LLM
+          // stored from a prior list_email_attachments call may be stale.
           const attachments = await getAttachment(userId, messageId);
-          console.log("[send_attachment_to_telegram] attachments fetched for messageId", messageId, ":", JSON.stringify(attachments, null, 2));
-          console.log("[send_attachment_to_telegram] looking for attachmentId:", JSON.stringify(attachmentId));
-          console.log("[send_attachment_to_telegram] available attachmentIds:", attachments.map(a => JSON.stringify(a.attachmentId)));
+          console.log("[send_attachment_to_telegram] fresh attachments fetched:", attachments.map(a => ({ id: a.attachmentId, file: a.filename })));
 
-          const selectedAttachment = attachments.find(
-            (attachment) => attachment.attachmentId === attachmentId,
-          );
-
-          console.log("[send_attachment_to_telegram] selectedAttachment:", selectedAttachment ?? "NOT FOUND");
-
-          if (!selectedAttachment) {
-            throw new Error(
-              `Attachment not found for this email. messageId=${messageId}, attachmentId=${attachmentId}, available=${JSON.stringify(attachments.map(a => ({ id: a.attachmentId, file: a.filename })))}`
-            );
+          if (attachments.length === 0) {
+            throw new Error(`No attachments found for messageId=${messageId}.`);
           }
+
+          // Try to match by stale ID first; if Gmail rotated it, fall back to first attachment.
+          const selectedAttachment =
+            attachments.find((a) => a.attachmentId === staleAttachmentId) ??
+            attachments[0];
+
+          const freshAttachmentId = selectedAttachment.attachmentId;
+          console.log("[send_attachment_to_telegram] using fresh attachmentId:", freshAttachmentId, "file:", selectedAttachment.filename);
 
           const attachmentBase64 = await downloadAttachment(
             userId,
             messageId,
-            attachmentId,
+            freshAttachmentId,
           );
           console.log("[send_attachment_to_telegram] downloaded base64 length:", attachmentBase64.length);
 
@@ -420,7 +414,7 @@ export async function handleTelegramQuery(
             {
               success: sent,
               message_id: messageId,
-              attachment_id: attachmentId,
+              attachment_id: freshAttachmentId,
               filename: selectedAttachment.filename,
             },
             null,
