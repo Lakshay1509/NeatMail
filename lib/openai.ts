@@ -244,6 +244,7 @@ Rules:
 - Never send a draft unless the user clearly asks to send it
 - If a draft action is requested but draft_id is missing, ask for it
 - If nothing is found after 2 searches, say so clearly
+- IMPORTANT: After successfully calling an action tool (send_attachment_to_telegram, send_draft, edit_draft), you MUST output a simple text confirmation to the user and DO NOT call the tool again.
  
 Today's date: ${new Date().toISOString().split("T")[0]}`;
 
