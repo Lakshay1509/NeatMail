@@ -197,6 +197,14 @@ const app = new Hono()
         const userId = message.text.split(" ")[1];
         const chatId = String(message.chat.id);
 
+        if (!userId) {
+          await sendTelegramMessage(
+            chatId,
+            "Welcome! Please connect your account by using the Telegram button from your NeatMail dashboard."
+          );
+          return ctx.json({ ok: true }, 200);
+        }
+
         await db.telegramIntegration.upsert({
           where: {
             user_id: userId,
