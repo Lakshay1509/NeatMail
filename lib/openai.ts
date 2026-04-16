@@ -4,8 +4,6 @@ import {
   getAttachment,
   getGmailMessageBody,
   searchGmail,
-  sendGmailDraft,
-  updateGmailDraft,
 } from "./gmail";
 import { redis } from "./redis";
 import { escapeHtml, sendTelegramDocument, sendTelegramMessage } from "./telegram";
@@ -178,48 +176,6 @@ Call this when the user asks to send/download/share a document or file.`,
       },
     },
   },
-  {
-    type: "function",
-    function: {
-      name: "edit_draft",
-      description: `Edit an existing Gmail draft using natural-language corrections.
-Use this when the user wants to revise a draft before sending.
-Returns the updated draft text.`,
-      parameters: {
-        type: "object",
-        properties: {
-          draft_id: {
-            type: "string",
-            description: "Gmail draft ID to edit",
-          },
-          changes: {
-            type: "string",
-            description:
-              "User-requested corrections to apply to the current draft text",
-          },
-        },
-        required: ["draft_id", "changes"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "send_draft",
-      description: `Send an existing Gmail draft immediately.
-Use only when the user explicitly confirms they want to send it.`,
-      parameters: {
-        type: "object",
-        properties: {
-          draft_id: {
-            type: "string",
-            description: "Gmail draft ID to send",
-          },
-        },
-        required: ["draft_id"],
-      },
-    },
-  },
 ];
 
 const SYSTEM_PROMPT = `You are an intelligent Gmail assistant inside a Telegram bot.
@@ -230,21 +186,19 @@ When the user asks about their emails:
 3. If you need the full content of a specific email, call get_email_content
 4. If user asks for files/docs/attachments, call list_email_attachments for candidate emails
 5. When the user wants the file in Telegram, call send_attachment_to_telegram
-6. For draft revisions, call edit_draft with draft_id and changes
-7. For sending a confirmed draft, call send_draft with draft_id
-8. Answer concisely — the user is on Telegram, keep it short
+6. Answer concisely — the user is on Telegram, keep it short
  
 Rules:
+- If the user asks you to manage, edit, or send a draft, simply reply "I can't do that yet."
 - Use Gmail search operators precisely
 - If the first search returns nothing, retry with a broader query
 - For payments/invoices: subject:(payment OR invoice OR receipt OR order)
 - For client questions: search by their name or email domain
 - For attachment requests, prioritize the newest matching email, list its attachments, then send the most relevant file
 - Never fabricate email content
-- Never send a draft unless the user clearly asks to send it
-- If a draft action is requested but draft_id is missing, ask for it
 - If nothing is found after 2 searches, say so clearly
-- IMPORTANT: After successfully calling an action tool (send_attachment_to_telegram, send_draft, edit_draft), you MUST output a simple text confirmation to the user and DO NOT call the tool again.
+- IMPORTANT: After successfully calling an action tool (send_attachment_to_telegram), you MUST output a simple text confirmation to the user and DO NOT call the tool again.
+-Don't append any extra text after the main message (e.g., avoid phrases like “Want me to send the full message?”).
  
 Today's date: ${new Date().toISOString().split("T")[0]}`;
 
@@ -413,49 +367,6 @@ export async function handleTelegramQuery(
               message_id: messageId,
               attachment_id: freshAttachmentId,
               filename: selectedAttachment.filename,
-            },
-            null,
-            2,
-          );
-        } else if (toolCall.function.name === "edit_draft") {
-          const draftId =
-            typeof args.draft_id === "string" ? args.draft_id.trim() : "";
-          const changes =
-            typeof args.changes === "string" ? args.changes.trim() : "";
-
-          if (!draftId) {
-            throw new Error("draft_id is required to edit a draft.");
-          }
-
-          if (!changes) {
-            throw new Error("changes is required to edit a draft.");
-          }
-
-          const updatedDraft = await updateGmailDraft(userId, draftId, changes);
-          resultContent = JSON.stringify(
-            {
-              success: true,
-              draft_id: draftId,
-              updated_text: updatedDraft.text,
-            },
-            null,
-            2,
-          );
-        } else if (toolCall.function.name === "send_draft") {
-          const draftId =
-            typeof args.draft_id === "string" ? args.draft_id.trim() : "";
-
-          if (!draftId) {
-            throw new Error("draft_id is required to send a draft.");
-          }
-
-          const sentMessage = await sendGmailDraft(userId, draftId);
-          resultContent = JSON.stringify(
-            {
-              success: true,
-              draft_id: draftId,
-              message_id: sentMessage.id ?? null,
-              thread_id: sentMessage.threadId ?? null,
             },
             null,
             2,
