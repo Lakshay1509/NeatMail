@@ -8,7 +8,7 @@ import {
   updateGmailDraft,
 } from "./gmail";
 import { redis } from "./redis";
-import { escapeHtml, sendTelegramDocument } from "./telegram";
+import { escapeHtml, sendTelegramDocument, sendTelegramMessage } from "./telegram";
 
 const endpoint = process.env.AZURE_ENDPOINT!;
 const apiKey = process.env.AZURE_API_KEY!;
@@ -364,11 +364,7 @@ export async function handleTelegramQuery(
           const caption =
             typeof args.caption === "string" ? args.caption.trim() : "";
 
-          console.log("[send_attachment_to_telegram] args received:", {
-            message_id: args.message_id,
-            attachment_id: args.attachment_id,
-            caption: args.caption,
-          });
+  
 
           if (!messageId) {
             throw new Error("message_id is required to send an attachment.");
@@ -382,8 +378,7 @@ export async function handleTelegramQuery(
           // Gmail attachment IDs rotate between API calls, so the ID the LLM
           // stored from a prior list_email_attachments call may be stale.
           const attachments = await getAttachment(userId, messageId);
-          console.log("[send_attachment_to_telegram] fresh attachments fetched:", attachments.map(a => ({ id: a.attachmentId, file: a.filename })));
-
+          
           if (attachments.length === 0) {
             throw new Error(`No attachments found for messageId=${messageId}.`);
           }
@@ -394,14 +389,16 @@ export async function handleTelegramQuery(
             attachments[0];
 
           const freshAttachmentId = selectedAttachment.attachmentId;
-          console.log("[send_attachment_to_telegram] using fresh attachmentId:", freshAttachmentId, "file:", selectedAttachment.filename);
+          
+
+          await sendTelegramMessage(chatId, `⏳ Downloading <b>${escapeHtml(selectedAttachment.filename || "file")}</b>...`);
 
           const attachmentBase64 = await downloadAttachment(
             userId,
             messageId,
             freshAttachmentId,
           );
-          console.log("[send_attachment_to_telegram] downloaded base64 length:", attachmentBase64.length);
+         
 
           const sent = await sendTelegramDocument(chatId, {
             fileName: selectedAttachment.filename || "attachment",
@@ -409,8 +406,7 @@ export async function handleTelegramQuery(
             mimeType: selectedAttachment.mimeType,
             caption: caption || undefined,
           });
-          console.log("[send_attachment_to_telegram] sendTelegramDocument result:", sent);
-
+          
           resultContent = JSON.stringify(
             {
               success: sent,
