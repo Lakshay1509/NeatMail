@@ -55,12 +55,8 @@ const app = new Hono()
 
     const now = new Date();
 
-    const day = now.getUTCDay(); // 0 = Sunday
-    const diffToMonday = day === 0 ? -6 : 1 - day;
-
     const startOfWeek = new Date(now);
-    startOfWeek.setUTCDate(now.getUTCDate() + diffToMonday);
-    startOfWeek.setUTCHours(0, 0, 0, 0);
+    startOfWeek.setDate(now.getDate() - 7);
 
     const totalThisWeek = await db.email_tracked.count({
       where: {
