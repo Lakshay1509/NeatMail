@@ -1,6 +1,6 @@
 import { deleteGmailDraft, sendGmailDraft, updateGmailDraft } from "@/lib/gmail";
 import { db } from "@/lib/prisma";
-import { handleTelegramQuery } from "@/lib/openai";
+import { inngest } from "@/lib/inngest";
 import {
   sendDraftConfirmationMessage,
   sendTelegramMessage,
@@ -349,12 +349,14 @@ const app = new Hono()
         } else {
           try {
             await sendTelegramMessage(chatId, "Searching and thinking...");
-            const answer = await handleTelegramQuery(
-              text,
-              integration.user_id,
-              chatId,
-            );
-            await sendTelegramMessage(chatId, answer);
+            await inngest.send({
+              name: "telegram/process.query",
+              data: {
+                text,
+                userId: integration.user_id,
+                chatId,
+              },
+            });
           } catch (error) {
             console.error("Agent Error:", error);
             await sendTelegramMessage(chatId, "⚠️ Sorry, I encountered an error processing your request.");
