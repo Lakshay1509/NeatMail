@@ -650,7 +650,7 @@ export async function searchGmail(
 
 export async function getAttachment(userId:string,messageId:string) {
 
-  console.log("[getAttachment] called with messageId:", messageId, "userId:", userId);
+  
   const gmail = await getGmailClient(userId);
   const res = await gmail.users.messages.get({
     userId: "me",
@@ -659,8 +659,7 @@ export async function getAttachment(userId:string,messageId:string) {
   });
 
   const payload = res.data.payload;
-  console.log("[getAttachment] payload mimeType:", payload?.mimeType);
-  console.log("[getAttachment] top-level parts count:", payload?.parts?.length ?? 0);
+  
 
   // Check if attachment is directly on payload.body (flat message — no parts array)
   if (payload?.body?.attachmentId) {
@@ -708,7 +707,6 @@ export async function getAttachment(userId:string,messageId:string) {
   }
 
   extractParts(parts);
-  console.log("[getAttachment] total attachments found:", attachments.length, attachments.map(a => ({ id: a.attachmentId, file: a.filename })));
   return attachments;  
 
 }
