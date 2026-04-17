@@ -48,7 +48,7 @@ const API_CONFIG = {
   timeout: 120000,
   headers: {
     "Content-Type": "application/json",
-    
+    "X-API-Key": process.env.AUTHORIZATION_KEY,
   },
 };
 
