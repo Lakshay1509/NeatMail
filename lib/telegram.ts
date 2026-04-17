@@ -14,6 +14,40 @@ export async function sendTelegramMessage(chatId: string, text: string) {
   const json = await res.json();
   if (!json.ok) {
     console.error("Telegram API error:", JSON.stringify(json));
+    return undefined;
+  }
+  return json.result?.message_id as number | undefined;
+}
+
+export async function editTelegramMessage(chatId: string, messageId: number, text: string) {
+  const res = await fetch(
+    `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/editMessageText`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, message_id: messageId, text, parse_mode: "HTML" }),
+    },
+  );
+
+  const json = await res.json();
+  if (!json.ok) {
+    console.error("Telegram editMessageText error:", JSON.stringify(json));
+  }
+}
+
+export async function deleteTelegramMessage(chatId: string, messageId: number) {
+  const res = await fetch(
+    `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteMessage`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, message_id: messageId }),
+    },
+  );
+
+  const json = await res.json();
+  if (!json.ok) {
+    console.error("Telegram deleteMessage error:", JSON.stringify(json));
   }
 }
 
