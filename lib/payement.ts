@@ -10,6 +10,7 @@ import {
   deleteOutlookSubscription,
 } from "./outlook";
 import { getUserIsGmail } from "./supabase";
+import { sendSubExpiredEmail } from "./resend";
 
 export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
   try {
@@ -82,6 +83,7 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
       data.status === "pending"
     ) {
       await handleWatchDeactivation(data.metadata?.clerk_user_id);
+      await sendSubExpiredEmail(data.customer.email,data.metadata?.clerk_user_id)
     }
 
     return subscription;

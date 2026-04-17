@@ -6,6 +6,7 @@ import { activateWatch } from "@/lib/gmail";
 import { updateHistoryId, updateOutlookId } from "@/lib/supabase";
 import { createOutlookSubscription } from "@/lib/outlook";
 import { Resend } from "resend";
+import { handleWatchDeactivation } from "@/lib/payement";
 
 const app = new Hono()
   .get("/delete-user", async (ctx) => {
@@ -397,6 +398,8 @@ const app = new Hono()
             now.getMonth() + 1,
             1,
           );
+
+          await handleWatchDeactivation(trial.user_id);
 
           const data = await db.email_tracked.count({
             where: {
