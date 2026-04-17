@@ -9,6 +9,7 @@ import { auth } from "@clerk/nextjs/server";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import z from "zod";
+import { getUserSubscribed } from "@/lib/supabase";
 
 async function answerCallbackQuery(callbackQueryId: string) {
   await fetch(
@@ -348,6 +349,10 @@ const app = new Hono()
           }
         } else {
           try {
+            const subscription = await getUserSubscribed(integration.user_id);
+            if(subscription.subscribed===false){
+              await sendTelegramMessage(chatId,"You are not subscribed")
+            }
             await sendTelegramMessage(chatId, "Searching and thinking...");
             await inngest.send({
               name: "telegram/process.query",
