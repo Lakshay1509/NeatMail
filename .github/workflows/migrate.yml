@@ -53,6 +53,9 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        run: bunx prisma generate
+
       - name: Type check
         run: bunx tsc --noEmit
 
@@ -67,4 +70,6 @@ jobs:
           UPSTASH_REDIS_URL: ${{ secrets.UPSTASH_REDIS_URL }}
           UPSTASH_REDIS_TOKEN: ${{ secrets.UPSTASH_REDIS_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RESEND_API_KEY: ${{secrets.RESEND_API_KEY}}
+
         run: bun run build
