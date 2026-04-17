@@ -1,6 +1,6 @@
 import { inngest } from "@/lib/inngest";
 import { handleTelegramQuery } from "@/lib/openai";
-import { deleteTelegramMessage, sendTelegramMessage } from "@/lib/telegram";
+import { deleteTelegramMessage, editTelegramMessage, sendTelegramMessage } from "@/lib/telegram";
 
 export const processTelegramQueryFn = inngest.createFunction(
   { id: "process-telegram-query" },
@@ -32,7 +32,33 @@ export const processTelegramQueryFn = inngest.createFunction(
       });
 
       const answer = await step.run("run-telegram-agent", async () => {
-        return await handleTelegramQuery(text, userId, chatId);
+        let interval: NodeJS.Timeout | undefined;
+        if (thinkingMsgId) {
+          const thinkingMessages = [
+            "Searching your inbox...",
+            "Reading through your emails...",
+            "Scanning your Gmail...",
+            "Looking up relevant conversations...",
+            "Fetching email threads...",
+            "Analyzing your messages...",
+            "Digging through your inbox...",
+            "Cross-referencing your conversations...",
+            "Retrieving matching emails...",
+            "Checking your recent threads...",
+            "Combing through your messages...",
+            "Pulling up relevant emails...",
+          ];
+          interval = setInterval(() => {
+            const msg = thinkingMessages[Math.floor(Math.random() * thinkingMessages.length)];
+            editTelegramMessage(chatId, thinkingMsgId as number, `<i>${msg}</i>`).catch(console.error);
+          }, 3500);
+        }
+
+        try {
+          return await handleTelegramQuery(text, userId, chatId);
+        } finally {
+          if (interval) clearInterval(interval);
+        }
       });
 
       await step.run("send-telegram-response", async () => {
