@@ -26,7 +26,7 @@ export function LabelDistribution() {
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 h-full">
-      <h3 className="font-bold text-gray-900 text-lg mb-1">Label Distribution</h3>
+      <h3 className="font-bold text-gray-900 text-xl mb-1">Label Distribution</h3>
       <p className="text-sm text-gray-500 mb-8">
         Top category:{" "}
         <span className="font-medium text-gray-900">

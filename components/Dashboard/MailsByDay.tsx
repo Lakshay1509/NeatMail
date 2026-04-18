@@ -51,10 +51,10 @@ export default function MailsByDay() {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 w-full font-sans">
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 w-full">
       {/* Header matching the screenshot UI */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">
+        <h2 className="text-xl font-semibold text-gray-900">
           Labeled Emails & Time Saved
         </h2>
         
