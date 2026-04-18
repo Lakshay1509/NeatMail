@@ -160,6 +160,66 @@ const app = new Hono()
       return ctx.json({ data }, 200);
     })
 
+  .get("/mailsByDay", async (ctx) => {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const now = new Date();
+    // To calculate growth rate we need previous days too.
+    // Let's get 8 days to calculate growth for 7 days.
+    const startOfPeriod = new Date(now);
+    startOfPeriod.setDate(startOfPeriod.getDate() - 7);
+    startOfPeriod.setHours(0, 0, 0, 0);
+
+    const rawData = await db.$queryRaw<{ date_str: string; email_count: number }[]>`
+      SELECT 
+        TO_CHAR(created_at, 'YYYY-MM-DD') as date_str,
+        CAST(COUNT(*) AS INTEGER) as email_count
+      FROM "public"."email_tracked"
+      WHERE user_id = ${userId}
+        AND tag_id IS NOT NULL
+        AND created_at >= ${startOfPeriod}
+      GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD')
+      ORDER BY date_str ASC;
+    `;
+
+    // Map into last 7 days array
+    const result = [];
+    let previousCount = 0;
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split("T")[0];
+      const month = d.toLocaleString("default", { month: "short" });
+      const day = d.getDate();
+      const label = `${month} ${day}`;
+
+      const matched = rawData.find((r) => r.date_str === dateStr);
+      const count = matched ? matched.email_count : 0;
+
+      let growthRate = 0;
+      if (previousCount > 0) {
+        growthRate = ((count - previousCount) / previousCount) * 100;
+      } else if (previousCount === 0 && count > 0) {
+        growthRate = 100;
+      }
+
+      result.push({
+        date: label,
+        total: count,
+        growthRate: parseFloat(growthRate.toFixed(2)),
+      });
+
+      previousCount = count;
+    }
+
+    return ctx.json({ data: result }, 200);
+  })
+
   // 4. Inbox Traffic / Focus Heatmap (Activity by Day & Hour)
   .get("/traffic-heatmap", async (ctx) => {
     const { userId } = await auth();

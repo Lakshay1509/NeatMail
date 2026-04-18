@@ -5,6 +5,7 @@ import { useUser } from "@clerk/nextjs"
 import { LabelDistribution } from "./LabelDistribution"
 import Clutter from "./Dashboard/Clutter"
 import HeatMap from "./Dashboard/HeatMap"
+import MailsByDay from "./Dashboard/MailsByDay"
 
 
 const Dashboard = () => {
@@ -91,6 +92,9 @@ const Dashboard = () => {
 
             {/* Charts & Distribution Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="lg:col-span-2">
+                    <MailsByDay />
+                </div>
                 <div className="lg:col-span-1">
                     <LabelDistribution />
                 </div>
