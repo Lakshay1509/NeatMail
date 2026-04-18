@@ -201,17 +201,12 @@ const app = new Hono()
       const matched = rawData.find((r) => r.date_str === dateStr);
       const count = matched ? matched.email_count : 0;
 
-      let growthRate = 0;
-      if (previousCount > 0) {
-        growthRate = ((count - previousCount) / previousCount) * 100;
-      } else if (previousCount === 0 && count > 0) {
-        growthRate = 100;
-      }
+      let timeSaved = count * 5;
 
       result.push({
         date: label,
         total: count,
-        growthRate: parseFloat(growthRate.toFixed(2)),
+        timeSaved: timeSaved,
       });
 
       previousCount = count;

@@ -44,7 +44,7 @@ export default function MailsByDay() {
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-pink-500"></div>
-          <span className="text-sm font-medium text-gray-500">Growth Rate</span>
+          <span className="text-sm font-medium text-gray-500">Time Saved (s)</span>
         </div>
       </div>
     );
@@ -55,7 +55,7 @@ export default function MailsByDay() {
       {/* Header matching the screenshot UI */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
         <h2 className="text-lg font-semibold text-gray-900">
-          Labeled Emails & Growth Rate
+          Labeled Emails & Time Saved
         </h2>
         
       </div>
@@ -87,14 +87,14 @@ export default function MailsByDay() {
               tickFormatter={(value) => `${value}`}
             />
             
-            {/* Right Y-axis for Growth Rate Line */}
+            {/* Right Y-axis for Time Saved Line */}
             <YAxis 
               yAxisId="right" 
               orientation="right" 
               axisLine={false} 
               tickLine={false}
               tick={{ fill: '#6B7280', fontSize: 12, fontWeight: 600 }}
-              tickFormatter={(value) => `${value}%`}
+              tickFormatter={(value) => `${value}s`}
             />
 
             <Tooltip 
@@ -114,12 +114,12 @@ export default function MailsByDay() {
             <Line 
               yAxisId="right" 
               type="linear" 
-              dataKey="growthRate" 
+              dataKey="timeSaved" 
               stroke="#EC4899" 
               strokeWidth={3} 
               dot={false}
               activeDot={{ r: 6, fill: "#EC4899", strokeWidth: 0 }} 
-              name="Growth Rate" 
+              name="Time Saved (s)" 
             />
           </ComposedChart>
         </ResponsiveContainer>
