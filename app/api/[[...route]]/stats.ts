@@ -30,7 +30,7 @@ const app = new Hono()
       orderBy: {
         _count: { message_id: "desc" },
       },
-      take: 3,
+      take: 4,
     });
 
     const clutterData = await Promise.all(
@@ -88,7 +88,7 @@ const app = new Hono()
           tag_id: "desc",
         },
       },
-      take: 4,
+      take: 5,
     });
 
     const tagIds = topLabels
