@@ -12,8 +12,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { ExternalLink } from "lucide-react";
 
 export default function MailsByDay() {
   const { data: response, isLoading, isError } = useGetUserMailsByDay();
@@ -41,7 +39,7 @@ export default function MailsByDay() {
     return (
       <div className="flex items-center justify-end gap-6 mb-6">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-violet-600"></div>
+          <div className="w-3 h-3 rounded-full bg-[#1ea97f]"></div>
           <span className="text-sm font-medium text-gray-500">Total</span>
         </div>
         <div className="flex items-center gap-2">
@@ -60,14 +58,6 @@ export default function MailsByDay() {
           Labeled Emails & Growth Rate
         </h2>
         
-        <div className="flex items-center gap-2 mt-4 sm:mt-0">
-          <Button variant="secondary" className="bg-gray-50 text-gray-600 hover:bg-gray-100 shadow-none border-0">
-            Show breakdown
-          </Button>
-          <Button variant="secondary" size="icon" className="bg-gray-50 text-gray-600 hover:bg-gray-100 shadow-none border-0">
-            <ExternalLink className="w-4 h-4" />
-          </Button>
-        </div>
       </div>
 
       <CustomLegend />
@@ -116,7 +106,7 @@ export default function MailsByDay() {
             <Bar 
               yAxisId="left" 
               dataKey="total" 
-              fill="#8B5CF6" 
+              fill="#1ea97f" 
               name="Total" 
               radius={[6, 6, 0, 0]} 
               barSize={40}

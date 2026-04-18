@@ -92,14 +92,15 @@ const Dashboard = () => {
 
             {/* Charts & Distribution Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="lg:col-span-2">
-                    <MailsByDay />
-                </div>
+                
                 <div className="lg:col-span-1">
                     <LabelDistribution />
                 </div>
                 <div className="lg:col-span-1">
                     <Clutter />
+                </div>
+                <div className="lg:col-span-2">
+                    <MailsByDay />
                 </div>
 
             </div>
