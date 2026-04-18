@@ -1,9 +1,6 @@
-import { Redis } from '@upstash/redis';
+import Redis from 'ioredis';
 
-export const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_URL!,
-  token: process.env.UPSTASH_REDIS_TOKEN!,
-});
+export const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 
 export async function isMessageProcessed(messageId: string): Promise<boolean> {
   const exists = await redis.exists(`processed:msg:${messageId}`);
@@ -47,4 +44,5 @@ export async function markDodoWebhookProcessed(webhookId: string) {
 export async function unmarkDodoWebhookProcessed(webhookId: string) {
   await redis.del(`processed:dodo:${webhookId}`);
 }
+
 

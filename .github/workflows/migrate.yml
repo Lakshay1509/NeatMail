@@ -45,8 +45,7 @@ jobs:
       NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
-      UPSTASH_REDIS_URL: ${{ secrets.UPSTASH_REDIS_URL }}
-      UPSTASH_REDIS_TOKEN: ${{ secrets.UPSTASH_REDIS_TOKEN }}
+      REDIS_URL: ${{ secrets.REDIS_URL }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       RESEND_API_KEY: ${{secrets.RESEND_API_KEY}}
     steps:

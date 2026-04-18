@@ -1,33 +1,71 @@
-import { Redis } from '@upstash/redis';
-import { Ratelimit } from '@upstash/ratelimit';
+import Redis from 'ioredis';
 
+const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_URL!,
-  token: process.env.UPSTASH_REDIS_TOKEN!,
-});
+class CustomRateLimit {
+  private redis: Redis;
+  private limitCount: number;
+  private windowDurationMs: number;
+  private prefix: string;
 
+  constructor(options: { redis: Redis; limit: number; window: string; prefix: string }) {
+    this.redis = options.redis;
+    this.limitCount = options.limit;
+    
+    // Parse duration strings like '1 m', '10 s'
+    const [amount, unit] = options.window.split(' ');
+    const amt = parseInt(amount, 10);
+    if (unit.startsWith('s')) this.windowDurationMs = amt * 1000;
+    else if (unit.startsWith('m')) this.windowDurationMs = amt * 60 * 1000;
+    else if (unit.startsWith('h')) this.windowDurationMs = amt * 60 * 60 * 1000;
+    else this.windowDurationMs = 60000; // default 1 minute
 
-export const gmailWebhookLimiter = new Ratelimit({
+    this.prefix = options.prefix;
+  }
+
+  async limit(identifier: string) {
+    const key = `${this.prefix}:${identifier}`;
+    const now = Date.now();
+    const clearBefore = now - this.windowDurationMs;
+
+    // Use a transaction to perform Sliding Window rate limiting via Sorted Sets
+    const multi = this.redis.multi();
+    multi.zremrangebyscore(key, 0, clearBefore);
+    multi.zadd(key, now, `${now}-${Math.random()}`);
+    multi.zcard(key);
+    multi.pexpire(key, this.windowDurationMs);
+
+    const results = await multi.exec();
+    
+    // zcard result is the 3rd operation (index 2)
+    const count = results![2][1] as number;
+    
+    const success = count <= this.limitCount;
+    const remaining = Math.max(0, this.limitCount - count);
+    const reset = now + this.windowDurationMs;
+
+    return { success, limit: this.limitCount, remaining, reset };
+  }
+}
+
+export const gmailWebhookLimiter = new CustomRateLimit({
   redis,
-  limiter: Ratelimit.slidingWindow(100, '1 m'), 
-  analytics: true,
+  limit: 100,
+  window: '1 m',
   prefix: 'ratelimit:gmail-webhook',
 });
 
-
-export const apiLimiter = new Ratelimit({
+export const apiLimiter = new CustomRateLimit({
   redis,
-  limiter: Ratelimit.slidingWindow(50, '1 m'), 
-  analytics: true,
+  limit: 50,
+  window: '1 m',
   prefix: 'ratelimit:api',
 });
 
-
-export const routeLimiter = new Ratelimit({
+export const routeLimiter = new CustomRateLimit({
   redis,
-  limiter: Ratelimit.slidingWindow(100, '1 m'), 
-  analytics: true,
+  limit: 100,
+  window: '1 m',
   prefix: 'ratelimit:route',
 });
 
