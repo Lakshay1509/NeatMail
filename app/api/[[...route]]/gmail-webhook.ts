@@ -149,26 +149,24 @@ const app = new Hono().post("/", async (ctx) => {
     const historyRecords = history.data.history ?? [];
 
     // Trigger label modifications endpoint asynchronously
-    handleLabelCorrections(gmail, clerkUserId, historyRecords).catch(e => 
-      console.error("Error running label correction handler:", e)
+    handleLabelCorrections(gmail, clerkUserId, historyRecords).catch((e) =>
+      console.error("Error running label correction handler:", e),
     );
 
     for (const record of historyRecords) {
-      
       for (const item of record.labelsRemoved ?? []) {
         if (item.labelIds?.includes("UNREAD")) {
           const messageId = item.message?.id;
-          if(!messageId) continue;
-          await updateMessageStatus(messageId,true)
+          if (!messageId) continue;
+          await updateMessageStatus(messageId, true);
         }
       }
 
-     
       for (const item of record.labelsAdded ?? []) {
         if (item.labelIds?.includes("UNREAD")) {
           const messageId = item.message?.id;
-          if(!messageId) continue;
-          await updateMessageStatus(messageId,false)
+          if (!messageId) continue;
+          await updateMessageStatus(messageId, false);
         }
       }
     }
@@ -248,6 +246,10 @@ const app = new Hono().post("/", async (ctx) => {
         (tag) => tag.tag.name === "Read only",
       );
 
+      const hasAutomatedAlertTag = tagsOfUser.some(
+        (tag) => tag.tag.name === "Automated alerts",
+      );
+
       if (
         email.data.labelIds?.includes("CATEGORY_PROMOTIONS") &&
         hasMarketingTag
@@ -258,17 +260,26 @@ const app = new Hono().post("/", async (ctx) => {
         email.data.labelIds?.includes("CATEGORY_SOCIAL")
       ) {
         labelName = "Read only";
+      } else if (
+        hasAutomatedAlertTag &&
+        (email.data.labelIds?.includes("CATEGORY_PROMOTIONS") ||
+          email.data.labelIds?.includes("CATEGORY_SOCIAL"))
+      ) {
+        labelName = "Automated alerts";
       } else {
         const classification = await getModelResponse({
           bodySnippet: emailData.bodySnippet,
           from: emailData.from,
           subject: emailData.subject,
           user_id: emailData.userId,
-          tags: tagsOfUser.map((t) => ({ name: t.tag.name, description: t.tag.description ?? '' })),
+          tags: tagsOfUser.map((t) => ({
+            name: t.tag.name,
+            description: t.tag.description ?? "",
+          })),
           sensitivity: draftsenstivity || "if actionable",
         });
         labelName = classification.category;
-  
+
         responseRequired = classification.response_required === true;
       }
 
@@ -277,7 +288,7 @@ const app = new Hono().post("/", async (ctx) => {
         responseRequired;
 
       if (labelName === "" && !shouldDraft) {
-        await addMailtoDB(clerkUserId, null, String(messageId),emailData.from);
+        await addMailtoDB(clerkUserId, null, String(messageId), emailData.from);
         console.log(`No label assigned for message: ${messageId}`);
         continue;
       }
@@ -328,12 +339,22 @@ const app = new Hono().post("/", async (ctx) => {
           throw err;
         }
 
-        
-          const {senderEmail } = parseFromHeader(emailData.from);
-          await checkAndForwardToTelegram(clerkUserId,senderEmail,emailData.subject,fullBody,colourofLabel.id,colourofLabel.name)
-        
+        const { senderEmail } = parseFromHeader(emailData.from);
+        await checkAndForwardToTelegram(
+          clerkUserId,
+          senderEmail,
+          emailData.subject,
+          fullBody,
+          colourofLabel.id,
+          colourofLabel.name,
+        );
 
-        await addMailtoDB(clerkUserId, colourofLabel.id, String(messageId),emailData.from);
+        await addMailtoDB(
+          clerkUserId,
+          colourofLabel.id,
+          String(messageId),
+          emailData.from,
+        );
       }
 
       if (shouldDraft) {
@@ -365,18 +386,30 @@ const app = new Hono().post("/", async (ctx) => {
 
     return ctx.json({ success: true }, 200);
   } catch (error: any) {
-    console.error(`❌ Error processing webhook for user: ${errorUserId} (${errorEmail})`);
+    console.error(
+      `❌ Error processing webhook for user: ${errorUserId} (${errorEmail})`,
+    );
     console.error("❌ Error Message:", error.message || String(error));
 
     if (error.clerkError) {
-      console.error("❌ Clerk API Error details:", JSON.stringify({
-        status: error.status,
-        code: error.code,
-        clerkTraceId: error.clerkTraceId,
-        errors: error.errors
-      }, null, 2));
+      console.error(
+        "❌ Clerk API Error details:",
+        JSON.stringify(
+          {
+            status: error.status,
+            code: error.code,
+            clerkTraceId: error.clerkTraceId,
+            errors: error.errors,
+          },
+          null,
+          2,
+        ),
+      );
     } else if (error.errors) {
-      console.error("❌ Detailed errors payload:", JSON.stringify(error.errors, null, 2));
+      console.error(
+        "❌ Detailed errors payload:",
+        JSON.stringify(error.errors, null, 2),
+      );
     } else if (error.stack) {
       console.error("❌ Stack trace:", error.stack);
     } else {
