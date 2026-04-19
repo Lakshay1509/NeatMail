@@ -83,7 +83,7 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
       data.status === "pending"
     ) {
       await handleWatchDeactivation(data.metadata?.clerk_user_id);
-      await sendSubExpiredEmail(data.customer.email,data.metadata?.clerk_user_id)
+      await sendSubExpiredEmail(data.customer.email,data.customer.name)
     }
 
     return subscription;
