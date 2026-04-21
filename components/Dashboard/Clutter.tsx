@@ -1,21 +1,18 @@
-'use client'
+"use client";
 
-import { useGetClutter } from "@/features/stats/use-get-clutter"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import Avatar from "boring-avatars";
+import { useGetClutter } from "@/features/stats/use-get-clutter";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useUnsubscribeDomain } from "@/features/email/use-post-unsubscribe";
 import Link from "next/link";
 
-
 const Clutter = () => {
-  const { data, isLoading, isError } = useGetClutter()
-   const unsubscribeMutation = useUnsubscribeDomain();
+  const { data, isLoading, isError } = useGetClutter();
+  const unsubscribeMutation = useUnsubscribeDomain();
 
   const handleUnsubscribe = (domain: string) => {
-   
-    unsubscribeMutation.mutateAsync({domain:domain});
-  }
+    unsubscribeMutation.mutateAsync({ domain: domain });
+  };
 
   if (isLoading) {
     return (
@@ -28,46 +25,51 @@ const Clutter = () => {
           <Skeleton className="h-16 w-full rounded-xl" />
         </div>
       </div>
-    )
+    );
   }
 
   if (isError) {
-    return <div className="text-red-500">Failed to load clutter data.</div>
+    return <div className="text-red-500">Failed to load clutter data.</div>;
   }
 
   return (
     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 w-full ">
       <div className="flex justify-between items-start mb-6 space-x-2">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Top Clutter Sources</h2>
-          <p className="text-sm text-gray-500 mt-1">Domains impacting your attention span</p>
+          <h2 className="text-xl font-bold text-gray-900">
+            Top Clutter Sources
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Domains impacting your attention span
+          </p>
         </div>
-        <Link className="text-sm font-semibold text-gray-500 hover:text-gray-600 transition-colors pt-1 text-right" href='/unsubscribe'>
+        <Link
+          className="text-sm font-semibold text-gray-500 hover:text-gray-600 transition-colors pt-1 text-right"
+          href="/unsubscribe"
+        >
           View all
-          
         </Link>
       </div>
 
       <div className="space-y-3">
         {data?.clutterData?.map((item) => (
-          <div 
-            key={item.domain} 
+          <div
+            key={item.domain}
             className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-50 transition-colors gap-x-2"
           >
             <div className="flex items-center gap-4">
-              
-                <Avatar name={item.domain} size='35' variant="bauhaus" colors={["#222222","#ffe4c4"]}/>
-              
               <div className="flex flex-col max-w-20 md:max-w-60 space-y-1">
-                <span className="font-semibold text-gray-900 text-sm truncate">{item.domain}</span>
-               <span className="text-xs font-medium text-gray-500 mt-0.5">
-  {item.unreadCount} unread
-</span>
+                <span className="font-semibold text-gray-900 text-sm truncate">
+                  {item.domain}
+                </span>
+                <span className="text-xs font-medium text-gray-500 mt-0.5">
+                  {item.unreadCount} unread
+                </span>
               </div>
             </div>
-            
-            <Button 
-              variant="secondary" 
+
+            <Button
+              variant="secondary"
               size="sm"
               disabled={unsubscribeMutation.isPending}
               onClick={() => handleUnsubscribe(item.rawDomain ?? "")}
@@ -84,7 +86,7 @@ const Clutter = () => {
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Clutter
+export default Clutter;
