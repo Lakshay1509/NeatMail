@@ -55,10 +55,10 @@ const Clutter = () => {
         {data?.clutterData?.map((item) => (
           <div
             key={item.domain}
-            className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-50 transition-colors gap-x-2"
+            className="flex items-center justify-between gap-3 p-3 rounded-xl bg-gray-50 border border-gray-50 transition-colors"
           >
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col max-w-20 md:max-w-60 space-y-1">
+            <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
+              <div className="flex min-w-0 flex-1 flex-col space-y-1">
                 <span className="font-semibold text-gray-900 text-sm truncate">
                   {item.domain}
                 </span>
@@ -73,7 +73,7 @@ const Clutter = () => {
               size="sm"
               disabled={unsubscribeMutation.isPending}
               onClick={() => handleUnsubscribe(item.rawDomain ?? "")}
-              className="bg-gray-200/50 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg px-4"
+              className="shrink-0 bg-gray-200/50 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg px-4"
             >
               Unsubscribe
             </Button>
