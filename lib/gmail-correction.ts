@@ -1,6 +1,7 @@
 import { gmail_v1 } from "googleapis";
 import { correctLabel } from "./model";
 import { getGmailMessageBody } from "./gmail";
+import { escapeHtml } from "./telegram";
 
 export async function handleLabelCorrections(
   gmail: gmail_v1.Gmail,
@@ -88,7 +89,8 @@ export async function handleLabelCorrections(
         "No Subject";
 
       const fullBody = await getGmailMessageBody(clerkUserId, messageId);
-      const bodySnippet = fullBody?.slice(0, 1000) ?? ""; // Capture large enough snippet for the API
+      const bodySnippet = escapeHtml(fullBody?.slice(0, 1000) ?? ""); // Capture large enough snippet for the API
+      
 
       // Fire the correction API
 
