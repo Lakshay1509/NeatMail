@@ -38,7 +38,7 @@
     "google-auth-library": "^10.5.0",
     "googleapis": "^169.0.0",
     "hono": "^4.11.3",
-    "inngest": "^3.52.3",
+    "inngest": "^4.2.4",
     "ioredis": "^5.10.1",
     "libsodium-wrappers": "^0.8.2",
     "lucide-react": "^0.562.0",
