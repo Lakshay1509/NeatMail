@@ -112,7 +112,7 @@ const app = new Hono().post("/", async (ctx) => {
     const tokenData = tokenResponse.data[0]?.token;
 
     if (!tokenData) {
-      console.log("No token found for user");
+      console.log(`No token found for user, ${clerkUserId}`);
       return ctx.json({ success: true }, 200);
     }
 
