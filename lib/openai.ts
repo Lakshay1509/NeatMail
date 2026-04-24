@@ -190,14 +190,15 @@ When the user asks about their emails:
  
 Rules:
 - Use Gmail search operators precisely
-- If the first search returns nothing, retry with a broader query
+- SPEED: When you can predict the next tool call ahead of time, call multiple tools together in the same turn — do not wait for one result before deciding to call the next.
+- If a search may return nothing, send both a narrow and a broader query simultaneously in the same turn instead of retrying sequentially.
 - For payments/invoices: subject:(payment OR invoice OR receipt OR order)
 - For client questions: search by their name or email domain
 - For attachment requests, prioritize the newest matching email, list its attachments, then send the most relevant file
 - Never fabricate email content
 - If nothing is found after 2 searches, say so clearly
 - IMPORTANT: After successfully calling an action tool (send_attachment_to_telegram), you MUST output a simple text confirmation to the user and DO NOT call the tool again.
--Don't append any extra text after the main message (e.g., avoid phrases like “Want me to send the full message?”).
+- Don't append any extra text after the main message (e.g., avoid phrases like "Want me to send the full message?").
  
 Today's date: ${new Date().toISOString().split("T")[0]}`;
 
@@ -224,9 +225,9 @@ export async function handleTelegramQuery(
 
   history.push({ role: "user", content: userQuery });
 
-  // Keep only the last 10 messages (sliding window) to save context window and Redis space
-  if (history.length > 10) {
-    history = history.slice(history.length - 10);
+  // Keep only the last 6 messages (sliding window) to save context window and Redis space
+  if (history.length > 6) {
+    history = history.slice(history.length - 6);
   }
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
@@ -253,7 +254,7 @@ export async function handleTelegramQuery(
       try {
         // Append assistant response to history and save to Redis with 1 hour TTL (3600 seconds)
         history.push({ role: "assistant", content: finalAnswer });
-        if (history.length > 10) history = history.slice(history.length - 10);
+        if (history.length > 6) history = history.slice(history.length - 6);
         await redis.setex(redisKey, 3600, JSON.stringify(history));
       } catch (err) {
         console.error("Error saving chat history to Redis:", err);
@@ -280,10 +281,10 @@ export async function handleTelegramQuery(
           resultContent =
             results.length === 0
               ? "No emails found matching this query."
-              : JSON.stringify(results, null, 2);
+              : JSON.stringify(results);
         } else if (toolCall.function.name === "get_email_content") {
           const email = await getGmailMessageBody(userId, args.message_id);
-          resultContent = JSON.stringify(email, null, 2);
+          resultContent = JSON.stringify(email);
         } else if (toolCall.function.name === "list_email_attachments") {
           const messageId =
             typeof args.message_id === "string" ? args.message_id.trim() : "";
@@ -304,8 +305,6 @@ export async function handleTelegramQuery(
                   mime_type: attachment.mimeType,
                   size_bytes: attachment.size,
                 })),
-                null,
-                2,
               );
         } else if (toolCall.function.name === "send_attachment_to_telegram") {
           const messageId =
@@ -360,16 +359,12 @@ export async function handleTelegramQuery(
             caption: caption || undefined,
           });
           
-          resultContent = JSON.stringify(
-            {
-              success: sent,
-              message_id: messageId,
-              attachment_id: freshAttachmentId,
-              filename: selectedAttachment.filename,
-            },
-            null,
-            2,
-          );
+          resultContent = JSON.stringify({
+            success: sent,
+            message_id: messageId,
+            attachment_id: freshAttachmentId,
+            filename: selectedAttachment.filename,
+          });
         } else {
           resultContent = `Unknown tool: ${toolCall.function.name}`;
         }
