@@ -256,22 +256,14 @@ const app = new Hono().post("/", async (ctx) => {
       ) {
         labelName = "Marketing";
       } else if (
-        hasAutomatedAlertTag &&
-        email.data.labelIds?.includes("CATEGORY_UPDATES")
-      ) {
-        // Priority 1 for Updates: They are usually system notifications, receipts, etc.
-        labelName = "Automated alerts";
-      } else if (
         hasReadonlyTag &&
-        (email.data.labelIds?.includes("CATEGORY_UPDATES") || 
-         email.data.labelIds?.includes("CATEGORY_SOCIAL"))
+        email.data.labelIds?.includes("CATEGORY_SOCIAL")
       ) {
-        // Priority 1 for Social, Priority 2 (Fallback) for Updates
         labelName = "Read only";
       } else if (
-        hasAutomatedAlertTag &&
         (email.data.labelIds?.includes("CATEGORY_PROMOTIONS") ||
-          email.data.labelIds?.includes("CATEGORY_SOCIAL"))
+          email.data.labelIds?.includes("CATEGORY_SOCIAL")) &&
+        hasAutomatedAlertTag
       ) {
         labelName = "Automated alerts";
       } else {
