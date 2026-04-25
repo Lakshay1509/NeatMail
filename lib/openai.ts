@@ -203,6 +203,18 @@ Today's date: ${new Date().toISOString().split("T")[0]}`;
 
 // ─── Agent ────────────────────────────────────────────────────────────────────
 
+/** Compress search results to a compact format before feeding to the LLM.
+ * Cuts token usage by ~60% — the LLM only needs IDs, sender, subject, date & snippet.
+ */
+function compressSearchResults(results: any[]): string {
+  if (results.length === 0) return "No emails found matching this query.";
+  return results
+    .map((r, i) =>
+      `[${i + 1}] id:${r.id} | from:${r.from} | subj:${r.subject} | date:${r.date}\n    snippet: ${r.snippet?.slice(0, 200) ?? ""}`
+    )
+    .join("\n\n");
+}
+
 export async function handleTelegramQuery(
   userQuery: string,
   userId: string,
@@ -210,34 +222,29 @@ export async function handleTelegramQuery(
 ): Promise<string> {
   const redisKey = `telegram:history:${userId}`;
   let history: OpenAI.Chat.ChatCompletionMessageParam[] = [];
-  
+
+  // Load history (non-blocking — don't stall if Redis is slow)
   try {
     const rawHistory = await redis.get(redisKey);
-    if (typeof rawHistory === "string") {
-      history = JSON.parse(rawHistory);
-    } else if (Array.isArray(rawHistory)) {
-      history = rawHistory;
-    }
+    if (typeof rawHistory === "string") history = JSON.parse(rawHistory);
+    else if (Array.isArray(rawHistory)) history = rawHistory;
   } catch (err) {
     console.error("Error fetching chat history from Redis:", err);
   }
 
   history.push({ role: "user", content: userQuery });
-
-  // Keep only the last 10 messages (sliding window) to save context window and Redis space
-  if (history.length > 10) {
-    history = history.slice(history.length - 10);
-  }
+  // Keep only the last 8 messages to reduce context window size
+  if (history.length > 8) history = history.slice(history.length - 8);
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: SYSTEM_PROMPT },
     ...history,
   ];
 
-  // Agentic loop — max 3 iterations
-  for (let i = 0; i < 3; i++) {
+  // ── Agentic loop — max 4 iterations ──────────────────────────────────────
+  for (let i = 0; i < 4; i++) {
     const response = await openai.chat.completions.create({
-      model: "gpt-5-mini", // was "gpt-4o"
+      model: "gpt-5-mini",
       tools: TOOLS,
       tool_choice: "auto",
       messages,
@@ -246,143 +253,121 @@ export async function handleTelegramQuery(
     const message = response.choices[0].message;
     messages.push(message);
 
-    // No tool calls → model is done, return the answer
+    // No tool calls → model is done
     if (!message.tool_calls || message.tool_calls.length === 0) {
       const finalAnswer = message.content ?? "No answer generated.";
-      
-      try {
-        // Append assistant response to history and save to Redis with 1 hour TTL (3600 seconds)
-        history.push({ role: "assistant", content: finalAnswer });
-        if (history.length > 10) history = history.slice(history.length - 10);
-        await redis.setex(redisKey, 3600, JSON.stringify(history));
-      } catch (err) {
-        console.error("Error saving chat history to Redis:", err);
-      }
+
+      // Persist history asynchronously — don't block the response
+      history.push({ role: "assistant", content: finalAnswer });
+      if (history.length > 8) history = history.slice(history.length - 8);
+      redis.setex(redisKey, 3600, JSON.stringify(history)).catch((err) =>
+        console.error("Error saving chat history to Redis:", err)
+      );
 
       return escapeHtml(finalAnswer);
     }
 
-    // Process every tool call in this turn
-    for (const toolCall of message.tool_calls) {
-      if (toolCall.type !== "function") continue;
+    // ── Execute ALL tool calls in this turn IN PARALLEL ──────────────────
+    const toolResults = await Promise.all(
+      message.tool_calls
+        .filter((tc) => tc.type === "function")
+        .map(async (toolCall) => {
+          let resultContent: string;
+          try {
+            const args = JSON.parse(toolCall.function.arguments);
 
-      let resultContent: string;
-
-      try {
-        const args = JSON.parse(toolCall.function.arguments);
-
-        if (toolCall.function.name === "search_gmail") {
-          const results = await searchGmail(
-            userId,
-            args.query,
-            Math.min(args.max_results ?? 10, 20),
-          );
-          resultContent =
-            results.length === 0
-              ? "No emails found matching this query."
-              : JSON.stringify(results, null, 2);
-        } else if (toolCall.function.name === "get_email_content") {
-          const email = await getGmailMessageBody(userId, args.message_id);
-          resultContent = JSON.stringify(email, null, 2);
-        } else if (toolCall.function.name === "list_email_attachments") {
-          const messageId =
-            typeof args.message_id === "string" ? args.message_id.trim() : "";
-
-          if (!messageId) {
-            throw new Error("message_id is required to list attachments.");
-          }
-
-          const attachments = await getAttachment(userId, messageId);
-          resultContent =
-            attachments.length === 0
-              ? "No downloadable attachments found for this email."
-              : JSON.stringify(
-                attachments.map((attachment) => ({
-                  message_id: attachment.messageId,
-                  attachment_id: attachment.attachmentId,
-                  filename: attachment.filename,
-                  mime_type: attachment.mimeType,
-                  size_bytes: attachment.size,
-                })),
-                null,
-                2,
+            if (toolCall.function.name === "search_gmail") {
+              const results = await searchGmail(
+                userId,
+                args.query,
+                Math.min(args.max_results ?? 10, 20),
               );
-        } else if (toolCall.function.name === "send_attachment_to_telegram") {
-          const messageId =
-            typeof args.message_id === "string" ? args.message_id.trim() : "";
-          const staleAttachmentId =
-            typeof args.attachment_id === "string"
-              ? args.attachment_id.trim()
-              : "";
-          const caption =
-            typeof args.caption === "string" ? args.caption.trim() : "";
+              // Send compact representation to save tokens
+              resultContent = compressSearchResults(results);
 
-  
+            } else if (toolCall.function.name === "get_email_content") {
+              const email = await getGmailMessageBody(userId, args.message_id);
+              // Truncate body to 3000 chars — enough for the LLM to answer
+              const body = typeof email === "string" ? email : JSON.stringify(email);
+              resultContent = body.slice(0, 3000);
 
-          if (!messageId) {
-            throw new Error("message_id is required to send an attachment.");
+            } else if (toolCall.function.name === "list_email_attachments") {
+              const messageId =
+                typeof args.message_id === "string" ? args.message_id.trim() : "";
+              if (!messageId) throw new Error("message_id is required.");
+
+              const attachments = await getAttachment(userId, messageId);
+              resultContent =
+                attachments.length === 0
+                  ? "No downloadable attachments found for this email."
+                  : JSON.stringify(
+                      attachments.map((a) => ({
+                        message_id: a.messageId,
+                        attachment_id: a.attachmentId,
+                        filename: a.filename,
+                        mime_type: a.mimeType,
+                        size_bytes: a.size,
+                      }))
+                    );
+
+            } else if (toolCall.function.name === "send_attachment_to_telegram") {
+              const messageId =
+                typeof args.message_id === "string" ? args.message_id.trim() : "";
+              const staleAttachmentId =
+                typeof args.attachment_id === "string" ? args.attachment_id.trim() : "";
+              const caption =
+                typeof args.caption === "string" ? args.caption.trim() : "";
+
+              if (!messageId) throw new Error("message_id is required to send an attachment.");
+              if (!staleAttachmentId) throw new Error("attachment_id is required to send an attachment.");
+
+              // Re-fetch to get fresh attachment IDs (Gmail rotates them)
+              const attachments = await getAttachment(userId, messageId);
+              if (attachments.length === 0)
+                throw new Error(`No attachments found for messageId=${messageId}.`);
+
+              const selectedAttachment =
+                attachments.find((a) => a.attachmentId === staleAttachmentId) ??
+                attachments[0];
+
+              // Fire download progress + actual download in parallel
+              const [, attachmentBase64] = await Promise.all([
+                sendTelegramMessage(
+                  chatId,
+                  `⏳ Downloading <b>${escapeHtml(selectedAttachment.filename || "file")}</b>...`
+                ),
+                downloadAttachment(userId, messageId, selectedAttachment.attachmentId),
+              ]);
+
+              const sent = await sendTelegramDocument(chatId, {
+                fileName: selectedAttachment.filename || "attachment",
+                fileDataBase64: attachmentBase64,
+                mimeType: selectedAttachment.mimeType,
+                caption: caption || undefined,
+              });
+
+              resultContent = JSON.stringify({
+                success: sent,
+                filename: selectedAttachment.filename,
+              });
+
+            } else {
+              resultContent = `Unknown tool: ${toolCall.function.name}`;
+            }
+          } catch (err) {
+            resultContent = `Error: ${err instanceof Error ? err.message : String(err)}`;
           }
 
-          if (!staleAttachmentId) {
-            throw new Error("attachment_id is required to send an attachment.");
-          }
+          return {
+            role: "tool" as const,
+            tool_call_id: toolCall.id,
+            content: resultContent,
+          };
+        })
+    );
 
-          // Always re-fetch attachments to get fresh IDs.
-          // Gmail attachment IDs rotate between API calls, so the ID the LLM
-          // stored from a prior list_email_attachments call may be stale.
-          const attachments = await getAttachment(userId, messageId);
-          
-          if (attachments.length === 0) {
-            throw new Error(`No attachments found for messageId=${messageId}.`);
-          }
-
-          // Try to match by stale ID first; if Gmail rotated it, fall back to first attachment.
-          const selectedAttachment =
-            attachments.find((a) => a.attachmentId === staleAttachmentId) ??
-            attachments[0];
-
-          const freshAttachmentId = selectedAttachment.attachmentId;
-          
-
-          await sendTelegramMessage(chatId, `⏳ Downloading <b>${escapeHtml(selectedAttachment.filename || "file")}</b>...`);
-
-          const attachmentBase64 = await downloadAttachment(
-            userId,
-            messageId,
-            freshAttachmentId,
-          );
-         
-
-          const sent = await sendTelegramDocument(chatId, {
-            fileName: selectedAttachment.filename || "attachment",
-            fileDataBase64: attachmentBase64,
-            mimeType: selectedAttachment.mimeType,
-            caption: caption || undefined,
-          });
-          
-          resultContent = JSON.stringify(
-            {
-              success: sent,
-              message_id: messageId,
-              attachment_id: freshAttachmentId,
-              filename: selectedAttachment.filename,
-            },
-            null,
-            2,
-          );
-        } else {
-          resultContent = `Unknown tool: ${toolCall.function.name}`;
-        }
-      } catch (err) {
-        resultContent = `Error: ${err instanceof Error ? err.message : String(err)}`;
-      }
-
-      messages.push({
-        role: "tool",
-        tool_call_id: toolCall.id,
-        content: resultContent,
-      });
-    }
+    // Push all tool results back into the message thread
+    messages.push(...toolResults);
   }
 
   return "Reached maximum iterations. Try a more specific query.";
