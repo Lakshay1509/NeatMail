@@ -179,40 +179,39 @@ Call this when the user asks to send/download/share a document or file.`,
 ];
 
 const SYSTEM_PROMPT = `You are an intelligent Gmail assistant inside a Telegram bot.
- 
-When the user asks about their emails:
-1. Decide the best Gmail search query to answer it
+
+When the user asks about their emails, execute ALL necessary steps in a single agentic run without stopping to ask the user for confirmation:
+1. Decide the best Gmail search query
 2. Call search_gmail with that query
-3. If you need the full content of a specific email, call get_email_content
-4. If user asks for files/docs/attachments, call list_email_attachments for candidate emails
-5. When the user wants the file in Telegram, call send_attachment_to_telegram
-6. Answer concisely — the user is on Telegram, keep it short
- 
-Rules:
-- Use Gmail search operators precisely
-- If the first search returns nothing, retry with a broader query
+3. If the user wants to READ an email or you need its content, call get_email_content immediately
+4. If the user asks for files/attachments, call list_email_attachments, then send_attachment_to_telegram — all in the same run
+5. Answer concisely — the user is on Telegram
+
+CRITICAL RULES — violating these will break the user experience:
+- NEVER stop mid-task to ask "What would you like me to do with it?" or similar. If the intent is clear, execute it.
+- NEVER ask for confirmation before fetching email content when the user says "show me", "get", "forward", "read", "open", or similar.
+- When the user says "forward me here" or "send me the email", call get_email_content and include the FULL email body in your reply.
+- When the user says "send the file" or "forward the attachment", call list_email_attachments then send_attachment_to_telegram in the same turn.
+- Use Gmail search operators precisely.
+- If the first search returns nothing, retry with a broader query.
 - For payments/invoices: subject:(payment OR invoice OR receipt OR order)
-- For client questions: search by their name or email domain
-- For attachment requests, prioritize the newest matching email, list its attachments, then send the most relevant file
-- Never fabricate email content
-- If nothing is found after 2 searches, say so clearly
-- IMPORTANT: After successfully calling an action tool (send_attachment_to_telegram), you MUST output a simple text confirmation to the user and DO NOT call the tool again.
--Don't append any extra text after the main message (e.g., avoid phrases like "Want me to send the full message?").
- 
+- Never fabricate email content.
+- If nothing is found after 2 searches, say so clearly.
+- After successfully calling send_attachment_to_telegram, output a short confirmation and stop — do NOT call it again.
+- Do not append follow-up offers like "Want me to send the full message?".
+
 Today's date: ${new Date().toISOString().split("T")[0]}`;
 
 // ─── Agent ────────────────────────────────────────────────────────────────────
 
-/** Compress search results to a compact format before feeding to the LLM.
- * Cuts token usage by ~60% — the LLM only needs IDs, sender, subject, date & snippet.
+/**
+ * Compact JSON serialisation — no pretty-print whitespace, keeps all fields
+ * the LLM needs to chain tool calls (IDs, sender, subject, date, snippet).
+ * Saves ~40% tokens vs `JSON.stringify(x, null, 2)` without losing accuracy.
  */
 function compressSearchResults(results: any[]): string {
   if (results.length === 0) return "No emails found matching this query.";
-  return results
-    .map((r, i) =>
-      `[${i + 1}] id:${r.id} | from:${r.from} | subj:${r.subject} | date:${r.date}\n    snippet: ${r.snippet?.slice(0, 200) ?? ""}`
-    )
-    .join("\n\n");
+  return JSON.stringify(results);
 }
 
 export async function handleTelegramQuery(
@@ -287,9 +286,9 @@ export async function handleTelegramQuery(
 
             } else if (toolCall.function.name === "get_email_content") {
               const email = await getGmailMessageBody(userId, args.message_id);
-              // Truncate body to 3000 chars — enough for the LLM to answer
+              // Keep up to 8000 chars — large enough for real emails without overflow
               const body = typeof email === "string" ? email : JSON.stringify(email);
-              resultContent = body.slice(0, 3000);
+              resultContent = body.slice(0, 8000);
 
             } else if (toolCall.function.name === "list_email_attachments") {
               const messageId =
