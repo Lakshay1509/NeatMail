@@ -1,4 +1,5 @@
 import { db } from "./prisma";
+import { convert } from "html-to-text";
 
 // lib/telegram.ts
 export async function sendTelegramMessage(chatId: string, text: string) {
@@ -153,10 +154,15 @@ export async function sendDraftConfirmationMessage(
 }
 
 export function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return convert(text, {
+    wordwrap: false,
+    selectors: [
+      { selector: "style", format: "skip" },   // drop <style> blocks entirely
+      { selector: "script", format: "skip" },
+      { selector: "img", format: "skip" },
+      { selector: "a", options: { ignoreHref: true } },
+    ],
+  });
 }
 
 export async function checkAndForwardToTelegram(
