@@ -7,6 +7,7 @@ import {
 } from "./gmail";
 import { redis } from "./redis";
 import { escapeHtml, sendTelegramDocument, sendTelegramMessage } from "./telegram";
+import { escapeTelegramHtml, htmlToTelegramHtml } from "./telegramFormatter";
 
 const endpoint = process.env.AZURE_ENDPOINT!;
 const apiKey = process.env.AZURE_API_KEY!;
@@ -263,7 +264,7 @@ export async function handleTelegramQuery(
         console.error("Error saving chat history to Redis:", err)
       );
 
-      return escapeHtml(finalAnswer);
+      return htmlToTelegramHtml(escapeTelegramHtml(finalAnswer));
     }
 
     // ── Execute ALL tool calls in this turn IN PARALLEL ──────────────────
