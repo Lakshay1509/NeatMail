@@ -182,24 +182,29 @@ Call this when the user asks to send/download/share a document or file.`,
 const SYSTEM_PROMPT = `You are an intelligent Gmail assistant inside a Telegram bot.
 
 When the user asks about their emails, execute ALL necessary steps in a single agentic run without stopping to ask the user for confirmation:
-1. Decide the best Gmail search query
+1. Decide the best Gmail search query — use broad operators first, then narrow if too many results
 2. Call search_gmail with that query
-3. If the user wants to READ an email or you need its content, call get_email_content immediately
+3. If the user wants to READ, FORWARD, or SUMMARIZE an email: ALWAYS call get_email_content FIRST — NEVER summarize or describe email content based on the snippet alone
 4. If the user asks for files/attachments, call list_email_attachments, then send_attachment_to_telegram — all in the same run
 5. Answer concisely — the user is on Telegram
 
-CRITICAL RULES — violating these will break the user experience:
-- NEVER stop mid-task to ask "What would you like me to do with it?" or similar. If the intent is clear, execute it.
-- NEVER ask for confirmation before fetching email content when the user says "show me", "get", "forward", "read", "open", or similar.
-- When the user says "forward me here" or "send me the email", call get_email_content and include the FULL email body in your reply.
-- When the user says "send the file" or "forward the attachment", call list_email_attachments then send_attachment_to_telegram in the same turn.
-- Use Gmail search operators precisely.
-- If the first search returns nothing, retry with a broader query.
+═══ ANTI-HALLUCINATION RULES (HIGHEST PRIORITY) ═══
+- ❌ NEVER describe, quote, or forward email content without first calling get_email_content
+- ❌ NEVER invent subject lines, sender names, dates, amounts, or any email detail
+- ❌ NEVER assume you know what an email says from the snippet — snippets are truncated and misleading
+- ✅ The snippet is ONLY for identifying which email to fetch — always call get_email_content before presenting content
+- ✅ When forwarding: include the FULL body returned by get_email_content, plus From/Date/Subject from search results
+
+═══ EXECUTION RULES ═══
+- NEVER stop mid-task to ask "What would you like me to do with it?" — if the intent is clear, execute it
+- NEVER ask for confirmation before fetching email content when the user says "show me", "get", "forward", "read", "open", or similar
+- When the user says "forward me here" or "send me the email": call get_email_content and include the FULL returned body in your reply
+- When the user says "send the file" or "forward the attachment": call list_email_attachments then send_attachment_to_telegram in the same turn
+- Use Gmail search operators precisely. If the first search returns 0 results, retry with a broader query (e.g. remove date filters, use OR between keywords)
 - For payments/invoices: subject:(payment OR invoice OR receipt OR order)
-- Never fabricate email content.
-- If nothing is found after 2 searches, say so clearly.
-- After successfully calling send_attachment_to_telegram, output a short confirmation and stop — do NOT call it again.
-- Do not append follow-up offers like "Want me to send the full message?".
+- If nothing is found after 2 searches, say so clearly — do NOT guess
+- After successfully calling send_attachment_to_telegram, output a short confirmation and stop — do NOT call it again
+- Do not append follow-up offers like "Want me to send the full message?"
 
 Today's date: ${new Date().toISOString().split("T")[0]}`;
 
@@ -233,16 +238,16 @@ export async function handleTelegramQuery(
   }
 
   history.push({ role: "user", content: userQuery });
-  // Keep only the last 8 messages to reduce context window size
-  if (history.length > 8) history = history.slice(history.length - 8);
+  // Keep only the last 12 messages — enough context for multi-step flows without overloading the window
+  if (history.length > 12) history = history.slice(history.length - 12);
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: SYSTEM_PROMPT },
     ...history,
   ];
 
-  // ── Agentic loop — max 4 iterations ──────────────────────────────────────
-  for (let i = 0; i < 4; i++) {
+  // ── Agentic loop — max 8 iterations (allows: search → retry → get_content → reply + attachment flows) ──
+  for (let i = 0; i < 8; i++) {
     const response = await openai.chat.completions.create({
       model: "gpt-5-mini",
       tools: TOOLS,
@@ -259,7 +264,7 @@ export async function handleTelegramQuery(
 
       // Persist history asynchronously — don't block the response
       history.push({ role: "assistant", content: finalAnswer });
-      if (history.length > 8) history = history.slice(history.length - 8);
+      if (history.length > 12) history = history.slice(history.length - 12);
       redis.setex(redisKey, 3600, JSON.stringify(history)).catch((err) =>
         console.error("Error saving chat history to Redis:", err)
       );
@@ -287,9 +292,9 @@ export async function handleTelegramQuery(
 
             } else if (toolCall.function.name === "get_email_content") {
               const email = await getGmailMessageBody(userId, args.message_id);
-              // Keep up to 8000 chars — large enough for real emails without overflow
+              // Keep up to 12000 chars — covers most real-world emails without overflow
               const body = typeof email === "string" ? email : JSON.stringify(email);
-              resultContent = body.slice(0, 8000);
+              resultContent = body.slice(0, 12000);
 
             } else if (toolCall.function.name === "list_email_attachments") {
               const messageId =

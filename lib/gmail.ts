@@ -634,8 +634,8 @@ export async function searchGmail(
   query: string,
   maxResults = 10
 ) {
-  // Cache search results for 2 minutes — avoids redundant Gmail API calls
-  // for repeated or similar queries within the same conversation turn
+  // Cache search results for 30 seconds only — avoids hammering Gmail API on rapid retries
+  // while keeping results fresh enough that "recent email from X" queries aren't stale
   const cacheKey = `gmail:search:${userId}:${query}:${maxResults}`;
   try {
     const cached = await redis.get(cacheKey);
@@ -683,9 +683,9 @@ export async function searchGmail(
     })
   );
 
-  // Cache the result for 2 minutes
+  // Cache the result for 30 seconds
   try {
-    await redis.setex(cacheKey, 120, JSON.stringify(detailed));
+    await redis.setex(cacheKey, 30, JSON.stringify(detailed));
   } catch { /* ignore */ }
 
   return detailed;
