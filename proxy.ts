@@ -23,6 +23,8 @@ export default clerkMiddleware(async (auth, req) => {
   });
 
   if (isPublicApiRoute(req) || isPublicRoute(req)) {
+    // Initialize Clerk context for public routes so server helpers can read auth state safely.
+    await auth();
     return;
   }
 
