@@ -7,6 +7,10 @@ import { updateHistoryId, updateOutlookId } from "@/lib/supabase";
 import { createOutlookSubscription } from "@/lib/outlook";
 import { Resend } from "resend";
 import { handleWatchDeactivation } from "@/lib/payement";
+import { zValidator } from "@hono/zod-validator";
+import z from "zod";
+import { generateRandomAlphanumericString } from "@/lib/utils";
+import BetaAccessEmail from "@/components/Email/BetaAccess";
 
 const app = new Hono()
   .get("/delete-user", async (ctx) => {
@@ -459,7 +463,7 @@ const app = new Hono()
           deleted_flag: false,
           watch_activated: true,
           free_trial: {
-             status: "EXPIRED",
+            status: "EXPIRED",
           },
           subscriptions: {
             none: {
@@ -483,12 +487,20 @@ const app = new Hono()
         try {
           await handleWatchDeactivation(user.clerk_user_id);
           results.successful++;
-          console.log(`Successfully deactivated watch for user: ${user.clerk_user_id}`);
+          console.log(
+            `Successfully deactivated watch for user: ${user.clerk_user_id}`,
+          );
         } catch (error) {
           results.failed++;
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          results.errors.push(`Failed to deactivate watch for user ${user.clerk_user_id}: ${errorMessage}`);
-          console.error(`Failed to deactivate watch for user ${user.clerk_user_id}:`, error);
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          results.errors.push(
+            `Failed to deactivate watch for user ${user.clerk_user_id}: ${errorMessage}`,
+          );
+          console.error(
+            `Failed to deactivate watch for user ${user.clerk_user_id}:`,
+            error,
+          );
         }
       }
 
@@ -509,6 +521,68 @@ const app = new Hono()
         500,
       );
     }
-  });
+  })
+
+  .post(
+    "/sendNewMails",
+    zValidator(
+      "json",
+      z.object({
+        mails: z.array(z.string()).min(1).max(30),
+      }),
+    ),
+    async (ctx) => {
+      const authHeader = ctx.req.header("x-authorization");
+      const expectedToken = `Bearer ${process.env.CRON_SECRET}`;
+
+      if (authHeader !== expectedToken) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      try {
+        const values = ctx.req.valid("json");
+
+        const resend = new Resend(process.env.RESEND_API_KEY);
+
+        for (const mail of values.mails) {
+          try {
+            const data = await db.allowedToken.upsert({
+              where: {
+                email: mail.trim(),
+              },
+              create: {
+                email: mail.trim(),
+                token: generateRandomAlphanumericString(),
+                is_used: false,
+              },
+              update: {},
+            });
+
+            await resend.emails.send({
+              from: "Lakshay <lakshay@mails.neatmail.app>",
+              to: mail,
+              subject: "Your NeatMail beta access is live!",
+              react: BetaAccessEmail({
+                activationLink: `https://dashboard.neatmail.app/sign-in?accessToken=${data.token}`,
+              }),
+            });
+          } catch (error) {
+            console.error("Error sending new mail to", mail);
+          }
+        }
+      } catch (error) {
+        console.error("Error sending new mails to the users:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        return ctx.json(
+          {
+            error: "Internal server error",
+            details: errorMessage,
+          },
+          500,
+        );
+      }
+    },
+  );
 
 export default app;
