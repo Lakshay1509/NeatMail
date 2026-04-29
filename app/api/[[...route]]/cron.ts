@@ -570,6 +570,8 @@ const app = new Hono()
             console.error("Error sending new mail to", mail);
           }
         }
+        
+        return ctx.json({ success: true, count: values.mails.length });
       } catch (error) {
         console.error("Error sending new mails to the users:", error);
         const errorMessage =

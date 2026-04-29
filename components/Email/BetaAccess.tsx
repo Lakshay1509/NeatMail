@@ -177,6 +177,7 @@ const button = {
   padding: "14px 28px",
   borderRadius: "8px",
   textDecoration: "none",
+  border: "1px solid #111111",
   fontSize: "14px",
   fontWeight: "600",
 };
