@@ -543,6 +543,8 @@ const app = new Hono()
         const values = ctx.req.valid("json");
 
         const resend = new Resend(process.env.RESEND_API_KEY);
+        let successCount = 0;
+        let failedMails = [];
 
         for (const mail of values.mails) {
           try {
@@ -558,7 +560,7 @@ const app = new Hono()
               update: {},
             });
 
-            await resend.emails.send({
+            const { data: resData, error: resError } = await resend.emails.send({
               from: "Lakshay <lakshay@mails.neatmail.app>",
               to: mail,
               subject: "Your NeatMail beta access is live!",
@@ -566,12 +568,23 @@ const app = new Hono()
                 activationLink: `https://dashboard.neatmail.app/sign-in?accessToken=${data.token}`,
               }),
             });
+
+            if (resError) {
+              console.error("Resend API error for", mail, resError);
+              failedMails.push(mail);
+            } else {
+              successCount++;
+            }
+
+            // Sleep for 500ms to avoid hitting Resend rate limits
+            await new Promise((resolve) => setTimeout(resolve, 500));
           } catch (error) {
-            console.error("Error sending new mail to", mail);
+            console.error("Error sending new mail to", mail, error);
+            failedMails.push(mail);
           }
         }
         
-        return ctx.json({ success: true, count: values.mails.length });
+        return ctx.json({ success: true, count: successCount, failed: failedMails });
       } catch (error) {
         console.error("Error sending new mails to the users:", error);
         const errorMessage =
