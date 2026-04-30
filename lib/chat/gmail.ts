@@ -203,7 +203,7 @@ export async function handleTelegramQueryGmail(
         console.error("Error saving chat history to Redis:", err)
       );
 
-      return htmlToTelegramHtml(escapeTelegramHtml(finalAnswer));
+      return htmlToTelegramHtml(finalAnswer);
     }
 
     // ── Execute ALL tool calls in this turn IN PARALLEL ──────────────────
