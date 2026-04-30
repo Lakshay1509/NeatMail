@@ -1,6 +1,10 @@
 import OpenAI from "openai";
 import { escapeTelegramHtml, htmlToTelegramHtml } from "../telegramFormatter";
-import { escapeHtml, sendTelegramDocument, sendTelegramMessage } from "../telegram";
+import {
+  escapeHtml,
+  sendTelegramDocument,
+  sendTelegramMessage,
+} from "../telegram";
 import { redis } from "../redis";
 import { getGraphClient, getOutlookMessageBody } from "../outlook";
 
@@ -15,33 +19,42 @@ const openai = new OpenAI({
 async function searchOutlook(userId: string, query: string, maxResults = 10) {
   const client = await getGraphClient(userId);
   try {
-    const listRes = await client.api("/me/messages")
-      .search(query)
+    // Graph API $search requires the entire query to be wrapped in double quotes.
+    // We strip any existing double quotes provided by the LLM and wrap the whole thing.
+    const cleanQuery = query.replace(/"/g, "");
+    const formattedQuery = `"${cleanQuery}"`;
+
+    const listRes = await client
+      .api("/me/messages")
+      .search(formattedQuery)
       .top(maxResults)
       .select("id,subject,from,receivedDateTime,bodyPreview")
       .get();
-      
+
     const messages = listRes.value ?? [];
     return messages.map((msg: any) => ({
       messageId: msg.id,
       subject: msg.subject,
       from: msg.from?.emailAddress?.address ?? msg.from?.emailAddress?.name,
       internalDate: msg.receivedDateTime,
-      snippet: msg.bodyPreview
+      snippet: msg.bodyPreview,
     }));
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to search Outlook:", error);
-    return [];
+    throw new Error(
+      `Search failed due to invalid KQL query syntax: ${error.message}. Please simplify your query. Do not use parentheses, and stick to standard operators like subject:, from:, isread:false.`,
+    );
   }
 }
 
 async function listOutlookAttachments(userId: string, messageId: string) {
   const client = await getGraphClient(userId);
   try {
-    const res = await client.api(`/me/messages/${messageId}/attachments`)
+    const res = await client
+      .api(`/me/messages/${messageId}/attachments`)
       .select("id,name,contentType,size")
       .get();
-      
+
     return (res.value ?? []).map((a: any) => ({
       message_id: messageId,
       attachment_id: a.id,
@@ -55,9 +68,15 @@ async function listOutlookAttachments(userId: string, messageId: string) {
   }
 }
 
-async function downloadOutlookAttachment(userId: string, messageId: string, attachmentId: string): Promise<string> {
+async function downloadOutlookAttachment(
+  userId: string,
+  messageId: string,
+  attachmentId: string,
+): Promise<string> {
   const client = await getGraphClient(userId);
-  const res = await client.api(`/me/messages/${messageId}/attachments/${attachmentId}`).get();
+  const res = await client
+    .api(`/me/messages/${messageId}/attachments/${attachmentId}`)
+    .get();
   return res.contentBytes || "";
 }
 
@@ -68,12 +87,38 @@ const TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
       name: "search_outlook",
       description: `Search the user's Outlook inbox using KQL (Keyword Query Language).
 Returns emails with subject, sender, date, and snippet.
-Use operators like:
-  from:, to:, subject:, hasattachments:true, isread:false
-IMPORTANT: Do NOT wrap the entire query string in quotes. You MUST wrap email addresses/terms in double quotes.
-Examples:
-  from:"john@company.com"
-  subject:"invoice" OR subject:"payment"`,
+
+SYNTAX RULES — follow exactly or the query will fail:
+- Never use double quotes (") or single quotes (') anywhere in the query
+- Never use parentheses for grouping — expand them out instead
+- Never combine a field filter with a bare keyword on the same line without AND/OR
+- Use AND / OR in uppercase only
+
+SUPPORTED OPERATORS:
+  from:email@domain.com
+  to:email@domain.com
+  subject:keyword
+  hasattachments:true
+  isread:false
+  received:today
+  received:yesterday
+  received:last week
+
+COMBINING FILTERS:
+  from:john@company.com AND subject:invoice
+  subject:urgent OR subject:important
+  isread:false AND hasattachments:true
+  from:boss@company.com AND received:last week
+
+NEVER write:
+  subject:(urgent OR important)     ← parentheses not allowed
+  from:"john@company.com"           ← quotes not allowed
+  subject:"project update"          ← quotes not allowed
+
+ALWAYS write:
+  subject:urgent OR subject:important
+  from:john@company.com
+  subject:project AND subject:update`,
       parameters: {
         type: "object",
         properties: {
@@ -222,9 +267,11 @@ export async function handleTelegramQueryOutlook(
 
       history.push({ role: "assistant", content: finalAnswer });
       if (history.length > 12) history = history.slice(history.length - 12);
-      redis.setex(redisKey, 3600, JSON.stringify(history)).catch((err) =>
-        console.error("Error saving chat history to Redis:", err)
-      );
+      redis
+        .setex(redisKey, 3600, JSON.stringify(history))
+        .catch((err) =>
+          console.error("Error saving chat history to Redis:", err),
+        );
 
       return htmlToTelegramHtml(escapeTelegramHtml(finalAnswer));
     }
@@ -244,40 +291,67 @@ export async function handleTelegramQueryOutlook(
                 Math.min(args.max_results ?? 10, 20),
               );
               resultContent = compressSearchResults(results);
-
             } else if (toolCall.function.name === "get_email_content") {
-              const email = await getOutlookMessageBody(userId, args.message_id);
-              const body = typeof email === "string" ? email : JSON.stringify(email);
+              const email = await getOutlookMessageBody(
+                userId,
+                args.message_id,
+              );
+              const body =
+                typeof email === "string" ? email : JSON.stringify(email);
               resultContent = body.slice(0, 12000);
-
             } else if (toolCall.function.name === "list_email_attachments") {
-              const messageId = typeof args.message_id === "string" ? args.message_id.trim() : "";
+              const messageId =
+                typeof args.message_id === "string"
+                  ? args.message_id.trim()
+                  : "";
               if (!messageId) throw new Error("message_id is required.");
 
-              const attachments = await listOutlookAttachments(userId, messageId);
+              const attachments = await listOutlookAttachments(
+                userId,
+                messageId,
+              );
               resultContent =
                 attachments.length === 0
                   ? "No downloadable attachments found for this email."
                   : JSON.stringify(attachments);
+            } else if (
+              toolCall.function.name === "send_attachment_to_telegram"
+            ) {
+              const messageId =
+                typeof args.message_id === "string"
+                  ? args.message_id.trim()
+                  : "";
+              const attachmentId =
+                typeof args.attachment_id === "string"
+                  ? args.attachment_id.trim()
+                  : "";
+              const caption =
+                typeof args.caption === "string" ? args.caption.trim() : "";
 
-            } else if (toolCall.function.name === "send_attachment_to_telegram") {
-              const messageId = typeof args.message_id === "string" ? args.message_id.trim() : "";
-              const attachmentId = typeof args.attachment_id === "string" ? args.attachment_id.trim() : "";
-              const caption = typeof args.caption === "string" ? args.caption.trim() : "";
+              if (!messageId || !attachmentId)
+                throw new Error("message_id and attachment_id are required.");
 
-              if (!messageId || !attachmentId) throw new Error("message_id and attachment_id are required.");
-
-              const attachments = await listOutlookAttachments(userId, messageId);
-              const selectedAttachment = attachments.find((a: any) => a.attachment_id === attachmentId) ?? attachments[0];
+              const attachments = await listOutlookAttachments(
+                userId,
+                messageId,
+              );
+              const selectedAttachment =
+                attachments.find(
+                  (a: any) => a.attachment_id === attachmentId,
+                ) ?? attachments[0];
 
               if (!selectedAttachment) throw new Error("Attachment not found.");
 
               const [, attachmentBase64] = await Promise.all([
                 sendTelegramMessage(
                   chatId,
-                  `⏳ Downloading <b>${escapeHtml(selectedAttachment.filename || "file")}</b>...`
+                  `⏳ Downloading <b>${escapeHtml(selectedAttachment.filename || "file")}</b>...`,
                 ),
-                downloadOutlookAttachment(userId, messageId, selectedAttachment.attachment_id),
+                downloadOutlookAttachment(
+                  userId,
+                  messageId,
+                  selectedAttachment.attachment_id,
+                ),
               ]);
 
               const sent = await sendTelegramDocument(chatId, {
@@ -291,7 +365,6 @@ export async function handleTelegramQueryOutlook(
                 success: sent,
                 filename: selectedAttachment.filename,
               });
-
             } else {
               resultContent = `Unknown tool: ${toolCall.function.name}`;
             }
@@ -304,7 +377,7 @@ export async function handleTelegramQueryOutlook(
             tool_call_id: toolCall.id,
             content: resultContent,
           };
-        })
+        }),
     );
 
     messages.push(...toolResults);
