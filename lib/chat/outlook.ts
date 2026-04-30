@@ -16,7 +16,7 @@ async function searchOutlook(userId: string, query: string, maxResults = 10) {
   const client = await getGraphClient(userId);
   try {
     const listRes = await client.api("/me/messages")
-      .search(`"${query}"`)
+      .search(query)
       .top(maxResults)
       .select("id,subject,from,receivedDateTime,bodyPreview")
       .get();
