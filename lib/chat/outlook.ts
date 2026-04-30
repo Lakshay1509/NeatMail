@@ -15,8 +15,9 @@ const openai = new OpenAI({
 async function searchOutlook(userId: string, query: string, maxResults = 10) {
   const client = await getGraphClient(userId);
   try {
+    const formattedQuery = query.startsWith('"') && query.endsWith('"') ? query : `"${query}"`;
     const listRes = await client.api("/me/messages")
-      .search(query)
+      .search(formattedQuery)
       .top(maxResults)
       .select("id,subject,from,receivedDateTime,bodyPreview")
       .get();
@@ -66,7 +67,13 @@ const TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "search_outlook",
-      description: `Search the user's Outlook inbox. Returns emails with subject, sender, date, and snippet.`,
+      description: `Search the user's Outlook inbox using KQL (Keyword Query Language).
+Returns emails with subject, sender, date, and snippet.
+Use operators like:
+  from:, to:, subject:, hasattachments:true, isread:false
+Examples:
+  "from:john@company.com"
+  "subject:(payment OR invoice) received:last month"`,
       parameters: {
         type: "object",
         properties: {
