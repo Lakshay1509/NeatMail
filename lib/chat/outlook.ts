@@ -1,3 +1,5 @@
+//This feature is experimental
+
 import OpenAI from "openai";
 import { escapeTelegramHtml, htmlToTelegramHtml } from "../telegramFormatter";
 import {
