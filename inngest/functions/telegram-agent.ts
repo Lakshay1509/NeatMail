@@ -1,5 +1,8 @@
+import { handleTelegramQueryGmail } from "@/lib/chat/gmail";
+import { handleTelegramQueryOutlook } from "@/lib/chat/outlook";
 import { inngest } from "@/lib/inngest";
-import { handleTelegramQuery } from "@/lib/openai";
+import { getUserIsGmail } from "@/lib/supabase";
+
 import { deleteTelegramMessage, editTelegramMessage, sendTelegramMessage } from "@/lib/telegram";
 
 export const processTelegramQueryFn = inngest.createFunction(
@@ -15,7 +18,7 @@ export const processTelegramQueryFn = inngest.createFunction(
         const thinkingMessages = [
           "Searching your inbox...",
           "Reading through your emails...",
-          "Scanning your Gmail...",
+          "Scanning your Google Workspace/M365...",
           "Looking up relevant conversations...",
           "Fetching email threads...",
           "Analyzing your messages...",
@@ -37,7 +40,7 @@ export const processTelegramQueryFn = inngest.createFunction(
           const thinkingMessages = [
             "Searching your inbox...",
             "Reading through your emails...",
-            "Scanning your Gmail...",
+            "Scanning your Google Workspace/M365...",
             "Looking up relevant conversations...",
             "Fetching email threads...",
             "Analyzing your messages...",
@@ -55,7 +58,13 @@ export const processTelegramQueryFn = inngest.createFunction(
         }
 
         try {
-          return await handleTelegramQuery(text, userId, chatId);
+          const { isGmail } = await getUserIsGmail(userId);
+          
+          if (isGmail) {
+            return await handleTelegramQueryGmail(text, userId, chatId);
+          } else {
+            return await handleTelegramQueryOutlook(text, userId, chatId);
+          }
         } finally {
           if (interval) clearInterval(interval);
         }
