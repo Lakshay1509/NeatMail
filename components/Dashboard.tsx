@@ -1,146 +1,167 @@
-'use client'
+"use client";
 
-import { useGetUserMailsThisMonth } from "@/features/stats/use-get-mail-thisMonth"
-import { useUser } from "@clerk/nextjs"
-import { ArrowDownIcon, ArrowUpIcon, MinusIcon } from "lucide-react"
-import { LabelDistribution } from "./LabelDistribution"
-import Clutter from "./Dashboard/Clutter"
-import HeatMap from "./Dashboard/HeatMap"
-import MailsByDay from "./Dashboard/MailsByDay"
+import { useGetUserMailsThisMonth } from "@/features/stats/use-get-mail-thisMonth";
+import { useUser } from "@clerk/nextjs";
+import { ArrowDownIcon, ArrowUpIcon, MinusIcon } from "lucide-react";
+import { LabelDistribution } from "./LabelDistribution";
+import Clutter from "./Dashboard/Clutter";
+import HeatMap from "./Dashboard/HeatMap";
+import MailsByDay from "./Dashboard/MailsByDay";
 
+const subtitles = {
+  morning: [
+    "Let's see what landed overnight.",
+    "Inbox check before the chaos begins.",
+    "Your emails waited. Patiently.",
+    "Fresh start. Mostly.",
+    "Morning. Your inbox has thoughts.",
+    "Let's get ahead of it today.",
+    "Coffee first, clutter second.",
+  ],
+  afternoon: [
+    "Your inbox survived the morning.",
+    "Less noise, more signal.",
+    "Clutter contained. Mostly.",
+    "The inbox doesn't take lunch breaks. We do it for you.",
+    "Keeping things neat since you opened this tab.",
+    "You've got better things to do. We know.",
+  ],
+  evening: [
+    "Wrapping up. Your inbox is under control.",
+    "Almost done for the day. Your inbox already is.",
+    "End of day. NeatMail kept watch.",
+    "Clutter sorted. Go touch grass.",
+    "Your inbox won't bother you tonight.",
+    "Another day, fewer distractions.",
+    "Signing off? We've got the inbox.",
+  ],
+};
 
 const Dashboard = () => {
+  const { user } = useUser();
+  const { data, isLoading, isError } = useGetUserMailsThisMonth();
 
-    const { user } = useUser()
-    const { data, isLoading, isError } = useGetUserMailsThisMonth();
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
 
-    const getGreeting = () => {
-        const hour = new Date().getHours();
-        if (hour < 12) return { text: "Good Morning" };
-        if (hour < 18) return { text: "Good Afternoon" };
-        return { text: "Good Evening" };
-    };
+    if (hour < 12)
+      return { text: "Good Morning", subtitle: pick(subtitles.morning) };
+    if (hour < 18)
+      return { text: "Good Afternoon", subtitle: pick(subtitles.afternoon) };
+    return { text: "Good Evening", subtitle: pick(subtitles.evening) };
+  };
 
-    const greeting = getGreeting();
+  const greeting = getGreeting();
 
-    const renderTrend = (percentChange: number | null | undefined) => {
-        if (percentChange === undefined || percentChange === null) return null;
-        if (percentChange === 0) {
-            return (
-                <div className="flex items-center text-xs text-gray-500 mt-2">
-                    <MinusIcon className="w-3 h-3 mr-1" />
-                    <span>Same as last week</span>
-                </div>
-            );
-        }
-        const isPositive = percentChange > 0;
-        const Icon = isPositive ? ArrowUpIcon : ArrowDownIcon;
-        // Reversed colors since less labeled emails / time is generally "less", but maybe "more time saved" is good?
-        // Let's stick to standard: up = green, down = red.
-        const colorClass = isPositive ? "text-emerald-700 bg-emerald-50" : "text-rose-700 bg-rose-50";
-
-        return (
-            <div className="flex items-center mt-2 group">
-                <span className={`flex items-center px-1.5 py-0.5 rounded-md text-xs font-semibold ${colorClass}`}>
-                    <Icon className="w-3 h-3 mr-1" />
-                    {Math.abs(percentChange)}%
-                </span>
-                <span className="text-xs font-medium text-gray-500 ml-2">vs last week</span>
-            </div>
-        );
-    };
+  const renderTrend = (percentChange: number | null | undefined) => {
+    if (percentChange === undefined || percentChange === null) return null;
+    if (percentChange === 0) {
+      return (
+        <div className="flex items-center text-xs text-gray-500 mt-2">
+          <MinusIcon className="w-3 h-3 mr-1" />
+          <span>Same as last week</span>
+        </div>
+      );
+    }
+    const isPositive = percentChange > 0;
+    const Icon = isPositive ? ArrowUpIcon : ArrowDownIcon;
+    // Reversed colors since less labeled emails / time is generally "less", but maybe "more time saved" is good?
+    // Let's stick to standard: up = green, down = red.
+    const colorClass = isPositive
+      ? "text-emerald-700 bg-emerald-50"
+      : "text-rose-700 bg-rose-50";
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex items-center mt-2 group">
+        <span
+          className={`flex items-center px-1.5 py-0.5 rounded-md text-xs font-semibold ${colorClass}`}
+        >
+          <Icon className="w-3 h-3 mr-1" />
+          {Math.abs(percentChange)}%
+        </span>
+        <span className="text-xs font-medium text-gray-500 ml-2">
+          vs last week
+        </span>
+      </div>
+    );
+  };
 
-
-
-                <div className="flex-1">
-                    <h1 className="text-2xl font-bold">
-                        {greeting.text}, {user?.firstName || "User"}
-                    </h1>
-                    <p className="text-gray-500">
-                        Here is your email activity summary.
-                    </p>
-                </div>
-
-
-
-
-            </div>
-
-            {/* Stats Section */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Card 1 */}
-                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 relative overflow-hidden flex flex-col justify-between">
-                    
-                    <div>
-                        <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">
-                            Emails labelled this week
-                        </p>
-                        <p className="text-2xl font-semibold text-gray-900 mt-1">
-                            {isLoading ? "..." : data?.current || 0}
-                        </p>
-                        {!isLoading && renderTrend(data?.percentChange)}
-                    </div>
-                </div>
-
-                {/* Card 2 */}
-                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">
-                            Time saved this week
-                        </p>
-                        <p className="text-xl font-semibold text-gray-900 mt-1">
-                            {(() => {
-                                const seconds = (data?.current ?? 0) * 5;
-
-                                if (seconds < 60) return `${seconds} seconds`;
-                                if (seconds < 3600) return `${(seconds / 60).toFixed(1)} minutes`;
-                                return `${(seconds / 3600).toFixed(1)} hours`;
-                            })()}
-                        </p>
-                        {!isLoading && renderTrend(data?.percentChange)}
-                    </div>
-                </div>
-
-                {/* Card 3 */}
-                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">
-                            Avg emails / day
-                        </p>
-                        <p className="text-2xl font-semibold text-gray-900 mt-1">
-                            {Math.ceil((data?.current ?? 0) / 7)}
-                        </p>
-                        {!isLoading && renderTrend(data?.percentChange)}
-                    </div>
-
-                </div>
-            </div>
-
-            {/* Charts & Distribution Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                
-                <div className="lg:col-span-1">
-                    <LabelDistribution />
-                </div>
-                <div className="lg:col-span-1">
-                    <Clutter />
-                </div>
-                <div className="lg:col-span-2">
-                    <MailsByDay />
-                </div>
-
-            </div>
-
-            <HeatMap />
-
-
+  return (
+    <div className="max-w-7xl mx-auto space-y-8">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold">
+            {greeting.text}, {user?.firstName || "User"}
+          </h1>
+          <p className="text-gray-500">{greeting.subtitle}</p>
         </div>
-    )
-}
+      </div>
 
-export default Dashboard
+      {/* Stats Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Card 1 */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">
+              Emails labelled this week
+            </p>
+            <p className="text-2xl font-semibold text-gray-900 mt-1">
+              {isLoading ? "..." : data?.current || 0}
+            </p>
+            {!isLoading && renderTrend(data?.percentChange)}
+          </div>
+        </div>
+
+        {/* Card 2 */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col justify-between">
+          <div>
+            <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">
+              Time saved this week
+            </p>
+            <p className="text-xl font-semibold text-gray-900 mt-1">
+              {(() => {
+                const seconds = (data?.current ?? 0) * 5;
+
+                if (seconds < 60) return `${seconds} seconds`;
+                if (seconds < 3600)
+                  return `${(seconds / 60).toFixed(1)} minutes`;
+                return `${(seconds / 3600).toFixed(1)} hours`;
+              })()}
+            </p>
+          </div>
+        </div>
+
+        {/* Card 3 */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col justify-between">
+          <div>
+            <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">
+              Avg emails / day
+            </p>
+            <p className="text-2xl font-semibold text-gray-900 mt-1">
+              {Math.ceil((data?.current ?? 0) / 7)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts & Distribution Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="lg:col-span-1">
+          <LabelDistribution />
+        </div>
+        <div className="lg:col-span-1">
+          <Clutter />
+        </div>
+        <div className="lg:col-span-2">
+          <MailsByDay />
+        </div>
+      </div>
+
+      <HeatMap />
+    </div>
+  );
+};
+
+export default Dashboard;

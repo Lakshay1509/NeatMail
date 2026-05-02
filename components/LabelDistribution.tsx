@@ -10,6 +10,7 @@ export function LabelDistribution() {
     "#1ea97f",
     "#5dc8a8",
     "#bfe8d8",
+    "#e8f5f1",
   ];
 
 
