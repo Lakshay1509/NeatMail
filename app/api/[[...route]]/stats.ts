@@ -140,8 +140,7 @@ const app = new Hono()
       const now = new Date();
   
       const startOfPeriod = new Date(now);
-      startOfPeriod.setDate(startOfPeriod.getDate() - 30);
-  
+    startOfPeriod.setDate(startOfPeriod.getDate() - 7);
       const endOfPeriod = new Date(now);
   
       const currentCount = await db.email_tracked.count({
@@ -156,7 +155,7 @@ const app = new Hono()
       });
 
       const startOfPrevious = new Date(startOfPeriod);
-      startOfPrevious.setDate(startOfPrevious.getDate() - 30);
+      startOfPrevious.setDate(startOfPrevious.getDate() - 7);
 
       const previousCount = await db.email_tracked.count({
         where: {

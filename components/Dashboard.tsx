@@ -29,7 +29,7 @@ const Dashboard = () => {
             return (
                 <div className="flex items-center text-xs text-gray-500 mt-2">
                     <MinusIcon className="w-3 h-3 mr-1" />
-                    <span>Same as last month</span>
+                    <span>Same as last week</span>
                 </div>
             );
         }
@@ -45,7 +45,7 @@ const Dashboard = () => {
                     <Icon className="w-3 h-3 mr-1" />
                     {Math.abs(percentChange)}%
                 </span>
-                <span className="text-xs font-medium text-gray-500 ml-2">vs last month</span>
+                <span className="text-xs font-medium text-gray-500 ml-2">vs last week</span>
             </div>
         );
     };
@@ -78,7 +78,7 @@ const Dashboard = () => {
                     
                     <div>
                         <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">
-                            Emails labelled this month
+                            Emails labelled this week
                         </p>
                         <p className="text-2xl font-semibold text-gray-900 mt-1">
                             {isLoading ? "..." : data?.current || 0}
@@ -91,7 +91,7 @@ const Dashboard = () => {
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col justify-between">
                     <div>
                         <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">
-                            Time saved this month
+                            Time saved this week
                         </p>
                         <p className="text-xl font-semibold text-gray-900 mt-1">
                             {(() => {
@@ -113,7 +113,7 @@ const Dashboard = () => {
                             Avg emails / day
                         </p>
                         <p className="text-2xl font-semibold text-gray-900 mt-1">
-                            {Math.ceil((data?.current ?? 0) / 30)}
+                            {Math.ceil((data?.current ?? 0) / 7)}
                         </p>
                         {!isLoading && renderTrend(data?.percentChange)}
                     </div>
