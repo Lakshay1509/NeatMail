@@ -119,71 +119,34 @@ const ActionsCell = ({
   domain,
   isArchived,
   archiveAfterDays,
+  globalDuration,
 }: {
   domain: string;
   isArchived: boolean;
   archiveAfterDays: number | null;
+  globalDuration: 30 | 60;
 }) => {
   const unsubscribeMutation = useUnsubscribeDomain();
   const archiveAfterMutation = useArchiveMutation();
-  const openTimestamp = React.useRef<number>(0);
 
   return (
     <div className="flex items-center gap-2">
-      <DropdownMenu
-        onOpenChange={(open) => {
-          if (open) openTimestamp.current = Date.now();
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={archiveAfterMutation.isPending}
+        className=""
+        onClick={(e) => {
+          e.stopPropagation();
+          archiveAfterMutation.mutate({
+            domain,
+            enabled: !isArchived,
+            duration: !isArchived ? globalDuration : 30,
+          });
         }}
       >
-        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-          <Button variant="outline" size="sm" className="w-35 justify-between">
-            {isArchived && archiveAfterDays
-              ? `Archive (${archiveAfterDays}d)`
-              : "Auto Archive"}
-            <ChevronRight className="ml-2 h-4 w-4 opacity-50" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent side="right" align="end">
-          <DropdownMenuItem
-            onSelect={(e) => {
-              if (Date.now() - openTimestamp.current < 300) return;
-              archiveAfterMutation.mutate({
-                domain,
-                enabled: true,
-                duration: 30,
-              });
-            }}
-          >
-            After 30 days
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onSelect={(e) => {
-              if (Date.now() - openTimestamp.current < 300) return;
-              archiveAfterMutation.mutate({
-                domain,
-                enabled: true,
-                duration: 60,
-              });
-            }}
-          >
-            After 60 days
-          </DropdownMenuItem>
-          {isArchived && (
-            <DropdownMenuItem
-              onSelect={(e) => {
-                if (Date.now() - openTimestamp.current < 300) return;
-                archiveAfterMutation.mutate({
-                  domain,
-                  enabled: false,
-                  duration: 30,
-                });
-              }}
-            >
-              Turn off
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        {isArchived ? `Un-archive (${archiveAfterDays || globalDuration}d)` : "Archive"}
+      </Button>
       <Button
         variant="outline"
         size="sm"
@@ -212,6 +175,7 @@ const EmailStats = () => {
   const { data, isLoading, isError } = useGetUserEmailStats();
   const unsubscribeMutation = useUnsubscribeDomain();
   const archiveAfterMutation = useArchiveMutation();
+  const [archiveDuration, setArchiveDuration] = React.useState<30 | 60>(30);
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: "total", desc: true },
   ]);
@@ -320,12 +284,13 @@ const EmailStats = () => {
               domain={domain}
               isArchived={row.original.is_archived}
               archiveAfterDays={row.original.archive_after_days}
+              globalDuration={archiveDuration}
             />
           );
         },
       },
     ],
-    [unsubscribeMutation],
+    [unsubscribeMutation, archiveDuration],
   );
 
   const table = useReactTable({
@@ -384,6 +349,27 @@ const EmailStats = () => {
           }
           className="max-w-sm"
         />
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground text-nowrap hidden sm:inline-block">
+            Archive after:
+          </span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="w-30 justify-between" >
+                {archiveDuration} Days
+                <ChevronRight className="ml-2 h-4 w-4 opacity-50 rotate-90" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => setArchiveDuration(30)}>
+                30 Days
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setArchiveDuration(60)}>
+                60 Days
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
       <div className="">
         <Table>
