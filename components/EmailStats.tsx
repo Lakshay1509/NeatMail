@@ -135,7 +135,7 @@ const ActionsCell = ({
         variant="outline"
         size="sm"
         disabled={archiveAfterMutation.isPending}
-        className=""
+        className="w-32"
         onClick={(e) => {
           e.stopPropagation();
           archiveAfterMutation.mutate({
@@ -340,7 +340,7 @@ const EmailStats = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between px-2">
+      <div className="flex-col md:flex md:flex-row items-center justify-between px-2 space-y-2">
         <Input
           placeholder="Filter domains..."
           value={(table.getColumn("domain")?.getFilterValue() as string) ?? ""}
@@ -350,7 +350,7 @@ const EmailStats = () => {
           className="max-w-sm"
         />
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-muted-foreground text-nowrap hidden sm:inline-block">
+          <span className="text-sm font-medium text-muted-foreground text-nowrap ">
             Archive after:
           </span>
           <DropdownMenu>
