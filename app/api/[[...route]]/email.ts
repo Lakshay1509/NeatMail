@@ -1,4 +1,4 @@
-import { decryptDomain} from "@/lib/encode";
+import { decryptDomain } from "@/lib/encode";
 import { getLabelledMails, unsubscribeFromEmail } from "@/lib/gmail";
 import {
   getLabelledMailsOutlook,
@@ -92,7 +92,7 @@ const app = new Hono()
       return ctx.json({ error: "Unauthorized" }, 401);
     }
 
-    const [total, readData] = await Promise.all([
+    const [total, readData, archiveRules] = await Promise.all([
       db.email_tracked.groupBy({
         by: ["domain"],
         where: { user_id: userId, domain: { not: null } },
@@ -103,10 +103,18 @@ const app = new Hono()
         where: { user_id: userId, is_read: true, domain: { not: null } },
         _count: { message_id: true },
       }),
+      db.archiveRule.findMany({
+        where: { user_id: userId },
+        select: { domain: true, isActive: true, archiveAfterDays: true },
+      }),
     ]);
 
     const readMap = new Map(
       readData.map((r) => [r.domain, r._count.message_id]),
+    );
+
+    const archiveMap = new Map(
+      archiveRules.map((r) => [r.domain, { isActive: r.isActive, days: r.archiveAfterDays }]),
     );
 
     const stats = await Promise.all(
@@ -114,6 +122,7 @@ const app = new Hono()
         const totalCount = row._count.message_id;
         const readCount = readMap.get(row.domain) ?? 0;
         const unreadCount = totalCount - readCount;
+        const archiveSetting = row.domain ? archiveMap.get(row.domain) : undefined;
 
         return {
           domain: row.domain ? await decryptDomain(row.domain) : null,
@@ -123,6 +132,8 @@ const app = new Hono()
           unread_count: unreadCount,
           unread_percentage:
             totalCount > 0 ? Math.round((unreadCount / totalCount) * 100) : 0,
+          is_archived: archiveSetting?.isActive ?? false,
+          archive_after_days: archiveSetting?.days ?? null,
         };
       }),
     );
@@ -178,11 +189,60 @@ const app = new Hono()
           return ctx.json(response, 200);
         }
       } catch (_error) {
-        return ctx.json(
-          { error: "Error unsubscribing from this domain" },
-          500,
-        );
+        return ctx.json({ error: "Error unsubscribing from this domain" }, 500);
       }
+    },
+  )
+
+  .post(
+    "/archive",
+    zValidator(
+      "json",
+      z.object({
+        domain: z.string(),
+        enabled: z.boolean(),
+        duration: z.union([z.literal(30), z.literal(60)]),
+      }),
+    ),
+    async (ctx) => {
+      const { userId } = await auth();
+
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const values = ctx.req.valid("json");
+
+      const data = await db.$transaction(async (tx) => {
+        const updatedData = await db.archiveRule.upsert({
+          where: {
+            user_id_domain: {
+              user_id: userId,
+              domain: values.domain,
+            },
+          },
+          update: {
+            isActive: values.enabled,
+            archiveAfterDays: values.duration,
+          },
+          create: {
+            user_tokens: {
+              connect: { clerk_user_id: userId },
+            },
+            domain: values.domain,
+            isActive: values.enabled,
+            archiveAfterDays: values.duration,
+          },
+        });
+        return updatedData;
+      });
+
+      if(!data){
+        return ctx.json({error:"Error creating auto archive"},500);
+      }
+
+      return ctx.json({data},200);
+
     },
   );
 

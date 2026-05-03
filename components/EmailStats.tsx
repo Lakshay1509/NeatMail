@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -10,10 +10,16 @@ import {
   getFilteredRowModel,
   getSortedRowModel,
   useReactTable,
-} from "@tanstack/react-table"
-import { ArrowUpDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+} from "@tanstack/react-table";
+import { ArrowUpDown, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -21,44 +27,47 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useGetUserEmailStats } from "@/features/email/use-get-stats"
-import { useUnsubscribeDomain } from "@/features/email/use-post-unsubscribe"
+} from "@/components/ui/table";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useGetUserEmailStats } from "@/features/email/use-get-stats";
+import { useUnsubscribeDomain } from "@/features/email/use-post-unsubscribe";
+import { useArchiveMutation } from "@/features/email/use-post-archive";
 
 type EmailStatsRow = {
-  domain: string | null,
+  domain: string | null;
   rawDomain: string | null;
-  total: number
-  read_count: number
-  unread_count: number
-  unread_percentage: number
-}
+  total: number;
+  read_count: number;
+  unread_count: number;
+  unread_percentage: number;
+  is_archived: boolean;
+  archive_after_days: number | null;
+};
 
 const clampPercentage = (value: number): number => {
-  if (!Number.isFinite(value)) return 0
-  if (value < 0) return 0
-  if (value > 100) return 100
-  return value
-}
+  if (!Number.isFinite(value)) return 0;
+  if (value < 0) return 0;
+  if (value > 100) return 100;
+  return value;
+};
 
 const formatPercentage = (value: number): string => {
-  return `${Math.round(clampPercentage(value))}%`
-}
+  return `${Math.round(clampPercentage(value))}%`;
+};
 
 const getReadPercentage = (row: EmailStatsRow): number => {
-  if (!row.total || row.total <= 0) return 0
-  return clampPercentage((row.read_count / row.total) * 100)
-}
+  if (!row.total || row.total <= 0) return 0;
+  return clampPercentage((row.read_count / row.total) * 100);
+};
 
 const getDomainLabel = (domain: string | null): string => {
-  return domain?.trim() || "Unknown sender"
-}
+  return domain?.trim() || "Unknown sender";
+};
 
 const normalizeRows = (value: unknown): EmailStatsRow[] => {
   if (Array.isArray(value)) {
-    return value as EmailStatsRow[]
+    return value as EmailStatsRow[];
   }
 
   if (
@@ -66,24 +75,24 @@ const normalizeRows = (value: unknown): EmailStatsRow[] => {
     typeof value === "object" &&
     Array.isArray((value as { data?: unknown }).data)
   ) {
-    return (value as { data: EmailStatsRow[] }).data
+    return (value as { data: EmailStatsRow[] }).data;
   }
 
-  return []
-}
+  return [];
+};
 
 const getUnreadPercentage = (row: EmailStatsRow): number => {
-  return clampPercentage(row.unread_percentage)
-}
+  return clampPercentage(row.unread_percentage);
+};
 
 const ProgressBar = ({
   percentage,
   className,
 }: {
-  percentage: number
-  className?: string
+  percentage: number;
+  className?: string;
 }) => {
-  const safePercentage = clampPercentage(percentage)
+  const safePercentage = clampPercentage(percentage);
 
   return (
     <div className="flex w-30 items-center gap-2 sm:w-50">
@@ -97,19 +106,115 @@ const ProgressBar = ({
         {formatPercentage(safePercentage)}
       </span>
     </div>
-  )
-}
+  );
+};
+
+// Outside EmailStats component
+const ActionsCell = ({
+  domain,
+  isArchived,
+  archiveAfterDays,
+}: {
+  domain: string;
+  isArchived: boolean;
+  archiveAfterDays: number | null;
+}) => {
+  const unsubscribeMutation = useUnsubscribeDomain();
+  const archiveAfterMutation = useArchiveMutation();
+  const openTimestamp = React.useRef<number>(0);
+
+  return (
+    <div className="flex items-center gap-2">
+      <DropdownMenu
+        onOpenChange={(open) => {
+          if (open) openTimestamp.current = Date.now();
+        }}
+      >
+        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+          <Button variant="outline" size="sm" className="w-35 justify-between">
+            {isArchived && archiveAfterDays
+              ? `Archive (${archiveAfterDays}d)`
+              : "Auto Archive"}
+            <ChevronRight className="ml-2 h-4 w-4 opacity-50" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side="right" align="end">
+          <DropdownMenuItem
+            onSelect={(e) => {
+              if (Date.now() - openTimestamp.current < 300) return;
+              archiveAfterMutation.mutate({
+                domain,
+                enabled: true,
+                duration: 30,
+              });
+            }}
+          >
+            After 30 days
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              if (Date.now() - openTimestamp.current < 300) return;
+              archiveAfterMutation.mutate({
+                domain,
+                enabled: true,
+                duration: 60,
+              });
+            }}
+          >
+            After 60 days
+          </DropdownMenuItem>
+          {isArchived && (
+            <DropdownMenuItem
+              onSelect={(e) => {
+                if (Date.now() - openTimestamp.current < 300) return;
+                archiveAfterMutation.mutate({
+                  domain,
+                  enabled: false,
+                  duration: 30,
+                });
+              }}
+            >
+              Turn off
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={unsubscribeMutation.isPending}
+        onClick={(e) => {
+          e.stopPropagation();
+          unsubscribeMutation.mutate(
+            { domain },
+            {
+              onSuccess: (data: any) => {
+                if (data?.requiresRedirect && data?.redirectUrl) {
+                  window.open(data.redirectUrl, "_blank");
+                }
+              },
+            },
+          );
+        }}
+      >
+        Unsubscribe
+      </Button>
+    </div>
+  );
+};
 
 const EmailStats = () => {
-  const { data, isLoading, isError } = useGetUserEmailStats()
+  const { data, isLoading, isError } = useGetUserEmailStats();
   const unsubscribeMutation = useUnsubscribeDomain();
+  const archiveAfterMutation = useArchiveMutation();
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: "total", desc: true },
-  ])
-  const [columnFilters, setColumnFilters] =
-    React.useState<ColumnFiltersState>([])
+  ]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    [],
+  );
 
-  const rows = React.useMemo(() => normalizeRows(data), [data])
+  const rows = React.useMemo(() => normalizeRows(data), [data]);
 
   const columns = React.useMemo<ColumnDef<EmailStatsRow>[]>(
     () => [
@@ -125,7 +230,10 @@ const EmailStats = () => {
           </Button>
         ),
         cell: ({ row }) => (
-          <div className="max-w-50 truncate font-medium sm:max-w-md" title={getDomainLabel(row.original.domain)}>
+          <div
+            className="max-w-50 truncate font-medium sm:max-w-md"
+            title={getDomainLabel(row.original.domain)}
+          >
             {getDomainLabel(row.original.domain)}
           </div>
         ),
@@ -144,7 +252,9 @@ const EmailStats = () => {
           </Button>
         ),
         cell: ({ row }) => (
-          <span className="tabular-nums text-muted-foreground">{row.original.total}</span>
+          <span className="tabular-nums text-muted-foreground">
+            {row.original.total}
+          </span>
         ),
       },
       {
@@ -201,26 +311,17 @@ const EmailStats = () => {
           const domain = row.original.rawDomain;
           if (!domain) return null;
           return (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={unsubscribeMutation.isPending}
-              onClick={() => unsubscribeMutation.mutate({ domain }, {
-                onSuccess: (data: any) => {
-                  if (data?.requiresRedirect && data?.redirectUrl) {
-                    window.open(data.redirectUrl, "_blank");
-                  }
-                }
-              })}
-            >
-              Unsubscribe
-            </Button>
-          )
-        }
+            <ActionsCell
+              domain={domain}
+              isArchived={row.original.is_archived}
+              archiveAfterDays={row.original.archive_after_days}
+            />
+          );
+        },
       },
     ],
-    [unsubscribeMutation]
-  )
+    [unsubscribeMutation],
+  );
 
   const table = useReactTable({
     data: rows,
@@ -234,7 +335,7 @@ const EmailStats = () => {
       sorting,
       columnFilters,
     },
-  })
+  });
 
   if (isLoading) {
     return (
@@ -245,7 +346,7 @@ const EmailStats = () => {
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   if (isError) {
@@ -256,7 +357,7 @@ const EmailStats = () => {
           Please refresh the page and try again.
         </AlertDescription>
       </Alert>
-    )
+    );
   }
 
   if (rows.length === 0 && !isLoading) {
@@ -264,7 +365,7 @@ const EmailStats = () => {
       <div className="text-muted-foreground rounded-lg border p-6 text-sm">
         No email statistics available yet.
       </div>
-    )
+    );
   }
 
   return (
@@ -285,14 +386,12 @@ const EmailStats = () => {
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">
                 {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                  >
+                  <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
                       : flexRender(
                           header.column.columnDef.header,
-                          header.getContext()
+                          header.getContext(),
                         )}
                   </TableHead>
                 ))}
@@ -302,20 +401,26 @@ const EmailStats = () => {
           <TableBody>
             {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow 
+                <TableRow
                   key={row.id}
                   className="group transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="align-middle">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   No matching domains.
                 </TableCell>
               </TableRow>
@@ -324,7 +429,7 @@ const EmailStats = () => {
         </Table>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default EmailStats
+export default EmailStats;

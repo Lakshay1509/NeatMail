@@ -774,3 +774,36 @@ export async function downloadAttachment(
   const data = res.data.data || "";
   return data.replace(/-/g, "+").replace(/_/g, "/");
 }
+
+
+export async function archiveMessages(userId: string, messageIds: string[]) {
+  if (!messageIds || messageIds.length === 0) {
+    return { success: true, archived: 0, archivedIds: [], message: "No messages to archive" };
+  }
+
+  try {
+    const gmail = await getGmailClient(userId);
+
+    // Use batchModify to archive all messages at once
+    // Archiving in Gmail = removing the INBOX label
+    // Gmail's batchModify is all-or-nothing: either all succeed or the whole call fails
+    await gmail.users.messages.batchModify({
+      userId: "me",
+      requestBody: {
+        ids: messageIds,
+        removeLabelIds: ["INBOX"],
+      },
+    });
+
+    // If we get here, all messages were archived successfully
+    return { success: true, archived: messageIds.length, archivedIds: [...messageIds] };
+  } catch (error) {
+    console.error(`Gmail archive failed for user ${userId}:`, error);
+    return {
+      success: false,
+      archived: 0,
+      archivedIds: [],
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+}

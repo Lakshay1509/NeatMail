@@ -33,6 +33,7 @@ model user_tokens {
   pending_drafts             telegramPendingDraft[]
   integration_rules          integrationRules[]
   free_trial                 free_trial?
+  archive_rules              ArchiveRule[]
 
   @@schema("public")
 }
@@ -75,6 +76,7 @@ model email_tracked {
   domain      String?
   is_read     Boolean     @default(false) @map("isRead")
   created_at  DateTime    @default(now()) @db.Timestamptz(6)
+  archive_at  DateTime?    @db.Timestamptz(6) 
   tag         tag?        @relation(fields: [tag_id], references: [id], onDelete: Cascade)
   user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
@@ -262,6 +264,26 @@ model free_trial {
   updated_at       DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+
+  @@schema("public")
+}
+
+
+
+model ArchiveRule {
+  id               String      @id @default(uuid())
+  user_id          String
+  domain           String
+  archiveAfterDays Int
+  isActive         Boolean     @default(true)  // add this
+
+  createdAt        DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user_tokens      user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+
+  @@index([isActive, user_id])
+  @@unique([user_id, domain])
 
   @@schema("public")
 }

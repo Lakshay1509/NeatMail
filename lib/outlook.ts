@@ -389,3 +389,70 @@ export async function unsubscribeFromEmailOutlook(userId: string, messageId: str
     throw error;
   }
 }
+
+/**
+ * Archive messages by moving them to the Outlook Archive folder.
+ * @param userId - The user ID to get Graph client for
+ * @param messageIds - Array of message IDs to archive
+ * @returns Object with success status, count of archived messages, and failed count
+ */
+export async function archiveMessages(userId: string, messageIds: string[]) {
+  if (!messageIds || messageIds.length === 0) {
+    return { success: true, archived: 0, message: "No messages to archive" };
+  }
+
+  const client = await getGraphClient(userId);
+
+  // Get the Archive folder ID using well-known folder name
+  let archiveFolderId: string;
+  try {
+    const archiveFolder = await client.api('/me/mailFolders/archive').get();
+    archiveFolderId = archiveFolder.id;
+  } catch (error: any) {
+    console.error("Failed to retrieve Archive folder:", error);
+    throw new Error("Unable to access the Archive folder. Please ensure the folder exists.");
+  }
+
+  // Move each message to the Archive folder in parallel
+  const results = await Promise.allSettled(
+    messageIds.map(async (messageId) => {
+      try {
+        await client.api(`/me/messages/${messageId}/move`).post({
+          destinationId: archiveFolderId,
+        });
+        return { messageId, success: true };
+      } catch (error: any) {
+        console.error(`Failed to archive message ${messageId}:`, error);
+        return {
+          messageId,
+          success: false,
+          error: error?.message || "Unknown error"
+        };
+      }
+    })
+  );
+
+  // Count successes and failures, and collect successfully archived IDs
+  let archivedCount = 0;
+  let failedCount = 0;
+  const archivedIds: string[] = [];
+
+  results.forEach((result) => {
+    if (result.status === 'fulfilled' && result.value.success) {
+      archivedCount++;
+      archivedIds.push(result.value.messageId);
+    } else {
+      failedCount++;
+    }
+  });
+
+  return {
+    success: failedCount === 0,
+    archived: archivedCount,
+    archivedIds: archivedIds,
+    failed: failedCount,
+    message: failedCount === 0
+      ? `Successfully archived ${archivedCount} message(s).`
+      : `Archived ${archivedCount} message(s), ${failedCount} failed.`,
+  };
+}
