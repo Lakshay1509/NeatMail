@@ -293,6 +293,70 @@ const app = new Hono()
     `;
 
     return ctx.json({trafficData },200);
+  })
+
+  // 5. Read vs Unread over the last 7 days
+  .get("/readVsUnread", async (ctx) => {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const now = new Date();
+    // Go back 6 days to get 7 days total including today
+    const startOfPeriod = new Date(now);
+    startOfPeriod.setDate(startOfPeriod.getDate() - 6);
+    startOfPeriod.setHours(0, 0, 0, 0);
+
+    // Grouping by Date and Read Status
+    const rawData = await db.$queryRaw<{ date_str: string; is_read: boolean; email_count: number }[]>`
+      SELECT 
+        TO_CHAR(created_at, 'YYYY-MM-DD') as date_str,
+        "isRead" as is_read,
+        CAST(COUNT(*) AS INTEGER) as email_count
+      FROM "public"."email_tracked"
+      WHERE user_id = ${userId}
+        AND created_at >= ${startOfPeriod}
+      GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD'), "isRead"
+      ORDER BY date_str ASC;
+    `;
+
+    const result = [];
+
+    // Ensure we send back a dense array of exactly 7 days
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      
+      const dateStr = d.toISOString().split("T")[0];
+      const month = d.toLocaleString("default", { month: "short" });
+      const day = d.getDate();
+      const label = `${month} ${day}`;
+
+      let readCount = 0;
+      let unreadCount = 0;
+
+      for (const row of rawData) {
+        if (row.date_str === dateStr) {
+          if (row.is_read) {
+            readCount = row.email_count;
+          } else {
+            unreadCount = row.email_count;
+          }
+        }
+      }
+
+      result.push({
+        date: label,
+        fullDate: dateStr,
+        read: readCount,
+        unread: unreadCount,
+        total: readCount + unreadCount,
+      });
+    }
+
+    return ctx.json({ data: result }, 200);
   });
 
 export default app;

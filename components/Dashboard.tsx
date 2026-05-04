@@ -9,6 +9,7 @@ import Clutter from "./Dashboard/Clutter";
 import HeatMap from "./Dashboard/HeatMap";
 import MailsByDay from "./Dashboard/MailsByDay";
 import MostEmails from "./Dashboard/MostEmails";
+import ReadVsUnread from "./Dashboard/ReadVsUnread";
 
 const subtitles = {
   morning: [
@@ -162,7 +163,7 @@ const Dashboard = () => {
           <MostEmails />
         </div>
         <div className="lg:col-span-3">
-          <MailsByDay />
+          <ReadVsUnread />
         </div>
       </div>
 
