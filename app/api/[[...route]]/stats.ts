@@ -200,7 +200,6 @@ const app = new Hono()
       if (fromStr) startOfPeriod = new Date(fromStr);
       if (toStr) endOfPeriod = new Date(toStr);
 
-      const periodDuration = endOfPeriod.getTime() - startOfPeriod.getTime();
   
       const currentCount = await db.email_tracked.count({
         where: {
@@ -213,31 +212,12 @@ const app = new Hono()
         },
       });
 
-      const startOfPrevious = new Date(startOfPeriod.getTime() - periodDuration);
-
-      const previousCount = await db.email_tracked.count({
-        where: {
-          user_id: userId,
-          tag_id: { not: null },
-          created_at: {
-            gte: startOfPrevious,
-            lt: startOfPeriod,
-          },
-        },
-      });
-
-      const difference = currentCount - previousCount;
-      const percentChange =
-        previousCount > 0
-          ? Number(((difference / previousCount) * 100).toFixed(1))
-          : null;
+     
 
       return ctx.json(
         {
           current: currentCount,
-          previous: previousCount,
-          difference,
-          percentChange,
+          
         },
         200
       );

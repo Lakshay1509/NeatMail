@@ -45,7 +45,7 @@ const subtitles = {
 const Dashboard = () => {
   const { user } = useUser();
   const [date, setDate] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 7),
+    from: subDays(new Date(), 30),
     to: new Date(),
   });
 
@@ -127,7 +127,7 @@ const Dashboard = () => {
               <p className="text-2xl font-semibold text-gray-900 mt-1">
                 {isLoading ? "..." : data?.current || 0}
               </p>
-              {!isLoading && renderTrend(data?.percentChange)}
+              
             </div>
           </div>
         </div>
