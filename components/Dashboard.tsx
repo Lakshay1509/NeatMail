@@ -5,7 +5,7 @@ import { useUser } from "@clerk/nextjs";
 import { ArrowDownIcon, ArrowUpIcon, MinusIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DateRange } from "react-day-picker";
-import { subDays } from "date-fns";
+import { differenceInDays, subDays } from "date-fns";
 import { DatePickerWithRange } from "./DatePickerWithRange";
 import { LabelDistribution } from "./LabelDistribution";
 import Clutter from "./Dashboard/Clutter";
@@ -51,6 +51,11 @@ const Dashboard = () => {
 
   const from = date?.from?.toISOString();
   const to = date?.to?.toISOString();
+
+  const totalDays =
+    date?.from && date?.to
+      ? Math.max(differenceInDays(date.to, date.from), 1)
+      : 1;
 
   const { data, isLoading, isError } = useGetUserMailsThisMonth(from, to);
 
@@ -127,7 +132,6 @@ const Dashboard = () => {
               <p className="text-2xl font-semibold text-gray-900 mt-1">
                 {isLoading ? "..." : data?.current || 0}
               </p>
-              
             </div>
           </div>
         </div>
@@ -136,7 +140,7 @@ const Dashboard = () => {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col justify-between">
           <div>
             <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">
-              Time saved 
+              Time saved
             </p>
             <p className="text-xl font-semibold text-gray-900 mt-1">
               {(() => {
@@ -158,7 +162,7 @@ const Dashboard = () => {
               Avg emails / day
             </p>
             <p className="text-2xl font-semibold text-gray-900 mt-1">
-              {Math.ceil((data?.current ?? 0) / 7)}
+              {Math.ceil((data?.current ?? 0) / totalDays)}
             </p>
           </div>
         </div>
