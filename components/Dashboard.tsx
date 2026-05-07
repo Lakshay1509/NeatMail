@@ -150,7 +150,7 @@ const Dashboard = () => {
             <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">
               Unread
             </p>
-            <p className="text-xl font-semibold text-gray-900 mt-1">
+            <p className="text-2xl font-semibold text-gray-900 mt-1">
               {/* {(() => {
                 const seconds = (data?.current ?? 0) * 5;
 
