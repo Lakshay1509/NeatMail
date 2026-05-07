@@ -804,3 +804,72 @@ export async function trashMessages(userId: string, messageIds: string[]) {
     };
   }
 }
+
+export async function getPreviousMails(userId: string) {
+  const gmail = await getGmailClient(userId);
+
+  const listRes = await gmail.users.messages.list({
+    userId: "me",
+    q: "newer_than:14d",
+    maxResults: 500,
+  });
+
+  const messages = listRes.data.messages ?? [];
+  if (messages.length === 0) return [];
+
+  const chunkArray = <T>(arr: T[], size: number): T[][] =>
+    Array.from({ length: Math.ceil(arr.length / size) }, (v, i) =>
+      arr.slice(i * size, i * size + size)
+    );
+
+  // Use chunk size of 40 to stay well under Gmail API's 250 units/sec limit (get = 5 units)
+  const chunks = chunkArray(messages, 40);
+  const results: { messageId: string; senderEmail: string; date: string; is_read: boolean }[] = [];
+
+  for (const chunk of chunks) {
+    const chunkResults = await Promise.all(
+      chunk.map(async (msg) => {
+        try {
+          const res = await gmail.users.messages.get({
+            userId: "me",
+            id: msg.id!,
+            format: "metadata",
+            metadataHeaders: ["From"],
+            fields: "id,internalDate,labelIds,payload(headers)",
+          });
+
+          const headers = res.data.payload?.headers ?? [];
+          const senderEmail =
+            headers.find((h) => h.name?.toLowerCase() === "from")?.value ?? "";
+
+          const date = res.data.internalDate
+            ? new Date(Number(res.data.internalDate)).toISOString()
+            : new Date().toISOString();
+
+          const is_read = !(res.data.labelIds?.includes("UNREAD"));
+
+          return {
+            messageId: res.data.id!,
+            senderEmail: senderEmail.trim(),
+            date,
+            is_read,
+          };
+        } catch (error) {
+          console.error(`Failed to fetch message ${msg.id}:`, error);
+          return null;
+        }
+      })
+    );
+
+    results.push(
+      ...(chunkResults.filter((r) => r !== null) as {
+        messageId: string;
+        senderEmail: string;
+        date: string;
+        is_read: boolean;
+      }[])
+    );
+  }
+
+  return results;
+}

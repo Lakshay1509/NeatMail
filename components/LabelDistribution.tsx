@@ -24,16 +24,16 @@ export function LabelDistribution({ from, to }: { from?: string; to?: string }) 
   }
 
   const topCategory = tags?.[0];
-  
+
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 h-full">
       <h2 className="font-bold text-gray-900 text-lg
       
-      mb-1">Label Distribution</h2>
+      mb-1">AI Label Distribution</h2>
       <p className="text-sm text-gray-500 mb-8">
         Top category:{" "}
         <span className="font-medium text-gray-900">
-          {topCategory?.label ||"None"}
+          {topCategory?.label || "None"}
         </span>
       </p>
 

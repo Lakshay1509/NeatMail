@@ -178,7 +178,7 @@ const ActionsCell = ({
 
 const EmailStats = () => {
   const [date, setDate] = React.useState<DateRange | undefined>({
-    from: subDays(new Date(), 30),
+    from: subDays(new Date(), 14),
     to: new Date(),
   });
   const [debouncedDate, setDebouncedDate] = React.useState<
@@ -351,7 +351,7 @@ const EmailStats = () => {
     );
   }
 
- 
+
   return (
     <div className="space-y-4">
       <div className="flex-col md:flex md:flex-row items-center justify-between px-2 space-y-2">
@@ -390,7 +390,7 @@ const EmailStats = () => {
           </DropdownMenu>
         </div>
       </div>
-     
+
 
       <div>
         <Table>
@@ -402,9 +402,9 @@ const EmailStats = () => {
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -433,7 +433,7 @@ const EmailStats = () => {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                 No domain analytics are available for the selected time period.
+                  No domain analytics are available for the selected time period.
                 </TableCell>
               </TableRow>
             )}

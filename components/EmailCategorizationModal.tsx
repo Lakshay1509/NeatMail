@@ -10,6 +10,8 @@ import OnboardingSuccessDialog from "@/components/OnboardComplete"
 import { toast } from "sonner"
 import UpdateFolderPrefernce from "./UpdateFolderPrefernce"
 import { useAddUserDraftPrefernce } from "@/features/draftPreference/use-add-user-draftPreference"
+import { useSyncHistory } from "@/features/email/use-post-sync-history"
+import { Loader2 } from "lucide-react"
 
 export const CATEGORIES = [
 	{ name: 'Action Needed', color: '#cc3a21', outlookColor: 'preset0', description: 'Direct request to complete a task, approve, sign, submit, or decide.' },
@@ -36,6 +38,7 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
     const mutation = addTagstoUser();
 	const watchMutation = addWatch();
 	const draftMutation = useAddUserDraftPrefernce();
+	const syncHistoryMutation = useSyncHistory();
 	
 	const toggleCategory = (categoryName: string) => {
 		setSelectedCategories(prev =>
@@ -61,6 +64,7 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 				fontSize:14,
 				timezone:userTimezone
 			})
+			await syncHistoryMutation.mutateAsync({})
 			
 			onOpenChange(false);
 			setShowSuccessDialog(true);
@@ -124,9 +128,22 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 
 				
 
-				<DialogFooter className="mt-6">
-					<Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg" onClick={handleSubmit} disabled={mutation.isPending || !isValid}>
-						{isValid ? 'Update preferences' : `Select ${1 - selectedCategories.length} more categories`}
+				<DialogFooter className="mt-6 flex flex-col gap-2">
+					<Button 
+						className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg relative" 
+						onClick={handleSubmit} 
+						disabled={mutation.isPending || watchMutation.isPending || draftMutation.isPending || syncHistoryMutation.isPending || !isValid}
+					>
+						{(mutation.isPending || watchMutation.isPending || draftMutation.isPending || syncHistoryMutation.isPending) ? (
+							<div className="flex items-center gap-2">
+								<Loader2 className="h-5 w-5 animate-spin" />
+								{syncHistoryMutation.isPending 
+									? "Syncing history with Gmail, please hold on..." 
+									: "Updating preferences..."}
+							</div>
+						) : (
+							isValid ? 'Update preferences' : `Select ${1 - selectedCategories.length} more categories`
+						)}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

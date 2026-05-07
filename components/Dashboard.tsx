@@ -45,7 +45,7 @@ const subtitles = {
 const Dashboard = () => {
   const { user } = useUser();
   const [date, setDate] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 30),
+    from: subDays(new Date(), 14),
     to: new Date(),
   });
   const [debouncedDate, setDebouncedDate] = useState<DateRange | undefined>(date);
@@ -148,17 +148,18 @@ const Dashboard = () => {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col justify-between">
           <div>
             <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">
-              Time saved
+              Unread
             </p>
             <p className="text-xl font-semibold text-gray-900 mt-1">
-              {(() => {
+              {/* {(() => {
                 const seconds = (data?.current ?? 0) * 5;
 
                 if (seconds < 60) return `${seconds} seconds`;
                 if (seconds < 3600)
                   return `${(seconds / 60).toFixed(1)} minutes`;
                 return `${(seconds / 3600).toFixed(1)} hours`;
-              })()}
+              })()} */}
+              {data?.unreadCount}
             </p>
           </div>
         </div>

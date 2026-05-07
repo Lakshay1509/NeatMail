@@ -50,10 +50,10 @@ const app = new Hono()
 
     return ctx.json({
       clutterData,
-    },200);
+    }, 200);
   })
 
-  .get('/mostEmails',async(ctx)=>{
+  .get('/mostEmails', async (ctx) => {
     const { userId } = await auth();
     if (!userId) {
       return ctx.json({ error: "Unuathorized" }, 401);
@@ -181,49 +181,61 @@ const app = new Hono()
 
     return ctx.json(labels);
   })
-    .get("/mailsThisMonth", async (ctx) => {
-      const { userId } = await auth();
-  
-      if (!userId) {
-        return ctx.json({ error: "Unauthorized" }, 401);
-      }
-  
-      const fromStr = ctx.req.query("from");
-      const toStr = ctx.req.query("to");
+  .get("/mailsThisMonth", async (ctx) => {
+    const { userId } = await auth();
 
-      const now = new Date();
-  
-      let startOfPeriod = new Date(now);
-      startOfPeriod.setDate(startOfPeriod.getDate() - 7);
-      let endOfPeriod = new Date(now);
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
 
-      if (fromStr) startOfPeriod = new Date(fromStr);
-      if (toStr) endOfPeriod = new Date(toStr);
+    const fromStr = ctx.req.query("from");
+    const toStr = ctx.req.query("to");
 
-  
-      const currentCount = await db.email_tracked.count({
-        where: {
-          user_id: userId,
-          tag_id: { not: null },
-          created_at: {
-            gte: startOfPeriod,
-            lte: endOfPeriod,
-          },
+    const now = new Date();
+
+    let startOfPeriod = new Date(now);
+    startOfPeriod.setDate(startOfPeriod.getDate() - 7);
+    let endOfPeriod = new Date(now);
+
+    if (fromStr) startOfPeriod = new Date(fromStr);
+    if (toStr) endOfPeriod = new Date(toStr);
+
+
+    const currentCount = await db.email_tracked.count({
+      where: {
+        user_id: userId,
+        created_at: {
+          gte: startOfPeriod,
+          lte: endOfPeriod,
         },
-      });
+      },
+    });
 
-     
-
-      return ctx.json(
-        {
-          current: currentCount,
-          
+    const unreadCount = await db.email_tracked.count({
+      where: {
+        user_id: userId,
+        is_read: false,
+        created_at: {
+          gte: startOfPeriod,
+          lte: endOfPeriod,
         },
-        200
-      );
-    })
+      },
+    });
 
- 
+
+
+    return ctx.json(
+      {
+        current: currentCount,
+        unreadCount: unreadCount,
+
+
+      },
+      200
+    );
+  })
+
+
   // 4. Inbox Traffic / Focus Heatmap (Activity by Day & Hour)
   .get("/traffic-heatmap", async (ctx) => {
     const { userId } = await auth();
@@ -265,7 +277,7 @@ const app = new Hono()
       `;
     }
 
-    return ctx.json({trafficData },200);
+    return ctx.json({ trafficData }, 200);
   })
 
   // 5. Read vs Unread over the last 7 days
@@ -310,7 +322,7 @@ const app = new Hono()
     for (let i = daysDiff - 1; i >= 0; i--) {
       const d = new Date(endOfPeriod);
       d.setDate(d.getDate() - i);
-      
+
       const dateStr = d.toISOString().split("T")[0];
       const month = d.toLocaleString("default", { month: "short" });
       const day = d.getDate();

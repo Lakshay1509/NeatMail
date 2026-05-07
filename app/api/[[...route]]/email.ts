@@ -1,5 +1,9 @@
-import { decryptDomain } from "@/lib/encode";
-import { getLabelledMails, unsubscribeFromEmail } from "@/lib/gmail";
+import { decryptDomain, encryptDomain } from "@/lib/encode";
+import {
+  getLabelledMails,
+  unsubscribeFromEmail,
+  getPreviousMails,
+} from "@/lib/gmail";
 import {
   getLabelledMailsOutlook,
   unsubscribeFromEmailOutlook,
@@ -95,23 +99,31 @@ const app = new Hono()
     const fromStr = ctx.req.query("from");
     const toStr = ctx.req.query("to");
     const dateFilter: any = {};
-     if (fromStr) dateFilter.gte = new Date(fromStr);
-      if (toStr) dateFilter.lte = new Date(toStr);
+    if (fromStr) dateFilter.gte = new Date(fromStr);
+    if (toStr) dateFilter.lte = new Date(toStr);
 
     const [total, readData, archiveRules] = await Promise.all([
       db.email_tracked.groupBy({
         by: ["domain"],
-        where: { user_id: userId, domain: { not: null }, ...(Object.keys(dateFilter).length > 0 && { created_at: dateFilter }) },
+        where: {
+          user_id: userId,
+          domain: { not: null },
+          ...(Object.keys(dateFilter).length > 0 && { created_at: dateFilter }),
+        },
         _count: { message_id: true },
-        
       }),
       db.email_tracked.groupBy({
         by: ["domain"],
-        where: { user_id: userId, is_read: true, domain: { not: null }, ...(Object.keys(dateFilter).length > 0 && { created_at: dateFilter }) },
+        where: {
+          user_id: userId,
+          is_read: true,
+          domain: { not: null },
+          ...(Object.keys(dateFilter).length > 0 && { created_at: dateFilter }),
+        },
         _count: { message_id: true },
       }),
       db.archiveRule.findMany({
-        where: { user_id: userId},
+        where: { user_id: userId },
         select: { domain: true, isActive: true, archiveAfterDays: true },
       }),
     ]);
@@ -121,7 +133,10 @@ const app = new Hono()
     );
 
     const archiveMap = new Map(
-      archiveRules.map((r) => [r.domain, { isActive: r.isActive, days: r.archiveAfterDays }]),
+      archiveRules.map((r) => [
+        r.domain,
+        { isActive: r.isActive, days: r.archiveAfterDays },
+      ]),
     );
 
     const stats = await Promise.all(
@@ -129,7 +144,9 @@ const app = new Hono()
         const totalCount = row._count.message_id;
         const readCount = readMap.get(row.domain) ?? 0;
         const unreadCount = totalCount - readCount;
-        const archiveSetting = row.domain ? archiveMap.get(row.domain) : undefined;
+        const archiveSetting = row.domain
+          ? archiveMap.get(row.domain)
+          : undefined;
 
         return {
           domain: row.domain ? await decryptDomain(row.domain) : null,
@@ -244,13 +261,71 @@ const app = new Hono()
         return updatedData;
       });
 
-      if(!data){
-        return ctx.json({error:"Error creating auto archive"},500);
+      if (!data) {
+        return ctx.json({ error: "Error creating auto archive" }, 500);
       }
 
-      return ctx.json({data},200);
-
+      return ctx.json({ data }, 200);
     },
-  );
+  )
+
+  .post("/sync-history", async (ctx) => {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const is_gmail = await db.user_tokens.findUnique({
+      where: { clerk_user_id: userId },
+      select: { is_gmail: true },
+    });
+
+    if (!is_gmail?.is_gmail) {
+      return ctx.json(
+        { error: "Only Gmail is supported for this operation" },
+        400,
+      );
+    }
+
+    try {
+      const mails = await getPreviousMails(userId);
+
+      if (!mails || mails.length === 0) {
+        return ctx.json({ message: "No mails found" }, 200);
+      }
+
+      const insertData = await Promise.all(
+        mails.map(async (mail) => {
+          const domain = await encryptDomain(mail.senderEmail);
+
+          return {
+            user_id: userId,
+            message_id: mail.messageId,
+            domain,
+            is_read: mail.is_read,
+            created_at: new Date(mail.date),
+          };
+        }),
+      );
+
+      await db.email_tracked.createMany({
+        data: insertData,
+        skipDuplicates: true,
+      });
+
+      return ctx.json(
+        {
+          message: "History synced successfully",
+          count: insertData.length,
+        },
+        200,
+      );
+    } catch (error) {
+      console.error("Error syncing history:", error);
+
+      return ctx.json({ error: "Failed to sync history" }, 500);
+    }
+  });
 
 export default app;
