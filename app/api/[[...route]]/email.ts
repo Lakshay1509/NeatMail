@@ -328,7 +328,7 @@ const app = new Hono()
       }
 
       return ctx.json(
-        { error: "Failed to sync history for outlook" },
+        { error: "Failed to sync history for outlook, unable to find outlook id for user" },
         400,
       );
     }
