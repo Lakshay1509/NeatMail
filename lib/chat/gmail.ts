@@ -225,7 +225,7 @@ export async function handleTelegramQueryGmail(
                 Math.min(args.max_results ?? 10, 20),
               );
               // Send compact representation to save tokens
-              resultContent = compressSearchResults(results);
+              resultContent = compressSearchResults(results.data);
 
             } else if (toolCall.function.name === "get_email_content") {
               const email = await getGmailMessageBody(userId, args.message_id);

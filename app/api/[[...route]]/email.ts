@@ -28,6 +28,8 @@ const filteredQuerySchema = z.object({
   largerThan: z.coerce.number().int().positive(),
   from: z.string().optional(),
   to: z.string().optional(),
+  pageToken: z.string().optional(),
+  maxResults: z.coerce.number().int().min(1).max(500).optional(),
 });
 
 const app = new Hono()
@@ -404,8 +406,8 @@ const app = new Hono()
       return ctx.json({ error: z.treeifyError(query.error) }, 400);
     }
     
-    const emails = await getFilteredMails(userId, query.data);
-    return ctx.json({ emails }, 200);
+    const { data: emails, nextPageToken } = await getFilteredMails(userId, query.data);
+    return ctx.json({ emails, nextPageToken }, 200);
   })
 
   .post('/deleteMessage', zValidator(

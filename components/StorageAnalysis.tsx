@@ -11,7 +11,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,7 +26,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetFilteredEmails } from "@/features/email/use-get-filtered";
 import { useDeleteMessageMutation } from "@/features/email/use-post-delete-message";
-import { subDays, subMonths } from "date-fns";
+import { subMonths } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { DatePickerWithRange } from "./DatePickerWithRange";
 import {
@@ -56,17 +56,15 @@ const formatBytes = (bytes: number): string => {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 };
 
-const formatTime = (date:string):string=>{
-
+const formatTime = (date: string): string => {
   const formatted = new Intl.DateTimeFormat(undefined, {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-}).format(new Date(date));
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(date));
 
-return formatted
-
-}
+  return formatted;
+};
 
 const extractName = (from: string): string => {
   const match = from.match(/^"?(.*?)"?\s*</);
@@ -79,18 +77,6 @@ const extractName = (from: string): string => {
 const truncate = (value: string, maxLength: number): string => {
   if (value.length <= maxLength) return value;
   return `${value.slice(0, maxLength)}...`;
-};
-
-const normalizeEmails = (value: unknown): EmailRow[] => {
-  if (Array.isArray(value)) return value as EmailRow[];
-  if (
-    value &&
-    typeof value === "object" &&
-    Array.isArray((value as { emails?: unknown }).emails)
-  ) {
-    return (value as { emails: EmailRow[] }).emails;
-  }
-  return [];
 };
 
 const headerButtonClass =
@@ -115,15 +101,15 @@ const StorageAnalysis = () => {
   const [selectedSize, setSelectedSize] = React.useState<number>(52428800);
 
   const sizeOptions = [
-  { label: "1 MB", value: 1048576 },
-  { label: "10 MB", value: 10485760 },
-  { label: "25 MB", value: 26214400 },
-  { label: "50 MB", value: 52428800 },
-  { label: "100 MB", value: 104857600 },
-  { label: "500 MB", value: 524288000 },
-  { label: "1 GB", value: 1073741824 },
-  { label: ">1 GB", value: 1073741825 },
-];
+    { label: "1 MB", value: 1048576 },
+    { label: "10 MB", value: 10485760 },
+    { label: "25 MB", value: 26214400 },
+    { label: "50 MB", value: 52428800 },
+    { label: "100 MB", value: 104857600 },
+    { label: "500 MB", value: 524288000 },
+    { label: "1 GB", value: 1073741824 },
+    { label: ">1 GB", value: 1073741825 },
+  ];
 
   React.useEffect(() => {
     const handler = setTimeout(() => {
@@ -135,13 +121,20 @@ const StorageAnalysis = () => {
   const after = debouncedDate?.from?.toISOString();
   const before = debouncedDate?.to?.toISOString();
 
-  const { data, isLoading, isError } = useGetFilteredEmails(
-    after,
-    before,
-    selectedSize,
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useGetFilteredEmails(after, before, selectedSize, 100);
+
+  const rows = React.useMemo<EmailRow[]>(
+    () => data?.pages.flatMap((page) => page.emails ?? []) ?? [],
+    [data],
   );
 
-  const rows = React.useMemo(() => normalizeEmails(data), [data]);
   const deleteMutation = useDeleteMessageMutation();
 
   const columns = React.useMemo<ColumnDef<EmailRow>[]>(
@@ -265,7 +258,7 @@ const StorageAnalysis = () => {
               size="sm"
               onClick={() => {
                 deleteMutation.mutate({
-                  messageId: row.original.id
+                  messageId: row.original.id,
                 });
               }}
               disabled={isDeleting}
@@ -324,13 +317,13 @@ const StorageAnalysis = () => {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <Input
-            placeholder="Search by subject or sender..."
-            value={globalFilter ?? ""}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="max-w-sm"
-          />
-          <div className="flex flex-col md:flex-row md:justify-center md:items-center gap-4">
+        <Input
+          placeholder="Search by subject or sender..."
+          value={globalFilter ?? ""}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+          className="max-w-sm"
+        />
+        <div className="flex flex-col md:flex-row md:justify-center md:items-center gap-4">
           <Select
             value={selectedSize.toString()}
             onValueChange={(value) => setSelectedSize(Number(value))}
@@ -346,16 +339,8 @@ const StorageAnalysis = () => {
               ))}
             </SelectContent>
           </Select>
-          {/* <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Input
-              placeholder="Filter from..."
-              value={(table.getColumn('from')?.getFilterValue() as string) ?? ''}
-              onChange={(e) => table.getColumn('from')?.setFilterValue(e.target.value)}
-              className="max-w-[200px]"
-            />
-          </div> */}
           <DatePickerWithRange date={date} setDate={setDate} isStorage />
-          </div>
+        </div>
       </div>
 
       <div>
@@ -423,7 +408,27 @@ const StorageAnalysis = () => {
           </TableBody>
         </Table>
       </div>
-      <p className="text-xs text-gray-500 italic">To respect your privacy results are limited to 100 at a time</p>
+
+      {hasNextPage && (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+          >
+            {isFetchingNextPage ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              "Load more"
+            )}
+          </Button>
+        </div>
+      )}
+
+     
     </div>
   );
 };

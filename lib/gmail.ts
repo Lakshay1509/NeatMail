@@ -602,22 +602,23 @@ export async function deleteGmailDraft(userId: string, draftId: string) {
 export async function searchGmail(
   userId: string,
   query: string,
-  maxResults = 10
+  maxResults = 10,
+  pageToken?: string,
 ) {
-  
-
   const gmail = await getGmailClient(userId);
 
   const listRes = await gmail.users.messages.list({
     userId: "me",
     q: query,
     maxResults,
+    pageToken,
   });
 
   const messages = listRes.data.messages ?? [];
-  if (messages.length === 0) return [];
+  if (messages.length === 0) return { data: [], nextPageToken: undefined };
 
-  // Batch all metadata fetches in parallel — no serial waiting
+  const nextPageToken = listRes.data.nextPageToken ?? undefined;
+
   const data = await Promise.all(
     messages.map(async (msg) => {
       const res = await gmail.users.messages.get({
@@ -646,7 +647,7 @@ export async function searchGmail(
     })
   );
 
-  return data;
+  return { data, nextPageToken };
 }
 
 export async function getFilteredMails(
@@ -657,6 +658,8 @@ export async function getFilteredMails(
     largerThan: number;
     from?: string;
     to?: string;
+    pageToken?: string;
+    maxResults?: number;
   }
 ) {
   const toGmailDate = (iso: string) => {
@@ -672,8 +675,7 @@ export async function getFilteredMails(
   if (filters.from) parts.push(`from:${filters.from}`);
   if (filters.to) parts.push(`to:${filters.to}`);
 
-  const data = await searchGmail(userId, parts.join(" "), 100);
-  return data;
+  return searchGmail(userId, parts.join(" "), filters.maxResults ?? 10, filters.pageToken);
 }
 
 export async function getAttachment(userId:string,messageId:string) {

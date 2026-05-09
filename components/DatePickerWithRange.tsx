@@ -27,7 +27,7 @@ export function DatePickerWithRange({
   isStorage,
 }: DatePickerWithRangeProps) {
   const today = startOfDay(new Date())
-  const monthsAgo = isStorage ? 12 : 2
+  const monthsAgo = isStorage ? 60 : 2
   const pastLimit = subMonths(today, monthsAgo)
 
   return (
