@@ -634,15 +634,7 @@ export async function searchGmail(
   query: string,
   maxResults = 10
 ) {
-  // Cache search results for 30 seconds only — avoids hammering Gmail API on rapid retries
-  // while keeping results fresh enough that "recent email from X" queries aren't stale
-  const cacheKey = `gmail:search:${userId}:${query}:${maxResults}`;
-  try {
-    const cached = await redis.get(cacheKey);
-    if (typeof cached === "string") {
-      return JSON.parse(cached);
-    }
-  } catch { /* ignore cache errors, fall through to live fetch */ }
+  
 
   const gmail = await getGmailClient(userId);
 
@@ -656,14 +648,14 @@ export async function searchGmail(
   if (messages.length === 0) return [];
 
   // Batch all metadata fetches in parallel — no serial waiting
-  const detailed = await Promise.all(
+  const data = await Promise.all(
     messages.map(async (msg) => {
       const res = await gmail.users.messages.get({
         userId: "me",
         id: msg.id!,
         format: "metadata",
         metadataHeaders: ["Subject", "From", "To", "Date"],
-        fields: "id,threadId,snippet,payload(headers)",
+        fields: "id,threadId,snippet,sizeEstimate,payload(headers)",
       });
 
       const headers = res.data.payload?.headers ?? [];
@@ -679,16 +671,39 @@ export async function searchGmail(
         to: get("To"),
         date: get("Date"),
         snippet: res.data.snippet ?? "",
+        sizeEstimate: res.data.sizeEstimate ?? 0,
       };
     })
   );
 
-  // Cache the result for 30 seconds
-  try {
-    await redis.setex(cacheKey, 30, JSON.stringify(detailed));
-  } catch { /* ignore */ }
+  return data;
+}
 
-  return detailed;
+export async function getFilteredMails(
+  userId: string,
+  filters: {
+    after: string;
+    before: string;
+    largerThan: number;
+    from?: string;
+    to?: string;
+  }
+) {
+  const toGmailDate = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+  };
+
+  const parts = [
+    `after:${toGmailDate(filters.after)}`,
+    `before:${toGmailDate(filters.before)}`,
+    `larger:${filters.largerThan}`,
+  ];
+  if (filters.from) parts.push(`from:${filters.from}`);
+  if (filters.to) parts.push(`to:${filters.to}`);
+
+  const data = await searchGmail(userId, parts.join(" "), 100);
+  return data;
 }
 
 export async function getAttachment(userId:string,messageId:string) {

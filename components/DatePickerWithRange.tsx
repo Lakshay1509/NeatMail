@@ -17,15 +17,18 @@ import {
 interface DatePickerWithRangeProps extends React.HTMLAttributes<HTMLDivElement> {
   date: DateRange | undefined
   setDate: React.Dispatch<React.SetStateAction<DateRange | undefined>>
+  isStorage?: boolean
 }
 
 export function DatePickerWithRange({
   className,
   date,
   setDate,
+  isStorage,
 }: DatePickerWithRangeProps) {
   const today = startOfDay(new Date())
-  const twoMonthsAgo = subMonths(today, 2)
+  const monthsAgo = isStorage ? 12 : 2
+  const pastLimit = subMonths(today, monthsAgo)
 
   return (
     <div className={cn("grid gap-2", className)}>
@@ -58,13 +61,13 @@ export function DatePickerWithRange({
           <Calendar
             initialFocus
             mode="range"
-            defaultMonth={date?.from || subMonths(today, 1)}
+            defaultMonth={date?.from || subMonths(today, monthsAgo)}
             selected={date}
             onSelect={setDate as any}
             numberOfMonths={2}
             disabled={(d) => {
               const checkDate = startOfDay(d)
-              return isBefore(checkDate, twoMonthsAgo) || isAfter(checkDate, today)
+              return isBefore(checkDate, pastLimit) || isAfter(checkDate, today)
             }}
           />
         </PopoverContent>

@@ -3,6 +3,8 @@ import {
   getLabelledMails,
   unsubscribeFromEmail,
   getPreviousMails,
+  getFilteredMails,
+  trashMessages,
 } from "@/lib/gmail";
 import {
   getLabelledMailsOutlook,
@@ -18,6 +20,14 @@ import z from "zod";
 const dateQuerySchema = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z)?$/).optional(),
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z)?$/).optional(),
+});
+
+const filteredQuerySchema = z.object({
+  after: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z)?$/),
+  before: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z)?$/),
+  largerThan: z.coerce.number().int().positive(),
+  from: z.string().optional(),
+  to: z.string().optional(),
 });
 
 const app = new Hono()
@@ -380,6 +390,47 @@ const app = new Hono()
 
       return ctx.json({ error: "Failed to sync history for gmail" }, 500);
     }
-  });
+  })
+
+  .get("/filtered", async (ctx) => {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const query = filteredQuerySchema.safeParse(ctx.req.query());
+    if (!query.success) {
+      return ctx.json({ error: z.treeifyError(query.error) }, 400);
+    }
+    
+    const emails = await getFilteredMails(userId, query.data);
+    return ctx.json({ emails }, 200);
+  })
+
+  .post('/deleteMessage', zValidator(
+      "json",
+      z.object({
+        messageId:z.string()
+      }),
+    ),async(ctx)=>{
+
+     const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+    const values = ctx.req.valid("json");
+
+    const response = await trashMessages(userId,[values.messageId])
+
+    if(response.error){
+      return ctx.json({error:"Error deleting this message"},500);
+    }
+
+    return ctx.json({response},200);
+
+
+  })
 
 export default app;
