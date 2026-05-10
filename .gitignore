@@ -46,4 +46,4 @@ next-env.d.ts
 prisma/generated/
 
 #Graphify
-graphify-out/cache
+graphify-out
