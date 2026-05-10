@@ -6,7 +6,7 @@ import { activateWatch } from "@/lib/gmail";
 import { updateHistoryId, updateOutlookId, getUserSubscribed } from "@/lib/supabase";
 import { createOutlookSubscription } from "@/lib/outlook";
 import {trashMessages as archiveGmailMessages } from "@/lib/gmail";
-import { archiveMessages as archiveOutlookMessages } from "@/lib/outlook";
+import { archiveMessagesOutlook} from "@/lib/outlook";
 import { Resend } from "resend";
 import { handleWatchDeactivation } from "@/lib/payement";
 import { zValidator } from "@hono/zod-validator";
@@ -733,7 +733,7 @@ const app = new Hono()
           // Process Outlook messages
           for (const [userId, messageIds] of outlookMessagesByUser) {
             try {
-              const archiveResult = await archiveOutlookMessages(userId, messageIds);
+              const archiveResult = await archiveMessagesOutlook(userId, messageIds);
               if (archiveResult.success) {
                 results.archivedOutlook += archiveResult.archived || 0;
                 // Only update archive_at for successfully archived IDs

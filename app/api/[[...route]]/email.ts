@@ -7,6 +7,8 @@ import {
   trashMessages,
 } from "@/lib/gmail";
 import {
+  archiveMessagesOutlook,
+  getFilteredMailsOutlook,
   getLabelledMailsOutlook,
   getPreviousOutlookMails,
   unsubscribeFromEmailOutlook,
@@ -18,13 +20,23 @@ import { Hono } from "hono";
 import z from "zod";
 
 const dateQuerySchema = z.object({
-  from: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z)?$/).optional(),
-  to: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z)?$/).optional(),
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z)?$/)
+    .optional(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z)?$/)
+    .optional(),
 });
 
 const filteredQuerySchema = z.object({
-  after: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z)?$/),
-  before: z.string().regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z)?$/),
+  after: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z)?$/),
+  before: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z)?$/),
   largerThan: z.coerce.number().int().positive(),
   from: z.string().optional(),
   to: z.string().optional(),
@@ -349,7 +361,10 @@ const app = new Hono()
       }
 
       return ctx.json(
-        { error: "Failed to sync history for outlook, unable to find outlook id for user" },
+        {
+          error:
+            "Failed to sync history for outlook, unable to find outlook id for user",
+        },
         400,
       );
     }
@@ -405,34 +420,78 @@ const app = new Hono()
     if (!query.success) {
       return ctx.json({ error: z.treeifyError(query.error) }, 400);
     }
-    
-    const { data: emails, nextPageToken } = await getFilteredMails(userId, query.data);
-    return ctx.json({ emails, nextPageToken }, 200);
+
+    const userData = await db.user_tokens.findUnique({
+      where: { clerk_user_id: userId },
+      select: {
+        is_gmail: true,
+      },
+    });
+
+    if (!userData) {
+      return ctx.json({ error: "Error getting filtered mails" }, 500);
+    }
+
+    if (userData.is_gmail === true) {
+      const { data: emails, nextPageToken } = await getFilteredMails(
+        userId,
+        query.data,
+      );
+      return ctx.json({ emails, nextPageToken }, 200);
+    } else {
+      const { data: emails, nextPageToken } = await getFilteredMailsOutlook(
+        userId,
+        query.data,
+      );
+      return ctx.json({ emails, nextPageToken }, 200);
+    }
   })
 
-  .post('/deleteMessage', zValidator(
+  .post(
+    "/deleteMessage",
+    zValidator(
       "json",
       z.object({
-        messageId:z.string()
+        messageId: z.string(),
       }),
-    ),async(ctx)=>{
+    ),
+    async (ctx) => {
+      const { userId } = await auth();
 
-     const { userId } = await auth();
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+      const values = ctx.req.valid("json");
 
-    if (!userId) {
-      return ctx.json({ error: "Unauthorized" }, 401);
-    }
-    const values = ctx.req.valid("json");
+      const userData = await db.user_tokens.findUnique({
+        where: { clerk_user_id: userId },
+        select: {
+          is_gmail: true,
+        },
+      });
 
-    const response = await trashMessages(userId,[values.messageId])
+      if (!userData) {
+        return ctx.json({ error: "Error getting filtered mails" }, 500);
+      }
 
-    if(response.error){
-      return ctx.json({error:"Error deleting this message"},500);
-    }
+      if (userData.is_gmail === true) {
+        const response = await trashMessages(userId, [values.messageId]);
 
-    return ctx.json({response},200);
+        if (response.error) {
+          return ctx.json({ error: "Error deleting this message" }, 500);
+        }
 
+        return ctx.json({ response }, 200);
+      } else {
+        const response = await archiveMessagesOutlook(userId, [values.messageId]);
 
-  })
+        if (response.failed) {
+          return ctx.json({ error: "Error deleting this message" }, 500);
+        }
+
+        return ctx.json({ response }, 200);
+      }
+    },
+  );
 
 export default app;

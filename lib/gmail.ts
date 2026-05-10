@@ -675,7 +675,7 @@ export async function getFilteredMails(
   if (filters.from) parts.push(`from:${filters.from}`);
   if (filters.to) parts.push(`to:${filters.to}`);
 
-  return searchGmail(userId, parts.join(" "), filters.maxResults ?? 10, filters.pageToken);
+  return searchGmail(userId, parts.join(" "), filters.maxResults ?? 100, filters.pageToken);
 }
 
 export async function getAttachment(userId:string,messageId:string) {

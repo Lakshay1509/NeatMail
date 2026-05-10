@@ -444,7 +444,84 @@ export async function getPreviousOutlookMails(userId: string) {
   return messages;
 }
 
-export async function archiveMessages(userId: string, messageIds: string[]) {
+
+export async function searchOutlook(
+  userId: string,
+  filter: string,
+  orderBy = "size desc",
+  maxResults = 10,
+  skipToken?: string,
+) {
+  const client: Client = await getGraphClient(userId);
+
+  const res = await client
+    .api("/me/messages")
+    .filter(filter)
+    .orderby(orderBy)
+    .top(maxResults)
+    .select("id,conversationId,subject,from,toRecipients,receivedDateTime,bodyPreview,size,hasAttachments,isRead")
+    .skipToken(skipToken ?? "")
+    .get();
+
+  const messages = res.value ?? [];
+  if (messages.length === 0) return { data: [], nextPageToken: undefined };
+
+  // Graph returns next page as @odata.nextLink with $skiptoken in URL
+  const nextLink: string | undefined = res["@odata.nextLink"];
+  const nextPageToken = nextLink
+    ? new URL(nextLink).searchParams.get("$skiptoken") ?? undefined
+    : undefined;
+
+  const data = messages.map((msg: any) => ({
+    id: msg.id,
+    threadId: msg.conversationId,
+    subject: msg.subject ?? "",
+    from: msg.from?.emailAddress?.address ?? "",
+    to: msg.toRecipients?.[0]?.emailAddress?.address ?? "",
+    date: msg.receivedDateTime ?? "",
+    snippet: msg.bodyPreview ?? "",
+    size: msg.size ?? 0,               
+    hasAttachments: msg.hasAttachments ?? false,
+    isRead: msg.isRead ?? true,
+  }));
+
+  return { data, nextPageToken };
+}
+
+export async function getFilteredMailsOutlook(
+  userId: string,
+  filters: {
+    after: string;
+    before: string;
+    largerThan: number;         // bytes for Graph (Gmail uses mb label, Graph uses raw bytes)
+    from?: string;
+    to?: string;
+    isRead?: boolean;
+    pageToken?: string;
+    maxResults?: number;
+  }
+) {
+  const parts = [
+    `receivedDateTime ge ${new Date(filters.after).toISOString()}`,
+    `receivedDateTime le ${new Date(filters.before).toISOString()}`,
+    `size ge ${filters.largerThan}`,
+  ];
+  if (filters.from) parts.push(`from/emailAddress/address eq '${filters.from}'`);
+  if (filters.to) parts.push(`toRecipients/any(r: r/emailAddress/address eq '${filters.to}')`);
+  if (filters.isRead !== undefined) parts.push(`isRead eq ${filters.isRead}`);
+
+  const filter = parts.join(" and ");
+
+  return searchOutlook(
+    userId,
+    filter,
+    "size desc",                // server-side sort — no client sorting needed unlike Gmail
+    filters.maxResults ?? 100,
+    filters.pageToken,
+  );
+}
+
+export async function archiveMessagesOutlook(userId: string, messageIds: string[]) {
   if (!messageIds || messageIds.length === 0) {
     return { success: true, archived: 0, message: "No messages to archive" };
   }
