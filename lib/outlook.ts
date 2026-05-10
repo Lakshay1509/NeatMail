@@ -445,80 +445,139 @@ export async function getPreviousOutlookMails(userId: string) {
 }
 
 
+
+interface OutlookMessage {
+  id: string;
+  threadId: string;
+  subject: string;
+  from: string;
+  to: string;
+  date: string;
+  snippet: string;
+  sizeEstimate: number;
+  hasAttachments: boolean;
+  isRead: boolean;
+}
+
+interface SearchOutlookResult {
+  data: OutlookMessage[];
+  nextPageToken: string | undefined;
+}
+
 export async function searchOutlook(
   userId: string,
   filter: string,
-  orderBy = "size desc",
-  maxResults = 10,
+  maxResults = 100,
   skipToken?: string,
-) {
+): Promise<SearchOutlookResult> {
   const client: Client = await getGraphClient(userId);
 
-  const res = await client
+  // size is NOT a selectable property on Graph messages.
+  // Must use singleValueExtendedProperties with PidTagMessageSize (0x0E08)
+  let req = client
     .api("/me/messages")
     .filter(filter)
-    .orderby(orderBy)
+    .orderby("receivedDateTime desc")
     .top(maxResults)
-    .select("id,conversationId,subject,from,toRecipients,receivedDateTime,bodyPreview,size,hasAttachments,isRead")
-    .skipToken(skipToken ?? "")
-    .get();
+    .select([
+      "id",
+      "conversationId",
+      "subject",
+      "from",
+      "toRecipients",
+      "receivedDateTime",
+      "bodyPreview",
+      "hasAttachments",
+      "isRead",
+    ].join(","))
+    .expand("singleValueExtendedProperties($filter=Id eq 'LONG 0x0E08')");
 
-  const messages = res.value ?? [];
+  if (skipToken) req = req.skipToken(skipToken);
+
+  const res = await req.get();
+
+  const messages: any[] = res.value ?? [];
   if (messages.length === 0) return { data: [], nextPageToken: undefined };
 
-  // Graph returns next page as @odata.nextLink with $skiptoken in URL
   const nextLink: string | undefined = res["@odata.nextLink"];
   const nextPageToken = nextLink
     ? new URL(nextLink).searchParams.get("$skiptoken") ?? undefined
     : undefined;
 
-  const data = messages.map((msg: any) => ({
-    id: msg.id,
-    threadId: msg.conversationId,
-    subject: msg.subject ?? "",
-    from: msg.from?.emailAddress?.address ?? "",
-    to: msg.toRecipients?.[0]?.emailAddress?.address ?? "",
-    date: msg.receivedDateTime ?? "",
-    snippet: msg.bodyPreview ?? "",
-    size: msg.size ?? 0,               
-    hasAttachments: msg.hasAttachments ?? false,
-    isRead: msg.isRead ?? true,
-  }));
+  const data: OutlookMessage[] = messages.map((msg) => {
+    // extract size from extended property
+    const sizeStr = msg.singleValueExtendedProperties?.[0]?.value ?? "0";
+    const size = parseInt(sizeStr, 10) || 0;
+
+    return {
+      id: msg.id ?? "",
+      threadId: msg.conversationId ?? "",
+      subject: msg.subject ?? "",
+      from: msg.from?.emailAddress?.address ?? "",
+      to: msg.toRecipients?.[0]?.emailAddress?.address ?? "",
+      date: msg.receivedDateTime ?? "",
+      snippet: msg.bodyPreview ?? "",
+      sizeEstimate:size,
+      hasAttachments: msg.hasAttachments ?? false,
+      isRead: msg.isRead ?? true,
+    };
+  });
+
 
   return { data, nextPageToken };
 }
 
+interface GetFilteredMailsFilters {
+  after: string;
+  before: string;
+  largerThan: number;
+  from?: string;
+  to?: string;
+  isRead?: boolean;
+  pageToken?: string;
+  maxResults?: number;
+}
+
 export async function getFilteredMailsOutlook(
   userId: string,
-  filters: {
-    after: string;
-    before: string;
-    largerThan: number;         // bytes for Graph (Gmail uses mb label, Graph uses raw bytes)
-    from?: string;
-    to?: string;
-    isRead?: boolean;
-    pageToken?: string;
-    maxResults?: number;
-  }
-) {
-  const parts = [
+  filters: GetFilteredMailsFilters,
+): Promise<SearchOutlookResult> {
+  const parts: string[] = [
     `receivedDateTime ge ${new Date(filters.after).toISOString()}`,
     `receivedDateTime le ${new Date(filters.before).toISOString()}`,
-    `size ge ${filters.largerThan}`,
   ];
+
   if (filters.from) parts.push(`from/emailAddress/address eq '${filters.from}'`);
   if (filters.to) parts.push(`toRecipients/any(r: r/emailAddress/address eq '${filters.to}')`);
   if (filters.isRead !== undefined) parts.push(`isRead eq ${filters.isRead}`);
 
-  const filter = parts.join(" and ");
-
-  return searchOutlook(
+  const result = await searchOutlook(
     userId,
-    filter,
-    "size desc",                // server-side sort — no client sorting needed unlike Gmail
+    parts.join(" and "),
     filters.maxResults ?? 100,
     filters.pageToken,
   );
+
+  const data = result.data
+    .filter((msg) => !filters.largerThan || msg.sizeEstimate >= filters.largerThan)
+    .sort((a, b) => b.sizeEstimate - a.sizeEstimate);
+
+
+  return { ...result, data };
+}
+export async function deleteOutlookMessage(userId: string, messageId: string) {
+  const client = await getGraphClient(userId);
+
+  try {
+    await client.api(`/me/messages/${messageId}`).delete();
+    return { success: true, messageId };
+  } catch (error: any) {
+    if (error?.statusCode === 404) {
+      return { success: true, messageId };
+    }
+    console.error("Failed to delete Outlook message:", error);
+    return { success: false, messageId };
+  }
 }
 
 export async function archiveMessagesOutlook(userId: string, messageIds: string[]) {

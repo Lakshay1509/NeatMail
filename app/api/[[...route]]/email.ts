@@ -8,6 +8,7 @@ import {
 } from "@/lib/gmail";
 import {
   archiveMessagesOutlook,
+  deleteOutlookMessage,
   getFilteredMailsOutlook,
   getLabelledMailsOutlook,
   getPreviousOutlookMails,
@@ -483,9 +484,9 @@ const app = new Hono()
 
         return ctx.json({ response }, 200);
       } else {
-        const response = await archiveMessagesOutlook(userId, [values.messageId]);
+        const response = await deleteOutlookMessage(userId, values.messageId);
 
-        if (response.failed) {
+        if (response.success===false) {
           return ctx.json({ error: "Error deleting this message" }, 500);
         }
 
