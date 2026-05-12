@@ -24,9 +24,9 @@ export default function BetaAccessEmail({
 
         <Text style={paragraph}>
           <a href={activationLink} style={link}>
-            Activate your inbox
+            Get started
           </a>{" "}
-          — takes about 2 minutes, no credit card.
+          — takes about 2 minutes.
         </Text>
 
         <Text style={smallText}>
