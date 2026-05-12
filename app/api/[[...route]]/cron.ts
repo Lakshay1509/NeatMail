@@ -3,10 +3,14 @@ import { Hono } from "hono";
 import { db } from "@/lib/prisma";
 import { clerkClient } from "@clerk/nextjs/server";
 import { activateWatch } from "@/lib/gmail";
-import { updateHistoryId, updateOutlookId, getUserSubscribed } from "@/lib/supabase";
+import {
+  updateHistoryId,
+  updateOutlookId,
+  getUserSubscribed,
+} from "@/lib/supabase";
 import { createOutlookSubscription } from "@/lib/outlook";
-import {trashMessages as archiveGmailMessages } from "@/lib/gmail";
-import { archiveMessagesOutlook} from "@/lib/outlook";
+import { trashMessages as archiveGmailMessages } from "@/lib/gmail";
+import { archiveMessagesOutlook } from "@/lib/outlook";
 import { Resend } from "resend";
 import { handleWatchDeactivation } from "@/lib/payement";
 import { zValidator } from "@hono/zod-validator";
@@ -562,14 +566,23 @@ const app = new Hono()
               update: {},
             });
 
-            const { data: resData, error: resError } = await resend.emails.send({
-              from: "Lakshay <lakshay@send.neatmail.app>",
-              to: mail,
-              subject: "Your NeatMail invite",
-              react: BetaAccessEmail({
-                activationLink: `https://dashboard.neatmail.app/sign-in?accessToken=${data.token}`,
-              }),
-            });
+            const { data: resData, error: resError } = await resend.emails.send(
+              {
+                from: "Lakshay <lakshay@send.neatmail.app>",
+                to: mail,
+                subject: "Your NeatMail invite",
+                text: `Hey,
+
+Your NeatMail access is ready.
+
+https://dashboard.neatmail.app/sign-in?accessToken=${data.token}
+
+Let me know if anything comes up.
+
+— Lakshay
+Founder, NeatMail`,
+              },
+            );
 
             if (resError) {
               console.error("Resend API error for", mail, resError);
@@ -586,7 +599,11 @@ const app = new Hono()
           }
         }
 
-        return ctx.json({ success: true, count: successCount, failed: failedMails });
+        return ctx.json({
+          success: true,
+          count: successCount,
+          failed: failedMails,
+        });
       } catch (error) {
         console.error("Error sending new mails to the users:", error);
         const errorMessage =
@@ -646,7 +663,9 @@ const app = new Hono()
 
           // Calculate the threshold date
           const thresholdDate = new Date(now);
-          thresholdDate.setDate(thresholdDate.getDate() - rule.archiveAfterDays);
+          thresholdDate.setDate(
+            thresholdDate.getDate() - rule.archiveAfterDays,
+          );
 
           // Find messages that match this rule's domain and are older than the threshold
           // Also ensure they haven't been archived yet (archive_at is null)
@@ -698,11 +717,17 @@ const app = new Hono()
           // Process Gmail messages
           for (const [userId, messageIds] of gmailMessagesByUser) {
             try {
-              const archiveResult = await archiveGmailMessages(userId, messageIds);
+              const archiveResult = await archiveGmailMessages(
+                userId,
+                messageIds,
+              );
               if (archiveResult.success) {
                 results.archivedGmail += archiveResult.trashed || 0;
                 // Only update archive_at for successfully archived IDs
-                if (archiveResult.trashedIds && archiveResult.trashedIds.length > 0) {
+                if (
+                  archiveResult.trashedIds &&
+                  archiveResult.trashedIds.length > 0
+                ) {
                   await db.email_tracked.updateMany({
                     where: {
                       user_id: userId,
@@ -733,11 +758,17 @@ const app = new Hono()
           // Process Outlook messages
           for (const [userId, messageIds] of outlookMessagesByUser) {
             try {
-              const archiveResult = await archiveMessagesOutlook(userId, messageIds);
+              const archiveResult = await archiveMessagesOutlook(
+                userId,
+                messageIds,
+              );
               if (archiveResult.success) {
                 results.archivedOutlook += archiveResult.archived || 0;
                 // Only update archive_at for successfully archived IDs
-                if (archiveResult.archivedIds && archiveResult.archivedIds.length > 0) {
+                if (
+                  archiveResult.archivedIds &&
+                  archiveResult.archivedIds.length > 0
+                ) {
                   await db.email_tracked.updateMany({
                     where: {
                       user_id: userId,
