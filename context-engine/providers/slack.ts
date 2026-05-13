@@ -47,6 +47,7 @@ export class SlackProvider implements ContextProvider {
     userId: string
   ): Promise<ContextCard | null> {
     let token: string
+    let userClerk: { firstName?: string | null; lastName?: string | null; primaryEmailAddress?: { emailAddress?: string } | null }
     try {
       const client = await clerkClient()
       const tokenResponse = await client.users.getUserOauthAccessToken(
@@ -55,11 +56,15 @@ export class SlackProvider implements ContextProvider {
       )
       token = tokenResponse.data[0]?.token
       if (!token) return null
+      const u = await client.users.getUser(userId)
+      userClerk = u
     } catch {
       return null
     }
 
-    const query = this.buildQuery(email, entities)
+    const userFullName = [userClerk.firstName, userClerk.lastName].filter(Boolean).join(" ")
+    const userEmail = userClerk.primaryEmailAddress?.emailAddress ?? ""
+    const query = this.buildQuery(email, entities, userFullName, userEmail)
 
     try {
       const searchUrl = new URL(`${SLACK_API}/search.messages`)
@@ -106,21 +111,30 @@ export class SlackProvider implements ContextProvider {
     }
   }
 
-  private buildQuery(email: IncomingEmail, entities: EmailEntities): string {
+  private buildQuery(
+    email: IncomingEmail,
+    entities: EmailEntities,
+    userName: string,
+    userEmail: string
+  ): string {
     const parts: string[] = []
 
     if (email.senderName) {
       parts.push(`"${email.senderName}"`)
     }
 
-    const emailLocal = email.senderEmail.split("@")[0]
-    if (emailLocal && emailLocal !== email.senderName) {
-      parts.push(emailLocal)
+    if (userName) {
+      parts.push(`"${userName}"`)
     }
 
-    const domain = email.senderEmail.split("@")[1]
-    if (domain) {
-      parts.push(domain)
+    const senderLocal = email.senderEmail.split("@")[0]
+    if (senderLocal && senderLocal !== email.senderName) {
+      parts.push(senderLocal)
+    }
+
+    const userLocal = userEmail.split("@")[0]
+    if (userLocal) {
+      parts.push(userLocal)
     }
 
     const keywords = entities.keywords.slice(0, 5)
