@@ -122,7 +122,9 @@ export class SlackProvider implements ContextProvider {
       !integration.token_expires_at ||
       integration.token_expires_at.getTime() > Date.now() + 300000
     ) {
-      return decrypt(integration.access_token)
+      const token = decrypt(integration.access_token)
+      console.log("[SlackProvider] Decrypted token:", token)
+      return token
     }
 
     if (!integration.refresh_token) return null
