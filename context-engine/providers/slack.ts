@@ -63,8 +63,7 @@ export class SlackProvider implements ContextProvider {
     }
 
     const userFullName = [userClerk.firstName, userClerk.lastName].filter(Boolean).join(" ")
-    const userEmail = userClerk.primaryEmailAddress?.emailAddress ?? ""
-    const query = this.buildQuery(email, entities, userFullName, userEmail)
+    const query = this.buildQuery(email, entities, userFullName)
 
     try {
       const searchUrl = new URL(`${SLACK_API}/search.messages`)
@@ -114,27 +113,16 @@ export class SlackProvider implements ContextProvider {
   private buildQuery(
     email: IncomingEmail,
     entities: EmailEntities,
-    userName: string,
-    userEmail: string
+    userName: string
   ): string {
     const parts: string[] = []
 
     if (email.senderName) {
-      parts.push(`"${email.senderName}"`)
+      parts.push(email.senderName)
     }
 
     if (userName) {
-      parts.push(`"${userName}"`)
-    }
-
-    const senderLocal = email.senderEmail.split("@")[0]
-    if (senderLocal && senderLocal !== email.senderName) {
-      parts.push(senderLocal)
-    }
-
-    const userLocal = userEmail.split("@")[0]
-    if (userLocal) {
-      parts.push(userLocal)
+      parts.push(userName)
     }
 
     const keywords = entities.keywords.slice(0, 5)
