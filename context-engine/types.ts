@@ -37,9 +37,14 @@ export interface ContextProvider {
 
 export type EmailIntent =
   | "scheduling_request"
+  | "meeting_confirmation"  // ← NEW
   | "task_assignment"
+  | "status_update"         // ← NEW
   | "question"
+  | "approval"              // ← NEW
   | "follow_up"
+  | "introduction"          // ← NEW
+  | "complaint"             // ← NEW
   | "general"
 
 export interface EmailEntities {

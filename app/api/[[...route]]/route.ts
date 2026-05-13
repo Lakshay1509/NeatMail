@@ -15,10 +15,9 @@ import cron from './cron'
 import draftPreference from './draft-preference'
 import outlook from './outlook'
 import telegram from './telegram'
+import slack from './slack'
 import stats from './stats'
 import freeTrial from './freeTrial'
-
-
 
 export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
@@ -85,6 +84,7 @@ const routes = app
     .route('/outlook',outlook)
     .route('/stats',stats)
     .route('/telegram',telegram)
+    .route('/slack',slack)
     .route('/freeTrial',freeTrial)
 
 

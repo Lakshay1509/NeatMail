@@ -47,6 +47,11 @@
 - Inngest function files export a single `createFunction` result; registration happens in `app/api/inngest/route.ts`.
 - `lib/supabase.ts` is a misnomer — it contains Prisma-based DB helpers, not Supabase SDK usage.
 
+## External Libraries & APIs
+- **If you are not sure, search the web.** When adding or referencing third-party integrations, SDKs, or APIs (e.g., Slack, Stripe, OAuth providers), do not rely on memory or guesswork for package names, import paths, API endpoints, method signatures, or configuration options.
+- Always verify references against official documentation or the latest SDK source. Incorrect package references or API URLs may cause runtime failures even if the surrounding logic is correct.
+- Prefer official docs, READMEs, and registry pages (npm, PyPI, etc.) over assumed knowledge.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
