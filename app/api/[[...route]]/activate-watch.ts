@@ -1,8 +1,16 @@
 import { activateWatch, deactivateWatch } from "@/lib/gmail";
-import { createOutlookSubscription, deleteOutlookSubscription } from "@/lib/outlook";
+import {
+  createOutlookSubscription,
+  deleteOutlookSubscription,
+} from "@/lib/outlook";
 import { db } from "@/lib/prisma";
-import { getUserSubscribed, updateHistoryId, updateOutlookId } from "@/lib/supabase";
-import { auth} from "@clerk/nextjs/server";
+import {
+  activeFolder,
+  getUserSubscribed,
+  updateHistoryId,
+  updateOutlookId,
+} from "@/lib/supabase";
+import { auth } from "@clerk/nextjs/server";
 import { Hono } from "hono";
 
 const app = new Hono()
@@ -14,14 +22,14 @@ const app = new Hono()
         return ctx.json({ error: "Unauthorized" }, 401);
       }
 
-      const subscription = await getUserSubscribed(userId)
-      if (subscription.subscribed===false) {
+      const subscription = await getUserSubscribed(userId);
+      if (subscription.subscribed === false) {
         return ctx.json({ error: "No active subscription" }, 403);
       }
 
       const userData = await db.user_tokens.findUnique({
         where: { clerk_user_id: userId },
-        select: { is_gmail: true ,email:true},
+        select: { is_gmail: true, email: true },
       });
 
       if (!userData) {
@@ -35,18 +43,24 @@ const app = new Hono()
         }
         await updateHistoryId(userData.email, response.history_id, true);
         return ctx.json({ success: true, historyId: response.history_id }, 200);
-      }
+      } else {
+        const activeFolderData = await activeFolder(userId);
 
-      else{
-        const response = await createOutlookSubscription(userId);
-        
+        const foldersData = activeFolderData
+          .filter((folder) => folder.isActive === true)
+          .map((folder) => ({
+            id: folder.id,
+            name: folder.name,
+          }));
+
+        const response = await createOutlookSubscription(userId,foldersData);
 
         if (!response) {
           return ctx.json({ error: "Error setting up outlook watch" }, 500);
         }
         await updateOutlookId(userData.email, response[0].id, true);
 
-        return ctx.json({ success: true, id: response[0].id },200);
+        return ctx.json({ success: true, id: response[0].id }, 200);
       }
     } catch (error) {
       console.error("❌ Error activating watch:", error);
@@ -70,7 +84,7 @@ const app = new Hono()
 
       const userData = await db.user_tokens.findUnique({
         where: { clerk_user_id: userId },
-        select: { is_gmail: true,email:true },
+        select: { is_gmail: true, email: true },
       });
 
       if (!userData) {
@@ -83,10 +97,8 @@ const app = new Hono()
           return ctx.json({ error: "Error deleting up Gmail watch" }, 500);
         }
         await updateHistoryId(userData.email, null, false);
-        return ctx.json({ success: true}, 200);
-      }
-
-      else{
+        return ctx.json({ success: true }, 200);
+      } else {
         const response = await deleteOutlookSubscription(userId);
 
         if (!response) {
@@ -94,7 +106,7 @@ const app = new Hono()
         }
         await updateOutlookId(userData.email, null, false);
 
-        return ctx.json({ success: true},200);
+        return ctx.json({ success: true }, 200);
       }
     } catch (error) {
       console.error("❌ Error deactivating watch:", error);

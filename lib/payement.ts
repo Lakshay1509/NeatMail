@@ -9,7 +9,7 @@ import {
   createOutlookSubscription,
   deleteOutlookSubscription,
 } from "./outlook";
-import { getUserIsGmail } from "./supabase";
+import { activeFolder, getUserIsGmail } from "./supabase";
 import { sendSubExpiredEmail } from "./resend";
 
 export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
@@ -53,7 +53,6 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
           metadata: data.metadata || {},
         },
       });
-      
 
       await tx.paymentHistory.updateMany({
         where: {
@@ -70,9 +69,7 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
 
     // Step 2: Handle watch operations outside transaction
     if (data.status === "active") {
-      await handleWatchActivation(
-        data.metadata?.clerk_user_id,
-      );
+      await handleWatchActivation(data.metadata?.clerk_user_id);
     }
 
     if (
@@ -83,7 +80,7 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
       data.status === "pending"
     ) {
       await handleWatchDeactivation(data.metadata?.clerk_user_id);
-      await sendSubExpiredEmail(data.customer.email,data.customer.name)
+      await sendSubExpiredEmail(data.customer.email, data.customer.name);
     }
 
     return subscription;
@@ -93,10 +90,8 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
   }
 }
 
-export async function handleWatchActivation(
-  userId: string,
-): Promise<void> {
-   const getUserIsGmailData = await getUserIsGmail(userId);
+export async function handleWatchActivation(userId: string): Promise<void> {
+  const getUserIsGmailData = await getUserIsGmail(userId);
   try {
     if (getUserIsGmailData.isGmail) {
       const response = await activateWatch(userId);
@@ -112,12 +107,23 @@ export async function handleWatchActivation(
         });
       }
     } else {
-      const outlookResponse = await createOutlookSubscription(userId);
+      const activeFolderData = await activeFolder(userId);
+
+      const foldersData = activeFolderData
+        .filter((folder) => folder.isActive === true)
+        .map((folder) => ({
+          id: folder.id,
+          name: folder.name,
+        }));
+      const outlookResponse = await createOutlookSubscription(
+        userId,
+        foldersData,
+      );
       if (outlookResponse?.[0].id) {
         await db.user_tokens.update({
           where: { clerk_user_id: userId },
           data: {
-            outlook_id:outlookResponse[0].id,
+            outlook_id: outlookResponse[0].id,
             watch_activated: true,
             updated_at: new Date(),
           },
@@ -125,18 +131,16 @@ export async function handleWatchActivation(
       }
     }
   } catch (error) {
-    if(getUserIsGmailData.isGmail){
-    console.error("Failed to activate Gmail watch:", error);
-    }
-    else{
-      console.error("Failed to activate outlook watch",error);
+    if (getUserIsGmailData.isGmail) {
+      console.error("Failed to activate Gmail watch:", error);
+    } else {
+      console.error("Failed to activate outlook watch", error);
     }
   }
 }
 
-export async function handleWatchDeactivation(userId:string): Promise<void> {
+export async function handleWatchDeactivation(userId: string): Promise<void> {
   try {
-
     const isGmail = (await getUserIsGmail(userId)).isGmail;
 
     if (isGmail) {
@@ -158,7 +162,7 @@ export async function handleWatchDeactivation(userId:string): Promise<void> {
           where: { clerk_user_id: userId },
           data: {
             watch_activated: false,
-            outlook_id:null,
+            outlook_id: null,
             updated_at: new Date(),
           },
         });
