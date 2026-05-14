@@ -50,7 +50,12 @@ export class SlackProvider implements ContextProvider {
     entities: EmailEntities,
     userId: string
   ): Promise<ContextCard | null> {
+    // TODO: remove debug logs
+    console.log("[SlackProvider] fetchContext called", { userId, senderName: email.senderName, subject: email.subject, keywords: entities.keywords, intent: entities.intent })
+
     const token = await this.getValidToken(userId)
+    // TODO: remove debug logs
+    console.log("[SlackProvider] token after getValidToken:", token ? token.slice(0, 20) + "..." : null)
     if (!token) return null
 
     let userClerk: { firstName?: string | null; lastName?: string | null }
@@ -59,6 +64,8 @@ export class SlackProvider implements ContextProvider {
       const u = await client.users.getUser(userId)
       userClerk = u
     } catch {
+      // TODO: remove debug logs
+      console.log("[SlackProvider] clerkClient.getUser failed")
       return null
     }
 
@@ -73,14 +80,27 @@ export class SlackProvider implements ContextProvider {
       searchUrl.searchParams.set("count", "5")
       searchUrl.searchParams.set("sort", "timestamp")
 
+      // TODO: remove debug logs
+      console.log("[SlackProvider] Fetching URL:", searchUrl.toString())
+
       const res = await fetch(searchUrl.toString(), {
         headers: { Authorization: `Bearer ${token}` },
       })
 
       const data: SlackSearchResponse = await res.json()
       // TODO: Remove console logs in production
+      console.log("[SlackProvider] Raw Slack response:", JSON.stringify(data).slice(0, 2000))
       console.log("[SlackProvider] Search response:", { ok: data.ok, total: data.messages?.total, matches: data.messages?.matches?.length })
-      if (!data.ok || !data.messages?.matches?.length) return null
+      if (!data.ok) {
+        // TODO: remove debug logs
+        console.log("[SlackProvider] Slack returned !ok:", data.error ?? "no error field")
+        return null
+      }
+      if (!data.messages?.matches?.length) {
+        // TODO: remove debug logs
+        console.log("[SlackProvider] No matches. messages field:", JSON.stringify(data.messages).slice(0, 500))
+        return null
+      }
 
       const summaryLines = data.messages.matches.slice(0, 5).map((m) => {
         const cleanText = m.text
@@ -112,22 +132,39 @@ export class SlackProvider implements ContextProvider {
   }
 
   private async getValidToken(userId: string): Promise<string | null> {
+    // TODO: remove debug logs
+    console.log("[SlackProvider] getValidToken called", { userId })
+
     const integration = await db.slack_integration.findUnique({
       where: { user_id: userId },
       select: { access_token: true, refresh_token: true, token_expires_at: true },
     })
-    if (!integration) return this.token
+    if (!integration) {
+      // TODO: remove debug logs
+      console.log("[SlackProvider] No DB integration, falling back to constructor token:", this.token ? this.token.slice(0, 20) + "..." : "null")
+      return this.token
+    }
+
+    // TODO: remove debug logs
+    console.log("[SlackProvider] Found integration, expires_at:", integration.token_expires_at)
 
     if (
       !integration.token_expires_at ||
       integration.token_expires_at.getTime() > Date.now() + 300000
     ) {
       const token = await decrypt(integration.access_token)
-      console.log("[SlackProvider] Decrypted token:", token)
+      console.log("[SlackProvider] Decrypted token:", token.slice(0, 20) + "...")
       return token
     }
 
-    if (!integration.refresh_token) return null
+    // TODO: remove debug logs
+    console.log("[SlackProvider] Token expired, attempting refresh")
+
+    if (!integration.refresh_token) {
+      // TODO: remove debug logs
+      console.log("[SlackProvider] No refresh token available")
+      return null
+    }
 
     const decryptedRefresh = await decrypt(integration.refresh_token)
 
@@ -174,6 +211,9 @@ export class SlackProvider implements ContextProvider {
     entities: EmailEntities,
     userName: string
   ): string {
+    // TODO: remove debug logs
+    console.log("[SlackProvider] buildQuery inputs:", { senderName: email.senderName, userName, keywords: entities.keywords })
+
     const parts: string[] = []
 
     if (email.senderName) {
@@ -185,10 +225,15 @@ export class SlackProvider implements ContextProvider {
     }
 
     const keywords = entities.keywords.slice(0, 5)
+    // TODO: remove debug logs
+    console.log("[SlackProvider] Keywords after slice(0,5):", keywords, "(dropped:", entities.keywords.slice(5), ")")
+
     if (keywords.length > 0) {
       parts.push(keywords.join(" "))
     }
 
+    // TODO: remove debug logs
+    console.log("[SlackProvider] Final parts:", parts)
     return parts.join(" ")
   }
 }
