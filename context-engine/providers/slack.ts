@@ -1,6 +1,4 @@
 import { clerkClient } from "@clerk/nextjs/server"
-import { db } from "@/lib/prisma"
-import { encrypt, decrypt } from "@/lib/encode"
 import {
   ContextProvider,
   ContextCard,
@@ -53,7 +51,7 @@ export class SlackProvider implements ContextProvider {
     // TODO: remove debug logs
     console.log("[SlackProvider] fetchContext called", { userId, senderName: email.senderName, subject: email.subject, keywords: entities.keywords, intent: entities.intent })
 
-    const token = await this.getValidToken(userId)
+    const token = this.token
     // TODO: remove debug logs
     console.log("[SlackProvider] token after getValidToken:", token ? token.slice(0, 20) + "..." : null)
     if (!token) return null
@@ -127,81 +125,6 @@ export class SlackProvider implements ContextProvider {
       }
     } catch (err) {
       console.error("[SlackProvider] search failed:", err)
-      return null
-    }
-  }
-
-  private async getValidToken(userId: string): Promise<string | null> {
-    // TODO: remove debug logs
-    console.log("[SlackProvider] getValidToken called", { userId })
-
-    const integration = await db.slack_integration.findUnique({
-      where: { user_id: userId },
-      select: { access_token: true, refresh_token: true, token_expires_at: true },
-    })
-    if (!integration) {
-      // TODO: remove debug logs
-      console.log("[SlackProvider] No DB integration, falling back to constructor token:", this.token ? this.token.slice(0, 20) + "..." : "null")
-      return this.token
-    }
-
-    // TODO: remove debug logs
-    console.log("[SlackProvider] Found integration, expires_at:", integration.token_expires_at)
-
-    if (
-      !integration.token_expires_at ||
-      integration.token_expires_at.getTime() > Date.now() + 300000
-    ) {
-      const token = await decrypt(integration.access_token)
-      console.log("[SlackProvider] Decrypted token:", token.slice(0, 20) + "...")
-      return token
-    }
-
-    // TODO: remove debug logs
-    console.log("[SlackProvider] Token expired, attempting refresh")
-
-    if (!integration.refresh_token) {
-      // TODO: remove debug logs
-      console.log("[SlackProvider] No refresh token available")
-      return null
-    }
-
-    const decryptedRefresh = await decrypt(integration.refresh_token)
-
-    const body = new URLSearchParams({
-      client_id: process.env.SLACK_CLIENT_ID!,
-      client_secret: process.env.SLACK_CLIENT_SECRET!,
-      grant_type: "refresh_token",
-      refresh_token: decryptedRefresh,
-    })
-
-    try {
-      const res = await fetch(`${SLACK_API}/oauth.v2.access`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: body.toString(),
-      })
-      const data = await res.json()
-      if (!data.ok) return null
-
-      const [encryptedToken, encryptedRefresh] = await Promise.all([
-        encrypt(data.access_token),
-        data.refresh_token ? encrypt(data.refresh_token) : Promise.resolve(null),
-      ])
-
-      await db.slack_integration.update({
-        where: { user_id: userId },
-        data: {
-          access_token: encryptedToken,
-          refresh_token: encryptedRefresh ?? integration.refresh_token,
-          token_expires_at: data.expires_in
-            ? new Date(Date.now() + data.expires_in * 1000)
-            : null,
-        },
-      })
-
-      return data.access_token
-    } catch {
       return null
     }
   }
