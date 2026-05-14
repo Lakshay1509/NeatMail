@@ -62,8 +62,8 @@ const WatchedFolderSelect = ({ disabled }: WatchedFolderSelectProps) => {
                 Select which folders to monitor for new emails (Inbox is always watched).
               </p>
             </div>
-            <div className="flex flex-col items-end gap-3">
-              <div className="flex items-center gap-2 pt-1">
+            <div className="max-w-md">
+              
                 {activeFoldersLoading ? (
                   <div className="rounded-md border border-input bg-background animate-pulse" />
                 ) : (
@@ -75,7 +75,7 @@ const WatchedFolderSelect = ({ disabled }: WatchedFolderSelectProps) => {
                     placeholder="Select folders to watch..."
                   />
                 )}
-              </div>
+              
             </div>
           </div>
           <div className="flex justify-start md:justify-end mt-3">
