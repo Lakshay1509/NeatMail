@@ -58,9 +58,9 @@ const app = new Hono()
         if (!response) {
           return ctx.json({ error: "Error setting up outlook watch" }, 500);
         }
-        await updateOutlookId(userData.email, response[0].id, true);
+        await updateOutlookId(userData.email, response.map(r => r.id).join(","), true);
 
-        return ctx.json({ success: true, id: response[0].id }, 200);
+        return ctx.json({ success: true, ids: response.map(r => r.id).join(",") }, 200);
       }
     } catch (error) {
       console.error("❌ Error activating watch:", error);

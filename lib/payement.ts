@@ -119,11 +119,11 @@ export async function handleWatchActivation(userId: string): Promise<void> {
         userId,
         foldersData,
       );
-      if (outlookResponse?.[0].id) {
+      if (outlookResponse?.length) {
         await db.user_tokens.update({
           where: { clerk_user_id: userId },
           data: {
-            outlook_id: outlookResponse[0].id,
+            outlook_id: outlookResponse.map(r => r.id).join(","),
             watch_activated: true,
             updated_at: new Date(),
           },

@@ -162,7 +162,7 @@ const app = new Hono()
               sub.user_tokens.clerk_user_id,
               foldersData,
             );
-            await updateOutlookId(sub.customerEmail, response[0]?.id, true);
+            await updateOutlookId(sub.customerEmail, response?.map(r => r.id).join(",") || null, true);
 
             results.successful++;
             console.log(`✅ Watch renewed outlook for: ${sub.customerEmail}`);

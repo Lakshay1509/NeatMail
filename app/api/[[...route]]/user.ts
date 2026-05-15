@@ -395,7 +395,7 @@ const app = new Hono()
       });
 
       const response = await createOutlookSubscription(userId, values);
-      await updateOutlookId(userData.email, response[0].id, true);
+      await updateOutlookId(userData.email, response.map(r => r.id).join(","), true);
 
       return ctx.json({ success: true, watched_folders: values }, 200);
   })

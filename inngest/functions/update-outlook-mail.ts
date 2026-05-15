@@ -21,7 +21,7 @@ export const updateOutlookMailFn = inngest.createFunction(
 
     const subscription = await step.run("lookup-subscription", async () => {
       return db.user_tokens.findFirst({
-        where: { outlook_id: subscriptionId },
+        where: { outlook_id: { contains: subscriptionId } },
       });
     });
 
