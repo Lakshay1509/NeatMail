@@ -1,0 +1,648 @@
+9cebbc9 Merge pull request #13 from Lakshay1509/follow_up
+ab72acd feat: add follow-ups page showing sent emails awaiting replies
+1042b19 fix: update Outlook ID handling to support multiple IDs in renewal process
+a312e56 fix: update outlook ID handling to support multiple IDs in various functions
+4d2681a feat: add changelog to document project updates and version history
+0a9df2d fix: remove console logging for label correction processing in Gmail and Outlook
+6080fb3 feat: include active folder data in Outlook subscription creation
+42a8f87 feat: integrate active folder data into Outlook subscription creation process
+cc7e409 fix: update activeFolder function to correctly filter and map folder data
+d4f1d6d feat: enhance folder structure handling in Outlook integration and update folder selection UI
+d31fd06 fix: adjust layout for folder selection in WatchedFolderSelect component
+b1d55b9 feat: add watched folders functionality with Outlook integration
+a6a3151 refactor: remove user privacy settings and related API endpoints
+5f2ad50 add language selection to draft preferences and pipe through draft creation
+c1a2622 fix: remove debug logs from fetchContext and buildQuery methods in SlackProvider
+3f822a6 fix: update search parameters to count 6 and sort by score in SlackProvider
+ce03d57 refactor: simplify token retrieval by removing getValidToken method in SlackProvider
+a627612 fix: add debug logs for fetchContext and getValidToken methods in SlackProvider
+51417be fix: await decryption of access token in SlackProvider for proper async handling
+d483859 fix: log decrypted token in SlackProvider for debugging purposes
+97a4276 fix: add console logs for query building and search response in SlackProvider
+e929b15 feat: integrate Slack OAuth flow and add Slack integration support
+894b099 fix: comment out SlackCard component in integrations page
+5be72ca fix: simplify Slack integration scopes by consolidating search permissions
+5685a75 fix: clean up SlackCard component by improving code formatting and structure
+b5eea2f fix: simplify query building in SlackProvider by removing user email dependency
+d34b758 fix: enhance user context retrieval in SlackProvider for query building
+7624a66 feat: add Slack integration with context provider and user connection check
+9505b98 feat: add Slack integration with API route, UI card, and hooks
+c85cef8 fix: update next and eslint-config-next versions in package.json and add allowedDevOrigins in next.config.ts
+a2358c4 fix: improve email content and formatting in sendNewMails endpoint
+635c4dc fix: update email subject and link text in BetaAccessEmail component
+1663e8d fix: update sender email address in resend configuration
+cdeede9 Update email subject and add warning about unverified app screen in BetaAccessEmail component
+749c077 Refactor BetaAccessEmail component for simplified structure and improved clarity
+858d068 Added the login.svg to the public folder
+69db3d4 chore: remove entity-extractor.ts file and associated OpenAI integration
+483f262 chore: update .gitignore to track graphify-out directory
+666d044 chore: remove graphify-out files from tracking
+d85b1c6 Refactor code structure for improved readability and maintainability
+4386f28 feat: implement deleteOutlookMessage function and update email deletion logic
+ab3dafb feat: refactor Outlook message archiving and enhance filtering capabilities
+1f45b71 feat: enhance AppSidebar with animated active indicator and layout grouping for smoother transitions
+d5fce37 feat: add PageTransition component for animated page transitions and update layout to use it
+1736602 feat: implement ErrorState component and replace Alert usage in EmailStats and StorageAnalysis
+b1cd1da chore: clean up empty code change sections in the changes log
+f126918 feat: add frontend-design skill with detailed guidelines and license
+a564941 feat: implement pagination for email retrieval with nextPageToken and maxResults
+6bdf91d feat: add One-Click Cleanup feature image to README
+7e6cc15 refactor: simplify getGmailClient by removing Redis caching and in-process token cache
+468c4cc feat: add Badge UI component with variants (default, secondary, destructive, outline, ghost, link)
+4a982ab feat: add shadcn agent skill for UI component management
+844ef81 refactor: restructure sidebar with Cleanup section and refined navigation
+cb4ea3d feat: add storage analysis page to find and delete large emails by size and date range
+f51d7c4 fix: update syncing message to clarify inbox reference
+a7dbab9 fix: update audience URL in Gmail webhook to use environment variable
+1fedcd1 Add next-best-practices documentation for Next.js
+e5f624f feat: add date validation schema and error handling for date queries in email and stats routes fix: update dependencies for @clerk/nextjs, axios, and hono in package.json and bun.lock
+851ef48 feat: add security review and cloud infrastructure security skills with comprehensive checklists
+e845b96 fix: increase font size for unread emails display in Dashboard
+bf378bf feat: skip processing for users who are not subscribed to archiving rules
+d94adbd feat: add comprehensive agent guide for build, architecture, and environment setup
+e87e308 fix: improve error message for Outlook history sync failure
+89e1741 feat: implement syncing of previous Outlook emails to enhance email history retrieval
+0ca6d47 fix: add margin to clutter item list for improved spacing
+8352f8f feat: implement Gmail historical data synchronization via a new API endpoint and React hook.
+f6eaed5 feat: add date filtering to email stats and enhance user interface for date selection
+e72efc0 fix: update README links for improved navigation and enhance product video display
+366a6f8 feat: add product screenshots and update README for enhanced user experience
+cdcf65f fix: implement debounced date handling in dashboard for improved performance
+d627265 fix: update total days calculation for email metrics in dashboard
+7104eea refactor: simplify email count logic and extend date range in dashboard
+5f5e99b refactor: remove MailsByDay component and associated data fetching logic
+1df801b fix: adjust margin for 'Show more' link in Clutter and MostEmails components
+ef48839 feat: add date range picker to dashboard and update related components
+1add533 feat: add Read vs Unread component and API integration for tracking email read status over the last 7 days
+9d1cf11 feat: add MostEmails component and API integration for tracking top email senders
+ba8a08c fix: enhance Clutter component layout and functionality with improved loading states and unsubscribe options
+ad80594 fix: adjust take limits in stats API for clutter and top labels queries
+e46d3f2 fix: rename archiveMessages to trashMessages in Gmail integration and update result handling
+161dda1 fix: rename archiveMessages to trashMessages and update response structure for trashing emails
+08fabd4 fix: update layout in EmailStats component for improved alignment of archive options
+2fd7dde fix: adjust layout and styling in EmailStats component for better responsiveness
+07a0b8a feat: simplify archive functionality in EmailStats with button and duration selection
+742bb23 fix: add truncateLabel function to limit domain display length in EmailStats
+644ef8d feat: implement auto-archive functionality for Gmail and Outlook messages, add archive rules management in API
+076313b fix: optimize greeting calculation with useMemo and improve layout in Dashboard
+d99ef0e fix: update greeting subtitles in Dashboard and add new color to LabelDistribution
+bbe0ba2 fix: update time period references from month to week in Dashboard and stats
+58cd1ca fix: enhance traffic data metrics and update Dashboard trend rendering
+09f263b fix: update headings for clarity in BetaAccessEmail component
+c53e30e fix: comment out unused code and add experimental feature notice in Gmail and Outlook modules
+e646625 fix: refactor OpenAI initialization and update forwarding instructions for Telegram
+9d8402b fix: remove unnecessary escaping in Telegram HTML conversion
+58f35c4 fix: update OpenAI initialization and clarify email handling instructions in Telegram query
+f03c253 fix: enhance domain matching in checkAndForwardToTelegram function
+5673b91 fix: improve query handling in Outlook API to enforce KQL syntax rules
+17329b1 fix: update search query handling in Outlook API to remove unnecessary quotes
+fdc06f4 fix: format search query for Outlook API to ensure proper KQL syntax
+c0e0b06 fix: remove unnecessary quotes from search query in Outlook API
+e5a490a fix: comment out subscription check in Telegram query processing for testing purpose now
+e2db357 fix: update response for unsubscribed users in Telegram integration to return JSON
+0e2c76c fix: add early return for unsubscribed users in Telegram integration
+738b1a6 feat: implement Telegram query handling for Gmail and Outlook with enhanced user interaction
+1ae3828 feat: enhance /sendNewMails endpoint to track success and failure of sent emails
+32ca834 feat: enhance mail sending response with success status and count of mails sent
+8fc2f45 feat: add new endpoint to send beta access emails and implement email template
+1c07b18 fix: ensure Clerk context is initialized for public routes to safely read auth state
+041d45b feat: implement Gmail API client with caching and support for fetching, parsing, and drafting messages.
+6daf561 feat: add Telegram HTML formatting functions and update message handling
+138ef88 feat: add html-to-text dependency and enhance HTML escaping in Telegram message functions
+cd526f5 refactor: optimize agentic workflow with improved system instructions, compact search results, and increased content buffer size
+de545d5 refactor: optimize token usage and concurrency in agentic loop via result compression and parallel tool execution
+3c30a1b feat: revert the changes in open ai made for improved latency
+2afb726 feat: implement OpenAI agent for Gmail interaction and email drafting via Telegram
+aae4390 fix: enhance logging for missing user token by including clerk user ID
+9082a08 fix: refine email labeling logic by removing redundant conditions
+7dca648 feat: sanitize email body snippet by escaping HTML characters
+0add8bf fix: downgrade inngest dependency from 4.2.4 to 3.54.0 for compatibility
+bfbc914 feat: update inngest dependency to version 4.2.4
+2b25d88 feat: improve layout and spacing in Clutter component for better readability
+797a87b Remove Avatar and clean up Clutter component
+2412d76 feat: enhance email categorization by adding automated alerts for updates
+b6450cc feat: improve error handling and code formatting in Gmail webhook processing
+c3a1b67 feat: update sendSubExpiredEmail to include customer name instead of clerk user ID
+6f60135 feat: implement global API rate limiting with dynamic response headers
+9a2e841 feat: migrate from Upstash Redis to ioredis and update rate limiting implementation
+368d5bd feat: increase header font size in MailsByDay and LabelDistribution components
+dda46bb feat: update MailsByDay component to display time saved instead of growth rate
+ea416fd feat: rearrange MailsByDay component in Dashboard and update color scheme
+aa90539 feat: add MailsByDay component and API integration for daily email statistics
+bbb15c3 chore: update prisma and @prisma/client to version 7.7.0
+60285a1 feat: increase take limit for clutter sources and top labels queries
+6753e31 feat: enhance processTelegramQueryFn to update thinking message during processing
+bbffde7 feat: add deleteTelegramMessage function and enhance message handling in processTelegramQueryFn
+855bd73 feat: add missing X-API-Key header to API configuration
+790e728 feat: update environment variables and API configuration for authorization
+d22049a feat: add endpoint to deactivate expired watches for users
+6cd127f feat: remove deprecated demo functions and related OpenAI integration
+dc50f46 feat: add subscription check before sending Telegram messages
+1b57a8b feat: streamline environment variable setup in build-check job
+05e60d7 feat: add Prisma Client generation step in migration workflow
+a6c423b feat: add Prisma generated files to .gitignore
+87a0fec Refactor code structure for improved readability and maintainability
+11af9d3 Merge branch 'main' of https://github.com/Lakshay1509/NeatMail
+b8fbcd7 feat: implement subscription expiration email notification and handle watch deactivation
+2965c13 Update openai.ts
+77d847c refactor: simplify startOfWeek calculation in stats.ts
+73185d5 refactor: remove unused Gmail draft functions and update system prompt instructions
+1e98db5 feat: add sendTelegramMessage function to handle message notifications in Telegram query processing
+50cfdd6 chore: remove debug logging from getAttachment function
+08cd778 feat: implement Telegram query processing function and update routing
+41a6633 feat: add welcome message for users without a connected account in Telegram integration
+a1c5539 feat: add instruction to output confirmation after tool execution in system prompt
+0f04705 fix: handle rotating Gmail attachment IDs by falling back to the first available attachment if the stale ID is not found
+515f187 chore: add debug logging to attachment retrieval and telegram sending processes
+f1bc1b6 feat: implement attachment handling in Gmail integration and Telegram messaging
+ce27686 feat: add feedback link to AppSidebar and rename 'Delete Account' to 'Danger Zone'
+c2d8026 feat: add functions to edit and send Gmail drafts in handleTelegramQuery
+68f4c1b feat: add event handlers to prevent interaction outside and escape key actions in PermissionsModal
+36d4d0d feat: integrate HTML escaping in handleTelegramQuery response
+bc44cf0 feat: enhance handleTelegramQuery to manage chat history with Redis
+c85c69a refactor: update OpenAI model version from gpt-5.4-mini to gpt-5-mini in handleTelegramQuery function
+65ffcc4 feat: implement Gmail search functionality and enhance Telegram query handling
+23ce74c refactor: standardize error handling by replacing error variable with a generic placeholder
+8b77626 refactor: remove unused imports and streamline code across multiple components
+f1f3839 refactor: remove unused imports in Dashboard component and add type-check script to package.json
+f06de2b refactor: reorganize email and stats endpoints, update data fetching logic, and remove unused components
+306b810 fix: add senderName extraction and correct senderEmail assignment in Outlook mail processing
+38c88fb refactor: update button variant and styling for rule removal
+b08954c refactor: streamline date calculations for email tracking and user subscription checks
+ce672dc refactor: enhance layout and styling for rules form fields
+3ecb4b4 feat: replace Autosend with Resend for email notifications
+64e456b fix: add error handling for allowedToken update in webhook
+0828cb4 refactor: improve error message display for rules form
+79324c5 refactor: remove minimum rule requirement and enhance error messages for Telegram rules
+b270287 feat: integrate react-hook-form for managing Telegram rules form
+72a160a refactor: comment out user.updated event handling logic in webhook
+584f4e8 fix: update URLs from neatmail.tech to neatmail.app in README and layout files
+61fb597 feat: update billing button visibility to show only for active free trials
+70cd97d feat: add free trial model and integrate with user_tokens
+1deecd8 feat: add email column to allowedToken model and update related types
+5ea3634 feat: add allowedToken model and actions for invite token validation
+7662852 feat: add allowedUsers model and related database migrations
+14791fb feat: add example environment configuration and update README for setup instructions
+8a0f3f3 feat: integrate Gmail status check to conditionally display AI draft review option
+91a9318 feat: add user Gmail status retrieval and integrate with label settings
+adf9972 refactor: enhance LabelsNotInGmail component with description validation and improved submission logic
+2d72112 refactor: comment out editMessageText calls and replace with sendTelegramMessage for draft replies
+0058377 refactor: improve code formatting and streamline draft creation logic in processDraftGmail function
+4ac317f refactor: enhance draft handling and confirmation messaging in Telegram integration
+e7482a2 refactor: update background color logic in LabelDistribution for improved visual consistency
+e280389 refactor: update HeatMap color scheme for improved visual clarity
+cfb38d2 refactor: update title for Gmail labeling integration to include Outlook
+0a00722 refactor: enhance error logging in webhook processing with detailed error information
+70eb568 refactor: add threadId to draft processing for improved email context
+9055134 refactor: simplify error logging in webhook processing by removing detailed error output
+e56210c refactor: improve error logging in webhook processing with user context
+11e0860 refactor: enhance error handling in webhook processing for detailed logging
+4280b4b refactor: update Navbar and SignInPage to include logo images for branding
+70aaebf refactor: implement stripQuotedReply function to clean up quoted replies in email bodies
+4038529 refactor: enhance reply generation requirements for improved clarity and consistency
+751ceb2 refactor: update draft context structure and parameters for improved context handling
+837f853 WIP: saving local changes
+6e79d83 Update applyCorrectionsToText function for email drafts
+485128c refactor(proxy): remove IP and user agent logging for cleaner output
+68297e4 feat(logging): add pino logger for improved logging in development and production
+b49d0be fix: correct indentation for build-check job in migrate workflow
+8750dea ci: add build-check job to perform type checking and production build in migration workflow
+a854a93 perf: optimize memory usage by reducing Node heap limits and disabling build-time type checking
+d3f41ea feat: refactor OpenAI initialization to use Azure endpoint and API key
+ed67349 feat: set NODE_OPTIONS to increase memory limit for Node.js
+06bd99d feat: enhance email notification format in checkAndForwardToTelegram function
+715fe18 feat: update message content for Telegram connection confirmation
+cd21a39 feat: prioritize text/plain and text/html extraction for multipart/alternative email bodies
+943a3d5 feat: add deleteGmailDraft function and update telegram route to use it for discarding drafts
+cb55260 feat: enhance checkAndForwardToTelegram to include tagName and update related functions for draft processing
+7dec72c feat: add forward_important_mails and forward_draft_for_confirmation fields to TelegramIntegration model
+3ba443c refactor: clean up conditional logic in email processing for clarity
+a5564d3 fix: correct URL for Integrations menu item in AppSidebar
+32b56a4 feat: add integration_rules model and update user_tokens relation
+aca15f6 feat: update button text in sendDraftNotification for clarity
+7601126 feat: remove unused getModelTagsUser function and related references; update tag handling in email processing
+238f0c8 feat: enhance extractBodyFromPart to decode HTML content and strip tags
+6e56303 feat: implement updateGmailDraft and sendGmailDraft functions; apply text corrections using OpenAI
+cf24827 feat(migrations): add telegramPendingDraft table and unique constraint on chat_id in TelegramIntegration
+d1fcb25 feat: add callback_data to quick reply options in sendDraftNotification function
+22a2d6b feat: add quick reply options and draft notification for Telegram integration
+ae5e88a refactor: improve error handling and code clarity in sendTelegramMessage function
+dd857bf feat: enhance logging in checkAndForwardToTelegram function
+fad99bf fix: correct Telegram webhook route matcher to remove wildcard
+e384764 feat: refine Telegram API route matcher to specify webhook pattern
+d62c197 feat: implement Telegram integration for email notifications and management
+303a454 feat: ensure tag_id is not null when counting tracked emails for the current month
+58b7285 feat: add word limit for replies in email processing context
+b006bec feat: make tag_id optional in email_tracked model and related changes
+3c072e9 feat: add Telegram integration to user_tokens model
+1e12daf feat: add getModelTagsUser function and integrate model tags in email processing
+0a73c29 feat: streamline error logging and remove debug statements in createGmailDraft
+bc7e870 feat: add threadId to email data in Gmail webhook handler
+b3f2d8a feat: enhance createGmailDraft to include sender's email, improve error logging, and add debug statements for message headers
+504254c feat: enhance createGmailDraft to include sender's email, improve threading headers, and ensure proper MIME formatting
+8d80232 feat: update createGmailDraft to use Base64 encoding for message body and improve subject handling
+97e8f54 feat: enhance createGmailDraft function to support threading with original message headers
+d399fc5 feat: update Gmail draft subject formatting to include 'Re:' prefix conditionally
+9fc232d feat: improve greeting function formatting and enhance Clutter component styles for better readability
+db08f04 feat: update HeatMap component color scheme and improve label distribution styles for better visual clarity
+b093834 feat: set background color for label percentage bars in LabelDistribution component
+fb16f8f feat: enhance AppSidebar component with dynamic active link styling and pathname handling
+cdfb27e feat: update greeting logic in Dashboard component; simplify color handling in HeatMap and Clutter components; adjust label distribution styles
+a6b453a feat: enhance label correction functions by adding missing commas and improving code readability
+bf8f329 feat: implement handleOutlookLabelCorrection function for processing label corrections in Outlook emails; update message fetching logic
+57918db feat: implement handleLabelCorrections function for asynchronous label modifications; add logging for correction requests
+17f429e feat: simplify sensitivity handling in email processing; remove unnecessary console log in getModelResponse function
+4dfe9fb feat: update model request to use bodySnippet; adjust sensitivity handling in email processing
+6761e2d feat: add correction request and response interfaces; implement correctLabel function for model correction API
+f333352 feat: update API endpoint in getModelResponse function from "/context" to "/classify"; add new lines for code clarity
+00270aa feat: remove addUserLabel function and update related routes; refactor email classification to use getModelResponse
+5b2ae6c feat: integrate model response handling in email classification process in gmail
+c01982b feat: enhance Avatar component in Clutter by adding color customization options
+e6c2809 feat: clean up Clutter and HeatMap components by removing TODO comments and unnecessary whitespace
+b46f8be feat: improve day and hour normalization in HeatMap component for accurate data processing
+abd95e7 feat: add gap between items in Clutter component for improved layout
+5d45695 feat: update Clutter component styling and Avatar variant for improved UI
+55493a7 feat: remove commented-out code for optimal focus time display in HeatMap component
+782a693 feat: add HeatMap component for visualizing inbox traffic and optimal focus times
+7181044 feat: add Clutter component and related hooks for clutter data management
+b7df692 feat: enhance clutter metric by decrypting domain names and refining tag query
+650c121 feat: add stats route for email metrics and engagement analysis
+a05fb68 feat: add description field to category display in UserLabelSettings
+fa36fc7 feat: implement deleteOutlookTag function to remove categories and folders in Outlook
+6fb4e8b feat: use deterministic nonce for domain encryption
+beda830 feat: add index on email_tracked model for user_id and domain
+d2ed6d7 feat: improve email classification by enhancing tag matching logic
+a6a4835 feat: enhance email classification to normalize category matching with tags
+03a4d03 feat: add WelcomeDialog component for onboarding process
+be1efde feat: integrate libsodium for domain encryption and decryption
+96ed9d4 feat: rename unsubscribe link extraction functions for Gmail and Outlook
+661c55e feat: add extractUnsubscribeLinkFromBody function to retrieve unsubscribe links from email body
+0aa3e4a feat: enhance unsubscribe functionality to include user ID and handle redirects
+d240a45 feat: update sidebar to replace "Mails" with "Unsubscribe" and change icon to Shredder
+249ee45 feat: enhance unsubscribe functionality to support Outlook email domains
+c1f80c9 feat: add update functionality for Outlook mail events and integrate into webhook
+d05b372 feat: add rawDomain field to EmailStatsRow and update domain reference in EmailStats component
+7502d2c feat: implement unsubscribe functionality for email domains
+3e429bf refactor: clean up code formatting and remove unnecessary semicolons
+5113a38 feat: update EmailStats component layout and button styles
+18c2c5b feat(email-stats): add EmailStats component and user email stats fetching hook
+e444a83 feat(stats): add endpoint to fetch email statistics by domain
+f31424c fix: include sender's email address when adding mail to the database
+84828b9 feat(email_tracked): add domain and is_read fields to email_tracked model
+855d02c refactor: clarify classification and response_required rules for email classification
+38ce340 refactor: update deployment name from gpt-5-nano to gpt-5-mini in pipeline configuration
+cdac54a refactor: enhance response_required rules for email classification to exclude no-reply and system-generated messages
+43dc5ee refactor: clarify response_required rules for email classification
+1a3788c refactor: update draft condition to include 'Action Needed' label for response requirement
+cc3d8c0 refactor: enhance email classification to include response requirement and update related logic
+a6c015c refactor: update sensitivity handling across email processing functions
+214b589 refactor: update sensitivity handling in draft preference component and API
+e3f8107 feat: add 'senstivity' field to draft_preference model and update related types and migrations
+6160249 refactor(gmail): remove unnecessary console logs from email processing
+fa7701f refactor(openai): enhance classifyEmail function by adding available categories to classification prompt
+1326e8e refactor(openai): increase max_completion_tokens from 20 to 40 for improved response generation
+6636335 refactor(gmail): simplify label handling by removing CATEGORY_UPDATES check
+cee39c6 refactor(openai): improve classifyEmail function by enhancing tag context formatting
+e772795 refactor(openai): simplify classifyEmail function and remove unused generateEmailReply
+f7134ef refactor(classification): remove response_required handling from email classification
+670dcf9 Update openai.ts
+46f1365 refactor(gmail): simplify body extraction by removing HTML handling and consolidating text processing
+89f06f1 feat(gmail): retrieve full email body and truncate for snippet in email data
+2d59ba1 feat(classification): update email body snippet handling to use Gmail snippet instead of truncated body
+a2070b9 feat(gmail): add function to retrieve full email body and truncate for snippet
+88a90fb feat(classification): update email classification rules for improved accuracy and specificity
+85c221f feat(classification): refine priority rules to emphasize semantic context in email classification
+aa5505e feat(categories): update category descriptions for clarity and specificity
+1ecbd84 feat(classification): enhance email classification rules with priority categories and examples
+208e0a5 feat(logging): add console logs for email body snippet and sender information
+2f11fed Refactor: update category selection rules to prioritize specificity and remove specific bot/read-only guidance.
+e04a14c fix: update to gpt-5-mini
+9eb4df8 feat(tag): include description field in UserTag and update related functions
+7c28f64 feat(tag): add description field to tag model and update related types and migrations
+ccb20a2 Add rule for classifying automated emails
+dd0d98b Update email classifier rules in openai.ts
+dfe7545 refactor: improve classification rules and examples in classifyEmail function
+c84fe7f refactor: clean up code formatting and improve classification rules in openai.ts
+d4b76ab updated model in open.ai
+0484816 Update openai.ts
+3281515 feat: add 'Read only' label classification for specific email categories
+ef52390 feat: add timezone support to draft preferences and related processing functions
+28e4db8 feat: add timezone field to draft_preference model
+7f78a10 feat: Add development-only route to retrieve OAuth access token for Microsoft
+ba1fd21 Update openai.ts
+2b102e2 feat: Update conflict messaging in calendar providers to list all busy slots
+3276da5 feat: Enhance draft processing for Outlook and Gmail with user-specific email handling
+82ed6ca feat: Update getOutlookMessageBody to handle content type and improve HTML stripping logic
+d766b69 feat: Update getOutlookMessageBody to include bodyPreview and set content type header
+f322555 feat: Add logging for full email body and draft context request
+6e1c235 feat: Add Outlook calendar integration and enhance draft processing for Outlook emails
+b423d41 refactor: Update fields in getGmailMessageBody to remove mimeType from API request
+a0d5d2f feat: Enhance email classification to include response requirement in OpenAI integration
+20cb591 feat: Implement getGmailMessageBody function to fetch full email body and update draft processing
+eae7ea5 refactor: Comment out unused tag handling code in tags API
+94cec2f refactor: Comment out Privacy menu item in AppSidebar
+178bc7f refactor: Replace model classification with OpenAI classifier in email processing
+2601583 trigger deploy
+2805bb2 debug: Log raw events and free/busy data for debugging purposes.
+228fc73 fix: Encode timezone offsets in Google Calendar event requests using URLSearchParams to prevent API misinterpretation of the `+` character.
+80a8565 fix: Adjust Google Calendar event queries to respect local timezone boundaries instead of UTC.
+4455834 feat: add console logging for summary lines in Google Calendar context
+1d1ee36 added debugging console in getDraftContext
+afa537d fix: correct variable names for token and email body in draft processing
+cefc798 feat: add logging for draft context request
+88b59c3 Merge pull request #8 from Lakshay1509/context
+2c753ed feat: add timezone parameter to email processing and draft handling
+3b41dfe Merge pull request #7 from Lakshay1509/context
+eefc76a refactor: remove unused properties from IncomingEmail interface and draft processing
+cd2ce84 refactor: comment out thread processing logic in Gmail webhook
+2a8fd05 feat: enhance draft processing by adding timezone and intent parameters to context generation
+89ed484 Merge pull request #6 from Lakshay1509/context
+44c63e3 feat: integrate draft processing with context generation and add draft context API
+8e42e92 Merge pull request #5 from Lakshay1509/context
+753df58 fix: update timezone from 'Asia' to 'Asia/Kolkata' in draft context generation
+848138a Merge pull request #4 from Lakshay1509/context
+6b900ee feat: implement context engine with email entity extraction and Google Calendar integration
+16ce39d feat: comment out top_p and frequency_penalty parameters in email reply generation
+fcd3d99 feat: comment out max_completion_tokens in email generation functions
+a209079 feat: remove temperature parameter from email reply generation
+030dbe1 feat: remove temperature setting from email reply generation parameters
+dc1026e feat: refactor OpenAI integration to use OpenAI class with updated endpoint and deployment name
+2e1f228 feat: update OpenAI deployment to gpt-5-nano for improved performance
+2398a80 feat: enhance customer portal functionality to retrieve payment history and handle missing subscriptions
+4563646 feat: add Billing component to billing page
+d19f8d2 feat: enhance error handling in useGetUserCustomerPortal hook
+70647df feat: add customer portal functionality and integrate with billing page
+29ae093 feat: add error handling for /all route and include it in public API routes
+b039211 feat: enhance error handling for Gmail API history and message retrieval
+942c5c2 fix: correct model deployment name from gpt-4o-mini to gpt-4.1-mini
+cd4b1f8 feat: update privacy settings description and add link for more information
+b1428f3 feat: update rate limiting logic and enhance identifier function to include user ID
+674518a fix: update subscription query to filter by next billing date and cancellation status
+c32dcea feat: enhance reminder email with user's full name and improve subscription details
+99b5c25 feat: integrate Autosend for email reminders and add new endpoint
+485d9c8 fix: simplify label mapping in classifyEmail function
+be0b175 feat: add GitHub Actions workflow for production database migration
+f983618 feat: add initial database migration with user_tokens, tag, and related tables
+c07094e fix: update README to include Outlook integration details and improve clarity on email automation features
+d804945 fix: change default value of is_folder in user_tokens model to false
+4c884f3 fix: update activateWatch call to use clerk_user_id instead of dodoSubscriptionId
+fe6ab51 Merge pull request #3 from Lakshay1509/dev
+9c6208d feat: add user data retrieval and error handling in email fetch endpoint
+5708471 fix: reorder outlook_id field in user_tokens model and related types for consistency; restore paymentId field in Refund model
+1a69908 feat: update user_tokens and tag models for unique email constraint and field reordering
+525712d Merge pull request #2 from Lakshay1509/dev
+f4074a6 feat: refactor EmailCategorizationModal and UserLabelSettings to streamline layout by removing redundant divs
+7b7a5c6 feat: refactor subscription handling for non-Gmail users in activate-watch endpoint
+6b38e5d feat: enhance UpdateFolderPreference component with folder categorization messaging
+78396a3 feat: add is_folder field to user_tokens model and related types
+4241b10 feat(tag): add outlook_preset field to tag model and related types
+2f0defb feat: enhance subscription renewal to support Outlook accounts
+ae6b25f feat: implement Outlook email fetching and processing logic
+12cfec3 feat: add outlook_id field to user_tokens model and related types and added outlook watch
+6ff40a4 feat: integrate Microsoft Outlook webhook and subscription management
+6ce607e feat: add external account provider check for user creation in webhook
+9a47bee refactor: rename gmail_email to email in user_tokens model and related files
+2cc113e feat: add customizable feature to SubscriptionModal and update trial period to 14 days
+ae5dd74 refactor: remove draft-related features and clean up draft handling logic
+a7a91a2 Refactor email_tracked and user_tokens models: remove drafts relation and related inputs
+89c9316 refactor: remove draft tracking feature
+f433452 refactor: clean up AppSidebar component by removing unused imports and consolidating menu items
+658f50a feat: add enabled field to draft_preference model and update related types and queries
+00a227f fix: increase API timeout from 12 seconds to 120 seconds
+e7ae708 feat: add Azure OpenAI integration and update environment variables in README
+ef14c11 Update model.ts
+78f8e10 Update openai.ts
+7f20945 feat: integrate user draft preferences into email reply generation and draft creation
+2f999fc refactor: update user_tokens model and add draft_preference model
+e061af3 fix: add bearer token support for classification API authorization in model
+78d7dc2 fix: add error handling for email classification fallback to OpenAI in gmail-webhook
+46d6044 fix: add unmarkThreadProcessed function and update currentThreadId handling in gmail-webhook
+23dd78e fix: add unmarkMessageProcessed function and update currentMessageId handling in gmail-webhook
+4bf5c08 fix: improve form layout and styling in CreateLabel component
+ba9d9b8 fix: comment out CreateLabel component in AddDropdown and remove import in UserLabelSettings
+7baaa46 fix: correct button disabled state logic in CreateLabel and update usage in UserLabelSettings
+48d05f8 feat: integrate subscription status into CreateLabel component in UserLabelSettings
+60e1507 fix: enhance layout responsiveness in UserLabelSettings component
+e867ad5 fix: update error handling in webhook to return 500 status on processing failure
+f3bdab8 feat: add link to in-house model and update AI integrations section in README
+ca8c10b fix: correct formatting and return statements in DraftEmails and TrackedEmail components
+016adb0 feat: add subscription check and no subscription message in DraftEmails and TrackedEmail components
+a0573b5 feat: extend trial period to 14 days if not previously taken
+10866cf feat: add error handling for missing product ID based on user's country
+7c38929 feat: update environment variables for product IDs and API URLs
+685284d feat: update checkout session to select product based on user's country
+ef19a57 feat: integrate updateHistoryId function to track watch renewal history
+21441cb Update model.ts
+047f00a feat: add description field to mutation for custom tags in LabelsNotInGmail component
+78fa0cb feat: add description field to label creation and implement user label management
+6cee5d2 refactor: use new endpoint for gmail classification
+677b420 feat: update CreateLabel button style and integrate CreateLabel component into UserLabelSettings
+1ea23cc refactor: remove unnecessary onSelect handler from Create Label dropdown item
+a667570 feat: add UserLabelSettings and UserPrivacySettings components with corresponding logic
+0bd548a feat: add use_llm field to ClassifyRequest interface and update classification logic
+63553f1 feat: remove unused imports from UserLabelSettings component
+477f305 feat: add use_external_ai_processing field to user_tokens model
+4fca8a2 feat:added additional test user to test new endpoint
+b4dd489 feat: remove refund processing endpoint from cron job
+07a3266 feat: add additional test user for classification model
+4c7bd04 feat: improve refund logging with display values for better clarity
+76e5340 feat: enhance refund processing with detailed logging for better traceability
+e62bced feat: implement refund processing endpoint with automated refund logic
+18a02cf feat: add refunds relation to user_tokens model and implement Refund entity
+068727d fix: increase API timeout to 120 seconds for better stability
+6eedff0 feat: add additional test users for the classification model
+205c623 fixed for gmail-webhook while caling model
+a832cde added some debug in model.ts
+2db4b43 feat: add email classification functionality with axios integration
+37b240f refactor: update font family in globals.css and adjust header styling in Dashboard component
+7aa1994 added logo.svg in the public folder
+82106a0 feat: add Cron Secret configuration to README
+e41001d refactor: improve code formatting and consistency in tags and user tag handling
+4d1bb14 fix: correct method call for trimming draft body length in gmail-webhook.ts
+14f5c23 refactor: improve code formatting and readability in gmail-webhook.ts
+eecf663 feat: enhance email classification rules for finance and domain-specific contexts
+9827411 feat: added finance label
+4503131 fix: select users with activesubscription and not flagged for deletion
+0bf8860 Update gmail-webhook.ts
+2902e61 fix: update domain from neatmail.tech to neatmail.app in Content-Security-Policy
+83e1776 Your descriptive message
+3a4032c added rate limiting
+2c1a8be fix: remove unnecessary class from SidebarTrigger in Navbar and clean up ConditionalSidebar
+2b4b418 feat: enhance error handling in components; add user-friendly error messages and loading states
+b42b523 remove console log from gmail-webhook used to debug in prod
+c292f56 feat: add cron endpoint to public API routes for authorization handling
+1166314 feat: add renew-watch endpoint for active subscriptions; implement watch renewal logic and error handling
+8ff6eef fix: enhance logging in Gmail webhook for better error tracking and request handling
+cd07571 feat: add cron job endpoint for user deletion; implement user deletion logic and error handling
+2c5b536 fix: remove redundant header and description in DraftEmails component; improve layout for draft display
+353d7b5 fix: update padding in dashboard header of TrackedEmail component; rename header to 'Recent Mails'
+850728b fix: update styling in TrackedEmail component; adjust divider color for better visibility
+6496c44 fix: update font weight for sender name in TrackedEmail component
+1e12870 fix: adjust padding in dashboard header of TrackedEmail component
+7d5dcb0 fix: remove redundant description in TrackedEmail component
+9a0ddfa feat: enhance TrackedEmail component layout and styling; improve header and email display
+ca54a78 feat: enhance TrackedEmail component with improved layout and sender name formatting; update loading state displayes
+abb5521 fix: update podman run command to use .env.local for environment variables
+303f869 feat: update README for Docker support and environment configuration; fix version in package.json
+de3b447 feat: add Dockerfile for multi-stage build and create .dockerignore file
+611ad62 fix: rename endpoint from /create to /addTagtoUser and update related types
+d28c3e7 feat: implement Gmail label synchronization and add dropdown for label management
+365deb1 fix: add query invalidation for user-related watches in delete and add watch mutations
+59ecadd fix: add query invalidation for user-related tags after successful tag creation
+6c04c26 fix: trim tag names before checking for duplicates in tag creation
+97b7e20 fix: update thread and message processing logic to ensure correct Redis key usage
+ffcced9 fix: comment out thread processing to prevent duplicate tags in Gmail webhook
+adcefc1 fix: update thread processing logic to use emailData.threadId and bump Next.js version to 16.1.5
+4a4fa58 fix: comment out thread processing to prevent duplicate tags in Gmail webhook
+b3104fc fix: improve formatting and readability in DraftEmails component
+01fc5f5 Merge pull request #1 from Lakshay1509/snyk-fix-f0c823e99ff6f2a6b4e16f5f5a1a5521
+631fc9b fix: package.json to reduce vulnerabilities
+259952c feat: add thread processing functions to prevent duplicate tags in Gmail webhook
+bea2462 fix: adjust wallet balance display to reflect correct value in Billing component
+173e256 feat: add wallet balance retrieval and display in Billing component
+7230c1c fix: remove hardcoded user check from addSubscriptiontoDb and addPaymenttoDb functions
+1e406d6 fix: add user subscription check in addSubscriptiontoDb and addPaymenttoDb functions
+0ee6cb1 fix: add user subscription check in Gmail webhook handler
+2c7ccf2 fix: extend subscription status handling in addSubscriptiontoDb function
+afcfc6a fix: implement authorization header validation in Gmail webhook
+0862c80 fix: disable checkbox and button when user is unsubscribed
+42932a2 fix: adjust Billing component layout for better responsiveness
+8638ef3 fix: add subscription status display and enhance cancel button logic in Billing component
+7cf464c fix: improve code formatting and consistency in checkout.ts
+6971d76 fix: update timestamp fields to use Timestamptz for better timezone handling
+1e7fda1 fix: update subscription queries to include ordering by updatedAt
+4875b00 fix: update subscription query to filter by active status and adjust payment invoice button logic
+c770861 fix: enhance subscription status checks and update response in user endpoint
+99af660 fix: improve email sender formatting in TrackedEmail component
+5c32c23 fix: update support contact information in README
+cf27e8e fix: update repository clone URL in README
+f265073 feat: add NeatMail Open Source License and enhance README with detailed project information
+7ac3de5 refactor: use environment variable for Gmail webhook topic in watch requests
+a1e33e6 feat: add permissions modal and scope fetching logic
+736f6c9 refactor: comment out unused email deletion logic
+10e7e1c debug for deleted mails
+245d35c refactor: add delay before deleting watch after account deletion
+582d07c refactor: streamline user account deletion process and integrate watch deactivation
+783245f refactor: improve logging and update timestamp format in user data
+9a714a2 updated logicc for the the user_token in delete account
+7b66d31 refactor: enhance logging and update user tokens on successful Gmail watch activation
+69f4964 added console log in delete for debug in prod
+60955ca refactor: improve reserved keywords validation logic in CreateLabel component
+f78ac45 fix: standardize reserved keywords to lowercase in CreateLabel component
+a573e3b feat: add reserved keywords validation for label names in form schema
+f79dbb4 refactor: clean up deleteStatus endpoint and improve error handling in user token management
+cc50322 feat: update user deletion process to handle watch deactivation and improve success messages
+2678de8 refactor: comment out user deletion and subscription cancellation logic in webhook handler
+4249910 feat: add deleted_flag and delete_at fields to user_tokens model
+1476b32 feat: add neatmail.tech to connect-src and img-src in Content-Security-Policy
+9b2c7a4 added headers
+2549fa5 feat: update subscription modal to include a 7-day free trial in the join button
+91777af refactor: encapsulate DodoPayments initialization in a function for better modularity
+367c371 added debug in the checkout
+1a90d70 feat: handle optional payment method type in payment processing
+f6758dc feat: update database schema for user tokens and subscription connections in payment and subscription functions
+4449a57 feat: configure DodoPayments environment based on NODE_ENV for better deployment handling
+7a89a27 feat: enhance user deletion process by improving subscription cancellation handling and error logging
+680322c Update openai.ts
+9895187 Update openai.ts
+dcc3fbf refactor: remove unnecessary console log for subscription in webhook handler
+59029ba feat: update user_tokens relations to use cascade delete for improved data integrity
+11786ff feat: log subscription details and update deactivateWatch to use dodoSubscriptionId
+ec6e8a8 feat: improve onboarding success dialog styling and enhance error handling in email categorization
+f0c7b29 feat: add onboarding success dialog and integrate it into email categorization modal
+ac939aa feat: integrate user subscription data to manage watch status
+fc103c6 feat: add unsubscription message and billing link to Navbar
+65234e3 feat: enhance branding section with additional tagline
+edb8e05 feat: add user feedback messages for empty drafts and tracked emails
+922325f feat: enhance tag deletion process and update user feedback messages
+c82c3f4 added option to delete tags
+b2bebdf feat: implement user deletion with subscription cleanup and webhook handling
+82cfa42 refactor: update SignInPage layout and improve Navbar styling
+ee93a13 Update tags.ts
+79bd66e feat: add custom label deletion functionality with confirmation dialog
+9051326 refactor: enhance CreateLabel component styling and improve TrackedEmail data handling
+f449266 refactor: update labelColor function to accept userId and modify tag retrieval logic
+1db65d4 fix: add multiSchema to previewFeatures in Prisma schema
+bebdbc3 added custom label functionality
+39f6109 openai prompt change
+61acda2 fix: change tag retrieval method from findUnique to findFirst for labelColor function
+2bbb9db view all changes
+9d8782f fix: update category selection validation to allow a minimum of 1 category
+4444875 fix: apply font-logo class to Navbar title for consistent typography
+f88e75d fix: update font imports and adjust Navbar and Dashboard components for consistency
+3343d69 fix: update Navbar title from MailOrbit to NeatMail for consistency
+49045f4 fix: log error details in checkout endpoint for improved debugging
+34a0fd1 fix: log error details in handleCancel function for better debugging
+5b7466b feat: enhance authentication middleware with public route matching for sign-in and API endpoints
+18c513a feat: update ConditionalSidebar to include SidebarTrigger and improve sidebar rendering logic
+4fd3f04 refactor: simplify Navbar component by removing conditional SidebarTrigger rendering
+2080d5d feat: implement ConditionalSidebar to hide sidebar on sign-in and sign-up pages, refactor layout structure for improved organization
+a8cfc15 removed /dashboard route
+f9dc026 Update globals.css
+77e6ffb feat: apply Inter font to html and body for consistent typography
+f54a329 feat: add Inter font import and apply it to body for improved typography
+c922579 feat: enhance checkout process with subscription management, add invoice retrieval functionality, and update dashboard labels
+f887271 feat: implement subscription cancellation and renewal functionality, add payment history retrieval, and enhance billing UI
+47a8e31 feat: add database checks for active subscriptions and processing payments in checkout
+ce04119 feat: add subscription validation and user subscription retrieval functionality
+309a951 feat: integrate Gmail watch activation and deactivation into subscription handling
+79fb753 feat: add break statements for subscription and payment webhook cases to ensure proper flow
+c309b7e feat: handle additional subscription webhook events and persist to database
+eced5a0 feat: update payment handling to use payment_method_type and allow null values for card details and error messages
+20c0410 feat: implement Dodo webhook processing with Redis for deduplication and enhance payment handling
+173a6ad feat: add payment history relation to user_tokens model and update related types
+4e996d6 feat: update subscription upsert logic to include detailed fields for status and billing information
+5a0b65a feat: update subscription handling in dodo webhook to use full payload and improve logging
+b88eab1 refactor: simplify subscription data handling in addSubscriptiontoDb function
+5e51cf7 feat: enhance dodo webhook to handle additional subscription events and improve error logging
+becff08 feat: handle subscription updates and cancellations in dodo webhook
+d4a215d feat: add Subscription model and integrate with user_tokens
+5fa7833 feat: add checkout API endpoint and integrate DodoPayments for processing transactions
+84fa366 feat: refine UI components by adjusting sidebar layout, email draft display, and icon sizes
+4d51047 feat: enhance email drafts display with dialog for draft details and fix recipient rendering
+629e249 feat: implement pagination for tracked emails and add no-mail image for empty states
+7f284cd feat: add email drafts functionality and UI
+135d30b Update openai.ts
+4a17498 Update openai.ts
+33b6fb6 refactor: update user_tokens model to use clerk_user_id as primary key and adjust related fields
+e242a34 refactor: update createGmailDraft function to use userId instead of gmail client
+fad9cee refactor: update table header in TrackedEmail component and adjust privacy notice in page layout
+75f3a8c refactor: adjust padding in page layout for improved spacing
+c9bae3f feat: enhance TrackedEmail component with limit prop and add limit validation in email fetching logic
+475d08e refactor: remove unused Link import from Dashboard component
+cd30c0d feat: add TrackedEmail component and integrate labelled email fetching logic
+1a16a68 feat: implement label distribution feature and update email fetching logic for this week
+4330e0b refactor: remove unused buttons from Dashboard and update AreaChart type in EmailTrendsChart
+ed8f633 feat: add LabelDistribution component for visualizing label distribution
+f9061dc fix: update SignIn component to use hardcoded redirect URL and enable sign-up
+41bd23b feat: enhance webhook responses for user creation, update, and deletion
+bc3f884 revert the changes
+eca343a refactor: optimize handleSubmit logic for tag and watch updates
+b6a173c feat: add email_tracked relation to user_tokens and tag models
+6bdec9b feat: add user label settings component and enhance sidebar navigation
+e55d1af added sidebar
+a4830fa feat: implement watch functionality for email categorization
+89b053d refactor: enhance email classification prompt for clarity and strict output format
+29fe3c7 refactor: comment out email classification and labeling logic for future implementation
+897000a feat: integrate user tags into email classification process
+832b11e feat: add UI components and utilities for buttons, checkboxes, dialogs, and switches
+c6cc6ad feat: add user_tags relation to user_tokens model and implement necessary input types
+724e0d6 feat: update email reply model to gpt-4o-mini for enhanced response quality
+3220f82 feat: update OpenAI model to gpt-4.1-nano for improved performance
+a3a3046 feat: improve email classification function formatting and error handling
+45fd3ad feat: update OpenAI model versions for email classification and reply generation
+2eb319b feat: add immediate message processing to prevent race conditions
+19c9584 feat: refactor user token handling to use upsert for create and update operations
+1f17512 feat: add tag model with fields id, name, created_at, and color
+6852b4d feat: add Clerk webhook handling and integrate user token management
+b77619f refactor: remove user token API routes and related fields from user_tokens model
+f635a51 feat: refactor user token retrieval to use getUserByEmail function
+d2002bb feat(redis): implement message processing tracking with Redis
+eaf827d feat: implement email draft generation and handling in webhook processing
+8bca48b refactor: improve error handling and structure in webhook and token management functions
+acd8953 fix: ensure historyId is updated as a string in webhook processing
+30b5f1e feat(prisma): add last_history_id field to user_tokens model and update related functions
+b6c9f45 feat: enhance build script to include Prisma generation
+002d829 feat(prisma): add initial schema for user_tokens model with UUID and token fields
+988d8ae inital commit
+e7a9f6f Initial commit from Create Next App

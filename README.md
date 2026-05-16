@@ -86,10 +86,15 @@ NeatMail is an intelligent email management platform that automatically organize
     
   </tr>
   <tr>
-  <td align="center">
+    <td align="center">
       <img src=".github/workflows/assets/cleanup.png" alt="One-Click Cleanup" />
       <br />
       <b>One-Click Cleanup</b>
+    </td>
+    <td align="center">
+      <img src=".github/workflows/assets/follow_up.png" alt="Follow-Ups" />
+      <br />
+      <b>Follow-Ups</b>
     </td>
   </tr>
 </table>
