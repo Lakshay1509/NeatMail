@@ -130,7 +130,7 @@ const StorageAnalysis = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useGetFilteredEmails(after, before, selectedSize, 100);
+  } = useGetFilteredEmails(after, before, selectedSize, 20);
 
   const rows = React.useMemo<EmailRow[]>(
     () => data?.pages.flatMap((page) => page.emails ?? []) ?? [],

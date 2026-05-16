@@ -487,10 +487,31 @@ interface SearchOutlookResult {
   nextPageToken: string | undefined;
 }
 
+interface SentEmailMessage {
+  id: string;
+  threadId: string;
+  subject: string;
+  to: string;
+  date: string;
+}
+
+interface SentEmailsResult {
+  data: SentEmailMessage[];
+  nextPageToken: string | undefined;
+}
+
+interface GraphMessage {
+  id?: string;
+  conversationId?: string;
+  subject?: string;
+  toRecipients?: { emailAddress?: { address?: string } }[];
+  sentDateTime?: string;
+}
+
 export async function searchOutlook(
   userId: string,
   filter: string,
-  maxResults = 100,
+  maxResults = 20,
   skipToken?: string,
 ): Promise<SearchOutlookResult> {
   const client: Client = await getGraphClient(userId);
@@ -515,7 +536,7 @@ export async function searchOutlook(
     ].join(","))
     .expand("singleValueExtendedProperties($filter=Id eq 'LONG 0x0E08')");
 
-  if (skipToken) req = req.skipToken(skipToken);
+  if (skipToken) req = req.query({ $skip: skipToken });
 
   const res = await req.get();
 
@@ -524,7 +545,7 @@ export async function searchOutlook(
 
   const nextLink: string | undefined = res["@odata.nextLink"];
   const nextPageToken = nextLink
-    ? new URL(nextLink).searchParams.get("$skiptoken") ?? undefined
+    ? new URL(nextLink).searchParams.get("$skip") ?? undefined
     : undefined;
 
   const data: OutlookMessage[] = messages.map((msg) => {
@@ -577,7 +598,7 @@ export async function getFilteredMailsOutlook(
   const result = await searchOutlook(
     userId,
     parts.join(" and "),
-    filters.maxResults ?? 100,
+    filters.maxResults ?? 20,
     filters.pageToken,
   );
 
@@ -662,4 +683,147 @@ export async function archiveMessagesOutlook(userId: string, messageIds: string[
       ? `Successfully archived ${archivedCount} message(s).`
       : `Archived ${archivedCount} message(s), ${failedCount} failed.`,
   };
+}
+
+async function outlookSleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function outlookBatch<T>(items: T[], fn: (item: T) => Promise<T | null>, concurrency = 4): Promise<(T | null)[]> {
+  const results: (T | null)[] = [];
+  const queue = [...items];
+  let idx = 0;
+
+  async function worker(): Promise<void> {
+    while (true) {
+      const i = idx++;
+      if (i >= queue.length) return;
+      results[i] = await fn(queue[i]);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker));
+  return results;
+}
+
+async function outlookRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      if (err?.statusCode === 429 && attempt < maxRetries) {
+        const retryAfter = err?.response?.headers?.get?.("Retry-After");
+        const retryMs = retryAfter
+          ? parseInt(retryAfter, 10) * 1000
+          : Math.min(1000 * 2 ** attempt + Math.random() * 1000, 30000);
+        console.warn(`[outlook] rate limited, retry ${attempt + 1}/${maxRetries} in ${retryMs}ms`);
+        await outlookSleep(retryMs);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("unreachable");
+}
+
+export async function getSentEmailsOutlook(
+  userId: string,
+  opts?: { maxResults?: number; skip?: number; olderThan?: number; userEmail?: string },
+): Promise<SentEmailsResult> {
+  const client = await getGraphClient(userId);
+
+  const maxResults = opts?.maxResults ?? 20;
+  const days = opts?.olderThan ?? 14;
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+  // get sent items folder ID to identify user-sent messages via parentFolderId
+  const sentFolderRes = await outlookRetry(() => client.api("/me/mailFolders('sentitems')").select("id").get()) as { id: string };
+  const sentItemsFolderId = sentFolderRes.id;
+
+  let req = client
+    .api("/me/mailFolders('sentitems')/messages")
+    .filter(`sentDateTime lt ${since}`)   // lt = older than X days (gt is for testing only)
+    .orderby("sentDateTime desc")
+    .top(maxResults)
+    .select(["id", "conversationId", "subject", "toRecipients", "sentDateTime"].join(","));
+
+  if (opts?.skip) req = req.query({ $skip: opts.skip });
+
+  const res = await outlookRetry(() => req.get()) as {
+    value?: GraphMessage[];
+    "@odata.nextLink"?: string;
+  };
+
+  const messages = res.value ?? [];
+
+  const nextLink = res["@odata.nextLink"];
+  const nextPageToken = nextLink
+    ? new URL(nextLink).searchParams.get("$skip") ?? undefined
+    : undefined;
+
+  if (messages.length === 0) return { data: [], nextPageToken };
+
+  // check each conversation for replies (max 4 concurrent to respect Graph API limit)
+  const results = await outlookBatch(messages, async (msg) => {
+      if (!msg.conversationId) return null;
+
+      const convRes = await outlookRetry(() =>
+        client
+          .api("/me/messages")
+          .filter(`conversationId eq '${msg.conversationId}'`)
+          .select("id,from,sender,sentDateTime,parentFolderId")
+          .get(),
+      ) as { value?: { id: string; from?: { emailAddress?: { address?: string } }; sender?: { emailAddress?: { address?: string } }; sentDateTime?: string; parentFolderId?: string }[] };
+
+      const convMessages = convRes.value ?? [];
+      if (convMessages.length === 0) return null;
+
+      // find messages sent AFTER this one (actual replies to this sent message)
+      const replies = convMessages.filter(
+        (m) => m.id !== msg.id && new Date(m.sentDateTime ?? 0) > new Date(msg.sentDateTime ?? 0),
+      );
+
+      // no replies yet — needs follow-up
+      if (replies.length === 0) {
+        return {
+          id: msg.id ?? "",
+          threadId: msg.conversationId ?? "",
+          subject: msg.subject ?? "",
+          to: msg.toRecipients?.[0]?.emailAddress?.address ?? "",
+          date: msg.sentDateTime ?? "",
+        } satisfies SentEmailMessage;
+      }
+
+      // sort replies by sentDateTime descending to find the latest reply
+      const sortedReplies = [...replies].sort(
+        (a, b) => new Date(b.sentDateTime ?? 0).getTime() - new Date(a.sentDateTime ?? 0).getTime(),
+      );
+      const latestReply = sortedReplies[0];
+
+      // if the latest reply is in Sent Items folder → sent by user → still needs follow-up
+      if (latestReply.parentFolderId === sentItemsFolderId) {
+        return {
+          id: msg.id ?? "",
+          threadId: msg.conversationId ?? "",
+          subject: msg.subject ?? "",
+          to: msg.toRecipients?.[0]?.emailAddress?.address ?? "",
+          date: msg.sentDateTime ?? "",
+        } satisfies SentEmailMessage;
+      }
+
+      // latest reply was from someone else → no follow-up needed
+      return null;
+    });
+  const data = results.filter(Boolean) as SentEmailMessage[];
+
+  // deduplicate: keep only the latest message per thread
+  const seen = new Map<string, SentEmailMessage>();
+  for (const msg of data) {
+    const existing = seen.get(msg.threadId);
+    if (!existing || new Date(msg.date) > new Date(existing.date)) {
+      seen.set(msg.threadId, msg);
+    }
+  }
+
+  return { data: Array.from(seen.values()), nextPageToken };
 }

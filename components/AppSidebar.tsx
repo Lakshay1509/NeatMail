@@ -1,5 +1,5 @@
 "use client"
-import { Home, Receipt, Tag, PenLine, Plug, MailX, Inbox, MessageSquareDashed, AlertCircle } from "lucide-react"
+import { Home, Receipt, Tag, PenLine, Plug, MailX, Inbox, MessageSquareDashed, AlertCircle, Send } from "lucide-react"
 import { motion, LayoutGroup } from "framer-motion"
 
 import {
@@ -24,6 +24,10 @@ const items = [
   { title: "Labels", url: "/settings/labels", icon: Tag },
   { title: "Draft preference", url: "/settings/draft-preference", icon: PenLine },
   { title: "Integrations", url: "/integrations", icon: Plug },
+]
+
+const followUpItems = [
+  { title: "Follow ups", url: "/follow-ups", icon: Send },
 ]
 
 const cleanupItems = [
@@ -75,6 +79,19 @@ export function AppSidebar() {
             <SidebarMenu>
               <LayoutGroup>
                 {renderItems(items)}
+              </LayoutGroup>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarSeparator />
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-[10.5px] font-medium tracking-widest uppercase text-sidebar-foreground/50 pb-1">
+            Review
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <LayoutGroup>
+                {renderItems(followUpItems)}
               </LayoutGroup>
             </SidebarMenu>
           </SidebarGroupContent>
