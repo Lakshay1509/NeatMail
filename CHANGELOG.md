@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] — 2026-05-16
+
+### Added
+- Follow-ups page showing sent emails awaiting replies (`ab72acd`)
+- Changelog to document project updates and version history (`4d2681a`)
+
+### Fixed
+- Outlook ID handling updated to support multiple IDs in renewal process and various functions (`1042b19`, `a312e56`)
+
 ## [1.0.0] — 2026-05-15
 
 ### Added
