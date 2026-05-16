@@ -1,17 +1,18 @@
 import { decryptDomain, encryptDomain } from "@/lib/encode";
 import {
   getLabelledMails,
+  getSentEmails,
   unsubscribeFromEmail,
   getPreviousMails,
   getFilteredMails,
   trashMessages,
 } from "@/lib/gmail";
 import {
-  archiveMessagesOutlook,
   deleteOutlookMessage,
   getFilteredMailsOutlook,
   getLabelledMailsOutlook,
   getPreviousOutlookMails,
+  getSentEmailsOutlook,
   unsubscribeFromEmailOutlook,
 } from "@/lib/outlook";
 import { db } from "@/lib/prisma";
@@ -446,6 +447,44 @@ const app = new Hono()
       );
       return ctx.json({ emails, nextPageToken }, 200);
     }
+  })
+
+  .get("/sent", async (ctx) => {
+    const { userId } = await auth();
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const maxResults = ctx.req.query("maxResults")
+      ? parseInt(ctx.req.query("maxResults")!)
+      : undefined;
+    const pageToken = ctx.req.query("pageToken") || undefined;
+    const olderThan = ctx.req.query("olderThan")
+      ? parseInt(ctx.req.query("olderThan")!)
+      : undefined;
+
+    const userData = await db.user_tokens.findUnique({
+      where: { clerk_user_id: userId },
+      select: { is_gmail: true, email: true },
+    });
+
+    if (!userData) {
+      return ctx.json({ error: "User not found" }, 500);
+    }
+
+    if (userData.is_gmail) {
+      const result = await getSentEmails(userId, { maxResults, pageToken, olderThan, userEmail: userData.email });
+      return ctx.json({ ...result, is_gmail: true }, 200);
+    }
+
+
+    const result = await getSentEmailsOutlook(userId, {
+      maxResults,
+      skip: pageToken ? parseInt(pageToken) : undefined,
+      olderThan,
+      userEmail: userData.email,
+    });
+    return ctx.json({ ...result, is_gmail: false }, 200);
   })
 
   .post(

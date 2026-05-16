@@ -599,6 +599,105 @@ export async function deleteGmailDraft(userId: string, draftId: string) {
 }
 
 
+async function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      const isRateLimit =
+        err?.code === 429 ||
+        err?.status === 429 ||
+        err?.code === 403 ||
+        err?.status === 403 ||
+        err?.errors?.some?.(
+          (e: any) =>
+            e.reason === "rateLimitExceeded" ||
+            e.reason === "userRateLimitExceeded",
+        );
+      if (isRateLimit && attempt < maxRetries) {
+        const delay = Math.min(1000 * 2 ** attempt + Math.random() * 1000, 30000);
+        console.warn(`[gmail] rate limited, retry ${attempt + 1}/${maxRetries} in ${delay}ms`);
+        await sleep(delay);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("unreachable");
+}
+
+export async function getSentEmails(
+  userId: string,
+  opts?: { maxResults?: number; pageToken?: string; olderThan?: number; userEmail?: string },
+) {
+  const gmail = await getGmailClient(userId);
+  const days = opts?.olderThan ?? 14;
+  const query = `in:sent older_than:${days}d newer_than:60d`;
+  const maxResults = opts?.maxResults ?? 20;
+  const userEmail = opts?.userEmail;
+
+  const listRes = await withRetry(() =>
+    gmail.users.threads.list({
+      userId: "me",
+      q: query,
+      maxResults,
+      pageToken: opts?.pageToken,
+    }),
+  );
+
+  const threads = listRes.data.threads ?? [];
+  if (threads.length === 0) return { data: [], nextPageToken: undefined };
+
+  const nextPageToken = listRes.data.nextPageToken ?? undefined;
+
+  const data = (
+    await Promise.all(
+      threads.map(async (thread) => {
+        const res = await withRetry(() =>
+          gmail.users.threads.get({
+            userId: "me",
+            id: thread.id!,
+            format: "metadata",
+            metadataHeaders: ["Subject", "To", "Date", "From"],
+          }),
+        );
+
+        const messages = res.data.messages ?? [];
+        if (messages.length === 0) return null;
+
+        // Check if the LAST message in the thread was sent by me
+        // If not, someone else replied — no follow-up needed
+        if (userEmail) {
+          const lastMsg = messages[messages.length - 1];
+          const lastHeaders = lastMsg.payload?.headers ?? [];
+          const lastFrom =
+            lastHeaders.find((h) => h.name?.toLowerCase() === "from")?.value ?? "";
+
+          if (!lastFrom.toLowerCase().includes(userEmail.toLowerCase())) return null;
+        }
+
+        const headers = messages[0].payload?.headers ?? [];
+        const get = (name: string) =>
+          headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())
+            ?.value ?? "";
+
+        return {
+          id: messages[0].id!,
+          threadId: thread.id!,
+          subject: get("Subject"),
+          to: get("To"),
+          date: get("Date"),
+        };
+      }),
+    )
+  ).filter(Boolean);
+
+  return { data, nextPageToken };
+}
 export async function searchGmail(
   userId: string,
   query: string,
@@ -675,7 +774,7 @@ export async function getFilteredMails(
   if (filters.from) parts.push(`from:${filters.from}`);
   if (filters.to) parts.push(`to:${filters.to}`);
 
-  return searchGmail(userId, parts.join(" "), filters.maxResults ?? 100, filters.pageToken);
+  return searchGmail(userId, parts.join(" "), filters.maxResults ?? 20, filters.pageToken);
 }
 
 export async function getAttachment(userId:string,messageId:string) {
@@ -809,8 +908,8 @@ export async function getPreviousMails(userId: string) {
       arr.slice(i * size, i * size + size)
     );
 
-  // Use chunk size of 40 to stay well under Gmail API's 250 units/sec limit (get = 5 units)
-  const chunks = chunkArray(messages, 40);
+  // Use chunk size of 30 to stay well under Gmail API's 250 units/sec limit (get = 5 units)
+  const chunks = chunkArray(messages, 30);
   const results: { messageId: string; senderEmail: string; date: string; is_read: boolean }[] = [];
 
   for (const chunk of chunks) {
