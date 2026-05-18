@@ -260,6 +260,7 @@ const app = new Hono()
             lt: in24Hours,
           },
           cancelAtNextBillingDate: true,
+          reminder_sent_at: null,
           user_tokens: { deleted_flag: false },
         },
       });
@@ -295,6 +296,11 @@ const app = new Hono()
               },
             },
           });
+
+          await db.subscription.update({
+            where: { id: sub.id },
+            data: { reminder_sent_at: new Date() },
+          });
         } catch (error) {
           console.error(
             `Failed to send subscription reminder to ${sub.customerEmail}:`,
@@ -310,6 +316,7 @@ const app = new Hono()
             gte: now,
             lt: in24Hours,
           },
+          reminder_sent_at: null,
           user_tokens: { deleted_flag: false },
         },
         select: {
@@ -352,6 +359,11 @@ const app = new Hono()
                 renewalLink: "https://dashboard.neatmail.app/billing",
               },
             },
+          });
+
+          await db.free_trial.update({
+            where: { user_id: sub.user_id },
+            data: { reminder_sent_at: new Date() },
           });
         } catch (error) {
           console.error(

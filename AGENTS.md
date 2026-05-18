@@ -25,7 +25,8 @@
 - Config: `prisma.config.ts` (loads `.env.local` in non-production)
 - **Always regenerate after schema changes:** `bunx prisma generate`
 - Migrations run via GitHub Actions on merge to `main` (`.github/workflows/migrate.yml`).
-- Local setup: `bunx prisma db push` then `bunx prisma generate`.
+- Local setup: `cp .env.example .env.local`, fill values, then `bunx prisma db push && bunx prisma generate` (one-time only).
+- **NEVER run `bunx prisma db push` after initial setup.** Schema changes must go through `bunx prisma generate` locally; migrations are applied via GitHub Actions on merge to `main`.
 
 ## Style & UI
 - **Tailwind CSS v4** with `@tailwindcss/postcss`. Config is in `postcss.config.mjs`; no separate `tailwind.config.ts`.

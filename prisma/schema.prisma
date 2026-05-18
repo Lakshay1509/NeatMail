@@ -107,6 +107,7 @@ model Subscription {
   previousBillingDate      DateTime?        @map("previous_billing_date")
   cancelAtNextBillingDate  Boolean          @default(false) @map("cancel_at_next_billing_date")
   cancelledAt              DateTime?        @map("cancelled_at")
+  reminder_sent_at         DateTime?        @db.Timestamptz(6)
   metadata                 Json?            @default("{}")
   createdAt                DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
