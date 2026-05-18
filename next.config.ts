@@ -5,11 +5,35 @@ const nextConfig: NextConfig = {
   // Skip type-checking during Docker builds on the VPS.
   // tsc spawns a separate worker that consumes ~1.5GB RAM — fatal on a 4GB machine.
   // Run `tsc --noEmit` locally or in CI (GitHub Actions) instead.
+  poweredByHeader: false,
   typescript: { ignoreBuildErrors: true },
+  images: {
+    remotePatterns: [],
+    localPatterns: [
+      { pathname: '/**', search: '' },
+    ],
+    qualities: [75],
+    maximumResponseBody: 5 * 1024 * 1024,
+    maximumRedirects: 3,
+  },
   async headers() {
     return [
       {
-        source: "/:path",
+        source: "/:path*",
+        has: [
+          {
+            type: 'header',
+            key: 'accept',
+            value: 'text/html',
+          },
+        ],
+        headers: [
+          { key: "Content-Type", value: "text/html; charset=utf-8" },
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate, private" },
+        ],
+      },
+      {
+        source: "/:path*",
         headers: [
           {
             key: "Strict-Transport-Security",
@@ -48,7 +72,6 @@ const nextConfig: NextConfig = {
       'self'
       data:
       blob:
-      https:
       *.clerk.dev
       *.clerk.com;
 

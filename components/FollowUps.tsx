@@ -191,7 +191,7 @@ const FollowUps = () => {
           return (
             <Button variant="outline" size="sm" asChild>
               <a href={href} target="_blank" rel="noopener noreferrer">
-                View Details
+                Open in {is_gmail ? "Gmail" : "Outlook"}
                 <ExternalLink className="ml-1.5 size-3" />
               </a>
             </Button>
