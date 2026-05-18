@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] — 2026-05-18
+
+### Added
+- `reminder_sent_at` field to Subscription model for tracking reminder delivery (`63bc563`)
+- Cache-Control header to improve caching strategy (`e77ac62`)
+- FollowUps button text updated to indicate email client (`7e24134`)
+
+### Changed
+- next.config settings enhanced for image handling and headers (`7e24134`)
+- Code structure refactored for improved readability and maintainability (`a5eb466`)
+
 ## [1.1.0] — 2026-05-16
 
 ### Added
