@@ -1,4 +1,5 @@
 import axios, { AxiosError } from "axios";
+import { throttled } from "./throttle";
 
 export interface Tags{
   name:string,
@@ -72,10 +73,8 @@ export async function getModelResponse(
       throw new Error("user_id is required");
     }
 
-    const response = await apiClient.post<ModelResponse>(
-      "/classify",
-
-      request,
+    const response = await throttled("openai", () =>
+      apiClient.post<ModelResponse>("/classify", request),
     );
 
 
@@ -119,10 +118,8 @@ export async function correctLabel(
 
     console.log(request)
 
-    const response = await apiClient.post<CorrectionResponse>(
-      "/correct",
-
-      request,
+    const response = await throttled("openai", () =>
+      apiClient.post<CorrectionResponse>("/correct", request),
     );
 
 
