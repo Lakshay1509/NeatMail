@@ -3,10 +3,10 @@ import {client} from "@/lib/hono"
 import { useUser } from "@clerk/nextjs";
 
 
-export const useGetUserEmailStats = (from?: string, to?: string)=>{
+export const useGetUserEmailStats = (from?: string, to?: string, enabled?: boolean)=>{
     const {user} = useUser()
     const query = useQuery({
-        enabled : !!user,
+        enabled : !!user && enabled !== false,
         queryKey: ["user-email-stats",{from,to}],
         queryFn: async ()=>{
             const response = await client.api.email.stats.$get({

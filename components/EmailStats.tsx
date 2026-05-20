@@ -37,6 +37,8 @@ import { subDays } from "date-fns";
 import { DatePickerWithRange } from "./DatePickerWithRange";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
+import { NotSubscribedState } from "./NotSubscribedState";
+import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
 
 type EmailStatsRow = {
   domain: string | null;
@@ -195,7 +197,9 @@ const EmailStats = () => {
 
   const from = debouncedDate?.from?.toISOString();
   const to = debouncedDate?.to?.toISOString();
-  const { data, isLoading, isError } = useGetUserEmailStats(from, to);
+  const { data: subscribedData, isLoading: subscribedLoading } =
+    useGetUserSubscribed();
+  const { data, isLoading, isError } = useGetUserEmailStats(from, to, subscribedData?.subscribed === true);
   const unsubscribeMutation = useUnsubscribeDomain();
   const [archiveDuration, setArchiveDuration] = React.useState<30 | 60>(30);
   const [sorting, setSorting] = React.useState<SortingState>([
@@ -329,7 +333,7 @@ const EmailStats = () => {
     },
   });
 
-  if (isLoading) {
+  if (isLoading || subscribedLoading) {
     return (
       <div className="">
         <div className="space-y-3 p-4">
@@ -338,6 +342,17 @@ const EmailStats = () => {
           ))}
         </div>
       </div>
+    );
+  }
+
+  if (subscribedData?.subscribed !== true) {
+    return (
+      <NotSubscribedState
+        title="Unsubscribe requires a subscription"
+        description="Subscribe to NeatMail Pro to track and unsubscribe from unwanted emails."
+        width={300}
+        height={300}
+      />
     );
   }
 

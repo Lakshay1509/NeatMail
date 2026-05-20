@@ -9,11 +9,12 @@ export const useGetFilteredEmails = (
   maxResults?: number,
   from?: string,
   to?: string,
+  enabled?: boolean,
 ) => {
   const { user } = useUser();
 
   const query = useInfiniteQuery({
-    enabled: !!user && !!after && !!before && !!largerThan,
+    enabled: !!user && !!after && !!before && !!largerThan && enabled !== false,
     queryKey: ["filtered-emails", { after, before, largerThan, maxResults, from, to }],
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {

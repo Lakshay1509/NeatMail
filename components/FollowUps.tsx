@@ -27,6 +27,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useGetSentEmails } from "@/features/email/use-get-sent-emails";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
+import { NotSubscribedState } from "./NotSubscribedState";
+import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
 
 type SentEmailRow = {
   id: string;
@@ -76,6 +78,9 @@ const FollowUps = () => {
   const [globalFilter, setGlobalFilter] = React.useState("");
   const [olderThan, setOlderThan] = React.useState("7");
 
+  const { data: subscribedData, isLoading: subscribedLoading } =
+    useGetUserSubscribed();
+
   const {
     data,
     isLoading,
@@ -83,7 +88,7 @@ const FollowUps = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useGetSentEmails(20, parseInt(olderThan));
+  } = useGetSentEmails(20, parseInt(olderThan), subscribedData?.subscribed === true);
 
 
   const rows = React.useMemo<SentEmailRow[]>(
@@ -224,13 +229,24 @@ const FollowUps = () => {
     },
   });
 
-  if (isLoading) {
+  if (isLoading || subscribedLoading) {
     return (
       <div className="flex flex-col gap-3 p-4">
         {[...Array(6)].map((_, i) => (
           <Skeleton key={i} className="h-10 w-full" />
         ))}
       </div>
+    );
+  }
+
+  if (subscribedData?.subscribed !== true) {
+    return (
+      <NotSubscribedState
+        title="Follow-ups require a subscription"
+        description="Subscribe to NeatMail Pro to track replies and send follow-up reminders."
+        width={300}
+        height={300}
+      />
     );
   }
 

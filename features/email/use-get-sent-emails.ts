@@ -16,11 +16,11 @@ type SentEmailsResponse = {
   is_gmail: boolean;
 };
 
-export const useGetSentEmails = (maxResults?: number, olderThan?: number) => {
+export const useGetSentEmails = (maxResults?: number, olderThan?: number, enabled?: boolean) => {
   const { user } = useUser();
 
   const query = useInfiniteQuery<SentEmailsResponse, Error>({
-    enabled: !!user,
+    enabled: !!user && enabled !== false,
     queryKey: ["sent-emails", { maxResults, olderThan }],
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
