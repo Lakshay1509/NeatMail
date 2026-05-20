@@ -1,3 +1,6 @@
+65ac44a feat: add NotSubscribedState component and integrate subscription checks in EmailStats, FollowUps, and StorageAnalysis
+042f898 feat: implement throttling mechanism for API requests using Redis
+c1dfcec chore: update changelog and commits file for version 1.2.0 with new features and changes
 63bc563 feat: add reminder_sent_at field to Subscription model and update related logic
 e77ac62 feat: add Cache-Control header to improve caching strategy
 1374e18 Merge pull request #14 from Lakshay1509/follow_up

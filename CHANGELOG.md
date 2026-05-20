@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] — 2026-05-20
+
+### Added
+- `NotSubscribedState` component using `premium.svg` with default "Go to Billing" link (`65ac44a`)
+- Subscription gating on FollowUps, EmailStats (unsubscribe), and StorageAnalysis pages (`65ac44a`)
+- `enabled` parameter on `useGetSentEmails`, `useGetUserEmailStats`, and `useGetFilteredEmails` hooks to skip API calls for unsubscribed users (`65ac44a`)
+
+## [1.3.0] — 2026-05-19
+
+### Added
+- Throttling mechanism for API requests using Redis (`042f898`)
+
 ## [1.2.0] — 2026-05-18
 
 ### Added
