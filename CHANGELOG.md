@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.0] — 2026-05-21
+
+### Added
+- Reply functionality for Gmail and Outlook conversations with FollowUps UI integration (`4f08c2d`)
+
 ## [1.4.0] — 2026-05-20
 
 ### Added

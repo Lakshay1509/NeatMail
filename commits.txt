@@ -1,3 +1,5 @@
+4f08c2d feat: add reply functionality for Gmail and Outlook conversations with UI integration in FollowUps component
+f59a5e8 chore: update changelog and commits file for version 1.4.0 with new features and changes
 65ac44a feat: add NotSubscribedState component and integrate subscription checks in EmailStats, FollowUps, and StorageAnalysis
 042f898 feat: implement throttling mechanism for API requests using Redis
 c1dfcec chore: update changelog and commits file for version 1.2.0 with new features and changes
