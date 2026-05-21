@@ -852,7 +852,7 @@ export async function getSentEmailsOutlook(
           threadId: msg.conversationId ?? "",
           subject: msg.subject ?? "",
           to: msg.toRecipients?.[0]?.emailAddress?.address ?? "",
-          date: msg.sentDateTime ?? "",
+          date: latestReply.sentDateTime ?? msg.sentDateTime ?? "",
         } satisfies SentEmailMessage;
       }
 

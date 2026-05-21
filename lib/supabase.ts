@@ -209,6 +209,17 @@ export async function getUserSubscribed(userId: string) {
       };
     }
 
+    if (data?.status !== "active" && hasActiveTrial) {
+      return {
+        success: true,
+        subscribed: true,
+        status: "trial",
+        next_billing_date: freeTrial.expires_at,
+        cancel_at_next_billing_date: null,
+        freeTrial: true,
+      };
+    }
+
     // paid subscription
     return {
       success: true,

@@ -98,6 +98,20 @@ const app = new Hono()
       );
     }
 
+    if (data?.status !== "active" && hasActiveTrial) {
+      return ctx.json(
+        {
+          success: true,
+          subscribed: true,
+          status: "trial",
+          next_billing_date: freeTrial.expires_at,
+          cancel_at_next_billing_date: null,
+          freeTrial: true,
+        },
+        200,
+      );
+    }
+
     return ctx.json(
       {
         success: true,
@@ -306,7 +320,6 @@ const app = new Hono()
     return ctx.json({ balance: wallets.total_balance_usd }, 200);
   })
 
-
   .get("/isGmail", async (ctx) => {
     const { userId } = await auth();
 
@@ -332,7 +345,7 @@ const app = new Hono()
     return ctx.json({ is_gmail: false }, 200);
   })
 
-  .get('/activeFolders', async (ctx) => {
+  .get("/activeFolders", async (ctx) => {
     const { userId } = await auth();
 
     if (!userId) {
@@ -346,7 +359,9 @@ const app = new Hono()
       select: { watched_folders: true },
     });
 
-    const watchedFolders: WatchedFolder[] = Array.isArray(dbResult?.watched_folders)
+    const watchedFolders: WatchedFolder[] = Array.isArray(
+      dbResult?.watched_folders,
+    )
       ? (dbResult.watched_folders as WatchedFolder[])
       : [];
 
@@ -362,16 +377,18 @@ const app = new Hono()
     return ctx.json(result, 200);
   })
 
-  .put('/updateWatchedFolders',zValidator(
+  .put(
+    "/updateWatchedFolders",
+    zValidator(
       "json",
       z.array(
-  z.object({
-    id: z.string(),
-    name: z.string(),
-  })
-)
-    ),async(ctx)=>{
-
+        z.object({
+          id: z.string(),
+          name: z.string(),
+        }),
+      ),
+    ),
+    async (ctx) => {
       const { userId } = await auth();
 
       if (!userId) {
@@ -380,7 +397,7 @@ const app = new Hono()
 
       const userData = await db.user_tokens.findUnique({
         where: { clerk_user_id: userId },
-        select: { is_gmail: true ,email:true},
+        select: { is_gmail: true, email: true },
       });
 
       if (!userData) {
@@ -395,11 +412,15 @@ const app = new Hono()
       });
 
       const response = await createOutlookSubscription(userId, values);
-      await updateOutlookId(userData.email, response.map(r => r.id).join(","), true);
+      await updateOutlookId(
+        userData.email,
+        response.map((r) => r.id).join(","),
+        true,
+      );
 
       return ctx.json({ success: true, watched_folders: values }, 200);
-  })
-
+    },
+  )
 
   .put(
     "update/moveToFolder",
