@@ -669,28 +669,33 @@ export async function getSentEmails(
         const messages = res.data.messages ?? [];
         if (messages.length === 0) return null;
 
-        // Check if the LAST message in the thread was sent by me
-        // If not, someone else replied — no follow-up needed
+        const getHeader = (headers: { name?: string | null; value?: string | null }[], name: string) =>
+          headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value ?? "";
+
         if (userEmail) {
           const lastMsg = messages[messages.length - 1];
-          const lastHeaders = lastMsg.payload?.headers ?? [];
-          const lastFrom =
-            lastHeaders.find((h) => h.name?.toLowerCase() === "from")?.value ?? "";
+          const lastFrom = getHeader(lastMsg.payload?.headers ?? [], "From");
 
           if (!lastFrom.toLowerCase().includes(userEmail.toLowerCase())) return null;
         }
 
-        const headers = messages[0].payload?.headers ?? [];
-        const get = (name: string) =>
-          headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())
-            ?.value ?? "";
+        const myMsg = userEmail
+          ? [...messages].reverse().find((msg) => {
+              const from = getHeader(msg.payload?.headers ?? [], "From");
+              return from.toLowerCase().includes(userEmail.toLowerCase());
+            })
+          : messages[messages.length - 1];
+
+        if (!myMsg) return null;
+
+        const headers = myMsg.payload?.headers ?? [];
 
         return {
-          id: messages[0].id!,
+          id: myMsg.id!,
           threadId: thread.id!,
-          subject: get("Subject"),
-          to: get("To"),
-          date: get("Date"),
+          subject: getHeader(headers, "Subject"),
+          to: getHeader(headers, "To"),
+          date: getHeader(headers, "Date"),
         };
       }),
     )
@@ -861,6 +866,90 @@ export async function downloadAttachment(
   return data.replace(/-/g, "+").replace(/_/g, "/");
 }
 
+
+export async function replyToGmailThread(
+  userId: string,
+  threadId: string,
+  message: string,
+  to?: string,
+) {
+  const gmail = await getGmailClient(userId);
+
+  const thread = await gmail.users.threads.get({
+    userId: "me",
+    id: threadId,
+    format: "metadata",
+    metadataHeaders: ["Subject", "To", "From", "Message-ID", "References"],
+  });
+
+  const messages = thread.data.messages ?? [];
+  if (messages.length === 0) throw new Error("Thread has no messages");
+
+  const lastMsg = messages[messages.length - 1];
+  const headers = lastMsg.payload?.headers ?? [];
+  const getHeader = (name: string) =>
+    headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value ?? "";
+
+  const subject = getHeader("Subject");
+  const recipient = to || getHeader("From");
+  const rfcMessageId = getHeader("Message-ID");
+  const references = getHeader("References");
+
+  const profile = await gmail.users.getProfile({ userId: "me" });
+  const fromEmail = profile.data.emailAddress ?? "";
+
+  const cleanSubject = subject.replace(/^(re:\s*)*/i, "").trim();
+  const replySubject = `Re: ${cleanSubject}`;
+  const utf8Subject = `=?utf-8?B?${Buffer.from(replySubject).toString("base64")}?=`;
+
+  const formattedBody = message.replace(/\n/g, "<br>");
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; font-size: 14px; color: #000000;">
+      ${formattedBody}
+    </div>
+  `.trim();
+
+  const encodedBody = Buffer.from(htmlContent).toString("base64");
+
+  const CRLF = "\r\n";
+  const messageParts: string[] = [
+    "MIME-Version: 1.0",
+    `From: ${fromEmail}`,
+    `To: ${recipient}`,
+    `Subject: ${utf8Subject}`,
+  ];
+
+  if (rfcMessageId) {
+    messageParts.push(`In-Reply-To: ${rfcMessageId}`);
+    messageParts.push(
+      `References: ${references ? references + " " : ""}${rfcMessageId}`,
+    );
+  }
+
+  messageParts.push(
+    "Content-Type: text/html; charset=utf-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    encodedBody,
+  );
+
+  const raw = messageParts.join(CRLF);
+  const encodedMessage = Buffer.from(raw)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
+  const res = await gmail.users.messages.send({
+    userId: "me",
+    requestBody: {
+      raw: encodedMessage,
+      threadId: threadId,
+    },
+  });
+
+  return res.data;
+}
 
 export async function trashMessages(userId: string, messageIds: string[]) {
   if (!messageIds || messageIds.length === 0) {

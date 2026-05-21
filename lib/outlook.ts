@@ -609,6 +609,51 @@ export async function getFilteredMailsOutlook(
 
   return { ...result, data };
 }
+export async function replyToOutlookConversation(
+  userId: string,
+  conversationId: string,
+  message: string,
+  toRecipients?: string[],
+) {
+  const client = await getGraphClient(userId);
+
+  const messagesRes = (await client
+    .api("/me/messages")
+    .filter(`conversationId eq '${conversationId}'`)
+    .select("id")
+    .top(1)
+    .get()) as { value?: { id: string }[] };
+
+  const messageId = messagesRes.value?.[0]?.id;
+  if (!messageId) throw new Error("No messages found in conversation");
+
+  const formattedBody = message.replace(/\n/g, "<br>");
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; font-size: 14px; color: #000000;">
+      ${formattedBody}
+    </div>
+  `.trim();
+
+  const requestBody: Record<string, unknown> = {
+    message: {
+      body: {
+        contentType: "HTML",
+        content: htmlContent,
+      },
+    },
+  };
+
+  if (toRecipients && toRecipients.length > 0) {
+    (requestBody.message as Record<string, unknown>).toRecipients = toRecipients.map((address) => ({
+      emailAddress: { address },
+    }));
+  }
+
+  const result = await client.api(`/me/messages/${messageId}/reply`).post(requestBody);
+
+  return result;
+}
+
 export async function deleteOutlookMessage(userId: string, messageId: string) {
   const client = await getGraphClient(userId);
 

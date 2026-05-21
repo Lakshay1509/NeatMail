@@ -11,7 +11,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ExternalLink, Loader2 } from "lucide-react";
+import { ArrowUpDown, ExternalLink, Loader2, SendHorizontal} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,7 +24,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { useGetSentEmails } from "@/features/email/use-get-sent-emails";
+import { useReplyMutation } from "@/features/email/use-post-reply";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
 import { NotSubscribedState } from "./NotSubscribedState";
@@ -77,6 +79,11 @@ const FollowUps = () => {
   );
   const [globalFilter, setGlobalFilter] = React.useState("");
   const [olderThan, setOlderThan] = React.useState("7");
+  const [expandedRowId, setExpandedRowId] = React.useState<string | null>(null);
+  const [replyText, setReplyText] = React.useState("");
+  const [replyTo, setReplyTo] = React.useState("");
+
+  const replyMutation = useReplyMutation();
 
   const { data: subscribedData, isLoading: subscribedLoading } =
     useGetUserSubscribed();
@@ -92,11 +99,15 @@ const FollowUps = () => {
 
 
   const rows = React.useMemo<SentEmailRow[]>(
-    () =>
-      data?.pages.flatMap((p) =>
-        p.data.map((d) => ({ ...d, is_gmail: p.is_gmail })),
-      ) ?? [],
-    [data],
+    () => {
+      const cutoff = Date.now() - parseInt(olderThan) * 24 * 60 * 60 * 1000;
+      return (
+        data?.pages.flatMap((p) =>
+          p.data.map((d) => ({ ...d, is_gmail: p.is_gmail })),
+        ) ?? []
+      ).filter((row) => new Date(row.date).getTime() < cutoff);
+    },
+    [data, olderThan],
   );
 
   const columns = React.useMemo<ColumnDef<SentEmailRow>[]>(
@@ -192,20 +203,40 @@ const FollowUps = () => {
           const href = is_gmail
             ? `https://mail.google.com/mail/u/0/#sent/${threadId}`
             : `https://outlook.office.com/mail/deeplink/read/${encodeURIComponent(id)}`;
+          const isExpanded = expandedRowId === row.id;
 
           return (
-            <Button variant="outline" size="sm" asChild>
-              <a href={href} target="_blank" rel="noopener noreferrer">
-                Open in {is_gmail ? "Gmail" : "Outlook"}
-                <ExternalLink className="ml-1.5 size-3" />
-              </a>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (isExpanded) {
+                    setExpandedRowId(null);
+                    setReplyText("");
+                    setReplyTo("");
+                  } else {
+                    setExpandedRowId(row.id);
+                    setReplyText("");
+                    setReplyTo(row.original.to);
+                  }
+                }}
+              >
+                <SendHorizontal className="size-3.5" />
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <a href={href} target="_blank" rel="noopener noreferrer">
+                  Open in {is_gmail ? "Gmail" : "Outlook"}
+                  <ExternalLink className="ml-1.5 size-3" />
+                </a>
+              </Button>
+            </div>
           );
         },
       },
       
     ],
-    [],
+    [expandedRowId],
   );
 
   const table = useReactTable({
@@ -277,7 +308,7 @@ const FollowUps = () => {
             <SelectValue placeholder="Select range" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="1">Last 1 days</SelectItem>
+           
             <SelectItem value="3">Last 3 days</SelectItem>
             <SelectItem value="7">Last 7 days</SelectItem>
             <SelectItem value="14">Last 14 days</SelectItem>
@@ -309,22 +340,79 @@ const FollowUps = () => {
           <TableBody>
             {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className="transition-colors hover:bg-muted/40"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className="py-4 border-b border-border/40"
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
+                <React.Fragment key={row.id}>
+                  <TableRow className="transition-colors hover:bg-muted/40">
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className="py-4 border-b border-border/40"
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                  {expandedRowId === row.id && (
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell
+                        colSpan={columns.length}
+                        className="py-3 border-b border-border/40 bg-muted/20"
+                      >
+                        <div className="flex flex-col gap-3">
+                          <Input
+                            placeholder="To"
+                            value={replyTo}
+                            onChange={(e) => setReplyTo(e.target.value)}
+                          />
+                          <Textarea
+                            placeholder="Write your reply..."
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            className="min-h-[100px]"
+                          />
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">
+                              {replyText.length}/1000
+                            </span>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                replyMutation.mutate(
+                                  {
+                                    id: row.original.threadId,
+                                    message: replyText,
+                                    to: replyTo,
+                                  },
+                                  {
+                                    onSuccess: () => {
+                                      setReplyText("");
+                                      setReplyTo("");
+                                      setExpandedRowId(null);
+                                    },
+                                  },
+                                );
+                              }}
+                              disabled={
+                                replyText.length < 10 ||
+                                replyText.length > 1000 ||
+                                replyMutation.isPending
+                              }
+                            >
+                              {replyMutation.isPending ? (
+                                <Loader2 className="mr-2 size-3.5 animate-spin" />
+                              ) : (
+                                <SendHorizontal className="mr-2 size-3.5" />
+                              )}
+                              Send follow up
+                            </Button>
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </React.Fragment>
               ))
             ) : (
               <TableRow>

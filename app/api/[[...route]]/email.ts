@@ -6,6 +6,7 @@ import {
   getPreviousMails,
   getFilteredMails,
   trashMessages,
+  replyToGmailThread,
 } from "@/lib/gmail";
 import {
   deleteOutlookMessage,
@@ -14,6 +15,7 @@ import {
   getPreviousOutlookMails,
   getSentEmailsOutlook,
   unsubscribeFromEmailOutlook,
+  replyToOutlookConversation,
 } from "@/lib/outlook";
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
@@ -530,6 +532,60 @@ const app = new Hono()
         }
 
         return ctx.json({ response }, 200);
+      }
+    },
+  )
+  .post(
+    "/reply",
+    zValidator(
+      "json",
+      z.object({
+        id: z.string(),
+        message: z.string().min(10).max(1000),
+        to: z.string().optional(),
+      }),
+    ),
+    async (ctx) => {
+      const { userId } = await auth();
+
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const { id, message, to } = ctx.req.valid("json");
+
+      const userData = await db.user_tokens.findUnique({
+        where: { clerk_user_id: userId },
+        select: { is_gmail: true },
+      });
+
+      if (!userData) {
+        return ctx.json({ error: "User not found" }, 500);
+      }
+
+      const extractEmail = (input: string) => {
+        const match = input.match(/<([^>]+)>/);
+        return match ? match[1].trim() : input.trim();
+      };
+
+      const cleanTo = to ? extractEmail(to) : undefined;
+
+      try {
+        if (userData.is_gmail) {
+          const result = await replyToGmailThread(userId, id, message, cleanTo);
+          return ctx.json(result, 200);
+        }
+
+        const result = await replyToOutlookConversation(
+          userId,
+          id,
+          message,
+          cleanTo ? [cleanTo] : undefined,
+        );
+        return ctx.json(result, 200);
+      } catch (error) {
+        console.error("Failed to send reply:", error);
+        return ctx.json({ error: "Failed to send reply" }, 500);
       }
     },
   );
