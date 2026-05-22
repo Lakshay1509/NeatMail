@@ -4,6 +4,7 @@ import { ContextAssembler }        from "./assembler"
 import { GoogleCalendarProvider } from "./providers/google-calender"
 import { OutlookCalendarProvider } from "./providers/outlook-calender"
 import { SlackProvider }          from "./providers/slack"
+import { HubSpotProvider }       from "./providers/hubspot"
 
 import { EmailEntities, EmailIntent, IncomingEmail } from "./types"
 import { db } from "@/lib/prisma"
@@ -60,6 +61,9 @@ export async function buildContextAndDraft(
 
   const data = await getUserConnectedProviders(email.userId);
 
+  if (data.includes("hubspot")) {
+    assembler.register(new HubSpotProvider())
+  }
 
   const entities: EmailEntities={
     senderEmail:email.senderEmail,

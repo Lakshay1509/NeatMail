@@ -18,6 +18,7 @@ import telegram from './telegram'
 import slack from './slack'
 import stats from './stats'
 import freeTrial from './freeTrial'
+import integrations from './integrations'
 
 export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
@@ -86,6 +87,7 @@ const routes = app
     .route('/telegram',telegram)
     .route('/slack',slack)
     .route('/freeTrial',freeTrial)
+    .route('/integrations',integrations)
 
 
 
