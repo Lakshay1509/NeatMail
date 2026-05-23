@@ -47,3 +47,4 @@ prisma/generated/
 
 #Graphify
 graphify-out
+.agents/skills/
