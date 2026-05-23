@@ -101,6 +101,7 @@ export const processOutlookMailFn = inngest.createFunction(
 
     const client = await clerkClient();
     const clerkUser = await client.users.getUser(subscription.clerk_user_id);
+    
 
     const draftsenstivity = await step.run("draft-senstivity",async()=>{
       return (await useGetUserDraftPreference(clerkUser.id)).senstivity
@@ -244,6 +245,7 @@ export const processOutlookMailFn = inngest.createFunction(
         await inngest.send({
           name: "email/process.draft",
           data: {
+            userName:clerkUser.fullName,
             userId: clerkUser.id,
             emailData: {
               ...emailData,

@@ -13,6 +13,7 @@ export const processDraftGmail = inngest.createFunction(
   { event: "email/process.draft" },
   async ({ event, step }) => {
     const {
+      userName,
       userId,
       emailData,
       senderName,
@@ -85,6 +86,7 @@ export const processDraftGmail = inngest.createFunction(
 
     const response = await step.run("model-called", async () => {
       const modelResult = await getDraftContext({
+        user_name:userName,
         user_id: userId,
         subject: emailData.subject,
         sender_email: senderEmail,
@@ -97,10 +99,10 @@ export const processDraftGmail = inngest.createFunction(
       return modelResult;
     });
 
-    const { draft, quickOptions } = await step.run(
+    const { draft } = await step.run(
       "build-context-and-draft",
       async () => {
-        const { draft, quickOptions } = await buildContextAndDraft(
+        const { draft } = await buildContextAndDraft(
           incomingEmail,
           is_gmail,
           draftPreference.timezone ?? "UTC",
@@ -114,7 +116,7 @@ export const processDraftGmail = inngest.createFunction(
           language,
         );
 
-        return { draft, quickOptions };
+        return { draft };
       },
     );
 
@@ -170,7 +172,6 @@ export const processDraftGmail = inngest.createFunction(
             emailData.from,
             emailData.subject,
             draft,
-            quickOptions,
             draft_id,
           );
         }

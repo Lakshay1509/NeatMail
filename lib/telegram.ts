@@ -225,7 +225,6 @@ export async function sendDraftNotification(
   senderEmail: string,
   emailSubject: string,
   draftReply: string, // the AI-generated draft content
-  quickOptions: string[], // e.g. ["Yes, 3am works!", "No, let's reschedule", "Not available"]
   draft_id: string,
 ) {
   const data = await db.telegramIntegration.findUnique({
@@ -260,7 +259,7 @@ export async function sendDraftNotification(
       user_id: userId,
       telegram_msg_id: messageId,
       draft_id: draft_id,
-      quick_options: quickOptions,
+      quick_options: [],
       awaiting_custom: false,
     },
   });

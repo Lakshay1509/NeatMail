@@ -2,6 +2,7 @@ import { EmailIntent } from "@/context-engine/types";
 import axios, { AxiosError } from "axios";
 
 export interface DraftContextRequest{
+  user_name:string
   user_id:string,
   token:string,
   body:string,

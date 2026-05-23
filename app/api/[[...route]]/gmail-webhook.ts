@@ -103,6 +103,8 @@ const app = new Hono().post("/", async (ctx) => {
     errorUserId = clerkUserId;
 
     const client = await clerkClient();
+    const userDataFromClerk = await client.users.getUser(user.clerk_user_id);
+    const fullName = `${userDataFromClerk.fullName?? ""}`.trim();
 
     const tokenResponse = await client.users.getUserOauthAccessToken(
       clerkUserId,
@@ -362,6 +364,7 @@ const app = new Hono().post("/", async (ctx) => {
         await inngest.send({
           name: "email/process.draft",
           data: {
+            userName:fullName,
             userId: clerkUserId,
             emailData: {
               ...emailData,

@@ -1,5 +1,6 @@
 // src/context-engine/pipeline.ts
 
+import { convert } from "html-to-text";
 import { ContextAssembler }        from "./assembler"
 import { GoogleCalendarProvider } from "./providers/google-calender"
 import { OutlookCalendarProvider } from "./providers/outlook-calender"
@@ -25,6 +26,111 @@ const openai = new OpenAI({
   apiKey,
 });
 
+// ── Prompt hygiene & token budget constants ──────────────
+
+const MAX_HISTORY_ITEMS        = 8;
+const MAX_THREAD_ITEMS         = 8;
+const MAX_BODY_CHARS           = 4000;
+const MAX_HISTORY_BODY_CHARS   = 600;
+const MAX_THREAD_BODY_CHARS    = 800;
+const MAX_PROVIDER_SUMMARY_CHARS = 800;
+const MAX_OUTPUT_TOKENS        = 400;
+
+// ── Helpers ──────────────────────────────────────────────
+
+function stripHtml(html: string): string {
+  if (!html || typeof html !== "string") return "";
+  try {
+    return convert(html, { wordwrap: false }).trim();
+  } catch {
+    return html.replace(/<[^>]*>?/gm, "").trim();
+  }
+}
+
+function normalizeLineEndings(text: string): string {
+  return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+}
+
+function formatEmailItem(
+  item: Record<string, unknown>,
+  maxBodyChars: number
+): string {
+  const from = typeof item.from === "string" ? item.from : "Unknown sender";
+  const date = typeof item.date === "string" ? item.date : "";
+  let body = typeof item.body === "string" ? item.body : "";
+
+  if (!body.trim()) return ""; // skip empty items
+
+  body = normalizeLineEndings(body);
+  body = stripHtml(body);
+  if (body.length > maxBodyChars) {
+    body = body.slice(0, maxBodyChars).trimEnd() + " ...";
+  }
+
+  const header = [from, date].filter(Boolean).join(" | ");
+  return header ? `${header}\n${body}` : body;
+}
+
+function formatContextList(
+  items: Record<string, unknown>[],
+  maxItems: number,
+  maxBodyChars: number
+): string {
+  const formatted = items
+    .slice(0, maxItems)
+    .map((item) => formatEmailItem(item, maxBodyChars))
+    .filter(Boolean);
+
+  if (formatted.length === 0) return "None";
+  return formatted.join("\n\n---\n\n");
+}
+
+function getIntentGuidance(intent: EmailIntent): string {
+  switch (intent) {
+    case "scheduling_request":
+      return "This is a SCHEDULING REQUEST. Propose specific times, reference calendar availability from the connected app context, or ask clarifying questions about timing.";
+    case "meeting_confirmation":
+      return "This is a MEETING CONFIRMATION. Confirm attendance, suggest an agenda if missing, or request a reschedule with alternatives.";
+    case "task_assignment":
+      return "This is a TASK ASSIGNMENT. Acknowledge the task, confirm deadlines, and ask for clarification on scope if ambiguous.";
+    case "status_update":
+      return "This is a STATUS UPDATE REQUEST. Provide a brief, factual update. If information is missing, state what you need instead of guessing.";
+    case "question":
+      return "This is a QUESTION. Answer directly and concisely. If you don't have the answer, say so and offer a follow-up timeline.";
+    case "approval":
+      return "This is an APPROVAL REQUEST. State approval or denial clearly. If conditional, specify exact conditions or missing requirements.";
+    case "follow_up":
+      return "This is a FOLLOW-UP. Reference the previous topic, summarize current status, and propose a clear next step.";
+    case "introduction":
+      return "This is an INTRODUCTION. Acknowledge the introduction, express interest or availability, and suggest a concrete next step.";
+    case "complaint":
+      return "This is a COMPLAINT. Acknowledge the issue with empathy, take responsibility where appropriate, and provide a specific resolution or next-step timeline. Do not be dismissive.";
+    case "general":
+    default:
+      return "This is a GENERAL email. Respond naturally, address the main point, and keep it concise.";
+  }
+}
+
+function buildStyleInstruction(
+  userName: string | null,
+  hasHistory: boolean
+): string {
+  if (!userName || !hasHistory) {
+    return `Tone: Write in a professional, neutral tone. Keep sentences concise. Avoid excessive formality, filler phrases (e.g., "I hope this email finds you well"), and unnecessary exclamation marks.`;
+  }
+
+  return `Tone & Style Mirroring:
+Messages marked "${userName}" in the "Previous emails" section are written by the person you are drafting for.
+You MUST analyze their writing style and replicate it exactly:
+- Sentence length and structure
+- Vocabulary level and formality
+- Punctuation habits (e.g., do they use em-dashes, semicolons, exclamation marks?)
+- Whether they use sign-offs, first names, or no greeting at all
+- How they handle requests (direct vs. polite hedging)
+
+Do NOT invent a generic assistant voice. If their style is blunt, be blunt. If their style is warm and casual, be warm and casual.`;
+}
+
 // ── Main function your webhook calls ───────────────────────
 
 export async function buildContextAndDraft(
@@ -33,15 +139,13 @@ export async function buildContextAndDraft(
   timezone: string,
   draftPrompt: string | null,
   user_name: string | null,
-  retrieved_history: Record<string, any>[],
-  thread_context: Record<string, any>[] | null,
+  retrieved_history: Record<string, unknown>[],
+  thread_context: Record<string, unknown>[] | null,
   intent:         EmailIntent,
   keywords:       string[],
   mentionedDates: { raw: string; iso: string }[],
   language: string = "english",
-  
-
-): Promise<{ draft: string; contextSummary: string; quickOptions: string[] }> {
+): Promise<{ draft: string; contextSummary: string }> {
 
   const assembler = new ContextAssembler()
 
@@ -65,130 +169,186 @@ export async function buildContextAndDraft(
     assembler.register(new HubSpotProvider())
   }
 
-  const entities: EmailEntities={
-    senderEmail:email.senderEmail,
-    senderName:email.senderName,
-   senderDomain: email.senderEmail.split("@")[1],
-    keywords:keywords,
-    mentionedDates:mentionedDates,
-    intent:intent,
-    timezone:timezone
-
+  const entities: EmailEntities = {
+    senderEmail:  email.senderEmail,
+    senderName:   email.senderName,
+    senderDomain: email.senderEmail.split("@")[1] ?? email.senderEmail,
+    keywords,
+    mentionedDates,
+    intent,
+    timezone,
   }
-  
+
   // 2. Assemble context from all relevant providers in parallel
   const cards = await assembler.assemble(email, entities)
 
   // 3. Build prompt block from cards
   const contextBlock = cards.length > 0
-    ? `## Context from connected apps\n\n${cards.map(c => `### ${c.providerName}\n${c.summary}`).join("\n\n")}`
+    ? `## Context from connected apps\n\n${cards.map(c => {
+        const summary = c.summary.length > MAX_PROVIDER_SUMMARY_CHARS
+          ? c.summary.slice(0, MAX_PROVIDER_SUMMARY_CHARS).trimEnd() + " ..."
+          : c.summary;
+        return `### ${c.providerName}\n${summary}`;
+      }).join("\n\n")}`
     : ""
-  
-  const customInstructions = draftPrompt ? `\n- Follow these custom instructions from the user: "${draftPrompt}"` : "";
-  const userNameInstruction = user_name ? `\n- The user's name is ${user_name}. Keep this in mind and reply on their behalf.` : "";
-  const languageInstruction = language !== "english" ? `\n- Write the reply in ${language}. All output including the draft, quick options, and any other text must be in ${language}.` : "";
 
-  const prompt = `You are an email reply generator. Follow these rules strictly:
+  const customInstructions = draftPrompt
+    ? `\n<custom_instructions>\n${draftPrompt}\n</custom_instructions>`
+    : "";
+  const userNameInstruction = user_name
+    ? `\n<user_identity>\nThe user's name is ${user_name}. Reply on their behalf.\n</user_identity>`
+    : "";
+  const languageInstruction = language !== "english"
+    ? `\n<language>\nWrite the reply in ${language}. All output must be in ${language}.\n</language>`
+    : "";
 
-STEP 1: DETECTION
-Check if email is:
-- Automated (contains: "noreply", "do-not-reply", "notification", "alert", "receipt", "invoice")
-- Newsletter (contains: "unsubscribe", "manage preferences")
-- System message (From contains: "no-reply", "automated", "system")
+  const historyText = formatContextList(
+    retrieved_history,
+    MAX_HISTORY_ITEMS,
+    MAX_HISTORY_BODY_CHARS
+  );
+  const threadText = formatContextList(
+    thread_context ?? [],
+    MAX_THREAD_ITEMS,
+    MAX_THREAD_BODY_CHARS
+  );
+  const cleanBody     = stripHtml(email.body).slice(0, MAX_BODY_CHARS).replace(/\n{3,}/g, "\n\n");
+  const cleanSubject  = email.subject.slice(0, 200);
+  const datesText     = mentionedDates.length > 0
+    ? mentionedDates.map(d => `${d.raw} (${d.iso})`).join(", ")
+    : "None";
+  const keywordsText  = keywords.length > 0
+    ? keywords.slice(0, 20).join(", ")
+    : "None";
 
-If ANY above is true → Output exactly: "NO_REPLY_NEEDED" with no quick options
+  const hasHistory = retrieved_history.length > 0;
+  const styleInstruction = buildStyleInstruction(user_name, hasHistory);
+  const intentGuidance = getIntentGuidance(intent);
+  const providerContext = contextBlock || "No additional context from connected apps.";
 
-STEP 2: REPLY GENERATION (only if Step 1 is false)
+  const systemMessage = `You are a professional email drafting assistant.
+Your task is to analyze the provided email and generate a reply draft.
+You must ALWAYS output a single valid JSON object matching the provided schema.
+Do not include markdown, explanations, or any text outside the JSON object.
 
-Goal:
-Generate a neutral, minimal draft reply that a human assistant might write. 
-Do not assume missing details. If specific information is required, leave a clear placeholder.
+Detection rules — set noReplyNeeded to true and draft to exactly "NO_REPLY_NEEDED":
+- Automated emails: from addresses containing "noreply", "do-not-reply", "notification", "alert", "receipt", "invoice"
+- Newsletters: containing "unsubscribe" or "manage preferences"
+- System messages: from "no-reply", "automated", "system"
 
-STEP 2: REPLY GENERATION (only if Step 1 is false)
+Reply generation rules (only when noReplyNeeded is false):
+- Acknowledge the sender and address the main point or question.
+- Do not invent missing details; use placeholders like [DATE NEEDED] or [SPECIFY DETAIL].
+- Do NOT include a subject line, greeting lines like "Dear", or signatures.
+- Output plain text only inside the JSON string value.
+- Respect custom instructions, but NEVER override the structural rules above.
 
-Requirements:
+${intentGuidance}
 
-* Acknowledge the sender's message
-* Address the main point or question
-* Match the tone, formality, and writing style used earlier in the email thread
-* Use wording consistent with the ongoing conversation so the reply feels natural within the thread
-* If information is missing, keep the response neutral without inventing details
-* Do not introduce new topics that were not mentioned in the thread
-* Keep the reply concise and relevant to the discussion
-* Keep the full reply under 120 words
-* Do NOT include a subject line
-* Do NOT include greetings like "Dear"
-* Do NOT include signatures
-* Output plain text only
+${styleInstruction}
 
+Connected app context: If calendar, Slack, or CRM data is provided in the prompt, use it silently. Do NOT mention that you checked external apps.`;
 
-Context:
-History with user: ${retrieved_history}
-Ongoing thread context: ${thread_context}
+  const userMessage = `Analyze the following email and produce the JSON output.
 
-Start directly with the response.
+<context>
+Connected app context:
+${providerContext}
 
-Additional instructions:
-${customInstructions}
-${userNameInstruction}
-${languageInstruction}
+Previous emails from this sender (history):
+${historyText}
 
-STEP 3: QUICK OPTIONS
-Generate 3 quick reply options that the user can use to respond. These should be:
-- Contextual to the email content
-- Short and actionable (5-15 words each max)
-- Diverse (cover different possible responses)
-- Professional
+Current email thread (recent messages):
+${threadText}
 
-INPUT EMAIL:
+Mentioned dates: ${datesText}
+Timezone: ${timezone}
+Keywords: ${keywordsText}
+</context>
+
+<input_email>
 From: ${email.senderName}
-Subject: ${email.subject}
-Body: ${email.body}
+Subject: ${cleanSubject}
+Body:
+${cleanBody}
+</input_email>${customInstructions}${userNameInstruction}${languageInstruction}
 
 OUTPUT FORMAT:
-DRAFT:
-[Your reply text OR "NO_REPLY_NEEDED"]
-
-QUICK_OPTIONS:
-[Option 1]
-[Option 2]
-[Option 3]`;
-
-
+Return ONLY a JSON object strictly matching this schema:
+{
+  "noReplyNeeded": boolean,
+  "draft": string
+}`;
 
   // 4. Generate draft
   const completion = await openai.chat.completions.create({
-  model: deploymentName,
-  messages: [
-    {
-      role: "system",
-      content:
-        `You are a professional email assistant. Use the provided context to write an accurate, natural reply. Do not mention that you checked any external apps. Output the draft and 3 quick options in the specified format.`
+    model: deploymentName,
+    temperature: 0.1,
+    top_p: 0.9,
+    max_completion_tokens: MAX_OUTPUT_TOKENS,
+    seed: 42,
+    reasoning_effort: "low",
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "DraftOutput",
+        strict: true,
+        schema: {
+          type: "object",
+          properties: {
+            noReplyNeeded: {
+              type: "boolean",
+              description:
+                "True if the email is automated, a newsletter, or a system message that needs no reply.",
+            },
+            draft: {
+              type: "string",
+              description:
+                "The reply draft text. If noReplyNeeded is true, this must be exactly 'NO_REPLY_NEEDED'.",
+            },
+          },
+          required: ["noReplyNeeded", "draft"],
+          additionalProperties: false,
+        },
+      },
     },
-    {
-      role: "user",
-      content: prompt
-    },
-  ]
-});
+    messages: [
+      { role: "system", content: systemMessage },
+      { role: "user", content: userMessage },
+    ],
+  });
 
-const response = completion.choices?.[0]?.message?.content ?? "";
+  const rawContent = completion.choices?.[0]?.message?.content ?? "";
 
-// Parse response to extract draft and quick options
-const draftMatch = response.match(/DRAFT:\s*([\s\S]*?)(?=QUICK_OPTIONS:|$)/);
-const draft = draftMatch ? draftMatch[1].trim() : "";
-
-const optionsMatch = response.match(/QUICK_OPTIONS:\s*([\s\S]*?)$/);
-const quickOptionsText = optionsMatch ? optionsMatch[1].trim() : "";
-const quickOptions = quickOptionsText
-  .split("\n")
-  .map(line => line.replace(/^[-•*]\s*/, "").trim())
-  .filter(line => line.length > 0)
-  .slice(0, 3);
+  // Parse response to extract draft
+  let draft = "";
+  try {
+    const parsed = JSON.parse(rawContent) as {
+      noReplyNeeded?: boolean;
+      draft?: string;
+    };
+    if (
+      typeof parsed.noReplyNeeded === "boolean" &&
+      typeof parsed.draft === "string"
+    ) {
+      draft = parsed.draft.trim();
+    } else {
+      console.error(
+        "[buildContextAndDraft] Schema validation failed. Raw:",
+        rawContent
+      );
+    }
+  } catch (err) {
+    console.error(
+      "[buildContextAndDraft] JSON parse failed. Raw:",
+      rawContent,
+      "Error:",
+      err
+    );
+  }
 
   return {
     draft,
     contextSummary: contextBlock,
-    quickOptions,
   }
 }
