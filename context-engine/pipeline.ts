@@ -34,7 +34,7 @@ const MAX_BODY_CHARS           = 4000;
 const MAX_HISTORY_BODY_CHARS   = 600;
 const MAX_THREAD_BODY_CHARS    = 800;
 const MAX_PROVIDER_SUMMARY_CHARS = 800;
-const MAX_OUTPUT_TOKENS        = 1200;
+  const MAX_OUTPUT_TOKENS        = 600;
 
 // ── Helpers ──────────────────────────────────────────────
 
@@ -242,6 +242,7 @@ Reply generation rules (only when noReplyNeeded is false):
 - Do NOT include a subject line, greeting lines like "Dear", or signatures.
 - Output plain text only inside the JSON string value.
 - Respect custom instructions, but NEVER override the structural rules above.
+- Keep the reply concise. Scheduling replies: 1-2 sentences. Task/complex replies: 3-5 sentences. Complaints: 4-6 sentences with clear action items. Never exceed 8 sentences.
 
 ${intentGuidance}
 
