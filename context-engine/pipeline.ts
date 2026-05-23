@@ -34,11 +34,11 @@ const MAX_BODY_CHARS           = 4000;
 const MAX_HISTORY_BODY_CHARS   = 600;
 const MAX_THREAD_BODY_CHARS    = 800;
 const MAX_PROVIDER_SUMMARY_CHARS = 800;
-const MAX_OUTPUT_TOKENS        = 400;
+const MAX_OUTPUT_TOKENS        = 1200;
 
 // ── Helpers ──────────────────────────────────────────────
 
-function stripHtml(html: string): string {
+export function stripHtml(html: string): string {
   if (!html || typeof html !== "string") return "";
   try {
     return convert(html, { wordwrap: false }).trim();
@@ -47,11 +47,11 @@ function stripHtml(html: string): string {
   }
 }
 
-function normalizeLineEndings(text: string): string {
+export function normalizeLineEndings(text: string): string {
   return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 }
 
-function formatEmailItem(
+export function formatEmailItem(
   item: Record<string, unknown>,
   maxBodyChars: number
 ): string {
@@ -71,7 +71,7 @@ function formatEmailItem(
   return header ? `${header}\n${body}` : body;
 }
 
-function formatContextList(
+export function formatContextList(
   items: Record<string, unknown>[],
   maxItems: number,
   maxBodyChars: number
@@ -85,7 +85,7 @@ function formatContextList(
   return formatted.join("\n\n---\n\n");
 }
 
-function getIntentGuidance(intent: EmailIntent): string {
+export function getIntentGuidance(intent: EmailIntent): string {
   switch (intent) {
     case "scheduling_request":
       return "This is a SCHEDULING REQUEST. Propose specific times, reference calendar availability from the connected app context, or ask clarifying questions about timing.";
@@ -111,7 +111,7 @@ function getIntentGuidance(intent: EmailIntent): string {
   }
 }
 
-function buildStyleInstruction(
+export function buildStyleInstruction(
   userName: string | null,
   hasHistory: boolean
 ): string {
@@ -283,10 +283,7 @@ Return ONLY a JSON object strictly matching this schema:
   // 4. Generate draft
   const completion = await openai.chat.completions.create({
     model: deploymentName,
-    temperature: 0.1,
-    top_p: 0.9,
     max_completion_tokens: MAX_OUTPUT_TOKENS,
-    seed: 42,
     reasoning_effort: "low",
     response_format: {
       type: "json_schema",
