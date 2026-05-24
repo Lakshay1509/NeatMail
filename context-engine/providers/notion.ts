@@ -203,8 +203,8 @@ export class NotionProvider implements ContextProvider {
     const contentSnippets: string[] = []
     const commentSnippets: string[] = []
 
-    if (anySenderMatch) {
-      const topPage = senderPages[0]
+    if (topPages.length > 0) {
+      const topPage = topPages[0]
       const [markdownRes, commentsRes] = await Promise.allSettled([
         fetch(`${NOTION_API}/pages/${topPage.id}/markdown`, {
           headers,
