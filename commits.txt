@@ -1,3 +1,12 @@
+b52a087 feat: implement last message retrieval for email threads in Gmail and Outlook
+188e2fb feat: adjust output token limit and add guidelines for reply generation length
+33b6411 feat: increase output token limit and export helper functions for better accessibility
+ac70b48 feat: add prompt engineering patterns skill to skills-lock.json
+57a00a0 Remove .agents/skills from tracking and add to .gitignore
+f6eb7a2 feat: enhance email draft processing with user name integration and context formatting
+7751568 feat: implement HubSpot integration with context fetching and UI components
+1732b3c feat: add trial status response for users with active trials in subscription checks
+7792cae chore: update changelog for version 1.5.0 with added reply functionality for Gmail and Outlook
 4f08c2d feat: add reply functionality for Gmail and Outlook conversations with UI integration in FollowUps component
 f59a5e8 chore: update changelog and commits file for version 1.4.0 with new features and changes
 65ac44a feat: add NotSubscribedState component and integrate subscription checks in EmailStats, FollowUps, and StorageAnalysis

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.0] — 2026-05-24
+
+### Added
+- HubSpot integration with context fetching and UI components (`7751568`)
+- Last message retrieval for email threads in Gmail and Outlook (`b52a087`)
+- Email draft processing with user name integration and context formatting (`f6eb7a2`)
+- Trial status response for users with active trials in subscription checks (`1732b3c`)
+- Prompt engineering patterns skill to skills-lock.json (`ac70b48`)
+
+### Changed
+- Output token limit adjusted with guidelines for reply generation length (`188e2fb`)
+- Output token limit increased; helper functions exported for better accessibility (`33b6411`)
+- .agents/skills removed from tracking and added to .gitignore (`57a00a0`)
+
 ## [1.5.0] — 2026-05-21
 
 ### Added
