@@ -16,6 +16,12 @@ const integrations = [
     label: "Notion",
     description: "Sync relevant Notion pages and docs into your email drafts.",
     iconUrl: "integrations/notion.svg"
+  },
+  {
+    provider: "github",
+    label: "GitHub",
+    description: "Pull issues, PRs, and org context from GitHub into your email drafts.",
+    iconUrl: "integrations/github.svg"
   }
 ] as const;
 

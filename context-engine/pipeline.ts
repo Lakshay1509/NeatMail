@@ -7,6 +7,7 @@ import { OutlookCalendarProvider } from "./providers/outlook-calender"
 import { SlackProvider }          from "./providers/slack"
 import { HubSpotProvider }       from "./providers/hubspot"
 import { NotionProvider }       from "./providers/notion"
+import { GitHubProvider }        from "./providers/github"
 
 import { EmailEntities, EmailIntent, IncomingEmail } from "./types"
 import { db } from "@/lib/prisma"
@@ -172,6 +173,10 @@ export async function buildContextAndDraft(
 
   if (data.includes("notion")) {
     assembler.register(new NotionProvider())
+  }
+
+  if (data.includes("github")) {
+    assembler.register(new GitHubProvider())
   }
 
   const entities: EmailEntities = {
