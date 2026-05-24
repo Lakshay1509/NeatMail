@@ -26,6 +26,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useGetSentEmails } from "@/features/email/use-get-sent-emails";
+import { useGetLastMessage } from "@/features/email/use-get-last-message";
 import { useReplyMutation } from "@/features/email/use-post-reply";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
@@ -80,10 +81,12 @@ const FollowUps = () => {
   const [globalFilter, setGlobalFilter] = React.useState("");
   const [olderThan, setOlderThan] = React.useState("7");
   const [expandedRowId, setExpandedRowId] = React.useState<string | null>(null);
+  const [expandedThreadId, setExpandedThreadId] = React.useState<string | null>(null);
   const [replyText, setReplyText] = React.useState("");
   const [replyTo, setReplyTo] = React.useState("");
 
   const replyMutation = useReplyMutation();
+  const lastMessage = useGetLastMessage(expandedThreadId);
 
   const { data: subscribedData, isLoading: subscribedLoading } =
     useGetUserSubscribed();
@@ -213,10 +216,12 @@ const FollowUps = () => {
                 onClick={() => {
                   if (isExpanded) {
                     setExpandedRowId(null);
+                    setExpandedThreadId(null);
                     setReplyText("");
                     setReplyTo("");
                   } else {
                     setExpandedRowId(row.id);
+                    setExpandedThreadId(row.original.threadId);
                     setReplyText("");
                     setReplyTo(row.original.to);
                   }
@@ -366,6 +371,35 @@ const FollowUps = () => {
                             value={replyTo}
                             onChange={(e) => setReplyTo(e.target.value)}
                           />
+                          {lastMessage.isLoading && (
+                            <div className="rounded-lg border bg-background p-4">
+                              <Skeleton className="h-4 w-32 mb-2" />
+                              <Skeleton className="h-4 w-full mb-1" />
+                              <Skeleton className="h-4 w-3/4" />
+                            </div>
+                          )}
+                          {lastMessage.data?.body && (
+                            <div className="rounded-lg border bg-background p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-medium text-muted-foreground">
+                                  Your last message
+                                </span>
+                                {lastMessage.data.date && (
+                                  <span className="text-xs text-muted-foreground/60">
+                                    {formatDate(lastMessage.data.date)}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-sm text-foreground/80 max-h-[200px] overflow-y-auto whitespace-pre-wrap break-words">
+                                {lastMessage.data.body}
+                              </div>
+                            </div>
+                          )}
+                          {lastMessage.isSuccess && !lastMessage.data?.body && (
+                            <div className="text-xs text-muted-foreground/60 px-1">
+                              Could not load message content
+                            </div>
+                          )}
                           <Textarea
                             placeholder="Write your reply..."
                             value={replyText}
@@ -386,11 +420,12 @@ const FollowUps = () => {
                                     to: replyTo,
                                   },
                                   {
-                                    onSuccess: () => {
-                                      setReplyText("");
-                                      setReplyTo("");
-                                      setExpandedRowId(null);
-                                    },
+                                  onSuccess: () => {
+                                    setReplyText("");
+                                    setReplyTo("");
+                                    setExpandedRowId(null);
+                                    setExpandedThreadId(null);
+                                  },
                                   },
                                 );
                               }}

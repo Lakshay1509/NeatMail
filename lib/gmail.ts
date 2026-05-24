@@ -703,6 +703,46 @@ export async function getSentEmails(
 
   return { data, nextPageToken };
 }
+
+export async function getLastSentMessageInThreadGmail(
+  userId: string,
+  threadId: string,
+  userEmail: string,
+) {
+  const gmail = await getGmailClient(userId);
+
+  const thread = await withRetry(() =>
+    gmail.users.threads.get({
+      userId: "me",
+      id: threadId,
+      format: "full",
+      fields: "messages(payload,internalDate,snippet),messages(id)",
+    }),
+  );
+
+  const messages = thread.data.messages ?? [];
+  if (messages.length === 0) return null;
+
+  const getHeader = (headers: { name?: string | null; value?: string | null }[], name: string) =>
+    headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value ?? "";
+
+  const myMsg = [...messages].reverse().find((msg) => {
+    const from = getHeader(msg.payload?.headers ?? [], "From");
+    return from.toLowerCase().includes(userEmail.toLowerCase());
+  });
+
+  if (!myMsg) return null;
+
+  const body = extractBodyFromPart(myMsg.payload).join("\n").trim();
+  const headers = myMsg.payload?.headers ?? [];
+
+  return {
+    body,
+    date: getHeader(headers, "Date"),
+    subject: getHeader(headers, "Subject"),
+  };
+}
+
 export async function searchGmail(
   userId: string,
   query: string,

@@ -872,3 +872,45 @@ export async function getSentEmailsOutlook(
 
   return { data: Array.from(seen.values()), nextPageToken };
 }
+
+export async function getLastSentMessageInThreadOutlook(
+  userId: string,
+  threadId: string,
+  userEmail: string,
+) {
+  const client = await getGraphClient(userId);
+
+  const sentFolderRes = await outlookRetry(() =>
+    client.api("/me/mailFolders('sentitems')").select("id").get(),
+  ) as { id: string };
+  const sentItemsFolderId = sentFolderRes.id;
+
+  const res = await outlookRetry(() =>
+    client
+      .api("/me/messages")
+      .filter(`conversationId eq '${threadId}' and parentFolderId eq '${sentItemsFolderId}'`)
+      .orderby("sentDateTime desc")
+      .top(1)
+      .select("id,subject,sentDateTime,body,bodyPreview")
+      .get(),
+  ) as {
+    value?: {
+      id: string;
+      subject?: string;
+      sentDateTime?: string;
+      body?: { contentType?: string; content?: string };
+      bodyPreview?: string;
+    }[];
+  };
+
+  const message = res.value?.[0];
+  if (!message) return null;
+
+  const body = message.body?.content ?? message.bodyPreview ?? "";
+
+  return {
+    body,
+    date: message.sentDateTime ?? "",
+    subject: message.subject ?? "",
+  };
+}

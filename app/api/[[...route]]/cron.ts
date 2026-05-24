@@ -582,7 +582,7 @@ const app = new Hono()
 
         const resend = new Resend(process.env.RESEND_API_KEY);
         let successCount = 0;
-        let failedMails = [];
+        const failedMails = [];
 
         for (const mail of values.mails) {
           try {

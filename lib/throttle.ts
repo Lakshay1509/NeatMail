@@ -132,7 +132,7 @@ export async function throttled<T>(
   const key = `${THROTTLE_PREFIX}:${provider}`;
   const startedAt = Date.now();
 
-  // eslint-disable-next-line no-constant-condition
+   
   while (true) {
     const now = Date.now();
     const alreadyWaited = now - startedAt;

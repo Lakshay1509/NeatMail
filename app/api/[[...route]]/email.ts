@@ -2,6 +2,7 @@ import { decryptDomain, encryptDomain } from "@/lib/encode";
 import {
   getLabelledMails,
   getSentEmails,
+  getLastSentMessageInThreadGmail,
   unsubscribeFromEmail,
   getPreviousMails,
   getFilteredMails,
@@ -12,6 +13,7 @@ import {
   deleteOutlookMessage,
   getFilteredMailsOutlook,
   getLabelledMailsOutlook,
+  getLastSentMessageInThreadOutlook,
   getPreviousOutlookMails,
   getSentEmailsOutlook,
   unsubscribeFromEmailOutlook,
@@ -588,6 +590,44 @@ const app = new Hono()
         return ctx.json({ error: "Failed to send reply" }, 500);
       }
     },
-  );
+  )
+
+  .get("/thread/:threadId/last-message", async (ctx) => {
+    const { userId } = await auth();
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const threadId = ctx.req.param("threadId");
+    if (!threadId) {
+      return ctx.json({ error: "Thread ID is required" }, 400);
+    }
+
+    const userData = await db.user_tokens.findUnique({
+      where: { clerk_user_id: userId },
+      select: { is_gmail: true, email: true },
+    });
+
+    if (!userData) {
+      return ctx.json({ error: "User not found" }, 500);
+    }
+
+    if (!userData.email) {
+      return ctx.json({ error: "User email not found" }, 500);
+    }
+
+    try {
+      if (userData.is_gmail) {
+        const result = await getLastSentMessageInThreadGmail(userId, threadId, userData.email);
+        return ctx.json({ ...result, is_gmail: true }, 200);
+      }
+
+      const result = await getLastSentMessageInThreadOutlook(userId, threadId, userData.email);
+      return ctx.json({ ...result, is_gmail: false }, 200);
+    } catch (error) {
+      console.error("Failed to get last message:", error);
+      return ctx.json({ error: "Failed to get last message" }, 500);
+    }
+  });
 
 export default app;
