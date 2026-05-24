@@ -62,3 +62,157 @@ Rules:
 - IF graphify-out/wiki/index.md EXISTS, navigate it instead of reading raw files
 - For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+# Google API Quota Reference for Agents
+
+> **Project note:** This project was created **before May 1, 2026** and used the API between Nov 2025–Apr 2026.  
+> It retains the **old (grandfathered) quota limits** — not the new post-May 2026 quotas.  
+> Google will give at least 90 days' notice before migrating existing projects.
+
+---
+
+## Scopes in use
+
+| Scope | Access level |
+|---|---|
+| `https://www.googleapis.com/auth/gmail.readonly` | Read all Gmail resources and metadata |
+| `https://www.googleapis.com/auth/gmail.labels` | Create, read, update, and delete labels only |
+| `https://www.googleapis.com/auth/gmail.modify` | Read, compose, send, permanently delete threads/messages |
+| `https://www.googleapis.com/auth/gmail.compose` | Create, read, update drafts and send messages |
+| `https://www.googleapis.com/auth/calendar.readonly` | Read all calendar data |
+| `https://www.googleapis.com/auth/calendar.events.readonly` | Read calendar events |
+
+---
+
+## Gmail API
+
+### Rate limits (grandfathered — old quotas)
+
+| Limit type | Value | Per-second equivalent | Error on exceed |
+|---|---|---|---|
+| Per project / minute | 1,200,000 quota units | ~20,000 / sec | `rateLimitExceeded` |
+| Per user / minute | 15,000 quota units | ~250 / sec | `userRateLimitExceeded` |
+| Recipients per email | 500 max | — | — |
+
+> **New project comparison (post May 1, 2026):** per-user drops to 6,000/min and `messages.get` costs 20 units (vs 5). Being grandfathered is a 4x advantage on read-heavy workloads.
+
+### Quota units per method
+
+All methods below are accessible with the scopes listed above.
+
+| Method | Quota units | Scopes required | Type |
+|---|---|---|---|
+| `getProfile` | 1 | `readonly` | read |
+| `labels.get` | 1 | `readonly`, `labels` | read |
+| `labels.list` | 1 | `readonly`, `labels` | read |
+| `history.list` | 2 | `readonly` | read |
+| `labels.create` | 5 | `labels` | write |
+| `labels.delete` | 5 | `labels` | write |
+| `labels.patch` | 5 | `labels` | write |
+| `labels.update` | 5 | `labels` | write |
+| `messages.list` | 5 | `readonly` | read |
+| `messages.get` | 5 | `readonly` | read |
+| `messages.attachments.get` | 5 | `readonly` | read |
+| `messages.modify` | 5 | `modify` | write |
+| `messages.trash` | 5 | `modify` | write |
+| `messages.untrash` | 5 | `modify` | write |
+| `drafts.list` | 5 | `readonly`, `compose` | read |
+| `drafts.get` | 5 | `readonly`, `compose` | read |
+| `threads.list` | 10 | `readonly` | read |
+| `threads.get` | 10 | `readonly` | read |
+| `threads.modify` | 10 | `modify` | write |
+| `threads.trash` | 10 | `modify` | write |
+| `threads.untrash` | 10 | `modify` | write |
+| `drafts.create` | 10 | `compose` | write |
+| `drafts.delete` | 10 | `compose` | write |
+| `drafts.update` | 15 | `compose` | write |
+| `messages.delete` | 20 | `modify` | write |
+| `threads.delete` | 20 | `modify` | write |
+| `stop` | 50 | `readonly` | write |
+| `messages.batchModify` | 50 | `modify` | write |
+| `messages.batchDelete` | 50 | `modify` | write |
+| `drafts.send` | 100 | `compose` | write ⚠️ |
+| `messages.send` | 100 | `compose` | write ⚠️ |
+| `watch` | 100 | `readonly` | write |
+
+### Quick burn-rate reference
+
+At the per-user limit of **15,000 units/min**:
+
+| Operation | Units | Max calls/min |
+|---|---|---|
+| Read labels | 1 | 15,000 |
+| List messages / threads | 5–10 | 1,500–3,000 |
+| Get message body | 5 | 3,000 |
+| Modify / trash message | 5 | 3,000 |
+| Batch modify (up to 1,000 msgs per call) | 50 | 300 |
+| Send email | 100 | 150 |
+
+---
+
+## Google Calendar API
+
+### Rate limits (grandfathered — old quotas)
+
+Calendar uses **raw request counts**, not quota units.  
+Quotas are enforced on a **sliding window per minute**.
+
+| Limit type | Value | Error on exceed |
+|---|---|---|
+| Per project / minute | ~2,400 requests | `rateLimitExceeded` (403 / 429) |
+| Per user / minute | ~2,400 requests | `userRateLimitExceeded` (403) |
+| Operational (per-calendar burst) | Unspecified — throttled dynamically | `quotaExceeded` (403) |
+
+> A burst that exceeds the per-minute quota in one window is smoothed into the next window — requests are rate-limited, not failed outright.
+
+### Methods available with your read-only scopes
+
+| Method | Scope required | Type |
+|---|---|---|
+| `calendarList.list` | `calendar.readonly` | read |
+| `calendarList.get` | `calendar.readonly` | read |
+| `calendars.get` | `calendar.readonly` | read |
+| `events.list` | `calendar.readonly` or `events.readonly` | read |
+| `events.get` | `calendar.readonly` or `events.readonly` | read |
+| `events.instances` | `calendar.readonly` or `events.readonly` | read |
+| `events.watch` | `calendar.readonly` | write |
+| `freebusy.query` | `calendar.readonly` | read |
+| `settings.list` | `calendar.readonly` | read |
+| `settings.get` | `calendar.readonly` | read |
+| `colors.get` | `calendar.readonly` | read |
+
+> ⚠️ With only `calendar.readonly` + `calendar.events.readonly`, agents **cannot** create, update, or delete events or calendars. Attempting to do so returns a `403 insufficientPermissions` error.
+
+---
+
+## Error handling
+
+Both APIs return `403` or `429` on quota/rate limit errors. Always implement **exponential backoff**:
+
+1. Catch the exception on a time-based error (403 `rateLimitExceeded` / 429)
+2. Wait an initial delay (e.g. 1–2 seconds)
+3. Retry, doubling the delay each time (1s → 2s → 4s → 8s → …)
+4. Set a max retry limit (5–7 attempts) before surfacing the error
+5. Add jitter (randomization) to avoid thundering-herd when multiple agents retry simultaneously
+
+```
+Gmail error codes:
+  403 rateLimitExceeded       → project quota hit, wait 60s
+  403 userRateLimitExceeded   → per-user quota hit, backoff
+  429                         → same as above, treat identically
+
+Calendar error codes:
+  403 rateLimitExceeded       → backoff + retry
+  403 userRateLimitExceeded   → backoff, consider splitting load across service accounts
+  403 quotaExceeded           → hit general Calendar use limits
+```
+
+---
+
+## Sources
+
+- [Gmail API usage limits](https://developers.google.com/workspace/gmail/api/reference/quota)
+- [Gmail API scopes](https://developers.google.com/workspace/gmail/api/auth/scopes)
+- [Calendar API quota management](https://developers.google.com/workspace/calendar/api/guides/quota)
+- [Calendar API error handling](https://developers.google.com/workspace/calendar/api/guides/errors)
+- [Google Workspace standardized model for agent tools and APIs](https://developers.google.com/workspace/guides/agent-tools-apis)
