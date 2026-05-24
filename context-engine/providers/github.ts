@@ -10,8 +10,9 @@ import {
 
 const GITHUB_API = "https://api.github.com"
 const REPO_CACHE_TTL = 3600
+const FETCH_TIMEOUT_MS = 2000
 
-// ── Interfaces ─────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────
 
 interface GitHubUser {
   login: string
@@ -21,12 +22,6 @@ interface GitHubUser {
   bio: string | null
   company: string | null
   html_url: string
-  avatar_url: string
-}
-
-interface GitHubOrg {
-  login: string
-  id: number
   avatar_url: string
 }
 
@@ -47,20 +42,18 @@ interface GitHubPullRequest {
   state: string
   html_url: string
   body: string | null
-  user: { login: string; html_url: string } | null
+  user: { login: string } | null
   assignees: Array<{ login: string }> | null
   head: { label: string; ref: string; sha: string }
   base: { label: string; ref: string; sha: string }
   created_at: string
   updated_at: string
-  merged: boolean
-  mergeable: boolean | null
-  mergeable_state: string
   draft: boolean
   additions: number
   deletions: number
   changed_files: number
-  labels: Array<{ name: string; color: string }>
+  mergeable_state: string
+  labels: Array<{ name: string }>
 }
 
 interface GitHubIssue {
@@ -83,7 +76,7 @@ interface GitHubCommit {
     message: string
     author: { name: string; date: string }
   }
-  author: { login: string; html_url: string } | null
+  author: { login: string } | null
   html_url: string
 }
 
@@ -96,53 +89,14 @@ interface GitHubMilestone {
   open_issues: number
   closed_issues: number
   due_on: string | null
-  created_at: string
-  updated_at: string
 }
 
-interface GitHubCheckRunsResponse {
+interface GitHubCheckRuns {
   total_count: number
-  check_runs: Array<{
-    name: string
-    status: string
-    conclusion: string | null
-  }>
+  check_runs: Array<{ name: string; status: string; conclusion: string | null }>
 }
 
-interface RouterDecision {
-  mode: "targeted" | "snapshot"
-  reason: string
-  repo: string | null
-  prNumber: number | null
-  filters: string[]
-  timeRange: { since?: string; sort?: string } | null
-}
-
-// ── Bot detection ──────────────────────────────────────────
-
-const BOT_KEYWORDS = ["snyk", "dependabot", "renovate", "github-actions", "security"]
-const BOT_LOGINS = [
-  "snyk-bot",
-  "dependabot[bot]",
-  "dependabot-preview[bot]",
-  "renovate[bot]",
-  "github-actions[bot]",
-]
-const NON_GITHUB_SENDER_DOMAINS = new Set([
-  "gmail.com",
-  "outlook.com",
-  "yahoo.com",
-  "hotmail.com",
-  "protonmail.com",
-  "icloud.com",
-  "aol.com",
-  "live.com",
-  "snyk.io",
-  "dependabot.com",
-  "github.com",
-])
-
-// ── Utility Functions ──────────────────────────────────────
+// ── Utilities ──────────────────────────────────────────────
 
 function stripHtml(html: string): string {
   if (!html || typeof html !== "string") return ""
@@ -150,55 +104,20 @@ function stripHtml(html: string): string {
 }
 
 function truncate(str: string, max: number): string {
-  if (str.length <= max) return str
-  return str.slice(0, max).trimEnd() + " ..."
+  return str.length <= max ? str : str.slice(0, max).trimEnd() + " ..."
 }
 
-function relativeTime(isoDate: string): string {
-  const then = new Date(isoDate).getTime()
-  const now = Date.now()
-  const diffMs = now - then
-  const diffSec = Math.floor(diffMs / 1000)
-  const diffMin = Math.floor(diffSec / 60)
-  const diffHr = Math.floor(diffMin / 60)
-  const diffDay = Math.floor(diffHr / 24)
-
-  if (diffDay > 30) return `${Math.floor(diffDay / 30)}mo ago`
-  if (diffDay > 0) return `${diffDay}d ago`
-  if (diffHr > 0) return `${diffHr}h ago`
-  if (diffMin > 0) return `${diffMin}m ago`
-  return "just now"
+function relativeTime(iso: string): string {
+  const sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
+  if (sec < 60) return "just now"
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`
+  if (sec < 2592000) return `${Math.floor(sec / 86400)}d ago`
+  return `${Math.floor(sec / 2592000)}mo ago`
 }
 
-function timeRangeToISO(text: string): { since?: string; sort?: string } | null {
-  const lower = text.toLowerCase()
-
-  if (/\bthis\s+week\b/.test(lower)) {
-    const d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-    return { since: d.toISOString() }
-  }
-  if (/\blast\s+30\s+days?\b/.test(lower) || /\bpast\s+30\s+days?\b/.test(lower)) {
-    const d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    return { since: d.toISOString() }
-  }
-  if (/\blast\s+7\s+days?\b/.test(lower) || /\bpast\s+week\b/.test(lower)) {
-    const d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-    return { since: d.toISOString() }
-  }
-  if (/\btoday\b/.test(lower)) {
-    const d = new Date()
-    d.setHours(0, 0, 0, 0)
-    return { since: d.toISOString() }
-  }
-  if (/\blongest\s+without\b/.test(lower) || /\bsitting\b/.test(lower) || /\bstale\b/.test(lower)) {
-    return { sort: "updated-asc" }
-  }
-
-  return null
-}
-
-function isCommonWord(word: string): boolean {
-  const stopWords = new Set([
+function isCommonWord(w: string): boolean {
+  const s = new Set([
     "the","a","an","i","you","he","she","it","we","they","me","him","her","us","them",
     "my","your","his","its","our","their","this","that","these","those",
     "in","on","at","to","for","of","with","by","from","as","into","through","during",
@@ -219,112 +138,95 @@ function isCommonWord(word: string): boolean {
     "allow","add","spend","spent","grow","grew","grown","open","walk","offer","remember",
     "love","consider","appear","buy","bought","wait","serve","die","send","sent","expect",
     "build","built","stay","fall","fell","fallen","cut","reach","kill","remain","suggest",
-    "raise","pass","sell","sold","require","report","decide","pull",
+    "raise","pass","sell","sold","require","report","decide","pull","have","having",
+    "being","been","was","were","being","having","done","gone","taken","made","seen",
+    "known","come","thought","said","told","given","found","felt","become","left",
+    "meant","kept","begun","shown","heard","stood","lost","paid","met","led",
+    "understood","spoken","spent","grown","fallen","built","bought","written",
+    "gotten","hidden","broken","chosen","drawn","driven","eaten","fallen","flown",
+    "frozen","gotten","hidden","hit","held","hurt","kept","laid","led","left",
+    "lent","let","lain","lit","lost","made","meant","met","misspelt","mistaken",
+    "understood","overcome","overdone","overtaken","overthrown","paid","proven",
+    "put","quit","read","rid","ridden","rung","risen","run","said","seen","sought",
+    "sold","sent","set","sewn","shaken","shaved","shown","shrunk","shut","sung",
+    "sunk","sat","slept","slid","slung","slit","smelt","sped","spelt","spent","spilt",
+    "spun","spat","split","spoilt","spread","sprung","stood","stolen","stuck","stung",
+    "struck","strung","sworn","swept","swollen","swum","swung","taken","taught","torn",
+    "told","thought","thrown","understood","upset","woken","worn","woven","wed","wept",
+    "wet","won","wound","withdrawn","wrung","written","that","those","these","this",
+    "which","who","whom","whose","what","whatever","whoever","whomever","whichever",
+    "where","wherever","when","whenever","why","how","however","whether","either",
+    "neither","both","all","some","any","none","each","every","either","neither",
+    "other","another","such","no","one","two","three","four","five","six","seven",
+    "eight","nine","ten","first","second","third","last","next","previous","now","then",
+    "today","tomorrow","yesterday","soon","later","early","late","already","still",
+    "yet","ever","never","always","often","sometimes","usually","rarely","seldom",
+    "once","twice","again","back","forward","together","apart","away","here","there",
+    "everywhere","somewhere","nowhere","else","also","too","either","neither","only",
+    "even","just","still","already","yet","quite","rather","pretty","fairly","almost",
+    "nearly","hardly","barely","scarcely","seldom","maybe","perhaps","probably","possibly",
+    "likely","surely","certainly","definitely","absolutely","completely","totally","entirely",
+    "fully","partly","mostly","mainly","largely","partly","slightly","somewhat","kind of",
+    "sort of","more","less","least","most","much","many","few","little","a lot","lots",
+    "plenty","enough","several","various","certain","particular","specific","general",
+    "usual","normal","regular","common","standard","typical","average","ordinary","special",
+    "unique","different","same","similar","equal","equivalent","opposite","contrary",
   ])
-  return stopWords.has(word.toLowerCase())
+  return s.has(w.toLowerCase())
 }
 
-function extractPRNumber(text: string): number | null {
-  const m = text.match(/(?:pull|pr|#)\s*(\d+)/i)
-  if (m) return parseInt(m[1], 10)
-  return null
-}
-
-function extractVersionNumbers(text: string): string[] {
-  const matches = text.match(/\d+\.\d+\.\d+(?:-\w+)?/g)
-  return matches ? [...new Set(matches)] : []
-}
-
-function isNonGitHubSender(email: string): boolean {
-  const domain = email.split("@")[1]?.toLowerCase() ?? ""
-  if (NON_GITHUB_SENDER_DOMAINS.has(domain)) return true
-  return false
-}
-
-function resolveRepoName(
+function resolveRepo(
   text: string,
   myLogin: string,
   knownRepos: string[]
-): { repoSlug: string | null; matchedName: string | null } {
+): string | null {
   const lower = text.toLowerCase()
 
-  // 1. Explicit "owner/repo"
-  const strict = text.match(/([\w.-]+\/[\w.-]+)/)
-  if (strict) {
-    return { repoSlug: strict[1], matchedName: strict[1].split("/")[1] }
+  // Explicit owner/repo
+  const m = text.match(/([\w.-]+\/[\w.-]+)/)
+  if (m) return m[1]
+
+  // Match against known repos
+  for (const r of knownRepos) {
+    if (lower.includes(r.toLowerCase())) return `${myLogin}/${r}`
   }
 
-  // 2. Match against known repo names
-  for (const repoName of knownRepos) {
-    if (lower.includes(repoName.toLowerCase())) {
-      return { repoSlug: `${myLogin}/${repoName}`, matchedName: repoName }
-    }
+  // "X repo" / "repo X" pattern
+  const ctx1 = lower.match(/(\b[\w-]{2,}\b)\s+(?:repo|repository)/)
+  if (ctx1) {
+    const c = ctx1[1]
+    if (!isCommonWord(c) && c.length >= 3) return `${myLogin}/${c}`
+  }
+  const ctx2 = lower.match(/(?:repo|repository)\s+(\b[\w-]{2,}\b)/)
+  if (ctx2) {
+    const c = ctx2[1]
+    if (!isCommonWord(c) && c.length >= 3) return `${myLogin}/${c}`
   }
 
-  // 3. "X repo" / "repo X" pattern
-  const repoCtxBefore = lower.match(/(\b[\w-]{2,}\b)\s+(?:repo|repository)/)
-  if (repoCtxBefore) {
-    const candidate = repoCtxBefore[1]
-    if (!isCommonWord(candidate) && candidate.length >= 3) {
-      return { repoSlug: `${myLogin}/${candidate}`, matchedName: candidate }
-    }
-  }
-  const repoCtxAfter = lower.match(/(?:repo|repository)\s+(\b[\w-]{2,}\b)/)
-  if (repoCtxAfter) {
-    const candidate = repoCtxAfter[1]
-    if (!isCommonWord(candidate) && candidate.length >= 3) {
-      return { repoSlug: `${myLogin}/${candidate}`, matchedName: candidate }
-    }
-  }
+  // "the repo" / "our repo" / "my repo" → use most recent
+  if (/\b(the|our|my|this)\s+repo\b/.test(lower)) return null
 
-  // 4. "the repo" / "our repo" → return null, caller uses most recent
-  if (/\b(the|our|my|this)\s+repo\b/.test(lower)) {
-    return { repoSlug: null, matchedName: null }
-  }
-
-  return { repoSlug: null, matchedName: null }
-}
-
-function detectBotAuthor(text: string): string | null {
-  const lower = text.toLowerCase()
-  for (const bot of BOT_LOGINS) {
-    const botName = bot.replace("[bot]", "").toLowerCase()
-    if (lower.includes(botName)) {
-      return bot
-    }
-  }
   return null
 }
 
-// ── Security helpers ───────────────────────────────────────
-
 function isValidRepoSlug(slug: string): boolean {
-  // GitHub repo slugs: owner/repo, where both parts are alphanumeric + hyphens + dots + underscores
-  // Max lengths: owner 39 chars, repo name 100 chars
-  const parts = slug.split("/")
-  if (parts.length !== 2) return false
-  const [owner, repo] = parts
+  const p = slug.split("/")
+  if (p.length !== 2) return false
+  const [owner, repo] = p
   if (!owner || !repo) return false
   if (owner.length > 39 || repo.length > 100) return false
-  // GitHub usernames/repos: alphanumeric, hyphens, no leading/trailing hyphen
-  const validPattern = /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?$/
-  return validPattern.test(owner) && validPattern.test(repo)
+  const rx = /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?$/
+  return rx.test(owner) && rx.test(repo)
 }
 
-function isValidPRNumber(n: number): boolean {
-  return Number.isInteger(n) && n > 0 && n < 1_000_000
-}
-
-function sanitizeForLog(text: string, maxLen = 80): string {
-  // Redact email addresses, tokens, and other PII from logs
+function sanitizeLog(text: string, max = 80): string {
   return text
-    .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, "[REDACTED_EMAIL]")
-    .replace(/ghp_[a-zA-Z0-9]{36,}/g, "[REDACTED_TOKEN]")
-    .replace(/gho_[a-zA-Z0-9]{36,}/g, "[REDACTED_TOKEN]")
-    .slice(0, maxLen)
+    .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, "[EMAIL]")
+    .replace(/gh[pousr]_[a-zA-Z0-9]{36,}/g, "[TOKEN]")
+    .slice(0, max)
 }
 
-// ── Provider ────────────────────────────────────────────────
+// ── Provider ───────────────────────────────────────────────
 
 export class GitHubProvider implements ContextProvider {
   id = "github"
@@ -343,437 +245,200 @@ export class GitHubProvider implements ContextProvider {
 
   async fetchContext(
     email: IncomingEmail,
-    entities: EmailEntities,
+    _entities: EmailEntities,
     userId: string
   ): Promise<ContextCard | null> {
-    console.log("[GitHub] fetchContext called", {
-      subject: sanitizeForLog(email.subject),
-      intent: entities.intent,
-      keywords: entities.keywords,
+    const text = `${email.subject} ${stripHtml(email.body)}`
+    console.log("[GitHub] fetchContext:", {
+      subject: sanitizeLog(email.subject),
     })
 
-    // ── 1. Auth ────────────────────────────────────────────
+    // ── 1. Auth ─────────────────────────────────────
     const auth = await this.authenticate(userId)
-    if (!auth) {
-      console.log("[GitHub] Auth failed, returning null")
-      return null
-    }
+    if (!auth) return null
     const { headers, profile } = auth
 
-    const parts: string[] = []
-    parts.push(
+    const parts: string[] = [
       `Your GitHub profile: @${profile.login}` +
         (profile.name ? ` (${profile.name})` : "") +
         (profile.company ? ` — ${profile.company}` : "") +
-        (profile.bio ? `\nBio: ${profile.bio}` : "")
+        (profile.bio ? `\nBio: ${profile.bio}` : ""),
+    ]
+
+    // ── 2. Resolve repo ─────────────────────────────
+    const knownRepos = await this.getCachedRepos(profile.login, headers, userId)
+    let repo = resolveRepo(text, profile.login, knownRepos)
+    if (!repo) {
+      repo = knownRepos[0] ? `${profile.login}/${knownRepos[0]}` : null
+      console.log("[GitHub] Fallback repo:", repo)
+    }
+
+    if (!repo || !isValidRepoSlug(repo)) {
+      console.log("[GitHub] No valid repo, returning profile only")
+      return {
+        providerId: this.id,
+        providerName: this.name,
+        relevance: "low",
+        summary: `GitHub context:\n${parts.join("\n\n")}`,
+        data: { profile },
+      }
+    }
+
+    console.log("[GitHub] Resolved repo:", repo)
+
+    // ── 3. Tiered fetch (all in parallel, bounded timeouts) ─
+    const prsPromise = this.fetchWithTimeout<GitHubPullRequest[]>(
+      `${GITHUB_API}/repos/${repo}/pulls?state=open&per_page=10&sort=updated&direction=desc`,
+      headers,
+      "open PRs"
     )
 
-    // ── 2. Known repos (cached) ────────────────────────────
-    const knownRepos = await this.getCachedRepos(profile.login, headers, userId)
-    console.log("[GitHub] Known repos:", knownRepos.length, knownRepos.slice(0, 10))
+    const mainCommitPromise = this.fetchWithTimeout<GitHubCommit[]>(
+      `${GITHUB_API}/repos/${repo}/commits?sha=main&per_page=1`,
+      headers,
+      "main commit"
+    )
 
-    // ── 3. Router ────────────────────────────────────────
-    const decision = this.router(email, entities, profile.login, knownRepos)
-    console.log("[GitHub] Router decision:", decision)
+    const issuesPromise = this.fetchWithTimeout<GitHubIssue[]>(
+      `${GITHUB_API}/repos/${repo}/issues?state=open&per_page=5&sort=updated&direction=desc`,
+      headers,
+      "open issues"
+    )
 
-    if (!decision.repo && decision.mode === "snapshot") {
-      // Use most recently pushed repo if none resolved
-      decision.repo = knownRepos[0] ? `${profile.login}/${knownRepos[0]}` : null
-      console.log("[GitHub] Fallback to most recent repo:", decision.repo)
+    const assignedPRsPromise = this.fetchWithTimeout<GitHubPullRequest[]>(
+      `${GITHUB_API}/repos/${repo}/pulls?state=open&assignee=${profile.login}&per_page=5&sort=updated`,
+      headers,
+      "assigned PRs"
+    )
+
+    const milestonesPromise = this.fetchWithTimeout<GitHubMilestone[]>(
+      `${GITHUB_API}/repos/${repo}/milestones?state=open&per_page=3&sort=due_on`,
+      headers,
+      "milestones"
+    )
+
+    const [openPRs, mainCommit, issues, assignedPRs, milestones] = await Promise.allSettled([
+      prsPromise,
+      mainCommitPromise,
+      issuesPromise,
+      assignedPRsPromise,
+      milestonesPromise,
+    ])
+
+    const prs = openPRs.status === "fulfilled" ? openPRs.value : null
+    const mainSha = mainCommit.status === "fulfilled" && mainCommit.value?.length
+      ? mainCommit.value[0].sha
+      : null
+
+    // ── 4. PR check-runs (for top 2 PRs) ─────────────
+    const prChecks: Map<number, GitHubCheckRuns> = new Map()
+    if (prs && prs.length > 0) {
+      const top2 = prs.slice(0, 2)
+      const checkResults = await Promise.allSettled(
+        top2.map((pr) =>
+          this.fetchWithTimeout<GitHubCheckRuns>(
+            `${GITHUB_API}/repos/${repo}/commits/${pr.head.sha}/check-runs`,
+            headers,
+            `checks #${pr.number}`
+          )
+        )
+      )
+      top2.forEach((pr, i) => {
+        const r = checkResults[i]
+        if (r.status === "fulfilled" && r.value) {
+          prChecks.set(pr.number, r.value)
+        }
+      })
     }
 
-    if (!decision.repo) {
-      console.log("[GitHub] No repo resolved, returning profile only")
-      return {
-        providerId: this.id,
-        providerName: this.name,
-        relevance: "low",
-        summary: `GitHub context:\n${parts.join("\n\n")}`,
-        data: { profile },
-      }
+    // ── 5. Main branch check-runs ────────────────────
+    let mainChecks: GitHubCheckRuns | null = null
+    if (mainSha) {
+      mainChecks = await this.fetchWithTimeout<GitHubCheckRuns>(
+        `${GITHUB_API}/repos/${repo}/commits/${mainSha}/check-runs`,
+        headers,
+        "main checks"
+      )
     }
 
-    // Validate repo slug before any API calls
-    if (!isValidRepoSlug(decision.repo)) {
-      console.error("[GitHub] Invalid repo slug, aborting:", decision.repo)
-      return {
-        providerId: this.id,
-        providerName: this.name,
-        relevance: "low",
-        summary: `GitHub context:\n${parts.join("\n\n")}`,
-        data: { profile },
-      }
+    // ── 6. Build sections (only if data exists) ──────
+    const sections: string[] = []
+
+    // PRs
+    if (prs && prs.length > 0) {
+      const lines = prs.slice(0, 5).map((pr) => this.formatPR(pr, prChecks.get(pr.number) ?? null))
+      sections.push(`Open Pull Requests (${prs.length} total):\n${lines.join("\n\n")}`)
     }
 
-    // ── 4. Fetch ───────────────────────────────────────────
-    let foundPRs: Array<{
-      repoFullName: string
-      pr: GitHubPullRequest
-      checks: GitHubCheckRunsResponse | null
-    }> = []
-
-    if (decision.mode === "targeted") {
-      foundPRs = await this.targetedFetch(decision, headers, profile.login)
-    } else {
-      const snapshot = await this.snapshotFetch(decision, headers, profile.login)
-      if (snapshot) {
-        parts.push(snapshot)
-      }
+    // Assigned PRs
+    if (assignedPRs.status === "fulfilled" && assignedPRs.value && assignedPRs.value.length > 0) {
+      const lines = assignedPRs.value.map((pr) => {
+        const assigneeList = pr.assignees?.map((a) => `@${a.login}`).join(", ") ?? "none"
+        return `- **#${pr.number}**: ${pr.title} (assigned: ${assigneeList})`
+      })
+      sections.push(`Pull Requests Assigned to You:\n${lines.join("\n")}`)
     }
 
-    // ── 5. Render targeted results ───────────────────────
-    if (decision.mode === "targeted" && foundPRs.length > 0) {
-      const prLines = foundPRs.map((f) => this.formatPR(f))
-      parts.push(`Focused result — open pull requests:\n${prLines.join("\n\n")}`)
+    // Main branch health
+    if (mainCommit.status === "fulfilled" && mainCommit.value?.length) {
+      const c = mainCommit.value[0]
+      const ci = this.formatChecks(mainChecks)
+      sections.push(
+        `Main Branch Health:\n- Latest: \`${truncate(c.commit.message.split("\n")[0], 60)}\` by @${c.author?.login ?? c.commit.author.name} (${relativeTime(c.commit.author.date)})\n- CI: ${ci}`
+      )
     }
 
-    // ── 6. Sender context ────────────────────────────────
-    if (!isNonGitHubSender(email.senderEmail)) {
+    // Issues
+    if (issues.status === "fulfilled" && issues.value && issues.value.length > 0) {
+      const lines = issues.value.map((issue) => {
+        const labels = issue.labels?.length ? ` [${issue.labels.map((l) => l.name).join(", ")}]` : ""
+        return `- **#${issue.number}**: ${issue.title}${labels} (${relativeTime(issue.updated_at)})`
+      })
+      sections.push(`Open Issues (${issues.value.length} shown):\n${lines.join("\n")}`)
+    }
+
+    // Milestones
+    if (milestones.status === "fulfilled" && milestones.value && milestones.value.length > 0) {
+      const lines = milestones.value.map((m) => {
+        const total = m.open_issues + m.closed_issues
+        const pct = total > 0 ? Math.round((m.closed_issues / total) * 100) : 0
+        const due = m.due_on ? `due ${relativeTime(m.due_on)}` : "no due date"
+        return `- **${m.title}**: ${m.open_issues} open / ${m.closed_issues} closed (${pct}%) — ${due}`
+      })
+      sections.push(`Open Milestones:\n${lines.join("\n")}`)
+    }
+
+    if (sections.length > 0) {
+      parts.push(`Recent activity for \`${repo}\`:\n\n${sections.join("\n\n")}`)
+    }
+
+    // ── 7. Sender context ────────────────────────────
+    const domain = email.senderEmail.split("@")[1]?.toLowerCase() ?? ""
+    if (!["gmail.com","outlook.com","yahoo.com","hotmail.com","protonmail.com","icloud.com","aol.com","live.com","snyk.io","dependabot.com","github.com"].includes(domain)) {
       const senderLogin = await this.findSenderGitHub(email, headers, parts)
-      if (senderLogin) {
-        console.log(`[GitHub] Sender matched: @${senderLogin}`)
-      }
-    }
-
-    if (parts.length === 1 && parts[0].startsWith("Your GitHub profile")) {
-      console.log("[GitHub] Only profile info, no context produced")
-      return {
-        providerId: this.id,
-        providerName: this.name,
-        relevance: "low",
-        summary: `GitHub context:\n${parts.join("\n\n")}`,
-        data: { profile },
-      }
+      if (senderLogin) console.log(`[GitHub] Sender: @${senderLogin}`)
     }
 
     return {
       providerId: this.id,
       providerName: this.name,
-      relevance: decision.mode === "targeted" ? "high" : "medium",
+      relevance: sections.length > 0 ? "high" : "medium",
       summary: `GitHub context:\n${parts.join("\n\n")}`,
-      data: { profile, mode: decision.mode, repo: decision.repo },
+      data: { profile, repo },
     }
-  }
-
-  // ── Auth ─────────────────────────────────────────────────
-
-  private async authenticate(
-    userId: string
-  ): Promise<{ headers: Record<string, string>; profile: GitHubUser } | null> {
-    try {
-      const client = await clerkClient()
-      const tokenResponse = await client.users.getUserOauthAccessToken(userId, "github")
-      const token = tokenResponse.data[0]?.token
-      if (!token) {
-        console.log("[GitHub] No OAuth token found")
-        return null
-      }
-
-      const headers = {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "neatmail-context-engine",
-      }
-
-      const profile = await this.fetchGitHub<GitHubUser>(`${GITHUB_API}/user`, headers, "/user")
-      if (!profile) {
-        console.log("[GitHub] Failed to fetch profile")
-        return null
-      }
-
-      return { headers, profile }
-    } catch (err) {
-      console.error("[GitHub] Auth error:", err)
-      return null
-    }
-  }
-
-  // ── Router ───────────────────────────────────────────────
-
-  private router(
-    email: IncomingEmail,
-    entities: EmailEntities,
-    myLogin: string,
-    knownRepos: string[]
-  ): RouterDecision {
-    const text = `${email.subject} ${stripHtml(email.body)}`.toLowerCase()
-    const { repoSlug } = resolveRepoName(text, myLogin, knownRepos)
-
-    const prNumber = extractPRNumber(text)
-    const botAuthor = detectBotAuthor(text)
-    const timeRange = timeRangeToISO(text)
-
-    // ── Auto-targeted triggers ──────────────────────────
-
-    if (prNumber && repoSlug) {
-      return {
-        mode: "targeted",
-        reason: "PR number + repo known",
-        repo: repoSlug,
-        prNumber,
-        filters: [],
-        timeRange,
-      }
-    }
-
-    if (botAuthor && repoSlug) {
-      return {
-        mode: "targeted",
-        reason: "Bot PR in known repo",
-        repo: repoSlug,
-        prNumber: null,
-        filters: ["bot"],
-        timeRange,
-      }
-    }
-
-    if (/\bassigned\s+to\s+(me|you)\b/.test(text) || /\bmy\s+pull\s+requests?\b/.test(text)) {
-      return {
-        mode: "targeted",
-        reason: "Assigned-to-me filter",
-        repo: repoSlug ?? null,
-        prNumber: null,
-        filters: ["assigned"],
-        timeRange,
-      }
-    }
-
-    if (/\bfailing\s+(checks?|ci|tests?)\b/.test(text)) {
-      return {
-        mode: "targeted",
-        reason: "Failing-checks filter",
-        repo: repoSlug ?? null,
-        prNumber: null,
-        filters: ["failing"],
-        timeRange,
-      }
-    }
-
-    if (/\bready\s+to\s+merge\b/.test(text) || /\bmergeable\b/.test(text)) {
-      return {
-        mode: "targeted",
-        reason: "Ready-to-merge filter",
-        repo: repoSlug ?? null,
-        prNumber: null,
-        filters: ["mergeable"],
-        timeRange,
-      }
-    }
-
-    // ── Score-based ─────────────────────────────────────
-
-    let score = 0
-
-    if (extractVersionNumbers(text).length > 0) score += 15
-    if (repoSlug) score += 10
-    if (/\b(update|review|merge|close|approve|check)\b/.test(text)) score += 10
-    if (/\bpull\s+request\b/.test(text) || /\bpr\b/.test(text)) score += 5
-    if (botAuthor) score += 10 // bot mentioned but no explicit repo
-
-    if (/\b(what|how\s+many|latest|recent|newest|last|any|all|some|show|list|give\s+me|tell\s+me)\b/.test(text)) {
-      score -= 10
-    }
-    if (!repoSlug) score -= 15
-
-    if (score >= 30) {
-      return {
-        mode: "targeted",
-        reason: `Score-based targeted (score=${score})`,
-        repo: repoSlug ?? null,
-        prNumber: prNumber,
-        filters: [],
-        timeRange,
-      }
-    }
-
-    // ── Default: Snapshot ───────────────────────────────
-    return {
-      mode: "snapshot",
-      reason: `Snapshot mode (score=${score})`,
-      repo: repoSlug ?? null,
-      prNumber: null,
-      filters: [],
-      timeRange,
-    }
-  }
-
-  // ── Targeted Fetch ───────────────────────────────────────
-
-  private async targetedFetch(
-    decision: RouterDecision,
-    headers: Record<string, string>,
-    myLogin: string
-  ): Promise<
-    Array<{ repoFullName: string; pr: GitHubPullRequest; checks: GitHubCheckRunsResponse | null }>
-  > {
-    const repo = decision.repo!
-    const results: Array<{
-      repoFullName: string
-      pr: GitHubPullRequest
-      checks: GitHubCheckRunsResponse | null
-    }> = []
-
-    // Specific PR number
-    if (decision.prNumber) {
-      if (!isValidPRNumber(decision.prNumber)) {
-        console.error("[GitHub] Invalid PR number:", decision.prNumber)
-        return results
-      }
-      const detail = await this.fetchPR(repo, decision.prNumber, headers)
-      if (detail) results.push(detail)
-      return results
-    }
-
-    // List open PRs and filter
-    let url = `${GITHUB_API}/repos/${repo}/pulls?state=open&per_page=20&sort=updated&direction=desc`
-    if (decision.filters.includes("assigned")) {
-      url += `&assignee=${myLogin}`
-    }
-    if (decision.timeRange?.since) {
-      url += `&since=${encodeURIComponent(decision.timeRange.since)}`
-    }
-
-    const prs = await this.fetchGitHub<GitHubPullRequest[]>(url, headers, `open PRs in ${repo}`)
-    if (!prs) return results
-
-    for (const pr of prs) {
-      if (results.length >= 5) break
-
-      // Bot filter
-      if (decision.filters.includes("bot")) {
-        const author = pr.user?.login?.toLowerCase() ?? ""
-        const isByBot =
-          BOT_LOGINS.some((b) => author.includes(b.toLowerCase())) ||
-          BOT_KEYWORDS.some((kw) => pr.title.toLowerCase().includes(kw))
-        if (!isByBot) continue
-      }
-
-      const checks = await this.fetchGitHub<GitHubCheckRunsResponse>(
-        `${GITHUB_API}/repos/${repo}/commits/${pr.head.sha}/check-runs`,
-        headers,
-        `checks for PR #${pr.number}`
-      )
-
-      // Failing filter
-      if (decision.filters.includes("failing")) {
-        const failing = checks?.check_runs.filter((c) => c.conclusion === "failure").length ?? 0
-        if (failing === 0) continue
-      }
-
-      // Mergeable filter
-      if (decision.filters.includes("mergeable")) {
-        if (pr.mergeable_state !== "clean" && pr.mergeable_state !== "unstable") continue
-        const failing = checks?.check_runs.filter((c) => c.conclusion === "failure").length ?? 0
-        if (failing > 0) continue
-      }
-
-      results.push({ repoFullName: repo, pr, checks })
-    }
-
-    return results
-  }
-
-  // ── Snapshot Fetch ───────────────────────────────────────
-
-  private async snapshotFetch(
-    decision: RouterDecision,
-    headers: Record<string, string>,
-    myLogin: string
-  ): Promise<string | null> {
-    const repo = decision.repo!
-
-    const [openPRs, assignedPRs, issues, commits, milestones] = await Promise.all([
-      this.fetchGitHub<GitHubPullRequest[]>(
-        `${GITHUB_API}/repos/${repo}/pulls?state=open&per_page=10&sort=updated&direction=desc`,
-        headers,
-        `open PRs in ${repo}`
-      ),
-      this.fetchGitHub<GitHubPullRequest[]>(
-        `${GITHUB_API}/repos/${repo}/pulls?state=open&assignee=${myLogin}&per_page=5&sort=updated`,
-        headers,
-        `assigned PRs in ${repo}`
-      ),
-      this.fetchGitHub<GitHubIssue[]>(
-        `${GITHUB_API}/repos/${repo}/issues?state=open&per_page=5&sort=updated&direction=desc`,
-        headers,
-        `open issues in ${repo}`
-      ),
-      this.fetchGitHub<GitHubCommit[]>(
-        `${GITHUB_API}/repos/${repo}/commits?per_page=5`,
-        headers,
-        `commits in ${repo}`
-      ),
-      this.fetchGitHub<GitHubMilestone[]>(
-        `${GITHUB_API}/repos/${repo}/milestones?state=open&per_page=3&sort=due_on`,
-        headers,
-        `milestones in ${repo}`
-      ),
-    ])
-
-    const sections: string[] = []
-
-    // Open PRs
-    if (openPRs && openPRs.length > 0) {
-      const lines = await Promise.all(
-        openPRs.slice(0, 5).map(async (pr) => {
-          const checks = await this.fetchGitHub<GitHubCheckRunsResponse>(
-            `${GITHUB_API}/repos/${repo}/commits/${pr.head.sha}/check-runs`,
-            headers,
-            `checks for PR #${pr.number}`
-          )
-          return this.formatPR({ repoFullName: repo, pr, checks })
-        })
-      )
-      sections.push(`Open Pull Requests (${openPRs.length} total):\n${lines.join("\n\n")}`)
-    }
-
-    // Assigned PRs
-    if (assignedPRs && assignedPRs.length > 0) {
-      const lines = assignedPRs.map((pr) => {
-        const assignees = pr.assignees?.map((a) => `@${a.login}`).join(", ") ?? "none"
-        return `- **#${pr.number}**: ${pr.title} (assigned: ${assignees})`
-      })
-      sections.push(`Pull Requests Assigned to You:\n${lines.join("\n")}`)
-    }
-
-    // Issues
-    if (issues && issues.length > 0) {
-      const lines = issues.map((issue) => this.formatIssue(issue))
-      sections.push(`Open Issues (${issues.length} shown):\n${lines.join("\n")}`)
-    }
-
-    // Commits
-    if (commits && commits.length > 0) {
-      const lines = commits.map((commit) => this.formatCommit(commit))
-      sections.push(`Recent Commits on main:\n${lines.join("\n")}`)
-    }
-
-    // Milestones
-    if (milestones && milestones.length > 0) {
-      const lines = milestones.map((m) => this.formatMilestone(m))
-      sections.push(`Open Milestones:\n${lines.join("\n")}`)
-    }
-
-    if (sections.length === 0) {
-      console.log("[GitHub] Snapshot empty for", repo)
-      return null
-    }
-
-    return `Recent activity snapshot for \`${repo}\`:\n\n${sections.join("\n\n")}`
   }
 
   // ── Formatters ───────────────────────────────────────────
 
-  private formatPR(found: {
-    repoFullName: string
-    pr: GitHubPullRequest
-    checks: GitHubCheckRunsResponse | null
-  }): string {
-    const { pr, checks } = found
-    const stateEmoji = pr.draft ? "📝 Draft" : pr.state === "open" ? "🟢 Open" : "🟣"
-    const ciStatus = this.formatChecks(checks)
-    const bodySnippet = pr.body ? truncate(stripHtml(pr.body), 200) : "No description."
+  private formatPR(pr: GitHubPullRequest, checks: GitHubCheckRuns | null): string {
+    const stateEmoji = pr.draft ? "📝 Draft" : "🟢 Open"
+    const ci = this.formatChecks(checks)
+    const merge =
+      pr.mergeable_state === "dirty"
+        ? "❌ Conflicts"
+        : pr.mergeable_state === "clean"
+          ? "✅ Clean"
+          : `⏳ ${pr.mergeable_state ?? "unknown"}`
     const files =
       pr.changed_files > 0
         ? `(${pr.changed_files} files, +${pr.additions}/-${pr.deletions})`
@@ -784,14 +449,15 @@ export class GitHubProvider implements ContextProvider {
 
     return (
       `- ${stateEmoji} **#${pr.number}**: ${pr.title}\n` +
-      `  Author: @${pr.user?.login ?? "unknown"} | ${files} | ${ciStatus}` +
+      `  Author: @${pr.user?.login ?? "unknown"} | ${files}\n` +
+      `  Merge: ${merge} | CI: ${ci}` +
       (assignees ? ` | ${assignees}` : "") +
-      `\n  ${bodySnippet}\n  Link: ${pr.html_url}`
+      `\n  Link: ${pr.html_url}`
     )
   }
 
-  private formatChecks(checks: GitHubCheckRunsResponse | null): string {
-    if (!checks || checks.total_count === 0) return "CI: —"
+  private formatChecks(checks: GitHubCheckRuns | null): string {
+    if (!checks || checks.total_count === 0) return "—"
     const passing = checks.check_runs.filter((c) => c.conclusion === "success").length
     const failing = checks.check_runs.filter((c) => c.conclusion === "failure").length
     const pending = checks.check_runs.filter((c) => c.status !== "completed").length
@@ -800,81 +466,99 @@ export class GitHubProvider implements ContextProvider {
     return `✅ ${passing}/${checks.total_count} passing`
   }
 
-  private formatIssue(issue: GitHubIssue): string {
-    const labels = issue.labels?.length ? ` [${issue.labels.map((l) => l.name).join(", ")}]` : ""
-    return `- **#${issue.number}**: ${issue.title}${labels} (${relativeTime(issue.updated_at)})`
+  // ── Auth ─────────────────────────────────────────────────
+
+  private async authenticate(
+    userId: string
+  ): Promise<{ headers: Record<string, string>; profile: GitHubUser } | null> {
+    try {
+      const client = await clerkClient()
+      const res = await client.users.getUserOauthAccessToken(userId, "github")
+      const token = res.data[0]?.token
+      if (!token) {
+        console.log("[GitHub] No OAuth token")
+        return null
+      }
+
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "neatmail-context-engine",
+      }
+
+      const profile = await this.fetchWithTimeout<GitHubUser>(
+        `${GITHUB_API}/user`,
+        headers,
+        "/user",
+        3000
+      )
+      if (!profile) {
+        console.log("[GitHub] Profile fetch failed")
+        return null
+      }
+
+      return { headers, profile }
+    } catch (err) {
+      console.error("[GitHub] Auth error:", err)
+      return null
+    }
   }
 
-  private formatCommit(commit: GitHubCommit): string {
-    const msg = truncate(commit.commit.message.split("\n")[0], 60)
-    const author = commit.author?.login ?? commit.commit.author.name
-    return `- \`${msg}\` — @${author} (${relativeTime(commit.commit.author.date)})`
+  // ── Fetch with timeout ───────────────────────────────────
+
+  private async fetchWithTimeout<T>(
+    url: string,
+    headers: Record<string, string>,
+    label?: string,
+    timeoutMs = FETCH_TIMEOUT_MS
+  ): Promise<T | null> {
+    try {
+      const res = await fetch(url, { headers, signal: AbortSignal.timeout(timeoutMs) })
+      if (!res.ok) {
+        if (label) console.log(`[GitHub] ${label}: HTTP ${res.status}`)
+        return null
+      }
+      return (await res.json()) as T
+    } catch (err) {
+      if (label) console.log(`[GitHub] ${label}: timeout or error`, err)
+      return null
+    }
   }
 
-  private formatMilestone(milestone: GitHubMilestone): string {
-    const total = milestone.open_issues + milestone.closed_issues
-    const pct = total > 0 ? Math.round((milestone.closed_issues / total) * 100) : 0
-    const due = milestone.due_on ? `due ${relativeTime(milestone.due_on)}` : "no due date"
-    return `- **${milestone.title}**: ${milestone.open_issues} open / ${milestone.closed_issues} closed (${pct}%) — ${due}`
-  }
-
-  // ── Helpers ──────────────────────────────────────────────
-
-  private async fetchPR(
-    repoFullName: string,
-    number: number,
-    headers: Record<string, string>
-  ): Promise<{ repoFullName: string; pr: GitHubPullRequest; checks: GitHubCheckRunsResponse | null } | null> {
-    const pr = await this.fetchGitHub<GitHubPullRequest>(
-      `${GITHUB_API}/repos/${repoFullName}/pulls/${number}`,
-      headers,
-      `PR #${number}`
-    )
-    if (!pr) return null
-
-    const checks = await this.fetchGitHub<GitHubCheckRunsResponse>(
-      `${GITHUB_API}/repos/${repoFullName}/commits/${pr.head.sha}/check-runs`,
-      headers,
-      `checks for PR #${number}`
-    )
-
-    return { repoFullName, pr, checks }
-  }
+  // ── Cached repo list ─────────────────────────────────────
 
   private async getCachedRepos(
     login: string,
     headers: Record<string, string>,
     userId: string
   ): Promise<string[]> {
-    const cacheKey = `github:repos:${userId}`
+    const key = `github:repos:${userId}`
     try {
-      const cached = await redis.get(cacheKey)
-      if (cached) {
-        console.log("[GitHub] Using cached repo list")
-        return JSON.parse(cached) as string[]
-      }
+      const cached = await redis.get(key)
+      if (cached) return JSON.parse(cached) as string[]
     } catch {
-      // ignore cache errors
+      // ignore
     }
 
-    const repos: string[] = []
-    const myRepos = await this.fetchGitHub<GitHubRepo[]>(
+    const repos = await this.fetchWithTimeout<GitHubRepo[]>(
       `${GITHUB_API}/users/${login}/repos?type=owner&sort=pushed&per_page=50`,
       headers,
-      "user repos"
+      "user repos",
+      3000
     )
-    if (myRepos) {
-      repos.push(...myRepos.map((r) => r.name))
-    }
+    const names = repos?.map((r) => r.name) ?? []
 
     try {
-      await redis.setex(cacheKey, REPO_CACHE_TTL, JSON.stringify(repos))
+      await redis.setex(key, REPO_CACHE_TTL, JSON.stringify(names))
     } catch {
-      // ignore cache write errors
+      // ignore
     }
 
-    return repos
+    return names
   }
+
+  // ── Sender lookup ──────────────────────────────────────────
 
   private async findSenderGitHub(
     email: IncomingEmail,
@@ -883,78 +567,48 @@ export class GitHubProvider implements ContextProvider {
   ): Promise<string | null> {
     if (!email.senderName) return null
 
-    const nameQuery = encodeURIComponent(`fullname:"${email.senderName}" type:user`)
-    console.log("[GitHub] Searching users by name:", sanitizeForLog(email.senderName ?? "", 40))
-    let senderLogin = await this.trySearchUser(nameQuery, headers, parts)
+    const q = encodeURIComponent(`fullname:"${email.senderName}" type:user`)
+    let login = await this.searchUser(q, headers, parts)
 
-    if (!senderLogin && email.senderEmail) {
-      const emailLocal = email.senderEmail.split("@")[0]
-      if (emailLocal && emailLocal.length >= 2) {
-        const emailQuery = encodeURIComponent(`${emailLocal} in:email type:user`)
-        console.log("[GitHub] Searching users by email local:", sanitizeForLog(emailLocal, 40))
-        senderLogin = await this.trySearchUser(emailQuery, headers, parts)
+    if (!login && email.senderEmail) {
+      const local = email.senderEmail.split("@")[0]
+      if (local && local.length >= 2) {
+        login = await this.searchUser(
+          encodeURIComponent(`${local} in:email type:user`),
+          headers,
+          parts
+        )
       }
     }
 
-    console.log("[GitHub] Sender match:", senderLogin ?? "NOT FOUND")
-    return senderLogin
+    return login
   }
 
-  private async trySearchUser(
+  private async searchUser(
     query: string,
     headers: Record<string, string>,
     parts: string[]
   ): Promise<string | null> {
     try {
-      const res = await fetch(`${GITHUB_API}/search/users?q=${query}&per_page=3`, { headers })
+      const res = await fetch(
+        `${GITHUB_API}/search/users?q=${query}&per_page=3`,
+        { headers, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }
+      )
       if (!res.ok) return null
       const data = (await res.json()) as {
-        items?: Array<{
-          login: string
-          name: string | null
-          company: string | null
-          bio: string | null
-        }>
+        items?: Array<{ login: string; name: string | null; company: string | null; bio: string | null }>
       }
       if (!data.items?.length) return null
 
       const top = data.items[0]
-      const login = top.login
       parts.push(
-        `Sender on GitHub: @${login}` +
+        `Sender on GitHub: @${top.login}` +
           (top.name ? ` (${top.name})` : "") +
           (top.company ? ` — ${top.company}` : "") +
           (top.bio ? `\nBio: ${top.bio}` : "")
       )
-
-      const senderOrgs = await this.fetchGitHub<GitHubOrg[]>(
-        `${GITHUB_API}/users/${login}/orgs`,
-        headers
-      )
-      if (senderOrgs && senderOrgs.length > 0) {
-        parts.push(`Sender's GitHub orgs: ${senderOrgs.map((o) => o.login).join(", ")}`)
-      }
-
-      return login
+      return top.login
     } catch {
-      return null
-    }
-  }
-
-  private async fetchGitHub<T>(
-    url: string,
-    headers: Record<string, string>,
-    label?: string
-  ): Promise<T | null> {
-    try {
-      const res = await fetch(url, { headers, signal: AbortSignal.timeout(8000) })
-      if (!res.ok) {
-        if (label) console.log(`[GitHub] ${label}: HTTP ${res.status}`)
-        return null
-      }
-      return (await res.json()) as T
-    } catch (err) {
-      if (label) console.log(`[GitHub] ${label}: fetch error`, err)
       return null
     }
   }
