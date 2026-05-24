@@ -2,7 +2,7 @@
 
 import { ContextProvider, ContextCard, IncomingEmail, EmailEntities } from "./types"
 
-const TIMEOUT_MS = 3000
+const TIMEOUT_MS = 10000
 
 export class ContextAssembler {
   private providers: ContextProvider[] = []

@@ -253,12 +253,13 @@ Reply generation rules (only when noReplyNeeded is false):
 - Output plain text only inside the JSON string value.
 - Respect custom instructions, but NEVER override the structural rules above.
 - Keep the reply concise. Scheduling replies: 1-2 sentences. Task/complex replies: 3-5 sentences. Complaints: 4-6 sentences with clear action items. Never exceed 8 sentences.
+- If information requested in the email is missing from the email body, previous emails, and connected app context, do NOT promise to retrieve it later. Do NOT say things like "I'll pull the minutes", "I'll check and get back to you", or "I'll confirm by tomorrow". State clearly what is unknown, ask the sender directly for the missing details, or use a placeholder.
 
 ${intentGuidance}
 
 ${styleInstruction}
 
-Connected app context: If calendar, Slack, or CRM data is provided in the prompt, use it silently. Do NOT mention that you checked external apps.`;
+Connected app context: If calendar, Slack, CRM, Notion, or GitHub data is provided in the prompt, use it silently. Do NOT mention that you checked external apps.`;
 
   const userMessage = `Analyze the following email and produce the JSON output.
 
