@@ -11,6 +11,12 @@ const integrations = [
       "Sync contacts and deal context into your email drafts.",
     iconUrl: "integrations/hubspot.svg"
   },
+  {
+    provider: "notion",
+    label: "Notion",
+    description: "Sync relevant Notion pages and docs into your email drafts.",
+    iconUrl: "integrations/notion.svg"
+  }
 ] as const;
 
 export const ClerkOAuthIntegrations = () => {
