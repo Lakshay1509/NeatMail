@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest";
-import { getGmailMessageBody } from "@/lib/gmail";
+import { getGmailClient, getGmailMessageBody } from "@/lib/gmail";
 import {
   isMessageProcessed,
   // isThreadProcessed,
@@ -20,7 +20,6 @@ import {
   useGetUserDraftPreference,
 } from "@/lib/supabase";
 import { clerkClient } from "@clerk/nextjs/server";
-import { google } from "googleapis";
 import { Hono } from "hono";
 import { OAuth2Client } from "google-auth-library";
 import { getModelResponse } from "@/lib/model";
@@ -125,9 +124,7 @@ const app = new Hono().post("/", async (ctx) => {
       return ctx.json({ success: true }, 200);
     }
 
-    const oauth2Client = new google.auth.OAuth2();
-    oauth2Client.setCredentials({ access_token: tokenData });
-    const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+    const gmail = await getGmailClient(clerkUserId);
 
     let history;
     try {

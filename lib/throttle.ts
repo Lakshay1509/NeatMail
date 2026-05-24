@@ -4,7 +4,7 @@ const THROTTLE_PREFIX = "throttle";
 
 const DEFAULT_LIMITS: Record<string, { rpm?: number; rps?: number }> = {
   openai: { rpm: 500 },
-  google: { rps: 250 },
+  google: { rpm: 15_000 },
 };
 
 export class ThrottleTimeoutError extends Error {
@@ -26,6 +26,10 @@ export interface ThrottleOptions {
   rps?: number;
   /** Max total wait time in milliseconds (default: 30000) */
   timeoutMs?: number;
+  /** Per-user rate limit key. When set, uses throttle:provider:userId instead of throttle:provider */
+  userId?: string;
+  /** Quota units consumed by this call (default: 1) */
+  units?: number;
 }
 
 const THROTTLE_LUA = `
@@ -33,6 +37,7 @@ const THROTTLE_LUA = `
   local maxTokens = tonumber(ARGV[1])
   local intervalMs = tonumber(ARGV[2])
   local now = tonumber(ARGV[3])
+  local cost = tonumber(ARGV[4])
 
   local data = redis.call('HMGET', key, 'tokens', 'lastRefill')
   local tokens = tonumber(data[1])
@@ -46,13 +51,13 @@ const THROTTLE_LUA = `
   local elapsed = now - lastRefill
   local newTokens = math.min(maxTokens, tokens + (elapsed / intervalMs))
 
-  if newTokens >= 1 then
-    newTokens = newTokens - 1
+  if newTokens >= cost then
+    newTokens = newTokens - cost
     redis.call('HMSET', key, 'tokens', newTokens, 'lastRefill', now)
     redis.call('PEXPIRE', key, 60000)
     return 0
   else
-    local waitMs = math.ceil((1 - newTokens) * intervalMs)
+    local waitMs = math.ceil((cost - newTokens) * intervalMs)
     redis.call('HMSET', key, 'tokens', newTokens, 'lastRefill', now)
     redis.call('PEXPIRE', key, 60000)
     return waitMs
@@ -62,8 +67,9 @@ const THROTTLE_LUA = `
 function resolveConfig(
   provider: string,
   options?: ThrottleOptions
-): { maxTokens: number; intervalMs: number; timeoutMs: number } {
+): { maxTokens: number; intervalMs: number; timeoutMs: number; units: number } {
   const timeoutMs = options?.timeoutMs ?? 30_000;
+  const units = options?.units ?? 1;
 
   let maxTokens: number;
   let windowMs: number;
@@ -95,7 +101,7 @@ function resolveConfig(
   }
 
   const intervalMs = windowMs / maxTokens;
-  return { maxTokens, intervalMs, timeoutMs };
+  return { maxTokens, intervalMs, timeoutMs, units };
 }
 
 function sleep(ms: number): Promise<void> {
@@ -113,26 +119,33 @@ function sleep(ms: number): Promise<void> {
  * const result = await throttled('openai', () => openai.chat.completions.create({...}));
  *
  * @example
- * // Override for a specific call
- * const result = await throttled('openai', () => openai.chat.completions.create({...}), { rpm: 100 });
+ * // Per-user throttle with quota-unit cost
+ * const result = await throttled('google', () => gmail.users.messages.get({...}), { userId, units: 5 });
  *
  * @example
- * // Google at 250 RPS (built-in default)
- * const result = await throttled('google', () => gmail.users.messages.get({...}));
+ * // Override for a specific call
+ * const result = await throttled('openai', () => openai.chat.completions.create({...}), { rpm: 100 });
  */
 export async function throttled<T>(
   provider: string,
   fn: () => Promise<T> | T,
   options?: ThrottleOptions
 ): Promise<T> {
-  const { maxTokens, intervalMs, timeoutMs } = resolveConfig(
+  const { maxTokens, intervalMs, timeoutMs, units } = resolveConfig(
     provider,
     options
   );
-  const key = `${THROTTLE_PREFIX}:${provider}`;
+  const key = options?.userId
+    ? `${THROTTLE_PREFIX}:${provider}:${options.userId}`
+    : `${THROTTLE_PREFIX}:${provider}`;
   const startedAt = Date.now();
 
-   
+  if (units > maxTokens) {
+    throw new Error(
+      `Request cost (${units} units) exceeds bucket capacity (${maxTokens} units) for provider "${provider}".`
+    );
+  }
+
   while (true) {
     const now = Date.now();
     const alreadyWaited = now - startedAt;
@@ -147,15 +160,14 @@ export async function throttled<T>(
       key,
       maxTokens,
       intervalMs,
-      now
+      now,
+      units
     )) as number;
 
     if (waitMs === 0) {
-      // Token granted — execute the actual work
       return await fn();
     }
 
-    // Would the next wait push us over the timeout?
     if (alreadyWaited + waitMs > timeoutMs) {
       throw new ThrottleTimeoutError(provider, timeoutMs);
     }
