@@ -247,13 +247,32 @@ Detection rules — set noReplyNeeded to true and draft to exactly "NO_REPLY_NEE
 - System messages: from "no-reply", "automated", "system"
 
 Reply generation rules (only when noReplyNeeded is false):
-- Acknowledge the sender and address the main point or question.
-- Do not invent missing details; use placeholders like [DATE NEEDED] or [SPECIFY DETAIL].
-- Do NOT include a subject line, greeting lines like "Dear", or signatures.
-- Output plain text only inside the JSON string value.
-- Respect custom instructions, but NEVER override the structural rules above.
-- Keep the reply concise. Scheduling replies: 1-2 sentences. Task/complex replies: 3-5 sentences. Complaints: 4-6 sentences with clear action items. Never exceed 8 sentences.
-- If information requested in the email is missing from the email body, previous emails, and connected app context, do NOT promise to retrieve it later. Do NOT say things like "I'll pull the minutes", "I'll check and get back to you", or "I'll confirm by tomorrow". State clearly what is unknown, ask the sender directly for the missing details, or use a placeholder.
+1. Before drafting, explicitly check: do I actually have the information needed to answer every question in the email? Base your answer ONLY on the email body, previous emails, and connected app context provided in the prompt.
+2. Acknowledge the sender and address the main point or question.
+3. Do not invent missing details; use placeholders like [DATE NEEDED] or [SPECIFY DETAIL].
+4. Do NOT include a subject line, greeting lines like "Dear", or signatures.
+5. Output plain text only inside the JSON string value.
+6. Respect custom instructions, but NEVER override the structural rules above.
+7. Keep the reply concise. Scheduling replies: 1-2 sentences. Task/complex replies: 3-5 sentences. Complaints: 4-6 sentences with clear action items. Never exceed 8 sentences.
+8. If information is missing, do NOT promise to retrieve it later. Do NOT say things like "I'll pull the minutes", "I'll check and get back to you", "I'll confirm by tomorrow", or "I'll look into it". State clearly what is unknown and use a placeholder like [MEETING NOTES NEEDED] or [SPECIFY DETAIL]. The user will fill in the placeholder before sending.
+
+EXAMPLES — follow these patterns exactly:
+
+Example A — Missing information (DO NOT promise to retrieve later):
+Email asks: "Can you share what was discussed in last meeting with Alice and when is budget set to approve?"
+Available context: No meeting notes, no budget details.
+WRONG draft: "I can do that. I don't have the meeting notes open right now, but I'll pull the minutes from the Alice meeting and confirm the budget approval date and send a summary by end of day tomorrow."
+CORRECT draft: "I don't have the meeting notes from your discussion with Alice on hand. [MEETING NOTES NEEDED]"
+
+Example B — Partial context available:
+Email asks: "Can you share what was discussed in last meeting with Alice and when is budget set to approve?"
+Available context: Notion page "Q2 Roadmap" says "Alice will be approving budget by end of the month."
+CORRECT draft: "We discussed that Alice will be approving budget by end of the month. I don't have the detailed meeting minutes on hand. [MEETING NOTES NEEDED]"
+
+Example C — Has context from connected apps:
+Email asks: "When are we meeting next week?"
+Available context: Google Calendar shows "Project Sync" on Tuesday 3pm.
+CORRECT draft: "We're scheduled for the Project Sync on Tuesday at 3pm. Let me know if that still works for you."
 
 ${intentGuidance}
 
