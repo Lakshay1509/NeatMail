@@ -1,5 +1,6 @@
 import { clerkClient } from "@clerk/nextjs/server"
 import { redis } from "@/lib/redis"
+import { eng } from "stopword"
 import {
   ContextProvider,
   ContextCard,
@@ -116,63 +117,10 @@ function relativeTime(iso: string): string {
   return `${Math.floor(sec / 2592000)}mo ago`
 }
 
+const ENGLISH_STOPWORDS = new Set(eng)
+
 function isCommonWord(w: string): boolean {
-  const s = new Set([
-    "the","a","an","i","you","he","she","it","we","they","me","him","her","us","them",
-    "my","your","his","its","our","their","this","that","these","those",
-    "in","on","at","to","for","of","with","by","from","as","into","through","during",
-    "before","after","above","below","between","under","again","further","then","once",
-    "here","there","when","where","why","how","all","any","both","each","few","more",
-    "most","other","some","such","no","nor","not","only","own","same","so","than",
-    "too","very","just","and","but","if","or","because","until","while","about",
-    "is","are","was","were","be","been","being","have","has","had","do","does","did",
-    "will","would","could","should","may","might","must","shall","can","need",
-    "get","got","go","went","gone","make","made","take","took","taken","see","saw",
-    "seen","know","knew","known","come","came","think","thought","say","said","tell",
-    "told","give","gave","given","find","found","feel","felt","become","became",
-    "leave","left","put","mean","meant","keep","kept","let","begin","began","seem",
-    "help","show","showed","shown","hear","heard","play","run","ran","move","live",
-    "believe","bring","brought","happen","stand","stood","lose","lost","pay","paid",
-    "meet","met","include","continue","set","learn","learned","change","lead","led",
-    "understand","understood","watch","follow","stop","create","speak","spoke","spoken",
-    "allow","add","spend","spent","grow","grew","grown","open","walk","offer","remember",
-    "love","consider","appear","buy","bought","wait","serve","die","send","sent","expect",
-    "build","built","stay","fall","fell","fallen","cut","reach","kill","remain","suggest",
-    "raise","pass","sell","sold","require","report","decide","pull","have","having",
-    "being","been","was","were","being","having","done","gone","taken","made","seen",
-    "known","come","thought","said","told","given","found","felt","become","left",
-    "meant","kept","begun","shown","heard","stood","lost","paid","met","led",
-    "understood","spoken","spent","grown","fallen","built","bought","written",
-    "gotten","hidden","broken","chosen","drawn","driven","eaten","fallen","flown",
-    "frozen","gotten","hidden","hit","held","hurt","kept","laid","led","left",
-    "lent","let","lain","lit","lost","made","meant","met","misspelt","mistaken",
-    "understood","overcome","overdone","overtaken","overthrown","paid","proven",
-    "put","quit","read","rid","ridden","rung","risen","run","said","seen","sought",
-    "sold","sent","set","sewn","shaken","shaved","shown","shrunk","shut","sung",
-    "sunk","sat","slept","slid","slung","slit","smelt","sped","spelt","spent","spilt",
-    "spun","spat","split","spoilt","spread","sprung","stood","stolen","stuck","stung",
-    "struck","strung","sworn","swept","swollen","swum","swung","taken","taught","torn",
-    "told","thought","thrown","understood","upset","woken","worn","woven","wed","wept",
-    "wet","won","wound","withdrawn","wrung","written","that","those","these","this",
-    "which","who","whom","whose","what","whatever","whoever","whomever","whichever",
-    "where","wherever","when","whenever","why","how","however","whether","either",
-    "neither","both","all","some","any","none","each","every","either","neither",
-    "other","another","such","no","one","two","three","four","five","six","seven",
-    "eight","nine","ten","first","second","third","last","next","previous","now","then",
-    "today","tomorrow","yesterday","soon","later","early","late","already","still",
-    "yet","ever","never","always","often","sometimes","usually","rarely","seldom",
-    "once","twice","again","back","forward","together","apart","away","here","there",
-    "everywhere","somewhere","nowhere","else","also","too","either","neither","only",
-    "even","just","still","already","yet","quite","rather","pretty","fairly","almost",
-    "nearly","hardly","barely","scarcely","seldom","maybe","perhaps","probably","possibly",
-    "likely","surely","certainly","definitely","absolutely","completely","totally","entirely",
-    "fully","partly","mostly","mainly","largely","partly","slightly","somewhat","kind of",
-    "sort of","more","less","least","most","much","many","few","little","a lot","lots",
-    "plenty","enough","several","various","certain","particular","specific","general",
-    "usual","normal","regular","common","standard","typical","average","ordinary","special",
-    "unique","different","same","similar","equal","equivalent","opposite","contrary",
-  ])
-  return s.has(w.toLowerCase())
+  return ENGLISH_STOPWORDS.has(w.toLowerCase())
 }
 
 function resolveRepo(

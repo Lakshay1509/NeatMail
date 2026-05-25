@@ -64,6 +64,30 @@ interface HubSpotTicket {
   properties: Record<string, string | null>
 }
 
+interface HubSpotCall {
+  id: string
+  properties: Record<string, string | null>
+}
+
+interface HubSpotMeeting {
+  id: string
+  properties: Record<string, string | null>
+}
+
+interface HubSpotEmail {
+  id: string
+  properties: Record<string, string | null>
+}
+
+function isValidDate(dateStr: string): boolean {
+  const d = new Date(dateStr).getTime()
+  return !isNaN(d) && d > 0
+}
+
+function isOverdue(dateStr: string): boolean {
+  return isValidDate(dateStr) && new Date(dateStr).getTime() < Date.now()
+}
+
 export class HubSpotProvider implements ContextProvider {
   id = "hubspot"
   name = "HubSpot"
@@ -106,25 +130,85 @@ export class HubSpotProvider implements ContextProvider {
       "Content-Type": "application/json",
     }
 
-    const [contacts, companies, owners] = await Promise.all([
+    const [emailContacts, domainCompanies, owners] = await Promise.all([
       this.searchContacts(email.senderEmail, headers),
       this.searchCompanies(entities.senderDomain, headers),
       this.getOwners(headers),
     ])
 
-    console.log(`[HubSpot] Primary search — contacts=${contacts.length} companies=${companies.length} owners=${owners.length}`)
+    console.log(
+      `[HubSpot] Primary search — contacts=${emailContacts.length} companies=${domainCompanies.length} owners=${owners.length}`
+    )
+
+    let contacts = emailContacts
+    let companies = domainCompanies
+
+    // Fallback 1: senderName as a contact name
+    if (
+      contacts.length === 0 &&
+      email.senderName &&
+      !email.senderName.includes("@")
+    ) {
+      const nameContacts = await this.searchContactsByName(
+        email.senderName,
+        headers
+      )
+      if (nameContacts.length > 0) {
+        contacts = nameContacts
+        console.log(
+          `[HubSpot] Fallback contact found by senderName: ${email.senderName}`
+        )
+      }
+    }
+
+    // Fallback 2: keywords that look like full names
+    if (contacts.length === 0) {
+      const nameKeywords = entities.keywords
+        .filter(
+          (k) =>
+            k.includes(" ") &&
+            k.split(" ").every((w) => w.length > 1 && /^[A-Z]/i.test(w))
+        )
+        .slice(0, 2)
+      for (const kw of nameKeywords) {
+        const kwContacts = await this.searchContactsByName(kw, headers)
+        if (kwContacts.length > 0) {
+          contacts = kwContacts
+          console.log(`[HubSpot] Fallback contact found by keyword: ${kw}`)
+          break
+        }
+      }
+    }
+
+    // Fallback 3: keywords that look like company names
+    if (companies.length === 0) {
+      const companyKeywords = entities.keywords
+        .filter((k) => k.length > 2 && /^[A-Z]/i.test(k) && !k.includes("@"))
+        .slice(0, 2)
+      for (const kw of companyKeywords) {
+        const kwCompanies = await this.searchCompaniesByName(kw, headers)
+        if (kwCompanies.length > 0) {
+          companies = kwCompanies
+          console.log(`[HubSpot] Fallback company found by keyword: ${kw}`)
+          break
+        }
+      }
+    }
 
     const contactId = contacts.length > 0 ? contacts[0].id : null
     const companyId = companies.length > 0 ? companies[0].id : null
     const contactCompanyId =
       contacts.length > 0 ? contacts[0].properties.associatedcompanyid : null
 
-    const [companyDeals, contactDeals, notes, tasks, tickets] = await Promise.all([
+    const [companyDeals, contactDeals, notes, tasks, tickets, calls, meetings, emails] = await Promise.all([
       companyId ? this.getOpenDealsForCompany(companyId, headers) : Promise.resolve([]),
       contactId ? this.getOpenDealsForContact(contactId, headers) : Promise.resolve([]),
       contactId ? this.getNotesForContact(contactId, headers) : Promise.resolve([]),
       contactId ? this.getOpenTasksForContact(contactId, headers) : Promise.resolve([]),
       contactId ? this.getTicketsForContact(contactId, headers) : Promise.resolve([]),
+      contactId ? this.getCallsForContact(contactId, headers) : Promise.resolve([]),
+      contactId ? this.getMeetingsForContact(contactId, headers) : Promise.resolve([]),
+      contactId ? this.getEmailsForContact(contactId, headers) : Promise.resolve([]),
     ])
 
     // Merge deals from company and contact, dedupe by id
@@ -137,7 +221,50 @@ export class HubSpotProvider implements ContextProvider {
     }
     const deals = Array.from(dealMap.values())
 
-    console.log(`[HubSpot] Secondary fetch — companyDeals=${companyDeals.length} contactDeals=${contactDeals.length} mergedDeals=${deals.length} notes=${notes.length} tasks=${tasks.length} tickets=${tickets.length}`)
+    // Build unified activity timeline from all engagement types
+    type Activity = { type: string; date: Date; text: string }
+    const activities: Activity[] = []
+
+    for (const n of notes) {
+      const ts = n.properties.hs_timestamp
+      if (ts && isValidDate(ts)) {
+        const body = stripHtml(n.properties.hs_note_body ?? "").slice(0, 80)
+        activities.push({ type: "Note", date: new Date(ts), text: body })
+      }
+    }
+    for (const c of calls) {
+      const ts = c.properties.hs_timestamp
+      if (ts && isValidDate(ts)) {
+        const title = c.properties.hs_call_title ?? "Call"
+        const status = c.properties.hs_call_status ?? ""
+        const text = `${title}${status ? ` (${status})` : ""}`
+        activities.push({ type: "Call", date: new Date(ts), text })
+      }
+    }
+    for (const m of meetings) {
+      const ts = m.properties.hs_timestamp
+      if (ts && isValidDate(ts)) {
+        const title = m.properties.hs_meeting_title ?? "Meeting"
+        const outcome = m.properties.hs_meeting_outcome ?? ""
+        const text = `${title}${outcome ? ` (${outcome})` : ""}`
+        activities.push({ type: "Meeting", date: new Date(ts), text })
+      }
+    }
+    for (const e of emails) {
+      const ts = e.properties.hs_timestamp
+      if (ts && isValidDate(ts)) {
+        const subject = e.properties.hs_email_subject ?? "Email"
+        const status = e.properties.hs_email_status ?? ""
+        const text = `${subject}${status ? ` [${status}]` : ""}`
+        activities.push({ type: "Email", date: new Date(ts), text })
+      }
+    }
+
+    activities.sort((a, b) => b.date.getTime() - a.date.getTime())
+    const recentActivities = activities.slice(0, 4)
+    const lastActivity = recentActivities[0] ?? null
+
+    console.log(`[HubSpot] Secondary fetch — companyDeals=${companyDeals.length} contactDeals=${contactDeals.length} mergedDeals=${deals.length} notes=${notes.length} tasks=${tasks.length} tickets=${tickets.length} calls=${calls.length} meetings=${meetings.length} emails=${emails.length} activities=${activities.length}`)
 
     const ownerMap = new Map(
       owners.map((o) => [o.id, `${o.firstName} ${o.lastName}`])
@@ -145,6 +272,7 @@ export class HubSpotProvider implements ContextProvider {
 
     const parts: string[] = []
 
+    // ── 1. Identity ─────────────────────────────────────────
     if (contacts.length > 0) {
       const c = contacts[0].properties
       const ownerId = c.hubspot_owner_id
@@ -167,6 +295,11 @@ export class HubSpotProvider implements ContextProvider {
         const ago = daysAgo(c.notes_last_contacted)
         if (ago) parts.push(`Last contacted: ${ago}`)
       }
+      if (lastActivity) {
+        parts.push(
+          `Last interaction: ${lastActivity.type} (${lastActivity.date.toLocaleDateString()}) — ${lastActivity.text}`
+        )
+      }
     }
 
     if (companies.length > 0 && contacts.length === 0) {
@@ -180,9 +313,17 @@ export class HubSpotProvider implements ContextProvider {
       }
     }
 
+    // ── 2. Current context ───────────────────────────────────
+    const contextItems: string[] = []
+
     if (deals.length > 0) {
-      parts.push("")
-      parts.push("Open deals:")
+      const totalValue = deals.reduce((sum, d) => {
+        const amt = parseFloat(d.properties.amount ?? "0")
+        return sum + (isNaN(amt) ? 0 : amt)
+      }, 0)
+      contextItems.push(
+        `Open deals: ${deals.length}${totalValue > 0 ? ` (total $${totalValue.toLocaleString()})` : ""}`
+      )
       for (const d of deals.slice(0, 3)) {
         const dp = d.properties
         const dealOwner = dp.hubspot_owner_id
@@ -195,48 +336,55 @@ export class HubSpotProvider implements ContextProvider {
         const closeDate = dp.closedate
           ? new Date(dp.closedate).toLocaleDateString()
           : "—"
-        parts.push(
+        contextItems.push(
           `  - ${dp.dealname ?? "Unnamed"} | ${stage} | ${amount} | Close: ${closeDate} | Owner: ${dealOwner}`
         )
       }
     }
 
-    if (notes.length > 0) {
-      parts.push("")
-      parts.push("Recent activity:")
-      for (const note of notes.slice(0, 2)) {
-        const np = note.properties
-        const body = stripHtml(np.hs_note_body ?? "").slice(0, 80)
-        const date = np.hs_timestamp
-          ? new Date(np.hs_timestamp).toLocaleDateString()
-          : ""
-        parts.push(
-          `  - ${date ? `[${date}] ` : ""}${body}${body.length >= 80 ? "..." : ""}`
-        )
-      }
-    }
-
     if (tasks.length > 0) {
-      parts.push("")
-      parts.push("Open tasks:")
+      const overdueCount = tasks.filter((t) =>
+        isOverdue(t.properties.hs_timestamp ?? "")
+      ).length
+      contextItems.push(
+        `Open tasks: ${tasks.length}${overdueCount > 0 ? ` (${overdueCount} overdue)` : ""}`
+      )
       for (const task of tasks.slice(0, 2)) {
         const tp = task.properties
         const due = tp.hs_timestamp
           ? new Date(tp.hs_timestamp).toLocaleDateString()
           : "—"
-        parts.push(
-          `  - ${tp.hs_task_subject ?? "Unnamed"} | Due: ${due}${tp.hs_task_priority ? ` | ${tp.hs_task_priority}` : ""}`
+        const overdue = isOverdue(tp.hs_timestamp ?? "") ? " OVERDUE" : ""
+        contextItems.push(
+          `  - ${tp.hs_task_subject ?? "Unnamed"} | Due: ${due}${tp.hs_task_priority ? ` | ${tp.hs_task_priority}` : ""}${overdue}`
         )
       }
     }
 
     if (tickets.length > 0) {
-      parts.push("")
-      parts.push("Support tickets:")
+      contextItems.push(`Support tickets: ${tickets.length}`)
       for (const ticket of tickets.slice(0, 2)) {
         const t = ticket.properties
+        const stage = t.hs_pipeline_stage ?? ""
+        contextItems.push(
+          `  - ${t.subject ?? "Unnamed"}${t.hs_ticket_priority ? ` | Priority: ${t.hs_ticket_priority}` : ""}${stage ? ` | Status: ${stage}` : ""}`
+        )
+      }
+    }
+
+    if (contextItems.length > 0) {
+      parts.push("")
+      parts.push("Current context:")
+      parts.push(...contextItems)
+    }
+
+    // ── 3. Recent history ───────────────────────────────────
+    if (recentActivities.length > 0) {
+      parts.push("")
+      parts.push("Recent history:")
+      for (const a of recentActivities) {
         parts.push(
-          `  - ${t.subject ?? "Unnamed"}${t.hs_ticket_priority ? ` | Priority: ${t.hs_ticket_priority}` : ""}`
+          `  - ${a.type} (${a.date.toLocaleDateString()}): ${a.text}${a.text.length >= 80 ? "..." : ""}`
         )
       }
     }
@@ -261,7 +409,7 @@ export class HubSpotProvider implements ContextProvider {
       providerName: this.name,
       relevance,
       summary,
-      data: { contacts, companies, deals, notes, tasks, tickets },
+      data: { contacts, companies, deals, notes, tasks, tickets, calls, meetings, emails, activities },
     }
   }
 
@@ -343,6 +491,113 @@ export class HubSpotProvider implements ContextProvider {
       return data.results ?? []
     } catch (err) {
       console.error("[HubSpotProvider] searchCompanies failed:", err)
+      return []
+    }
+  }
+
+  private async searchContactsByName(
+    fullName: string,
+    headers: Record<string, string>
+  ): Promise<HubSpotContact[]> {
+    const parts = fullName.trim().split(/\s+/)
+    if (parts.length < 2) return []
+
+    const first = parts[0]
+    const last = parts.slice(1).join(" ")
+
+    try {
+      const res = await fetch(`${HUBSPOT_API}/crm/v3/objects/contacts/search`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          after: "0",
+          filterGroups: [
+            {
+              filters: [
+                { propertyName: "firstname", operator: "EQ", value: first },
+                { propertyName: "lastname", operator: "EQ", value: last },
+              ],
+            },
+            {
+              filters: [
+                {
+                  propertyName: "firstname",
+                  operator: "CONTAINS_TOKEN",
+                  value: first,
+                },
+                {
+                  propertyName: "lastname",
+                  operator: "CONTAINS_TOKEN",
+                  value: last,
+                },
+              ],
+            },
+          ],
+          limit: 3,
+          properties: [
+            "firstname",
+            "lastname",
+            "email",
+            "company",
+            "phone",
+            "jobtitle",
+            "hubspot_owner_id",
+            "lifecyclestage",
+            "associatedcompanyid",
+            "hs_lead_status",
+            "hubspotscore",
+            "notes_last_contacted",
+          ],
+          sorts: ["createdate"],
+        }),
+      })
+      const data = await res.json()
+      return data.results ?? []
+    } catch (err) {
+      console.error("[HubSpotProvider] searchContactsByName failed:", err)
+      return []
+    }
+  }
+
+  private async searchCompaniesByName(
+    name: string,
+    headers: Record<string, string>
+  ): Promise<HubSpotCompany[]> {
+    try {
+      const res = await fetch(
+        `${HUBSPOT_API}/crm/v3/objects/companies/search`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            after: "0",
+            filterGroups: [
+              {
+                filters: [
+                  {
+                    propertyName: "name",
+                    operator: "CONTAINS_TOKEN",
+                    value: name,
+                  },
+                ],
+              },
+            ],
+            limit: 3,
+            properties: [
+              "name",
+              "domain",
+              "industry",
+              "hubspot_owner_id",
+              "description",
+            ],
+            sorts: ["createdate"],
+          }),
+        }
+      )
+      const data = await res.json()
+      return data.results ?? []
+    } catch (err) {
+      console.error("[HubSpotProvider] searchCompaniesByName failed:", err)
       return []
     }
   }
@@ -575,6 +830,142 @@ export class HubSpotProvider implements ContextProvider {
       return (batchData.results ?? []) as HubSpotTicket[]
     } catch (err) {
       console.error("[HubSpotProvider] getTicketsForContact failed:", err)
+      return []
+    }
+  }
+
+  private async getCallsForContact(
+    contactId: string,
+    headers: Record<string, string>
+  ): Promise<HubSpotCall[]> {
+    try {
+      const assocRes = await fetch(
+        `${HUBSPOT_API}/crm/v4/objects/contacts/${contactId}/associations/calls?limit=10`,
+        { headers }
+      )
+      const assocData = await assocRes.json()
+      const callIds = (assocData.results ?? []).map(
+        (r: { toObjectId: number | string }) => String(r.toObjectId)
+      )
+
+      if (callIds.length === 0) return []
+
+      const batchRes = await fetch(
+        `${HUBSPOT_API}/crm/v3/objects/calls/batch/read`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            properties: [
+              "hs_call_title",
+              "hs_call_body",
+              "hs_call_status",
+              "hs_call_duration",
+              "hs_timestamp",
+            ],
+            inputs: callIds.map((id: string) => ({ id })),
+          }),
+        }
+      )
+      const batchData = await batchRes.json()
+      const calls: HubSpotCall[] = batchData.results ?? []
+      return calls.sort((a, b) => {
+        const ta = new Date(a.properties.hs_timestamp ?? 0).getTime()
+        const tb = new Date(b.properties.hs_timestamp ?? 0).getTime()
+        return tb - ta
+      })
+    } catch (err) {
+      console.error("[HubSpotProvider] getCallsForContact failed:", err)
+      return []
+    }
+  }
+
+  private async getMeetingsForContact(
+    contactId: string,
+    headers: Record<string, string>
+  ): Promise<HubSpotMeeting[]> {
+    try {
+      const assocRes = await fetch(
+        `${HUBSPOT_API}/crm/v4/objects/contacts/${contactId}/associations/meetings?limit=10`,
+        { headers }
+      )
+      const assocData = await assocRes.json()
+      const meetingIds = (assocData.results ?? []).map(
+        (r: { toObjectId: number | string }) => String(r.toObjectId)
+      )
+
+      if (meetingIds.length === 0) return []
+
+      const batchRes = await fetch(
+        `${HUBSPOT_API}/crm/v3/objects/meetings/batch/read`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            properties: [
+              "hs_meeting_title",
+              "hs_meeting_body",
+              "hs_meeting_outcome",
+              "hs_timestamp",
+            ],
+            inputs: meetingIds.map((id: string) => ({ id })),
+          }),
+        }
+      )
+      const batchData = await batchRes.json()
+      const meetings: HubSpotMeeting[] = batchData.results ?? []
+      return meetings.sort((a, b) => {
+        const ta = new Date(a.properties.hs_timestamp ?? 0).getTime()
+        const tb = new Date(b.properties.hs_timestamp ?? 0).getTime()
+        return tb - ta
+      })
+    } catch (err) {
+      console.error("[HubSpotProvider] getMeetingsForContact failed:", err)
+      return []
+    }
+  }
+
+  private async getEmailsForContact(
+    contactId: string,
+    headers: Record<string, string>
+  ): Promise<HubSpotEmail[]> {
+    try {
+      const assocRes = await fetch(
+        `${HUBSPOT_API}/crm/v4/objects/contacts/${contactId}/associations/emails?limit=10`,
+        { headers }
+      )
+      const assocData = await assocRes.json()
+      const emailIds = (assocData.results ?? []).map(
+        (r: { toObjectId: number | string }) => String(r.toObjectId)
+      )
+
+      if (emailIds.length === 0) return []
+
+      const batchRes = await fetch(
+        `${HUBSPOT_API}/crm/v3/objects/emails/batch/read`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            properties: [
+              "hs_email_subject",
+              "hs_email_text",
+              "hs_email_status",
+              "hs_timestamp",
+            ],
+            inputs: emailIds.map((id: string) => ({ id })),
+          }),
+        }
+      )
+      const batchData = await batchRes.json()
+      const emails: HubSpotEmail[] = batchData.results ?? []
+      return emails.sort((a, b) => {
+        const ta = new Date(a.properties.hs_timestamp ?? 0).getTime()
+        const tb = new Date(b.properties.hs_timestamp ?? 0).getTime()
+        return tb - ta
+      })
+    } catch (err) {
+      console.error("[HubSpotProvider] getEmailsForContact failed:", err)
       return []
     }
   }
