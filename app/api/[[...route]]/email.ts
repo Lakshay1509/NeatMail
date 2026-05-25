@@ -316,18 +316,20 @@ const app = new Hono()
       return ctx.json({ error: "Unauthorized" }, 401);
     }
 
-    const is_gmail = await db.user_tokens.findUnique({
+    const user = await db.user_tokens.findUnique({
       where: { clerk_user_id: userId },
-      select: { is_gmail: true },
+      select: { email: true, is_gmail: true, outlook_id: true },
     });
 
-    if (!is_gmail?.is_gmail) {
-      const is_outlook = await db.user_tokens.findUnique({
-        where: { clerk_user_id: userId },
-        select: { outlook_id: true },
-      });
+    if (process.env.GOOGLE_VERIFICATION_EMAIL && user?.email === process.env.GOOGLE_VERIFICATION_EMAIL) {
+      return ctx.json(
+        { message: "History synced successfully", count: 0 },
+        200,
+      );
+    }
 
-      if (is_outlook?.outlook_id) {
+    if (!user?.is_gmail) {
+      if (user?.outlook_id) {
         try {
           const mails = await getPreviousOutlookMails(userId);
 
