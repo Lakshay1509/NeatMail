@@ -84,6 +84,8 @@ export class HubSpotProvider implements ContextProvider {
     entities: EmailEntities,
     userId: string
   ): Promise<ContextCard | null> {
+    console.log(`[HubSpot] fetchContext started user=${userId} senderEmail=${email.senderEmail} domain=${entities.senderDomain}`)
+
     let token: string
     try {
       const client = await clerkClient()
@@ -92,6 +94,7 @@ export class HubSpotProvider implements ContextProvider {
         "hubspot"
       )
       token = tokenResponse.data[0]?.token
+      console.log(`[HubSpot] OAuth token retrieved: ${token ? "yes" : "NO"}`)
       if (!token) return null
     } catch (err) {
       console.error("[HubSpotProvider] Failed to get OAuth token:", err)
@@ -108,6 +111,8 @@ export class HubSpotProvider implements ContextProvider {
       this.searchCompanies(entities.senderDomain, headers),
       this.getOwners(headers),
     ])
+
+    console.log(`[HubSpot] Primary search — contacts=${contacts.length} companies=${companies.length} owners=${owners.length}`)
 
     const contactId = contacts.length > 0 ? contacts[0].id : null
     const companyId = companies.length > 0 ? companies[0].id : null
@@ -131,6 +136,8 @@ export class HubSpotProvider implements ContextProvider {
       for (const d of extraDeals) dealMap.set(d.id, d)
     }
     const deals = Array.from(dealMap.values())
+
+    console.log(`[HubSpot] Secondary fetch — companyDeals=${companyDeals.length} contactDeals=${contactDeals.length} mergedDeals=${deals.length} notes=${notes.length} tasks=${tasks.length} tickets=${tickets.length}`)
 
     const ownerMap = new Map(
       owners.map((o) => [o.id, `${o.firstName} ${o.lastName}`])
@@ -234,7 +241,10 @@ export class HubSpotProvider implements ContextProvider {
       }
     }
 
-    if (parts.length === 0) return null
+    if (parts.length === 0) {
+      console.log("[HubSpot] No data found, returning null")
+      return null
+    }
 
     const contactExists = contacts.length > 0
     const relevance = contactExists
@@ -243,11 +253,14 @@ export class HubSpotProvider implements ContextProvider {
         ? "medium"
         : "low"
 
+    const summary = `HubSpot CRM:\n${parts.join("\n")}`
+    console.log(`[HubSpot] Returning card relevance=${relevance} summaryLength=${summary.length} parts=${parts.length}`)
+
     return {
       providerId: this.id,
       providerName: this.name,
       relevance,
-      summary: `HubSpot CRM:\n${parts.join("\n")}`,
+      summary,
       data: { contacts, companies, deals, notes, tasks, tickets },
     }
   }

@@ -219,13 +219,6 @@ function isValidRepoSlug(slug: string): boolean {
   return rx.test(owner) && rx.test(repo)
 }
 
-function sanitizeLog(text: string, max = 80): string {
-  return text
-    .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, "[EMAIL]")
-    .replace(/gh[pousr]_[a-zA-Z0-9]{36,}/g, "[TOKEN]")
-    .slice(0, max)
-}
-
 // ── Provider ───────────────────────────────────────────────
 
 export class GitHubProvider implements ContextProvider {
@@ -249,9 +242,6 @@ export class GitHubProvider implements ContextProvider {
     userId: string
   ): Promise<ContextCard | null> {
     const text = `${email.subject} ${stripHtml(email.body)}`
-    console.log("[GitHub] fetchContext:", {
-      subject: sanitizeLog(email.subject),
-    })
 
     // ── 1. Auth ─────────────────────────────────────
     const auth = await this.authenticate(userId)
@@ -270,7 +260,6 @@ export class GitHubProvider implements ContextProvider {
     let repo = resolveRepo(text, profile.login, knownRepos)
     if (!repo) {
       repo = knownRepos[0] ? `${profile.login}/${knownRepos[0]}` : null
-      console.log("[GitHub] Fallback repo:", repo)
     }
 
     if (!repo || !isValidRepoSlug(repo)) {
@@ -283,8 +272,6 @@ export class GitHubProvider implements ContextProvider {
         data: { profile },
       }
     }
-
-    console.log("[GitHub] Resolved repo:", repo)
 
     // ── 3. Tiered fetch (all in parallel, bounded timeouts) ─
     const prsPromise = this.fetchWithTimeout<GitHubPullRequest[]>(
@@ -516,7 +503,6 @@ export class GitHubProvider implements ContextProvider {
     try {
       const res = await fetch(url, { headers, signal: AbortSignal.timeout(timeoutMs) })
       if (!res.ok) {
-        if (label) console.log(`[GitHub] ${label}: HTTP ${res.status}`)
         return null
       }
       return (await res.json()) as T

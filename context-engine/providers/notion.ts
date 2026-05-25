@@ -96,9 +96,6 @@ export class NotionProvider implements ContextProvider {
     entities: EmailEntities,
     userId: string
   ): Promise<ContextCard | null> {
-    console.log(`[Notion] fetchContext started for user=${userId}`)
-    console.log(`[Notion] Email subject="${email.subject}" senderName="${email.senderName}" keywords=${JSON.stringify(entities.keywords)} intent=${entities.intent}`)
-
     let token: string
     try {
       const client = await clerkClient()
@@ -107,9 +104,7 @@ export class NotionProvider implements ContextProvider {
         "notion"
       )
       token = tokenResponse.data[0]?.token
-      console.log(`[Notion] OAuth token retrieved: ${token ? "yes" : "NO"}`)
       if (!token) {
-        console.warn(`[Notion] No OAuth token found for user=${userId}`)
         return null
       }
     } catch (err) {
@@ -140,7 +135,6 @@ export class NotionProvider implements ContextProvider {
     }
 
     const uniqueQueries = [...new Set(queries.filter(Boolean))]
-    console.log(`[Notion] Search queries=${JSON.stringify(uniqueQueries)}`)
 
     const searchResults = await Promise.allSettled(
       uniqueQueries.slice(0, 4).map((query) =>
@@ -157,24 +151,14 @@ export class NotionProvider implements ContextProvider {
       )
     )
 
-    searchResults.forEach((r, idx) => {
-      const status = r.status === "fulfilled" ? "ok" : "err"
-      const count = r.status === "fulfilled" && r.value.results ? r.value.results.length : 0
-      console.log(`[Notion] Query #${idx} status=${status} results=${count}`)
-    })
-
     const allRaw: Array<{ object: string; id: string; [key: string]: unknown }> = []
     for (const result of searchResults) {
       if (result.status === "fulfilled" && result.value.results?.length) {
         allRaw.push(...result.value.results)
       }
     }
-    console.log(`[Notion] Total raw search results=${allRaw.length}`)
 
-    let usedFallback = false
     if (allRaw.length === 0) {
-      console.log(`[Notion] No query results — running fallback recent-pages search`)
-      usedFallback = true
       const fallbackRes = await fetch(`${NOTION_API}/search`, {
         method: "POST",
         headers,
@@ -186,14 +170,10 @@ export class NotionProvider implements ContextProvider {
       })
       const fallbackData: NotionSearchResponse = await fallbackRes.json()
       if (fallbackData.results?.length) {
-        console.log(`[Notion] Fallback returned ${fallbackData.results.length} pages`)
         allRaw.push(...fallbackData.results)
       } else {
-        console.warn(`[Notion] Fallback also returned nothing — bailing`)
         return null
       }
-    } else {
-      console.log(`[Notion] Skipping fallback because initial search found ${allRaw.length} result(s)`)
     }
 
     const seen = new Set<string>()
@@ -212,13 +192,7 @@ export class NotionProvider implements ContextProvider {
       uniquePages.push(page)
     }
 
-    console.log(`[Notion] Unique pages after dedup=${uniquePages.length}`)
-    uniquePages.forEach((p, i) => {
-      console.log(`[Notion] Page #${i}: id=${p.id} title="${extractTitle(p)}"`)
-    })
-
     if (uniquePages.length === 0) {
-      console.warn(`[Notion] No valid unique pages found — bailing`)
       return null
     }
 
@@ -236,7 +210,6 @@ export class NotionProvider implements ContextProvider {
 
     if (topPages.length > 0) {
       const topPage = topPages[0]
-      console.log(`[Notion] Fetching markdown+comments for topPage[0] id=${topPage.id} title="${extractTitle(topPage)}"`)
       const [markdownRes, commentsRes] = await Promise.allSettled([
         fetch(`${NOTION_API}/pages/${topPage.id}/markdown`, {
           headers,
@@ -246,18 +219,11 @@ export class NotionProvider implements ContextProvider {
         }).then((res) => res.json() as Promise<NotionCommentsResponse>),
       ])
 
-      console.log(`[Notion] Markdown fetch status=${markdownRes.status}`)
-      if (markdownRes.status === "fulfilled") {
-        const md = markdownRes.value
-        console.log(`[Notion] Markdown response has markdown=${!!md.markdown} truncated=${md.truncated} length=${md.markdown?.length ?? 0}`)
-      } else {
+      if (markdownRes.status === "rejected") {
         console.error(`[Notion] Markdown fetch failed:`, markdownRes.reason)
       }
 
-      console.log(`[Notion] Comments fetch status=${commentsRes.status}`)
-      if (commentsRes.status === "fulfilled") {
-        console.log(`[Notion] Comments response results=${commentsRes.value.results?.length ?? 0}`)
-      } else {
+      if (commentsRes.status === "rejected") {
         console.error(`[Notion] Comments fetch failed:`, commentsRes.reason)
       }
 
@@ -313,9 +279,6 @@ export class NotionProvider implements ContextProvider {
     const summary =
       `Relevant Notion pages (${uniquePages.length} found):\n${summaryLines.join("\n")}` +
       (extraBlocks ? `\n\n${extraBlocks}` : "")
-
-    console.log(`[Notion] Returning card relevance=${anySenderMatch ? "high" : "medium"} summaryLength=${summary.length}`)
-    console.log(`[Notion] Summary preview:\n${summary.slice(0, 500)}${summary.length > 500 ? "..." : ""}`)
 
     return {
       providerId: this.id,
