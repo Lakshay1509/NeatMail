@@ -880,18 +880,14 @@ export async function getLastSentMessageInThreadOutlook(
 ) {
   const client = await getGraphClient(userId);
 
-  const sentFolderRes = await outlookRetry(() =>
-    client.api("/me/mailFolders('sentitems')").select("id").get(),
-  ) as { id: string };
-  const sentItemsFolderId = sentFolderRes.id;
-
   const res = await outlookRetry(() =>
     client
-      .api("/me/messages")
-      .filter(`conversationId eq '${threadId}' and parentFolderId eq '${sentItemsFolderId}'`)
+      .api("/me/mailFolders('sentitems')/messages")
+      .filter(`sentDateTime ge 1900-01-01T00:00:00Z and conversationId eq '${threadId}'`)
       .orderby("sentDateTime desc")
       .top(1)
       .select("id,subject,sentDateTime,body,bodyPreview")
+      .header("Prefer", "outlook.body-content-type=text")
       .get(),
   ) as {
     value?: {
