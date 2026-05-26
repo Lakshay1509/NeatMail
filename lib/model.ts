@@ -108,6 +108,52 @@ export async function getModelResponse(
 }
 
 
+export interface DeleteUserResponse {
+  status: string;
+  message: string;
+}
+
+export async function deleteUser(
+  user_id: string,
+): Promise<DeleteUserResponse> {
+  try {
+    if (!user_id) {
+      throw new Error("user_id is required");
+    }
+
+    const response = await apiClient.post<DeleteUserResponse>(
+      "/delete-user",
+      { user_id },
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError<ApiErrorResponse>;
+
+      if (axiosError.response) {
+        const errorMessage =
+          axiosError.response.data?.detail ||
+          axiosError.response.data?.message ||
+          axiosError.response.data?.error ||
+          `API error: ${axiosError.response.status}`;
+
+        throw new Error(errorMessage);
+      } else if (axiosError.request) {
+        throw new Error(
+          "No response from model API. Please check if the service is running.",
+        );
+      } else {
+        throw new Error(`Request setup error: ${axiosError.message}`);
+      }
+    }
+
+    throw error instanceof Error
+      ? error
+      : new Error("Unknown error during deleting user from classification model");
+  }
+}
+
 export async function correctLabel(
   request: CorrectionRequest,
 ): Promise<CorrectionResponse> {

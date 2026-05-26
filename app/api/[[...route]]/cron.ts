@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 
 import { db } from "@/lib/prisma";
+import { deleteUser as deleteDraftUser } from "@/lib/draft";
+import { deleteUser as deleteModelUser } from "@/lib/model";
 import { clerkClient } from "@clerk/nextjs/server";
 import { activateWatch } from "@/lib/gmail";
 import {
@@ -56,6 +58,30 @@ const app = new Hono()
               clerk_user_id: user.clerk_user_id,
             },
           });
+
+          try {
+            const draftResult = await deleteDraftUser(user.clerk_user_id);
+            console.log(
+              `Deleted ${draftResult.vectors_deleted} vectors from draft model for user: ${user.clerk_user_id}`,
+            );
+          } catch (draftError) {
+            console.error(
+              `Failed to delete draft model data for user ${user.clerk_user_id}:`,
+              draftError,
+            );
+          }
+
+          try {
+            const modelResult = await deleteModelUser(user.clerk_user_id);
+            console.log(
+              `Deleted classification data for user ${user.clerk_user_id}: ${modelResult.status}`,
+            );
+          } catch (modelError) {
+            console.error(
+              `Failed to delete classification model data for user ${user.clerk_user_id}:`,
+              modelError,
+            );
+          }
 
           results.successful++;
           console.log(`Successfully deleted user: ${user.clerk_user_id}`);
