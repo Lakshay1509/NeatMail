@@ -1,3 +1,20 @@
+5bf9e23 feat: implement user deletion functionality in draft and model services with error handling
+205eb4e fix: optimize getLastSentMessageInThreadOutlook by directly querying sent items and improving filter criteria
+216533e feat: add Google verification email handling for history sync in email route to be removed after verification
+cfe3b08 feat: add stopword package and integrate stopword functionality in GitHub and HubSpot providers
+a1c6cc0 refactor: remove unnecessary logging and sanitize functions in GitHub and Notion providers and added loggin in hubspot
+c0130bd feat: enhance HubSpotProvider with new methods for fetching notes, tasks, and tickets, and improve error handling
+0f179fb fix: clarify reply generation rules and add explicit checks for missing information
+d96dfdf fix: increase timeout duration for context fetching and update guidance on missing information
+d82546a feat: enhance NotionProvider with detailed logging for context fetching process
+9ef69bd fix: update condition to check for top pages in NotionProvider context fetching
+ec11b54 refactor: simplify GitHubProvider — remove router/scoring, use Promise.allSettled + unified fetchWithTimeout
+38fa502 feat: enhance GitHubProvider with caching for known repositories and improve context fetching logic
+38188e1 feat: add GitHub integration for context fetching and issue retrieval in email drafts
+8ddb8ad feat: add Notion integration with context fetching and relevant page extraction
+0032ee9 docs: add Google API quota reference and rate limits for Gmail and Calendar APIs
+2e2eba0 feat: enhance Gmail integration with client retrieval and introduce quota limits for API calls in throttle.ts ready for future use.
+d47de97 chore: update changelog and commits file for version 1.6.0 with recent features and changes
 b52a087 feat: implement last message retrieval for email threads in Gmail and Outlook
 188e2fb feat: adjust output token limit and add guidelines for reply generation length
 33b6411 feat: increase output token limit and export helper functions for better accessibility
