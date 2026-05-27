@@ -22,7 +22,7 @@ import {
 import { clerkClient } from "@clerk/nextjs/server";
 import { Hono } from "hono";
 import { OAuth2Client } from "google-auth-library";
-import { getModelResponse } from "@/lib/model";
+import { getModelResponse, ModelResponse } from "@/lib/model";
 import { handleLabelCorrections } from "@/lib/gmail-correction";
 import { checkAndForwardToTelegram } from "@/lib/telegram";
 
@@ -238,6 +238,7 @@ const app = new Hono().post("/", async (ctx) => {
       // Check if Gmail already classified this as Promotions
       let labelName: string;
       let responseRequired = false;
+      let classificationResult: ModelResponse | null = null;
       const hasMarketingTag = tagsOfUser.some(
         (tag) => tag.tag.name === "Marketing",
       );
@@ -277,6 +278,7 @@ const app = new Hono().post("/", async (ctx) => {
           })),
           sensitivity: draftsenstivity || "if actionable",
         });
+        classificationResult = classification;
         labelName = classification.category;
 
         responseRequired = classification.response_required === true;
@@ -353,6 +355,8 @@ const app = new Hono().post("/", async (ctx) => {
           colourofLabel.id,
           String(messageId),
           emailData.from,
+          classificationResult?.ai_summary,
+          classificationResult?.ai_action,
         );
       }
 

@@ -141,6 +141,8 @@ export async function addMailtoDB(
   tag_id: string | null,
   message_id: string,
   domain: string | null,
+  ai_summary?: string,
+  ai_action?: string,
 ) {
   try {
     const normalizedDomain = domain?.trim();
@@ -153,12 +155,16 @@ export async function addMailtoDB(
       update: {
         message_id: message_id,
         ...(encryptedDomain ? { domain: encryptedDomain } : {}),
+        ...(ai_summary !== undefined ? { ai_summary } : {}),
+        ...(ai_action !== undefined ? { ai_action } : {}),
       },
       create: {
         user_id: user_id,
         tag_id: tag_id,
         message_id: message_id,
         domain: encryptedDomain,
+        ...(ai_summary !== undefined ? { ai_summary } : {}),
+        ...(ai_action !== undefined ? { ai_action } : {}),
       },
     });
 

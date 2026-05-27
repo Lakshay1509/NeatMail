@@ -20,7 +20,8 @@ export interface ModelRequest{
 export interface ModelResponse{
     category: string
     response_required: boolean
-  
+    ai_summary?: string
+    ai_action?: string
 }
 
 export interface CorrectionRequest{
