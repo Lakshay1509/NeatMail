@@ -36,9 +36,8 @@ export default function DigestSettings() {
   const { data, isLoading } = useGetDigestPreferences();
   const postPreferences = usePostDigestPreferences();
 
-  const [enabled, setEnabled] = useState(true);
+  const [enabled, setEnabled] = useState(false);
   const [deliveryTime, setDeliveryTime] = useState("09:00");
-  const [timezone, setTimezone] = useState("UTC");
   const [hasChanges, setHasChanges] = useState(false);
   const [testSending, setTestSending] = useState(false);
 
@@ -46,7 +45,6 @@ export default function DigestSettings() {
     if (data?.preference) {
       setEnabled(data.preference.enabled);
       setDeliveryTime(data.preference.delivery_time);
-      setTimezone(data.preference.timezone);
       setHasChanges(false);
     }
   }, [data]);
