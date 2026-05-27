@@ -1,5 +1,5 @@
 import { db } from "@/lib/prisma";
-import { decryptDomain } from "./encode";
+import { decryptDomain, decrypt } from "./encode";
 
 export interface DigestEmail {
   message_id: string;
@@ -85,8 +85,8 @@ export async function getDigestForUser(
     subject: r.message_id,
     from: r.domain ? await decryptDomain(r.domain) : "Unknown",
     domain: r.domain,
-    ai_summary: r.ai_summary,
-    ai_action: r.ai_action,
+    ai_summary: r.ai_summary ? await decrypt(r.ai_summary) : null,
+    ai_action: r.ai_action ? await decrypt(r.ai_action) : null,
     created_at: r.created_at,
     tag_name: r.tag?.name || "",
     tag_color: r.tag?.color || "",
