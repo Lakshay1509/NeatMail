@@ -55,6 +55,52 @@ const API_CONFIG = {
 
 const apiClient = axios.create(API_CONFIG);
 
+export interface DeleteUserResponse {
+  status: string;
+  user_id: string;
+  vectors_deleted: number;
+}
+
+export async function deleteUser(
+  user_id: string,
+): Promise<DeleteUserResponse> {
+  try {
+    if (!user_id) {
+      throw new Error("user_id is required");
+    }
+
+    const response = await apiClient.delete<DeleteUserResponse>(
+      `/user/${user_id}`,
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError<ApiErrorResponse>;
+
+      if (axiosError.response) {
+        const errorMessage =
+          axiosError.response.data?.detail ||
+          axiosError.response.data?.message ||
+          axiosError.response.data?.error ||
+          `API error: ${axiosError.response.status}`;
+
+        throw new Error(errorMessage);
+      } else if (axiosError.request) {
+        throw new Error(
+          "No response from draft API. Please check if the service is running.",
+        );
+      } else {
+        throw new Error(`Request setup error: ${axiosError.message}`);
+      }
+    }
+
+    throw error instanceof Error
+      ? error
+      : new Error("Unknown error during deleting user from draft model");
+  }
+}
+
 export async function getDraftContext(
   request: DraftContextRequest,
 ): Promise<DraftContextResponse> {

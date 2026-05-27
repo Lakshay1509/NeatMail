@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@200..800&display=swap');
 
 @import "tw-animate-css";
@@ -15,7 +14,7 @@ body{
 
 @theme inline {
 
-    --font-logo: "Playfair Display", serif;
+    --font-logo: "Bricolage Grotesque", sans-serif;
 
     --radius-sm: calc(var(--radius) - 4px);
 
@@ -161,6 +160,22 @@ body{
     --sidebar-border: oklch(0.922 0 0);
 
     --sidebar-ring: oklch(0.708 0 0);
+
+    /* Digest Editorial Palette */
+    --digest-canvas: #fafaf8;
+    --digest-ink: #1a1a1a;
+    --digest-ink-secondary: #6b6b6b;
+    --digest-ink-muted: #a0a0a0;
+    --digest-hairline: rgba(0, 0, 0, 0.06);
+    --digest-critical: #C45B4A;
+    --digest-critical-bg: rgba(196, 91, 74, 0.06);
+    --digest-attention: #B8860B;
+    --digest-attention-bg: rgba(184, 134, 11, 0.06);
+    --digest-new: #6B9080;
+    --digest-new-bg: rgba(107, 144, 128, 0.06);
+    --digest-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.02);
+    --digest-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.04);
+    --digest-ring: #e8e6e1;
 
 }
 

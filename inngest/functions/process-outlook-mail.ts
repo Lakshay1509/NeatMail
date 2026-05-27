@@ -211,7 +211,7 @@ export const processOutlookMailFn = inngest.createFunction(
           return movedMessageId;
         }
       });
-      addMailtoDB(subscription.clerk_user_id, tagProperties.id, movedMessageId,from);
+      addMailtoDB(subscription.clerk_user_id, tagProperties.id, movedMessageId,from, classification.ai_summary, classification.ai_action);
 
       checkAndForwardToTelegram(subscription.clerk_user_id,from,subject,body,tagProperties.id,tagProperties.name)
     }

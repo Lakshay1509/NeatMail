@@ -35,6 +35,19 @@ model user_tokens {
   free_trial                 free_trial?
   archive_rules              ArchiveRule[]
   slack_integration          slack_integration?
+  digest_preference          digest_preference?
+
+  @@schema("public")
+}
+
+model digest_preference {
+  id            String     @id @default(cuid())
+  user_id       String     @unique
+  enabled       Boolean    @default(true)
+  delivery_time String     @default("09:00")
+  timezone      String     @default("UTC")
+  last_sent_at  DateTime?
+  user_tokens   user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
   @@schema("public")
 }
@@ -71,21 +84,25 @@ model user_tags {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model email_tracked {
-  user_id     String
-  tag_id      String?     @db.Uuid
-  message_id  String      @unique
-  domain      String?
-  is_read     Boolean     @default(false) @map("isRead")
-  created_at  DateTime    @default(now()) @db.Timestamptz(6)
-  archive_at  DateTime?    @db.Timestamptz(6) 
-  tag         tag?        @relation(fields: [tag_id], references: [id], onDelete: Cascade)
-  user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+  user_id       String
+  tag_id        String?     @db.Uuid
+  message_id    String      @unique
+  domain        String?
+  is_read       Boolean     @default(false) @map("isRead")
+  created_at    DateTime    @default(now()) @db.Timestamptz(6)
+  archive_at    DateTime?    @db.Timestamptz(6)
+  ai_summary    String?
+  ai_action     String?
+  snoozed_until DateTime?   @db.Timestamptz(6)
+  tag           tag?        @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+  user_tokens   user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
   @@id([user_id, message_id])
   @@index([user_id], map: "idx_tracked_user")
   @@index([user_id, message_id], map: "idx_tracked_user_message")
   @@index([user_id, tag_id], map: "idx_tracked_user_tag")
   @@index([user_id, domain], map: "idx_tracked_user_domain")
+  @@index([user_id, is_read, snoozed_until], map: "idx_tracked_user_read_snooze")
   @@schema("public")
 }
 

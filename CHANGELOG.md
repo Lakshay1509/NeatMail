@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.0] — 2026-05-26
+
+### Added
+- GitHub integration for context fetching and issue retrieval in email drafts (`38188e1`)
+- Notion integration with context fetching and relevant page extraction (`8ddb8ad`)
+- HubSpotProvider enhanced with methods for fetching notes, tasks, and tickets (`c0130bd`)
+- User deletion functionality in draft and model services with error handling (`5bf9e23`)
+- Google verification email handling for history sync in email route (`216533e`)
+- Gmail integration enhancement with client retrieval and quota limits in throttle.ts (`2e2eba0`)
+- Caching for known repositories in GitHubProvider (`38fa502`)
+- Stopword package integrated in GitHub and HubSpot providers (`cfe3b08`)
+
+### Changed
+- GitHubProvider simplified — removed router/scoring, uses Promise.allSettled + unified fetchWithTimeout (`ec11b54`)
+- Unnecessary logging removed in GitHub and Notion providers; logging added in HubSpot (`a1c6cc0`)
+- Reply generation rules clarified with explicit checks for missing information (`0f179fb`)
+- Timeout duration increased for context fetching and guidance on missing information updated (`d96dfdf`)
+- getLastSentMessageInThreadOutlook optimized by directly querying sent items (`205eb4e`)
+- Condition updated to check for top pages in NotionProvider context fetching (`9ef69bd`)
+
+### Docs
+- Google API quota reference and rate limits for Gmail and Calendar APIs (`0032ee9`)
+
 ## [1.6.0] — 2026-05-24
 
 ### Added

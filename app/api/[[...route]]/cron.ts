@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 
 import { db } from "@/lib/prisma";
+import { deleteUser as deleteDraftUser } from "@/lib/draft";
+import { deleteUser as deleteModelUser } from "@/lib/model";
 import { clerkClient } from "@clerk/nextjs/server";
 import { activateWatch } from "@/lib/gmail";
 import {
@@ -17,7 +19,10 @@ import { handleWatchDeactivation } from "@/lib/payement";
 import { zValidator } from "@hono/zod-validator";
 import z from "zod";
 import { generateRandomAlphanumericString } from "@/lib/utils";
-import BetaAccessEmail from "@/components/Email/BetaAccess";
+import DailyDigestEmail from "@/components/Email/DailyDigestEmail";
+import { getDigestForUser, getDigestCount } from "@/lib/digest";
+import { formatInTimeZone } from "date-fns-tz";
+import { render } from "@react-email/render";
 
 const app = new Hono()
   .get("/delete-user", async (ctx) => {
@@ -56,6 +61,30 @@ const app = new Hono()
               clerk_user_id: user.clerk_user_id,
             },
           });
+
+          try {
+            const draftResult = await deleteDraftUser(user.clerk_user_id);
+            console.log(
+              `Deleted ${draftResult.vectors_deleted} vectors from draft model for user: ${user.clerk_user_id}`,
+            );
+          } catch (draftError) {
+            console.error(
+              `Failed to delete draft model data for user ${user.clerk_user_id}:`,
+              draftError,
+            );
+          }
+
+          try {
+            const modelResult = await deleteModelUser(user.clerk_user_id);
+            console.log(
+              `Deleted classification data for user ${user.clerk_user_id}: ${modelResult.status}`,
+            );
+          } catch (modelError) {
+            console.error(
+              `Failed to delete classification model data for user ${user.clerk_user_id}:`,
+              modelError,
+            );
+          }
 
           results.successful++;
           console.log(`Successfully deleted user: ${user.clerk_user_id}`);
@@ -858,6 +887,161 @@ Founder, NeatMail`,
         500,
       );
     }
+  })
+  .get("/send-daily-digest", async (ctx) => {
+    const authHeader = ctx.req.header("x-authorization");
+    const expectedToken = `Bearer ${process.env.CRON_SECRET}`;
+
+    if (authHeader !== expectedToken) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const now = new Date();
+    const results = {
+      totalChecked: 0,
+      sent: 0,
+      skipped: 0,
+      errors: [] as string[],
+    };
+
+    try {
+      const preferences = await db.digest_preference.findMany({
+        where: { enabled: true },
+        include: {
+          user_tokens: {
+            select: { email: true, clerk_user_id: true },
+          },
+        },
+      });
+
+      results.totalChecked = preferences.length;
+
+      for (const pref of preferences) {
+        try {
+          // Check if already sent today
+          const lastSent = pref.last_sent_at;
+          if (lastSent) {
+            const lastSentDate = new Date(lastSent);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (lastSentDate >= today) {
+              results.skipped++;
+              continue;
+            }
+          }
+
+          // Check if current time in user's timezone matches delivery_time (±15 min)
+          const userLocalTime = formatInTimeZone(now, pref.timezone, "HH:mm");
+          const [prefHour, prefMin] = pref.delivery_time.split(":").map(Number);
+          const [userHour, userMin] = userLocalTime.split(":").map(Number);
+          const prefMinutes = prefHour * 60 + prefMin;
+          const userMinutes = userHour * 60 + userMin;
+          const diff = Math.abs(userMinutes - prefMinutes);
+
+          if (diff > 15) {
+            results.skipped++;
+            continue;
+          }
+
+          const userEmail = pref.user_tokens.email;
+          const userId = pref.user_tokens.clerk_user_id;
+          const count = await getDigestCount(userId);
+
+          if (count === 0) {
+            // Send "all caught up" email
+            await resend.emails.send({
+              from: "NeatMail <digest@send.neatmail.app>",
+              to: userEmail,
+              subject: "You're all caught up 🎉",
+              html: `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:24px;max-width:480px;margin:0 auto;">
+                <h2 style="font-size:20px;color:#111;margin:0 0 16px;">Good morning — your inbox is clear.</h2>
+                <p style="font-size:15px;color:#444;line-height:1.6;margin:0 0 24px;">
+                  No Action Needed or Pending Response emails from the last 24 hours. NeatMail kept everything organized while you were away.
+                </p>
+                <a href="https://dashboard.neatmail.app" style="display:inline-block;padding:10px 20px;background:#111;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500;">Open Dashboard</a>
+                <p style="font-size:12px;color:#888;margin-top:24px;">Your daily digest from NeatMail</p>
+              </div>`,
+            });
+          } else {
+            // Build digest email with React component
+            const digest = await getDigestForUser(userId);
+            const totalEmails = digest.reduce((sum, g) => sum + g.emails.length, 0);
+            const dateLabel = formatInTimeZone(now, pref.timezone, "EEEE, MMMM d");
+
+            const emailHtml = await render(
+              DailyDigestEmail({
+                totalEmails,
+                dateLabel,
+                groups: digest.map((g) => ({
+                  urgency: g.urgency,
+                  label: g.label,
+                  emails: g.emails.map((e) => ({
+                    ai_summary: e.ai_summary,
+                    ai_action: e.ai_action,
+                    from: e.from,
+                    ageText: getAgeText(e.created_at),
+                  })),
+                })),
+              })
+            );
+
+            await resend.emails.send({
+              from: "NeatMail <digest@send.neatmail.app>",
+              to: userEmail,
+              subject: `${totalEmails} email${totalEmails > 1 ? "s" : ""} need your attention`,
+              html: emailHtml,
+            });
+          }
+
+          await db.digest_preference.update({
+            where: { id: pref.id },
+            data: { last_sent_at: now },
+          });
+
+          results.sent++;
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          results.errors.push(
+            `Failed to send digest to ${pref.user_tokens.email}: ${errorMessage}`,
+          );
+          console.error(
+            `Failed to send digest to ${pref.user_tokens.email}:`
+            , error,
+          );
+        }
+      }
+
+      return ctx.json({
+        message: "Daily digest check completed",
+        timestamp: now.toISOString(),
+        ...results,
+      });
+    } catch (error) {
+      console.error("Daily digest cron job error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      return ctx.json(
+        {
+          error: "Internal server error",
+          details: errorMessage,
+        },
+        500,
+      );
+    }
   });
+
+function getAgeText(createdAt: Date): string {
+  const hours = Math.floor(
+    (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60),
+  );
+  if (hours < 1) return "Just now";
+  if (hours === 1) return "1 hour ago";
+  if (hours < 24) return `${hours} hours ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "Yesterday";
+  return `${days} days ago`;
+}
 
 export default app;

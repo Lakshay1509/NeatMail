@@ -1,5 +1,5 @@
 import { WatchedFolder } from "@/app/api/[[...route]]/user";
-import { encryptDomain } from "./encode";
+import { encryptDomain, encrypt } from "./encode";
 import { getFolderMap } from "./outlook";
 import { db } from "./prisma";
 
@@ -141,6 +141,8 @@ export async function addMailtoDB(
   tag_id: string | null,
   message_id: string,
   domain: string | null,
+  ai_summary?: string,
+  ai_action?: string,
 ) {
   try {
     const normalizedDomain = domain?.trim();
@@ -148,17 +150,24 @@ export async function addMailtoDB(
       ? await encryptDomain(normalizedDomain)
       : null;
 
+    const encryptedSummary = ai_summary !== undefined ? await encrypt(ai_summary) : undefined;
+    const encryptedAction = ai_action !== undefined ? await encrypt(ai_action) : undefined;
+
     const data = await db.email_tracked.upsert({
       where: { message_id: message_id },
       update: {
         message_id: message_id,
         ...(encryptedDomain ? { domain: encryptedDomain } : {}),
+        ...(encryptedSummary !== undefined ? { ai_summary: encryptedSummary } : {}),
+        ...(encryptedAction !== undefined ? { ai_action: encryptedAction } : {}),
       },
       create: {
         user_id: user_id,
         tag_id: tag_id,
         message_id: message_id,
         domain: encryptedDomain,
+        ...(encryptedSummary !== undefined ? { ai_summary: encryptedSummary } : {}),
+        ...(encryptedAction !== undefined ? { ai_action: encryptedAction } : {}),
       },
     });
 

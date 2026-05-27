@@ -1,5 +1,5 @@
 "use client"
-import { Home, Receipt, Tag, PenLine, Plug, MailX, Inbox, MessageSquareDashed, AlertCircle, Send } from "lucide-react"
+import { Home, Receipt, Tag, PenLine, Plug, MailX, Inbox, MessageSquareDashed, AlertCircle, Send, Bell, CheckSquare, ChevronDown } from "lucide-react"
 import { motion, LayoutGroup } from "framer-motion"
 
 import {
@@ -17,20 +17,42 @@ import {
 } from "@/components/ui/sidebar"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { cn } from "@/lib/utils"
+import type { LucideIcon } from "lucide-react"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 
-const items = [
+type SidebarItem = {
+  title: string
+  url: string
+  icon: LucideIcon
+  external?: boolean
+  danger?: boolean
+}
+
+const items: SidebarItem[] = [
   { title: "Home", url: "/", icon: Home },
-  { title: "Billing", url: "/billing", icon: Receipt },
+  { title: "Todos", url: "/todos", icon: CheckSquare },
   { title: "Labels", url: "/settings/labels", icon: Tag },
   { title: "Draft preference", url: "/settings/draft-preference", icon: PenLine },
   { title: "Integrations", url: "/integrations", icon: Plug },
 ]
 
-const followUpItems = [
+const userSettingsItems: SidebarItem[] = [
+  { title: "Billing", url: "/billing", icon: Receipt },
+  { title: "Daily Digest", url: "/settings/digest", icon: Bell },
+  { title: "Feedback", url: "https://forms.baytix.net/forms/neatmail-feedback-form-8fc4565d", icon: MessageSquareDashed, external: true },
+  { title: "Danger Zone", url: "/danger", icon: AlertCircle, danger: true },
+]
+
+const followUpItems: SidebarItem[] = [
   { title: "Follow ups", url: "/follow-ups", icon: Send },
 ]
 
-const cleanupItems = [
+const cleanupItems: SidebarItem[] = [
   { title: "Unsubscribe", url: "/unsubscribe", icon: MailX },
   { title: "Large emails", url: "/storage", icon: Inbox },
 ]
@@ -43,7 +65,7 @@ export function AppSidebar() {
     if (isMobile) setOpenMobile(false)
   }
 
-  const renderItems = (items: typeof cleanupItems) =>
+  const renderItems = (items: SidebarItem[]) =>
     items.map((item) => {
       const isActive = pathname === item.url || (item.url !== "/" && pathname.startsWith(item.url))
       const Icon = item.icon
@@ -52,9 +74,9 @@ export function AppSidebar() {
           <SidebarMenuButton
             asChild
             isActive={isActive}
-            className="group/menu-button relative"
+            className={cn("group/menu-button relative", item.danger && "text-red-600 hover:text-red-700")}
           >
-            <Link href={item.url} onClick={handleLinkClick}>
+            <Link href={item.url} onClick={handleLinkClick} {...("external" in item && item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
               {isActive && (
                 <motion.div
                   layoutId="activeIndicator"
@@ -112,27 +134,23 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Link
-                href="https://forms.baytix.net/forms/neatmail-feedback-form-8fc4565d"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={handleLinkClick}
-              >
-                <MessageSquareDashed size={16} className="shrink-0 opacity-70 group-hover:opacity-100" aria-hidden="true" />
-                <span>Feedback</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild className="text-red-600 hover:text-red-700">
-              <Link href="/danger" onClick={handleLinkClick}>
-                <AlertCircle size={16} className="shrink-0 opacity-70 group-hover:opacity-100" aria-hidden="true" />
-                <span>Danger Zone</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          <Collapsible className="group/collapsible w-full">
+            <SidebarMenuItem>
+              <CollapsibleTrigger asChild>
+                <SidebarMenuButton className="text-[10.5px] font-medium tracking-widest uppercase text-sidebar-foreground/50">
+                  <span>User settings</span>
+                  <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                </SidebarMenuButton>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarMenu>
+                  <LayoutGroup>
+                    {renderItems(userSettingsItems)}
+                  </LayoutGroup>
+                </SidebarMenu>
+              </CollapsibleContent>
+            </SidebarMenuItem>
+          </Collapsible>
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
