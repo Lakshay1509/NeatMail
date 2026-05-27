@@ -72,20 +72,7 @@ const app = new Hono()
       where: { user_id: userId },
     });
 
-    if (!pref) {
-      // Auto-create default preference
-      const newPref = await db.digest_preference.create({
-        data: {
-          user_id: userId,
-          enabled: true,
-          delivery_time: "09:00",
-          timezone: "UTC",
-        },
-      });
-      return c.json({ preference: newPref });
-    }
-
-    return c.json({ preference: pref });
+    return c.json({ preference: pref ?? null });
   })
   .post(
     "/preferences",
