@@ -5,6 +5,7 @@ import z from "zod";
 import {
   getDigestForUser,
   getDigestCount,
+  trimDigestForEmail,
   markEmailAsDone,
   snoozeEmail,
 } from "@/lib/digest";
@@ -156,14 +157,16 @@ const app = new Hono()
         });
       } else {
         const digest = await getDigestForUser(userId);
-        const totalEmails = digest.reduce((sum, g) => sum + g.emails.length, 0);
+        const trimmed = trimDigestForEmail(digest, 5);
+        const shownCount = trimmed.groups.reduce((sum, g) => sum + g.emails.length, 0);
         const dateLabel = formatInTimeZone(new Date(), "UTC", "EEEE, MMMM d");
 
         const emailHtml = await render(
           DailyDigestEmail({
-            totalEmails,
+            totalEmails: shownCount,
             dateLabel,
-            groups: digest.map((g) => ({
+            remainingCount: trimmed.remainingCount,
+            groups: trimmed.groups.map((g) => ({
               urgency: g.urgency,
               label: g.label,
               emails: g.emails.map((e) => ({
@@ -179,7 +182,7 @@ const app = new Hono()
         await resend.emails.send({
           from: "NeatMail <digest@send.neatmail.app>",
           to: user.email,
-          subject: `[TEST] ${totalEmails} email${totalEmails > 1 ? "s" : ""} need your attention`,
+          subject: `[TEST] ${shownCount} email${shownCount > 1 ? "s" : ""} need your attention`,
           html: emailHtml,
         });
       }

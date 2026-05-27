@@ -129,6 +129,44 @@ export async function getDigestForUser(
   return groups;
 }
 
+export function trimDigestForEmail(
+  groups: DigestGroup[],
+  maxItems: number,
+): { groups: DigestGroup[]; remainingCount: number } {
+  const totalItems = groups.reduce((sum, g) => sum + g.emails.length, 0);
+  if (totalItems <= maxItems) {
+    return { groups, remainingCount: 0 };
+  }
+
+  const priorityOrder: DigestGroup["urgency"][] = [
+    "urgent",
+    "needs_reply",
+    "new_today",
+  ];
+
+  const trimmed: DigestGroup[] = [];
+  let taken = 0;
+
+  for (const urgency of priorityOrder) {
+    const group = groups.find((g) => g.urgency === urgency);
+    if (!group) continue;
+
+    const remaining = maxItems - taken;
+    if (remaining <= 0) break;
+
+    trimmed.push({
+      ...group,
+      emails: group.emails.slice(0, remaining),
+    });
+    taken += Math.min(group.emails.length, remaining);
+  }
+
+  return {
+    groups: trimmed,
+    remainingCount: totalItems - taken,
+  };
+}
+
 export async function getDigestCount(userId: string): Promise<number> {
   const since = new Date();
   since.setDate(since.getDate() - 1);

@@ -20,7 +20,7 @@ import { zValidator } from "@hono/zod-validator";
 import z from "zod";
 import { generateRandomAlphanumericString } from "@/lib/utils";
 import DailyDigestEmail from "@/components/Email/DailyDigestEmail";
-import { getDigestForUser, getDigestCount } from "@/lib/digest";
+import { getDigestForUser, getDigestCount, trimDigestForEmail } from "@/lib/digest";
 import { formatInTimeZone } from "date-fns-tz";
 import { render } from "@react-email/render";
 
@@ -964,16 +964,18 @@ Founder, NeatMail`,
               </div>`,
             });
           } else {
-            // Build digest email with React component
             const digest = await getDigestForUser(userId);
             const totalEmails = digest.reduce((sum, g) => sum + g.emails.length, 0);
+            const trimmed = trimDigestForEmail(digest, 5);
+            const shownCount = trimmed.groups.reduce((sum, g) => sum + g.emails.length, 0);
             const dateLabel = formatInTimeZone(now, pref.timezone, "EEEE, MMMM d");
 
             const emailHtml = await render(
               DailyDigestEmail({
-                totalEmails,
+                totalEmails: shownCount,
                 dateLabel,
-                groups: digest.map((g) => ({
+                remainingCount: trimmed.remainingCount,
+                groups: trimmed.groups.map((g) => ({
                   urgency: g.urgency,
                   label: g.label,
                   emails: g.emails.map((e) => ({
@@ -989,7 +991,7 @@ Founder, NeatMail`,
             await resend.emails.send({
               from: "NeatMail <digest@send.neatmail.app>",
               to: userEmail,
-              subject: `${totalEmails} email${totalEmails > 1 ? "s" : ""} need your attention`,
+              subject: `${shownCount} email${shownCount > 1 ? "s" : ""} need your attention`,
               html: emailHtml,
             });
           }

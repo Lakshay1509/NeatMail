@@ -28,107 +28,79 @@ interface DailyDigestEmailProps {
   totalEmails: number;
   dateLabel: string;
   groups: DigestGroup[];
+  remainingCount?: number;
   dashboardUrl?: string;
 }
 
-const URGENCY_STYLES = {
-  urgent: {
-    color: "#C45B4A",
-    bg: "#FDF6F5",
-    border: "#C45B4A",
-    label: "Critical",
-  },
-  needs_reply: {
-    color: "#B8860B",
-    bg: "#FDFAF5",
-    border: "#B8860B",
-    label: "Attention",
-  },
-  new_today: {
-    color: "#6B9080",
-    bg: "#F5F9F7",
-    border: "#6B9080",
-    label: "New",
-  },
+const COLORS = {
+  urgent: "#DC2626",
+  needs_reply: "#D97706",
+  new_today: "#059669",
 };
 
 export default function DailyDigestEmail({
   totalEmails,
   dateLabel,
   groups,
+  remainingCount,
   dashboardUrl = "https://dashboard.neatmail.app",
 }: DailyDigestEmailProps) {
   return (
     <Html>
       <Head />
       <Preview>
-        {String(totalEmails)} email{totalEmails > 1 ? "s" : ""} need your
-        attention — {dateLabel}
+        {String(totalEmails)} item{totalEmails > 1 ? "s" : ""} need your
+        attention &mdash; {dateLabel}
       </Preview>
       <Body style={body}>
         <Container style={container}>
-          {/* Masthead */}
           <Section style={header}>
-            <Text style={brand}>NEATMAIL INTELLIGENCE BRIEFING</Text>
-            <Text style={edition}>{dateLabel}</Text>
-          </Section>
-
-          {/* Hero */}
-          <Section style={heroSection}>
-            <Heading style={heroNumber}>
-              {String(totalEmails)}
-            </Heading>
-            <Text style={heroLabel}>
-              item{totalEmails > 1 ? "s" : ""} need your attention
-            </Text>
+            <Heading style={heading}>Morning briefing</Heading>
+            <Text style={date}>{dateLabel}</Text>
           </Section>
 
           <Hr style={divider} />
 
-          {/* Groups */}
-          {groups.map((group) => {
-            const style = URGENCY_STYLES[group.urgency];
-            return (
-              <Section key={group.urgency} style={groupSection}>
-                <Section style={groupHeader}>
-                  <div
-                    style={{
-                      ...groupLabelIndicator,
-                      backgroundColor: style.color,
-                    }}
-                  />
-                  <Text style={{ ...groupLabelText, color: style.color }}>
-                    {group.label}
-                  </Text>
-                  <Text style={groupCount}>{group.emails.length}</Text>
-                </Section>
-
-                {group.emails.map((email, i) => (
-                  <Section
-                    key={i}
-                    style={{
-                      ...card,
-                      backgroundColor: style.bg,
-                      borderLeft: `3px solid ${style.border}`,
-                    }}
-                  >
-                    <Text style={cardTitle}>
-                      {email.ai_summary || "Action needed"}
-                    </Text>
-                    <Text style={cardMeta}>
-                      {email.from}
-                      <span style={metaDot}> · </span>
-                      {email.ai_action || "Review"}
-                      <span style={metaDot}> · </span>
-                      {email.ageText}
-                    </Text>
-                  </Section>
-                ))}
+          {groups.map((group) => (
+            <Section key={group.urgency} style={groupSection}>
+              <Section style={groupHeader}>
+                <Text
+                  style={{
+                    ...groupLabel,
+                    color: COLORS[group.urgency],
+                  }}
+                >
+                  {group.label}
+                </Text>
+                <Text style={groupCount}>{group.emails.length}</Text>
               </Section>
-            );
-          })}
 
-          {/* CTA */}
+              {group.emails.map((email, i) => (
+                <Section key={i} style={item}>
+                  <Text style={itemTitle}>
+                    {email.ai_summary || "Action needed"}
+                  </Text>
+                  <Text style={itemMeta}>
+                    {email.from}
+                    <span style={dot}> · </span>
+                    {email.ai_action || "Review"}
+                    <span style={dot}> · </span>
+                    {email.ageText}
+                  </Text>
+                </Section>
+              ))}
+            </Section>
+          ))}
+
+          {remainingCount && remainingCount > 0 && (
+            <Section style={overflowSection}>
+              <Text style={overflowText}>
+                +{remainingCount} more item{remainingCount > 1 ? "s" : ""} in
+                your dashboard
+              </Text>
+            </Section>
+          )}
+
           <Section style={ctaSection}>
             <Button style={button} href={dashboardUrl}>
               Open Dashboard
@@ -137,12 +109,9 @@ export default function DailyDigestEmail({
 
           <Hr style={divider} />
 
-          {/* Footer */}
-          <Section style={footerSection}>
-            <Text style={footerBrand}>Powered by NeatMail AI</Text>
+          <Section style={footer}>
             <Text style={footerText}>
-              You received this because you enabled daily digests in your
-              NeatMail settings.
+              NeatMail &middot; Daily digest
             </Text>
           </Section>
         </Container>
@@ -151,9 +120,8 @@ export default function DailyDigestEmail({
   );
 }
 
-/* Light mode (default) styles */
 const body = {
-  backgroundColor: "#fafaf8",
+  backgroundColor: "#f5f5f4",
   fontFamily:
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   padding: "24px 0",
@@ -162,81 +130,45 @@ const body = {
 
 const container = {
   backgroundColor: "#ffffff",
-  borderRadius: "16px",
-  maxWidth: "540px",
+  borderRadius: "8px",
+  maxWidth: "520px",
   margin: "0 auto",
-  padding: "36px 28px",
-  border: "1px solid rgba(0,0,0,0.06)",
+  padding: "32px 24px",
+  border: "1px solid #e7e5e4",
 };
 
 const header = {
-  marginBottom: "28px",
-  textAlign: "center" as const,
+  marginBottom: "20px",
 };
 
-const brand = {
-  fontSize: "11px",
+const heading = {
+  fontSize: "20px",
   fontWeight: 700,
-  letterSpacing: "1.5px",
-  textTransform: "uppercase" as const,
-  color: "#a0a0a0",
-  margin: "0 0 6px",
-};
-
-const edition = {
-  fontSize: "14px",
-  color: "#6b6b6b",
-  margin: "0",
-  fontFamily:
-    'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
-};
-
-const heroSection = {
-  textAlign: "center" as const,
-  marginBottom: "28px",
-};
-
-const heroNumber = {
-  fontSize: "48px",
-  fontWeight: 700,
-  color: "#1a1a1a",
+  color: "#1c1917",
   margin: "0 0 4px",
-  lineHeight: 1.1,
-  fontFamily: "'Helvetica Neue', Arial, sans-serif",
+  lineHeight: 1.3,
 };
 
-const heroLabel = {
-  fontSize: "15px",
-  color: "#6b6b6b",
+const date = {
+  fontSize: "13px",
+  color: "#78716c",
   margin: "0",
-  fontWeight: 400,
 };
 
 const divider = {
-  borderTop: "1px solid rgba(0,0,0,0.06)",
-  margin: "24px 0",
+  borderTop: "1px solid #e7e5e4",
+  margin: "20px 0",
 };
 
 const groupSection = {
-  marginBottom: "24px",
+  marginBottom: "20px",
 };
 
 const groupHeader = {
-  display: "flex",
-  alignItems: "center",
-  gap: "8px",
-  marginBottom: "10px",
+  marginBottom: "8px",
 };
 
-const groupLabelIndicator = {
-  width: "8px",
-  height: "8px",
-  borderRadius: "50%",
-  display: "inline-block",
-  flexShrink: 0,
-};
-
-const groupLabelText = {
+const groupLabel = {
   fontSize: "12px",
   fontWeight: 600,
   textTransform: "uppercase" as const,
@@ -247,72 +179,69 @@ const groupLabelText = {
 
 const groupCount = {
   fontSize: "12px",
-  color: "#a0a0a0",
-  margin: "0",
+  color: "#a8a29e",
+  margin: "0 0 0 6px",
   display: "inline",
   fontFamily:
     'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
 };
 
-const card = {
-  borderRadius: "10px",
-  padding: "14px 16px",
-  marginBottom: "8px",
+const item = {
+  padding: "12px 0",
+  borderBottom: "1px solid #f5f5f4",
 };
 
-const cardTitle = {
+const itemTitle = {
   fontSize: "14px",
   fontWeight: 600,
-  color: "#1a1a1a",
-  margin: "0 0 4px",
+  color: "#1c1917",
+  margin: "0 0 2px",
   lineHeight: 1.4,
 };
 
-const cardMeta = {
+const itemMeta = {
   fontSize: "12px",
-  color: "#6b6b6b",
+  color: "#78716c",
   margin: "0",
   lineHeight: 1.4,
-  fontFamily:
-    'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
 };
 
-const metaDot = {
-  color: "#a0a0a0",
+const dot = {
+  color: "#d6d3d1",
+};
+
+const overflowSection = {
+  textAlign: "center" as const,
+  marginBottom: "16px",
+};
+
+const overflowText = {
+  fontSize: "13px",
+  color: "#78716c",
+  margin: "0",
 };
 
 const ctaSection = {
-  marginTop: "8px",
   textAlign: "center" as const,
 };
 
 const button = {
-  backgroundColor: "#1a1a1a",
+  backgroundColor: "#1c1917",
   color: "#ffffff",
-  borderRadius: "8px",
-  padding: "12px 24px",
-  fontSize: "14px",
+  borderRadius: "6px",
+  padding: "10px 20px",
+  fontSize: "13px",
   fontWeight: 500,
   textDecoration: "none",
   display: "inline-block",
 };
 
-const footerSection = {
+const footer = {
   textAlign: "center" as const,
-};
-
-const footerBrand = {
-  fontSize: "11px",
-  fontWeight: 600,
-  letterSpacing: "1px",
-  textTransform: "uppercase" as const,
-  color: "#a0a0a0",
-  margin: "0 0 6px",
 };
 
 const footerText = {
   fontSize: "12px",
-  color: "#a0a0a0",
+  color: "#a8a29e",
   margin: "0",
-  lineHeight: 1.5,
 };
