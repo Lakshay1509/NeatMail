@@ -582,7 +582,7 @@ const app = new Hono()
           await db.email_tracked.updateMany({
             where:{message_id:id},
             data:{
-              is_read:true
+              isDone:true
             }
           })
           return ctx.json(result, 200);
@@ -597,7 +597,7 @@ const app = new Hono()
         await db.email_tracked.updateMany({
             where:{message_id:id},
             data:{
-              is_read:true
+              isDone:true
             }
           })
         return ctx.json(result, 200);
