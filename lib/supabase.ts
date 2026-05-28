@@ -150,8 +150,8 @@ export async function addMailtoDB(
       ? await encryptDomain(normalizedDomain)
       : null;
 
-    const encryptedSummary = ai_summary !== undefined ? await encrypt(ai_summary) : undefined;
-    const encryptedAction = ai_action !== undefined ? await encrypt(ai_action) : undefined;
+    const encryptedSummary = (ai_summary !== undefined && ai_summary.trim().length>0) ? await encrypt(ai_summary) : undefined;
+    const encryptedAction = (ai_action !== undefined && ai_action.trim().length >0) ? await encrypt(ai_action) : undefined;
 
     const data = await db.email_tracked.upsert({
       where: { message_id: message_id },
