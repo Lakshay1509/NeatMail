@@ -93,6 +93,7 @@ model email_tracked {
   archive_at    DateTime?    @db.Timestamptz(6)
   ai_summary    String?
   ai_action     String?
+  isDone        Boolean     @default(false)
   snoozed_until DateTime?   @db.Timestamptz(6)
   tag           tag?        @relation(fields: [tag_id], references: [id], onDelete: Cascade)
   user_tokens   user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)

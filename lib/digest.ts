@@ -63,7 +63,7 @@ export async function getDigestForUser(
   const rows = await db.email_tracked.findMany({
     where: {
       user_id: userId,
-      is_read: false,
+      isDone:false,
       archive_at: null,
       OR: [{ snoozed_until: null }, { snoozed_until: { lt: new Date() } }],
       tag: {
@@ -174,7 +174,7 @@ export async function getDigestCount(userId: string): Promise<number> {
   return db.email_tracked.count({
     where: {
       user_id: userId,
-      is_read: false,
+      isDone: false,
       archive_at: null,
       OR: [{ snoozed_until: null }, { snoozed_until: { lt: new Date() } }],
       tag: {
@@ -191,7 +191,7 @@ export async function markEmailAsDone(
 ): Promise<void> {
   await db.email_tracked.update({
     where: { user_id_message_id: { user_id: userId, message_id: messageId } },
-    data: { is_read: true },
+    data: { isDone: true },
   });
 }
 
