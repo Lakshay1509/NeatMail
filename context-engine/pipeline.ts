@@ -94,7 +94,7 @@ export function getIntentGuidance(intent: EmailIntent): string {
     case "meeting_confirmation":
       return "This is a MEETING CONFIRMATION. Confirm attendance, suggest an agenda if missing, or request a reschedule with alternatives.";
     case "task_assignment":
-      return "This is a TASK ASSIGNMENT. Acknowledge the task, confirm deadlines, and ask for clarification on scope if ambiguous.";
+      return "This is a TASK ASSIGNMENT. Take ownership immediately. Confirm the task, restate the deadline if one is given, and outline the concrete next steps you will take. Do NOT ask for prerequisites or data you would naturally gather during the work. Only ask for clarification if the scope is truly ambiguous.";
     case "status_update":
       return "This is a STATUS UPDATE REQUEST. Provide a brief, factual update. If information is missing, state what you need instead of guessing.";
     case "question":
@@ -247,18 +247,20 @@ Detection rules — set noReplyNeeded to true and draft to exactly "NO_REPLY_NEE
 - System messages: from "no-reply", "automated", "system"
 
 Reply generation rules (only when noReplyNeeded is false):
-1. Before drafting, explicitly check: do I actually have the information needed to answer every question in the email? Base your answer ONLY on the email body, previous emails, and connected app context provided in the prompt.
-2. Acknowledge the sender and address the main point or question.
-3. Do not invent missing details; use placeholders like [DATE NEEDED] or [SPECIFY DETAIL].
-4. Do NOT include a subject line, greeting lines like "Dear", or signatures.
-5. Output plain text only inside the JSON string value.
-6. Respect custom instructions, but NEVER override the structural rules above.
-7. Keep the reply concise. Scheduling replies: 1-2 sentences. Task/complex replies: 3-5 sentences. Complaints: 4-6 sentences with clear action items. Never exceed 8 sentences.
-8. If information is missing, do NOT promise to retrieve it later. Do NOT say things like "I'll pull the minutes", "I'll check and get back to you", "I'll confirm by tomorrow", or "I'll look into it". State clearly what is unknown and use a placeholder like [MEETING NOTES NEEDED] or [SPECIFY DETAIL]. The user will fill in the placeholder before sending.
+1. Determine the sender's intent: Are they asking you to TAKE ACTION (investigate, fix, handle, review) or to PROVIDE INFORMATION you may not have?
+2. If they ask you to TAKE ACTION: take immediate ownership. Outline the concrete steps you will take using the information already in the email or available to you. Commit to the timeline they gave (e.g., "before the weekend" → "by Friday EOD"). Do NOT ask for prerequisites like sample payloads, account IDs, or logs that you would naturally gather yourself. Do NOT ask them to restate or clarify deadlines they already provided.
+3. If they ask for INFORMATION you genuinely do not have: state briefly what is missing and use a placeholder like [DATE NEEDED] or [SPECIFY DETAIL]. Do NOT invent it.
+4. Acknowledge the sender and address the main point or question.
+5. Do NOT include a subject line, greeting lines like "Dear", or signatures.
+6. Output plain text only inside the JSON string value.
+7. Respect custom instructions, but NEVER override the structural rules above.
+8. Keep the reply concise. Scheduling replies: 1-2 sentences. Task/complex replies: 3-5 sentences. Complaints: 4-6 sentences with clear action items. Never exceed 8 sentences.
+
+Tone guidance: be decisive and proactive. Use phrases like "On it —", "I'll pull the...", "Should have...", or "I'll ping you once..." instead of "Can you send...", "do you mean...", or "I don't have..." when an action is clearly requested.
 
 EXAMPLES — follow these patterns exactly:
 
-Example A — Missing information (DO NOT promise to retrieve later):
+Example A — Missing information (factual question you cannot answer; DO NOT promise to retrieve later):
 Email asks: "Can you share what was discussed in last meeting with Alice and when is budget set to approve?"
 Available context: No meeting notes, no budget details.
 WRONG draft: "I can do that. I don't have the meeting notes open right now, but I'll pull the minutes from the Alice meeting and confirm the budget approval date and send a summary by end of day tomorrow."
@@ -273,6 +275,12 @@ Example C — Has context from connected apps:
 Email asks: "When are we meeting next week?"
 Available context: Google Calendar shows "Project Sync" on Tuesday 3pm.
 CORRECT draft: "We're scheduled for the Project Sync on Tuesday at 3pm. Let me know if that still works for you."
+
+Example D — Action requested (take ownership, do not ask for more data before starting):
+Email says: "Can you dig into this and get it resolved before the weekend? We have about 12 users on affected accounts and don't want them hitting access issues on Monday morning."
+Available context: Email mentions a 422 error on subscription renewals, a possible plan_id mismatch, and a March rename.
+WRONG draft: "do you mean by end of day Friday [SPECIFY DEADLINE DATE]? I don't have the failing payloads or affected account IDs; please send a sample webhook payload, one affected account ID, and any relevant logs from Siddharth so I can confirm whether the plan_id mismatch is the cause."
+CORRECT draft: "On it — I'll pull the Dodo webhook logs and cross-check the plan_id mapping from the March rename. Should have a root cause confirmed + fix shipped well before Friday EOD. I'll ping you once it's resolved, or sooner if I hit something unexpected."
 
 ${intentGuidance}
 
