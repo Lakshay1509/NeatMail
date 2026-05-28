@@ -92,7 +92,7 @@ export default function DailyDigestEmail({
             </Section>
           ))}
 
-          {remainingCount && remainingCount > 0 && (
+          {remainingCount != null && remainingCount > 0 && (
             <Section style={overflowSection}>
               <Text style={overflowText}>
                 +{remainingCount} more item{remainingCount > 1 ? "s" : ""} in
