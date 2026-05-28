@@ -26,6 +26,7 @@ export const useReplyMutation = () => {
 
     onSuccess:()=>{
       queryClient.invalidateQueries({ queryKey: ["sent-emails"] });
+      queryClient.invalidateQueries({queryKey:["digest"]})
       toast.success("Reply sent successfully");
     },
 

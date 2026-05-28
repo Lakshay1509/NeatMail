@@ -8,6 +8,7 @@ import {
   getFilteredMails,
   trashMessages,
   replyToGmailThread,
+  getGmailMessageBody,
 } from "@/lib/gmail";
 import {
   deleteOutlookMessage,
@@ -18,6 +19,7 @@ import {
   getSentEmailsOutlook,
   unsubscribeFromEmailOutlook,
   replyToOutlookConversation,
+  getOutlookMessageBody,
 } from "@/lib/outlook";
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
@@ -577,6 +579,12 @@ const app = new Hono()
       try {
         if (userData.is_gmail) {
           const result = await replyToGmailThread(userId, id, message, cleanTo);
+          await db.email_tracked.updateMany({
+            where:{message_id:id},
+            data:{
+              is_read:true
+            }
+          })
           return ctx.json(result, 200);
         }
 
@@ -586,6 +594,12 @@ const app = new Hono()
           message,
           cleanTo ? [cleanTo] : undefined,
         );
+        await db.email_tracked.updateMany({
+            where:{message_id:id},
+            data:{
+              is_read:true
+            }
+          })
         return ctx.json(result, 200);
       } catch (error) {
         console.error("Failed to send reply:", error);
@@ -629,6 +643,40 @@ const app = new Hono()
     } catch (error) {
       console.error("Failed to get last message:", error);
       return ctx.json({ error: "Failed to get last message" }, 500);
+    }
+  })
+
+  .get("/body/:messageId", async (ctx) => {
+    const { userId } = await auth();
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const messageId = ctx.req.param("messageId");
+    if (!messageId) {
+      return ctx.json({ error: "Message ID is required" }, 400);
+    }
+
+    const userData = await db.user_tokens.findUnique({
+      where: { clerk_user_id: userId },
+      select: { is_gmail: true },
+    });
+
+    if (!userData) {
+      return ctx.json({ error: "User not found" }, 500);
+    }
+
+    try {
+      if (userData.is_gmail) {
+        const body = await getGmailMessageBody(userId, messageId);
+        return ctx.json({ body }, 200);
+      }
+
+      const body = await getOutlookMessageBody(userId, messageId);
+      return ctx.json({ body }, 200);
+    } catch (error) {
+      console.error("Failed to get message body:", error);
+      return ctx.json({ error: "Failed to get message body" }, 500);
     }
   });
 
