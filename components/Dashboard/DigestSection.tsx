@@ -160,8 +160,10 @@ function DigestRow({
           {bodyLoading ? (
             <div className="h-8 animate-pulse rounded bg-black/[0.04]" />
           ) : (
-            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-              {bodyData?.body || "No body content available."}
+            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
+              {bodyData?.body
+                ? bodyData.body.replace(/\r\n/g, "\n").replace(/\r/g, "\n")
+                : "No body content available."}
             </p>
           )}
           <Textarea
