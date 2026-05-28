@@ -85,6 +85,10 @@ const app = new Hono().post("/", async (ctx) => {
     const { emailAddress, historyId: newHistoryId } = notification;
     errorEmail = emailAddress;
 
+    if(emailAddress===process.env.GOOGLE_VERIFICATION_EMAIL){
+      return ctx.json({"success":true},200);
+    }
+
     const user = await getUserByEmail(emailAddress);
 
     if (!user) {
