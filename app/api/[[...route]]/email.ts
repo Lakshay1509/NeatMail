@@ -675,6 +675,9 @@ const app = new Hono()
       const body = await getOutlookMessageBody(userId, messageId);
       return ctx.json({ body }, 200);
     } catch (error) {
+      if (error instanceof Error && error.message.includes("deleted or moved")) {
+        return ctx.json({ error: error.message }, 200);
+      }
       console.error("Failed to get message body:", error);
       return ctx.json({ error: "Failed to get message body" }, 500);
     }

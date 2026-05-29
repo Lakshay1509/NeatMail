@@ -250,23 +250,30 @@ export async function createOutlookDraft(
 
   const client = await getGraphClient(userId);
 
-  // Creates a reply draft saved to the Drafts folder (does not send)
-  const draft = await client.api(`/me/messages/${messageId}/createReply`).post({
-    message: {
-      subject: `Re: ${subject}`,
-      body: {
-        contentType: "HTML",
-        content: htmlContent,
-      },
-      toRecipients: [
-        {
-          emailAddress: {
-            address: to,
-          },
+  let draft;
+  try {
+    draft = await client.api(`/me/messages/${messageId}/createReply`).post({
+      message: {
+        subject: `Re: ${subject}`,
+        body: {
+          contentType: "HTML",
+          content: htmlContent,
         },
-      ],
-    },
-  });
+        toRecipients: [
+          {
+            emailAddress: {
+              address: to,
+            },
+          },
+        ],
+      },
+    });
+  } catch (error: any) {
+    if (error?.statusCode === 404) {
+      throw new Error("This message has been deleted or moved and is no longer available.");
+    }
+    throw error;
+  }
 
   return draft;
 }
@@ -296,7 +303,9 @@ export async function getOutlookMessageBody(userId: string, messageId: string) {
 
     return content;
   } catch (error: any) {
-    if (error?.statusCode === 404) return "";
+    if (error?.statusCode === 404) {
+      throw new Error("This message has been deleted or moved and is no longer available.");
+    }
     throw error;
   }
 }
@@ -407,7 +416,10 @@ export async function unsubscribeFromEmailOutlook(userId: string, messageId: str
     }
 
     throw new Error("Could not parse a valid unsubscribe action from headers.");
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.statusCode === 404) {
+      throw new Error("This message has been deleted or moved and is no longer available.");
+    }
     console.error("Failed to unsubscribe:", error);
     throw error;
   }
@@ -649,7 +661,15 @@ export async function replyToOutlookConversation(
     }));
   }
 
-  const result = await client.api(`/me/messages/${messageId}/reply`).post(requestBody);
+  let result;
+  try {
+    result = await client.api(`/me/messages/${messageId}/reply`).post(requestBody);
+  } catch (error: any) {
+    if (error?.statusCode === 404) {
+      throw new Error("This message has been deleted or moved and is no longer available.");
+    }
+    throw error;
+  }
 
   return result;
 }
@@ -695,6 +715,9 @@ export async function archiveMessagesOutlook(userId: string, messageIds: string[
         });
         return { messageId, success: true };
       } catch (error: any) {
+        if (error?.statusCode === 404) {
+          return { messageId, success: true, skipped: true };
+        }
         console.error(`Failed to archive message ${messageId}:`, error);
         return {
           messageId,
@@ -708,25 +731,31 @@ export async function archiveMessagesOutlook(userId: string, messageIds: string[
   // Count successes and failures, and collect successfully archived IDs
   let archivedCount = 0;
   let failedCount = 0;
+  let skippedCount = 0;
   const archivedIds: string[] = [];
 
   results.forEach((result) => {
     if (result.status === 'fulfilled' && result.value.success) {
       archivedCount++;
       archivedIds.push(result.value.messageId);
+      if ("skipped" in result.value) skippedCount++;
     } else {
       failedCount++;
     }
   });
+
+  const messageParts: string[] = [];
+  if (archivedCount > 0) messageParts.push(`Successfully archived ${archivedCount} message(s)`);
+  if (skippedCount > 0) messageParts.push(`${skippedCount} were already deleted`);
+  if (failedCount > 0) messageParts.push(`${failedCount} failed`);
 
   return {
     success: failedCount === 0,
     archived: archivedCount,
     archivedIds: archivedIds,
     failed: failedCount,
-    message: failedCount === 0
-      ? `Successfully archived ${archivedCount} message(s).`
-      : `Archived ${archivedCount} message(s), ${failedCount} failed.`,
+    skipped: skippedCount,
+    message: messageParts.length > 0 ? messageParts.join(". ") + "." : "No messages to archive.",
   };
 }
 

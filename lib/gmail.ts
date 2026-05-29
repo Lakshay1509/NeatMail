@@ -178,15 +178,22 @@ function extractBodyFromPart(part: any): string[] {
 export async function getGmailMessageBody(userId: string, messageId: string) {
   const gmail = await getGmailClient(userId);
 
-  const res = await gmail.users.messages.get({
-    userId: "me",
-    id: messageId,
-    format: "full",
-    fields: "snippet,payload(mimeType,body,parts)",
-  });
+  try {
+    const res = await gmail.users.messages.get({
+      userId: "me",
+      id: messageId,
+      format: "full",
+      fields: "snippet,payload(mimeType,body,parts)",
+    });
 
-  const plainBody = extractBodyFromPart(res.data.payload).join("\n").trim();
-  return plainBody.length > 0 ? plainBody : (res.data.snippet ?? "");
+    const plainBody = extractBodyFromPart(res.data.payload).join("\n").trim();
+    return plainBody.length > 0 ? plainBody : (res.data.snippet ?? "");
+  } catch (error: any) {
+    if (error?.code === 404 || error?.status === 404) {
+      throw new Error("This message has been deleted or moved and is no longer available.");
+    }
+    throw error;
+  }
 }
 
 export async function createGmailDraft(
@@ -482,7 +489,10 @@ export async function unsubscribeFromEmail(userId: string, messageId: string) {
     }
 
     throw new Error("Could not parse a valid unsubscribe action from headers.");
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 404 || error?.status === 404) {
+      throw new Error("This message has been deleted or moved and is no longer available.");
+    }
     console.error("Failed to unsubscribe:", error);
     throw error;
   }
@@ -657,14 +667,15 @@ export async function getSentEmails(
   const data = (
     await Promise.all(
       threads.map(async (thread) => {
-        const res = await withRetry(() =>
-          gmail.users.threads.get({
-            userId: "me",
-            id: thread.id!,
-            format: "metadata",
-            metadataHeaders: ["Subject", "To", "Date", "From"],
-          }),
-        );
+        try {
+          const res = await withRetry(() =>
+            gmail.users.threads.get({
+              userId: "me",
+              id: thread.id!,
+              format: "metadata",
+              metadataHeaders: ["Subject", "To", "Date", "From"],
+            }),
+          );
 
         const messages = res.data.messages ?? [];
         if (messages.length === 0) return null;
@@ -697,6 +708,10 @@ export async function getSentEmails(
           to: getHeader(headers, "To"),
           date: getHeader(headers, "Date"),
         };
+      } catch (error: any) {
+        if (error?.code === 404 || error?.status === 404) return null;
+        throw error;
+      }
       }),
     )
   ).filter(Boolean);
@@ -711,14 +726,20 @@ export async function getLastSentMessageInThreadGmail(
 ) {
   const gmail = await getGmailClient(userId);
 
-  const thread = await withRetry(() =>
-    gmail.users.threads.get({
-      userId: "me",
-      id: threadId,
-      format: "full",
-      fields: "messages(payload,internalDate,snippet),messages(id)",
-    }),
-  );
+  let thread;
+  try {
+    thread = await withRetry(() =>
+      gmail.users.threads.get({
+        userId: "me",
+        id: threadId,
+        format: "full",
+        fields: "messages(payload,internalDate,snippet),messages(id)",
+      }),
+    );
+  } catch (error: any) {
+    if (error?.code === 404 || error?.status === 404) return null;
+    throw error;
+  }
 
   const messages = thread.data.messages ?? [];
   if (messages.length === 0) return null;
@@ -765,33 +786,38 @@ export async function searchGmail(
 
   const data = await Promise.all(
     messages.map(async (msg) => {
-      const res = await gmail.users.messages.get({
-        userId: "me",
-        id: msg.id!,
-        format: "metadata",
-        metadataHeaders: ["Subject", "From", "To", "Date"],
-        fields: "id,threadId,snippet,sizeEstimate,payload(headers)",
-      });
+      try {
+        const res = await gmail.users.messages.get({
+          userId: "me",
+          id: msg.id!,
+          format: "metadata",
+          metadataHeaders: ["Subject", "From", "To", "Date"],
+          fields: "id,threadId,snippet,sizeEstimate,payload(headers)",
+        });
 
-      const headers = res.data.payload?.headers ?? [];
-      const get = (name: string) =>
-        headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())
-          ?.value ?? "";
+        const headers = res.data.payload?.headers ?? [];
+        const get = (name: string) =>
+          headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())
+            ?.value ?? "";
 
-      return {
-        id: msg.id!,
-        threadId: msg.threadId!,
-        subject: get("Subject"),
-        from: get("From"),
-        to: get("To"),
-        date: get("Date"),
-        snippet: res.data.snippet ?? "",
-        sizeEstimate: res.data.sizeEstimate ?? 0,
-      };
+        return {
+          id: msg.id!,
+          threadId: msg.threadId!,
+          subject: get("Subject"),
+          from: get("From"),
+          to: get("To"),
+          date: get("Date"),
+          snippet: res.data.snippet ?? "",
+          sizeEstimate: res.data.sizeEstimate ?? 0,
+        };
+      } catch (error: any) {
+        if (error?.code === 404 || error?.status === 404) return null;
+        throw error;
+      }
     })
   );
 
-  return { data, nextPageToken };
+  return { data: data.filter((d): d is NonNullable<typeof d> => d !== null), nextPageToken };
 }
 
 export async function getFilteredMails(
@@ -826,11 +852,17 @@ export async function getAttachment(userId:string,messageId:string) {
 
   
   const gmail = await getGmailClient(userId);
-  const res = await gmail.users.messages.get({
-    userId: "me",
-    id: messageId,
-    format: "full",
-  });
+  let res;
+  try {
+    res = await gmail.users.messages.get({
+      userId: "me",
+      id: messageId,
+      format: "full",
+    });
+  } catch (error: any) {
+    if (error?.code === 404 || error?.status === 404) return [];
+    throw error;
+  }
 
   const payload = res.data.payload;
   
@@ -894,12 +926,19 @@ export async function downloadAttachment(
 
    const gmail = await getGmailClient(userId);
 
-
-  const res = await gmail.users.messages.attachments.get({
-    userId: "me",
-    messageId,
-    id: attachmentId,
-  });
+  let res;
+  try {
+    res = await gmail.users.messages.attachments.get({
+      userId: "me",
+      messageId,
+      id: attachmentId,
+    });
+  } catch (error: any) {
+    if (error?.code === 404 || error?.status === 404) {
+      throw new Error("This message or attachment has been deleted or moved and is no longer available.");
+    }
+    throw error;
+  }
 
   // Gmail returns URL-safe base64; convert to standard base64
   const data = res.data.data || "";
@@ -915,12 +954,20 @@ export async function replyToGmailThread(
 ) {
   const gmail = await getGmailClient(userId);
 
-  const thread = await gmail.users.threads.get({
-    userId: "me",
-    id: threadId,
-    format: "metadata",
-    metadataHeaders: ["Subject", "To", "From", "Message-ID", "References"],
-  });
+  let thread;
+  try {
+    thread = await gmail.users.threads.get({
+      userId: "me",
+      id: threadId,
+      format: "metadata",
+      metadataHeaders: ["Subject", "To", "From", "Message-ID", "References"],
+    });
+  } catch (error: any) {
+    if (error?.code === 404 || error?.status === 404) {
+      throw new Error("This thread has been deleted or moved and is no longer available.");
+    }
+    throw error;
+  }
 
   const messages = thread.data.messages ?? [];
   if (messages.length === 0) throw new Error("Thread has no messages");
@@ -996,9 +1043,9 @@ export async function trashMessages(userId: string, messageIds: string[]) {
     return { success: true, trashed: 0, trashedIds: [], message: "No messages to trash" };
   }
 
-  try {
-    const gmail = await getGmailClient(userId);
+  const gmail = await getGmailClient(userId);
 
+  try {
     await gmail.users.messages.batchModify({
       userId: "me",
       requestBody: {
@@ -1009,13 +1056,51 @@ export async function trashMessages(userId: string, messageIds: string[]) {
     });
 
     return { success: true, trashed: messageIds.length, trashedIds: [...messageIds] };
-  } catch (error) {
-    console.error(`Gmail trash failed for user ${userId}:`, error);
+  } catch (batchError: any) {
+    if (batchError?.code === 404 || batchError?.status === 404) {
+      const results = await Promise.allSettled(
+        messageIds.map(async (messageId) => {
+          try {
+            await gmail.users.messages.trash({
+              userId: "me",
+              id: messageId,
+            });
+            return { messageId, success: true };
+          } catch (err: any) {
+            if (err?.code === 404 || err?.status === 404) {
+              return { messageId, success: true, skipped: true };
+            }
+            return { messageId, success: false, error: err?.message || String(err) };
+          }
+        })
+      );
+
+      const trashedIds: string[] = [];
+      let skipped = 0;
+      let failed = 0;
+
+      results.forEach((result) => {
+        if (result.status === "fulfilled" && result.value.success) {
+          trashedIds.push(result.value.messageId);
+          if ("skipped" in result.value) skipped++;
+        } else {
+          failed++;
+        }
+      });
+
+      const message = failed > 0
+        ? `Trashed ${trashedIds.length} message(s), ${failed} failed` + (skipped > 0 ? `, ${skipped} already deleted` : "")
+        : `Trashed ${trashedIds.length} message(s)` + (skipped > 0 ? ` (${skipped} were already deleted)` : "");
+
+      return { success: failed === 0, trashed: trashedIds.length, trashedIds, skipped, message };
+    }
+
+    console.error(`Gmail trash failed for user ${userId}:`, batchError);
     return {
       success: false,
       trashed: 0,
       trashedIds: [],
-      error: error instanceof Error ? error.message : String(error),
+      error: batchError instanceof Error ? batchError.message : String(batchError),
     };
   }
 }
@@ -1069,7 +1154,8 @@ export async function getPreviousMails(userId: string) {
             date,
             is_read,
           };
-        } catch (error) {
+        } catch (error: any) {
+          if (error?.code === 404 || error?.status === 404) return null;
           console.error(`Failed to fetch message ${msg.id}:`, error);
           return null;
         }
