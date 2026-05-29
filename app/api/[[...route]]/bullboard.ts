@@ -4,7 +4,11 @@ import { HonoAdapter } from "@bull-board/hono";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { timingSafeEqual } from "node:crypto";
 import { queueAdapters } from "@/lib/queue";
-import { bullboardAuthLimiter, getIdentifier } from "@/lib/rate-limit";
+import {
+  bullboardAuthLimiter,
+  bullboardGlobalAuthLimiter,
+  getIdentifier,
+} from "@/lib/rate-limit";
 
 const serverAdapter = new HonoAdapter(serveStatic);
 
@@ -15,12 +19,19 @@ createBullBoard({
 
 serverAdapter.setBasePath("/api/bullboard");
 
+const MIN_PASSWORD_LENGTH = 8;
+
 const app = new Hono();
 
 app.use("*", async (c, next) => {
   const envPass = process.env.BULLBOARD_PASSWORD;
 
   if (!envPass) {
+    return new Response("Service unavailable", { status: 503 });
+  }
+
+  if (envPass.length < MIN_PASSWORD_LENGTH) {
+    console.error("[bullboard] password too short, refusing to serve");
     return new Response("Service unavailable", { status: 503 });
   }
 
@@ -42,13 +53,20 @@ app.use("*", async (c, next) => {
   }
 
   if (!authorized) {
-    const rateLimitResult = await bullboardAuthLimiter.limit(identifier);
-    if (!rateLimitResult.success) {
+    const [perIpLimit, globalLimit] = await Promise.all([
+      bullboardAuthLimiter.limit(identifier),
+      bullboardGlobalAuthLimiter.limit("global"),
+    ]);
+
+    if (!perIpLimit.success || !globalLimit.success) {
       console.warn(`[bullboard] rate limited: ${identifier}`);
       return new Response("Too many requests", { status: 429 });
     }
 
     console.warn(`[bullboard] auth failed: ${identifier}`);
+
+    await new Promise((r) => setTimeout(r, 1000));
+
     return new Response("Unauthorized", {
       status: 401,
       headers: { "WWW-Authenticate": 'Basic realm="Bull Board"' },
