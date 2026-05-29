@@ -14,11 +14,15 @@ const HeatMap = ({ from, to }: { from?: string; to?: string }) => {
   const { data, isLoading, isError } = useGetTrafficHeatmap(from, to);
 
   if (isLoading) {
-    return <Skeleton className="w-full h-80 rounded-xl" />;
+    return (
+      <div className="bg-card rounded-lg border p-6 h-80">
+        <Skeleton className="w-full h-full" />
+      </div>
+    );
   }
 
   if (isError) {
-    return <div className="p-6 text-red-500 rounded-xl border">Failed to load heatmap data.</div>;
+    return <div className="bg-card rounded-lg border p-6 text-muted-foreground">Failed to load heatmap data.</div>;
   }
 
   // Group data by day (1-7, assuming Monday is 1, or 0-6). Let's assume 0=Monday to 6=Sunday for mapping or adapt based on JS getDay (0=Sun). 
@@ -92,13 +96,10 @@ const HeatMap = ({ from, to }: { from?: string; to?: string }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-neutral-900 border rounded-2xl p-6 shadow-sm">
+    <div className="bg-card rounded-lg border p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-        <div>
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Inbox Traffic Heatmap</h2>
-          {/* <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Hourly arrival density for the </p> */}
-        </div>
-        <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 px-4 py-2 rounded-xl text-sm font-medium">
+        <h2 className="text-xl font-semibold text-card-foreground">Inbox Traffic Heatmap</h2>
+        <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 px-4 py-2 rounded-lg text-sm font-medium">
           <Lightbulb className="w-4 h-4" />
           Best focus: {formatHour(bestStartTime)}-{formatHour(bestEndTime)}
         </div>
@@ -108,7 +109,7 @@ const HeatMap = ({ from, to }: { from?: string; to?: string }) => {
         {/* Y Axis Labels */}
         <div className="flex flex-col gap-2 pr-4 mt-8">
           {DAYS.slice(0, 5).map(day => ( // Only showing Mon-Fri as per the image. Remove .slice to show weekend
-            <div key={day} className="h-8 flex items-center text-xs font-medium text-neutral-500 w-8">
+            <div key={day} className="h-8 flex items-center text-xs font-medium text-muted-foreground w-8">
               {day}
             </div>
           ))}
@@ -120,7 +121,7 @@ const HeatMap = ({ from, to }: { from?: string; to?: string }) => {
             {/* X Axis Labels */}
             <div className="flex mb-2">
               {HOURS.map(hour => (
-                <div key={hour} className="flex-1 text-center text-xs text-neutral-500">
+                <div key={hour} className="flex-1 text-center text-xs text-muted-foreground">
                   {hour}
                 </div>
               ))}
@@ -146,13 +147,13 @@ const HeatMap = ({ from, to }: { from?: string; to?: string }) => {
 
       {/* Legend */}
       <div className="flex items-center justify-end gap-2 mt-6">
-        <span className="text-xs text-neutral-500 font-medium mr-2">LOW</span>
+        <span className="text-xs text-muted-foreground font-medium mr-2">LOW</span>
         <div className="w-4 h-4 rounded bg-[#e8f5f1] dark:bg-[#1b2f2a]" />
         <div className="w-4 h-4 rounded bg-[#bfe8d8] dark:bg-[#245145]" />
         <div className="w-4 h-4 rounded bg-[#5dc8a8] dark:bg-[#2f8a74]" />
         <div className="w-4 h-4 rounded bg-[#1ea97f] dark:bg-[#1f7f63]" />
         <div className="w-4 h-4 rounded bg-[#0c5c49] dark:bg-[#2ab08a]" />
-        <span className="text-xs text-neutral-500 font-medium ml-2">HIGH</span>
+        <span className="text-xs text-muted-foreground font-medium ml-2">HIGH</span>
       </div>
     </div>
   );

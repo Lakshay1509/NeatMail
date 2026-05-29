@@ -63,6 +63,7 @@ const nextConfig: NextConfig = {
       *.clerk.accounts.dev
       *.neatmail.app
       *.dodopayments.com
+      http://localhost:8400
       blob:;
 
     style-src
@@ -89,6 +90,7 @@ const nextConfig: NextConfig = {
       *.neatmail.app
       *.dodopayments.com
       *.dodo.com
+      http://localhost:8400
       https:;
 
     frame-src

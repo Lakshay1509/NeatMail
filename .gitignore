@@ -48,3 +48,7 @@ prisma/generated/
 #Graphify
 graphify-out
 .agents/skills/
+
+.impeccable
+
+.opencode/skills

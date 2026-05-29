@@ -2,7 +2,6 @@
 
 import { useGetUserMailsThisMonth } from "@/features/stats/use-get-mail-thisMonth";
 import { useUser } from "@clerk/nextjs";
-import { ArrowDownIcon, ArrowUpIcon, MinusIcon } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { DateRange } from "react-day-picker";
 import { differenceInDays, subDays } from "date-fns";
@@ -65,7 +64,7 @@ const Dashboard = () => {
       ? Math.max(differenceInDays(debouncedDate.to, debouncedDate.from), 1)
       : 1;
 
-  const { data, isLoading, isError } = useGetUserMailsThisMonth(from, to);
+  const { data, isLoading } = useGetUserMailsThisMonth(from, to);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -80,48 +79,15 @@ const Dashboard = () => {
 
   const greeting = useMemo(() => getGreeting(), []);
 
-  const renderTrend = (percentChange: number | null | undefined) => {
-    if (percentChange === undefined || percentChange === null) return null;
-    if (percentChange === 0) {
-      return (
-        <div className="flex items-center text-xs text-gray-500 mt-2">
-          <MinusIcon className="w-3 h-3 mr-1" />
-          <span>Same as last week</span>
-        </div>
-      );
-    }
-    const isPositive = percentChange > 0;
-    const Icon = isPositive ? ArrowUpIcon : ArrowDownIcon;
-    // Reversed colors since less labeled emails / time is generally "less", but maybe "more time saved" is good?
-    // Let's stick to standard: up = green, down = red.
-    const colorClass = isPositive
-      ? "text-emerald-700 bg-emerald-50"
-      : "text-rose-700 bg-rose-50";
-
-    return (
-      <div className="flex items-center mt-2 group">
-        <span
-          className={`flex items-center px-1.5 py-0.5 rounded-md text-xs font-semibold ${colorClass}`}
-        >
-          <Icon className="w-3 h-3 mr-1" />
-          {Math.abs(percentChange)}%
-        </span>
-        <span className="text-xs font-medium text-gray-500 ml-2">
-          vs last week
-        </span>
-      </div>
-    );
-  };
-
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex-1">
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-2xl font-bold text-foreground">
             {greeting.text}, {user?.firstName || "User"}
           </h1>
-          <p className="text-gray-500">{greeting.subtitle}</p>
+          <p className="text-muted-foreground">{greeting.subtitle}</p>
         </div>
         <div className="flex items-center gap-4">
           <DatePickerWithRange date={date} setDate={setDate} />
@@ -130,50 +96,34 @@ const Dashboard = () => {
 
       {/* Stats Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Card 1 */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 relative overflow-hidden flex flex-col justify-between">
-          <div>
-            <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">
-              Emails Received
-            </p>
-            <div className="w-full flex justify-between items-center">
-              <p className="text-2xl font-semibold text-gray-900 mt-1">
-                {isLoading ? "..." : data?.current || 0}
-              </p>
-            </div>
-          </div>
+        {/* Emails Received */}
+        <div className="bg-card rounded-lg border p-4">
+          <p className="text-xs font-medium text-muted-foreground">
+            Emails received
+          </p>
+          <p className="text-2xl font-semibold text-card-foreground mt-1">
+            {isLoading ? "..." : data?.current ?? 0}
+          </p>
         </div>
 
-        {/* Card 2 */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col justify-between">
-          <div>
-            <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">
-              Unread
-            </p>
-            <p className="text-2xl font-semibold text-gray-900 mt-1">
-              {/* {(() => {
-                const seconds = (data?.current ?? 0) * 5;
-
-                if (seconds < 60) return `${seconds} seconds`;
-                if (seconds < 3600)
-                  return `${(seconds / 60).toFixed(1)} minutes`;
-                return `${(seconds / 3600).toFixed(1)} hours`;
-              })()} */}
-              {data?.unreadCount}
-            </p>
-          </div>
+        {/* Unread */}
+        <div className="bg-card rounded-lg border p-4">
+          <p className="text-xs font-medium text-muted-foreground">
+            Unread
+          </p>
+          <p className="text-2xl font-semibold text-card-foreground mt-1">
+            {isLoading ? "..." : data?.unreadCount ?? 0}
+          </p>
         </div>
 
-        {/* Card 3 */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col justify-between">
-          <div>
-            <p className="text-xs font-bold text-gray-500 tracking-wider uppercase">
-              Avg emails / day
-            </p>
-            <p className="text-2xl font-semibold text-gray-900 mt-1">
-              {Math.ceil((data?.current ?? 0) / totalDays)}
-            </p>
-          </div>
+        {/* Avg Emails per Day */}
+        <div className="bg-card rounded-lg border p-4">
+          <p className="text-xs font-medium text-muted-foreground">
+            Avg emails per day
+          </p>
+          <p className="text-2xl font-semibold text-card-foreground mt-1">
+            {isLoading ? "..." : Math.ceil((data?.current ?? 0) / totalDays)}
+          </p>
         </div>
       </div>
 

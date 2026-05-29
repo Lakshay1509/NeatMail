@@ -9,21 +9,32 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
+
+function ChartLegend() {
+  return (
+    <div className="flex items-center justify-end gap-6 mb-2">
+      <div className="flex items-center gap-2">
+        <div className="w-3 h-3 rounded-full bg-emerald-500" />
+        <span className="text-sm font-medium text-muted-foreground">Read</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-3 h-3 rounded-full bg-blue-500" />
+        <span className="text-sm font-medium text-muted-foreground">Unread</span>
+      </div>
+    </div>
+  );
+}
 
 export default function ReadVsUnread({ from, to }: { from?: string; to?: string }) {
   const { data: response, isLoading, isError } = useGetReadVsUnread(from, to);
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm w-full h-[400px]">
-        <div className="p-6 pb-2 border-b border-gray-50 flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Read vs Unread</h3>
-            
-          </div>
+      <div className="bg-card rounded-lg border w-full h-[400px]">
+        <div className="p-6 pb-2 border-b flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-card-foreground">Read vs Unread</h3>
         </div>
         <div className="p-6 h-[320px]">
           <Skeleton className="w-full h-full" />
@@ -34,7 +45,7 @@ export default function ReadVsUnread({ from, to }: { from?: string; to?: string 
 
   if (isError || !response?.data) {
     return (
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm w-full h-[400px] flex items-center justify-center text-gray-500">
+      <div className="bg-card rounded-lg border w-full h-[400px] flex items-center justify-center text-muted-foreground">
         Failed to load read vs unread data.
       </div>
     );
@@ -42,33 +53,14 @@ export default function ReadVsUnread({ from, to }: { from?: string; to?: string 
 
   const chartData = response.data;
 
-  // Custom Legend
-  const CustomLegend = () => {
-    return (
-      <div className="flex items-center justify-end gap-6 mb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-          <span className="text-sm font-medium text-gray-500">Read</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-          <span className="text-sm font-medium text-gray-500">Unread</span>
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm w-full h-[400px] flex flex-col">
+    <div className="bg-card rounded-lg border w-full h-[400px] flex flex-col">
       <div className="p-6 pb-0 flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">Read vs Unread</h3>
-          
-        </div>
+        <h3 className="text-lg font-semibold text-card-foreground">Read vs Unread</h3>
       </div>
 
       <div className="flex-1 p-6">
-        <CustomLegend />
+        <ChartLegend />
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
