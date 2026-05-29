@@ -69,6 +69,13 @@ export const routeLimiter = new CustomRateLimit({
   prefix: 'ratelimit:route',
 });
 
+export const bullboardAuthLimiter = new CustomRateLimit({
+  redis,
+  limit: 5,
+  window: '1 m',
+  prefix: 'ratelimit:bullboard-auth',
+});
+
 export function getIdentifier(req: Request, userId?: string | null): string {
   if (userId) {
     return `user:${userId}`;

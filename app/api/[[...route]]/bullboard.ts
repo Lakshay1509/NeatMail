@@ -2,7 +2,9 @@ import { Hono } from "hono";
 import { createBullBoard } from "@bull-board/api";
 import { HonoAdapter } from "@bull-board/hono";
 import { serveStatic } from "@hono/node-server/serve-static";
+import { timingSafeEqual } from "node:crypto";
 import { queueAdapters } from "@/lib/queue";
+import { bullboardAuthLimiter, getIdentifier } from "@/lib/rate-limit";
 
 const serverAdapter = new HonoAdapter(serveStatic);
 
@@ -16,20 +18,37 @@ serverAdapter.setBasePath("/api/bullboard");
 const app = new Hono();
 
 app.use("*", async (c, next) => {
-  const auth = c.req.header("Authorization");
+  const envPass = process.env.BULLBOARD_PASSWORD;
 
-  if (!auth || !auth.startsWith("Basic ")) {
-    return new Response("Unauthorized", {
-      status: 401,
-      headers: { "WWW-Authenticate": 'Basic realm="Bull Board"' },
-    });
+  if (!envPass) {
+    return new Response("Service unavailable", { status: 503 });
   }
 
-  const decoded = Buffer.from(auth.slice(6), "base64").toString();
-  const colonIndex = decoded.indexOf(":");
-  const pass = decoded.slice(colonIndex + 1);
+  const auth = c.req.header("Authorization");
+  const identifier = getIdentifier(c.req.raw, null);
 
-  if (pass !== process.env.BULLBOARD_PASSWORD) {
+  let authorized = false;
+
+  if (auth && auth.startsWith("Basic ")) {
+    const decoded = Buffer.from(auth.slice(6), "base64").toString();
+    const colonIndex = decoded.indexOf(":");
+    const pass = decoded.slice(colonIndex + 1);
+
+    const passBuf = Buffer.from(pass);
+    const envBuf = Buffer.from(envPass);
+
+    authorized =
+      passBuf.length === envBuf.length && timingSafeEqual(passBuf, envBuf);
+  }
+
+  if (!authorized) {
+    const rateLimitResult = await bullboardAuthLimiter.limit(identifier);
+    if (!rateLimitResult.success) {
+      console.warn(`[bullboard] rate limited: ${identifier}`);
+      return new Response("Too many requests", { status: 429 });
+    }
+
+    console.warn(`[bullboard] auth failed: ${identifier}`);
     return new Response("Unauthorized", {
       status: 401,
       headers: { "WWW-Authenticate": 'Basic realm="Bull Board"' },
