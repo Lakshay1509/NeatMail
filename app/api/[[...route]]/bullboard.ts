@@ -17,8 +17,21 @@ const app = new Hono();
 
 app.use("*", async (c, next) => {
   const auth = c.req.header("Authorization");
+  const envPass = process.env.BULLBOARD_PASSWORD;
+
+  console.log("[bullboard] request path:", c.req.path);
+  console.log("[bullboard] BULLBOARD_PASSWORD exists:", !!envPass);
+  console.log("[bullboard] BULLBOARD_PASSWORD length:", envPass?.length ?? 0);
+  console.log("[bullboard] Authorization header present:", !!auth);
+  if (auth) {
+    console.log(
+      "[bullboard] Authorization prefix:",
+      auth.slice(0, 15) + "...",
+    );
+  }
 
   if (!auth || !auth.startsWith("Basic ")) {
+    console.log("[bullboard] missing or non-Basic auth, returning 401");
     return new Response("Unauthorized", {
       status: 401,
       headers: { "WWW-Authenticate": 'Basic realm="Bull Board"' },
@@ -28,7 +41,12 @@ app.use("*", async (c, next) => {
   const decoded = Buffer.from(auth.slice(6), "base64").toString();
   const [, pass] = decoded.split(":");
 
-  if (pass !== process.env.BULLBOARD_PASSWORD) {
+  console.log(
+    "[bullboard] password match:",
+    pass === envPass ? "YES" : "NO",
+  );
+
+  if (pass !== envPass) {
     return new Response("Unauthorized", {
       status: 401,
       headers: { "WWW-Authenticate": 'Basic realm="Bull Board"' },
