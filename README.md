@@ -119,7 +119,7 @@ NeatMail is an intelligent email management platform that automatically organize
   - **OpenAI** or **Azure OpenAI** (AI classification & drafts)
   - **Google Cloud Console** (Gmail API & Pub/Sub Webhooks)
   - **Microsoft Entra** (Outlook API & Webhooks)
-  - **Inngest** (Background jobs and queues)
+  - **BullMQ** (Background jobs and queues — with Bull Board UI at `/api/bullboard`)
   - **DodoPay** (Payments)
   - **Resend** (Transactional emails)
   - **Telegram** (Bot token for chat integrations)
@@ -171,20 +171,20 @@ graph TD
     PubSub -->|Webhook| API[NeatMail API]
 
     subgraph Core Processing
-        API -->|Trigger Background Job| Inngest[Inngest Worker]
-        Inngest -->|Fetch Full Email| Inbox
-        Inngest -->|Analyze Email| AI[OpenAI / Azure]
-        AI -->|Labels & Drafts| Inngest
-        Inngest -->|Apply Labels & Drafts| Inbox
+        API -->|Enqueue Job| BullMQ[BullMQ Worker]
+        BullMQ -->|Fetch Full Email| Inbox
+        BullMQ -->|Analyze Email| AI[OpenAI / Azure]
+        AI -->|Labels & Drafts| BullMQ
+        BullMQ -->|Apply Labels & Drafts| Inbox
     end
 
     subgraph Data & State
-        Inngest -->|Store Metadata| DB[(PostgreSQL)]
-        Inngest -->|Cache & Deduplication| Redis[(Redis)]
+        BullMQ -->|Store Metadata| DB[(PostgreSQL)]
+        BullMQ -->|Cache & Deduplication| Redis[(Redis)]
     end
 
     subgraph Notifications
-        Inngest -->|Send Alerts| Telegram[Telegram Bot]
+        BullMQ -->|Send Alerts| Telegram[Telegram Bot]
     end
 ```
 
@@ -193,7 +193,7 @@ graph TD
 ## 📦 Tech Stack
 
 - **Frontend**: Next.js 16.1.1, React 19, Tailwind CSS 4, shadcn/ui, TanStack Query
-- **Backend**: Hono.js, Prisma, PostgreSQL, Redis (Upstash), Clerk, Inngest
+- **Backend**: Hono.js, Prisma, PostgreSQL, Redis (Upstash), Clerk, BullMQ
 - **AI**: OpenAI GPT-4 Mini
 - **Integrations**: Google APIs, Microsoft Graph API, DodoPay, Svix
 

@@ -222,16 +222,7 @@ const app = new Hono()
         return ctx.json({ error: "Error creating tag" }, 500);
       }
 
-      // Fire and forget — runs in background, user gets instant response
-      // await inngest.send({
-      //   name: "tag/label.add",
-      //   data: {
-      //     user_id: userId,
-      //     tag_id: data.id,
-      //     label_name: values.tag.trim().toLowerCase(),
-      //     description: values.description,
-      //   },
-      // });
+      // TODO: enqueue tag/label.add job to BullMQ if background processing is needed
 
       return ctx.json({ data }, 200);
     },

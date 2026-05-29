@@ -12,7 +12,7 @@
 - **Next.js 16.1** + React 19 app router. Frontend pages in `app/`. API is **Hono** mounted via `app/api/[[...route]]/route.ts` with `basePath("/api")`.
 - **Auth:** Clerk (`@clerk/nextjs`). Middleware logic is in `proxy.ts` (not `middleware.ts`). Public API routes are explicitly allow-listed there.
 - **Database:** PostgreSQL via Prisma. Client is generated to a **custom output path**: `prisma/generated/prisma` and imported as `@/prisma/generated/prisma/client`.
-- **Background jobs:** Inngest. Functions live in `inngest/functions/`. They are registered in `app/api/inngest/route.ts`.
+- **Background jobs:** BullMQ. Queue definitions in `lib/queue.ts`, workers in `bullmq/workers/`. Dashboard at `/api/bullboard` (Bull Board).
 - **Rate limiting:** Custom Redis-based sliding-window limiter in `lib/rate-limit.ts`.
 - **AI drafts:** `context-engine/pipeline.ts` assembles context cards (calendar providers) and calls Azure OpenAI (`gpt-5-mini`).
 - **External APIs:**
@@ -40,12 +40,12 @@
 
 ## Env Setup
 - Copy `.env.example` to `.env.local` and fill all values.
-- Required infra: PostgreSQL, Redis, Clerk, Inngest, OpenAI/Azure, Google Cloud (Gmail/PubSub), Microsoft Entra (Outlook), DodoPay, Resend, Telegram Bot.
+- Required infra: PostgreSQL, Redis, Clerk, BullMQ (Redis-backed), OpenAI/Azure, Google Cloud (Gmail/PubSub), Microsoft Entra (Outlook), DodoPay, Resend, Telegram Bot.
 
 ## Code Conventions
 - Path alias `@/*` maps to root (`"./*"`).
 - Hono sub-routers are imported and chained in `app/api/[[...route]]/route.ts`.
-- Inngest function files export a single `createFunction` result; registration happens in `app/api/inngest/route.ts`.
+- BullMQ workers are plain async functions in `bullmq/workers/`; queue adapters are registered in `lib/queue.ts`.
 - `lib/supabase.ts` is a misnomer — it contains Prisma-based DB helpers, not Supabase SDK usage.
 
 ## External Libraries & APIs
