@@ -78,15 +78,32 @@ ENV HOSTNAME="0.0.0.0"
 # Cap runtime heap at 768MB — safe for a 4GB VPS with other services running
 ENV NODE_OPTIONS="--max-old-space-size=768"
 
-# Copy Prisma schema and generated client (Prisma 7 generates to prisma/generated/prisma)
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# Copy Bun from deps stage (needed to run BullMQ worker TS files)
+COPY --from=deps /root/.bun /root/.bun
+ENV BUN_INSTALL=/root/.bun
+ENV PATH=$BUN_INSTALL/bin:$PATH
 
-# Copy only what's needed for runtime
+# Copy full node_modules (workers need libs not included in standalone's trimmed set)
+COPY --from=builder /app/node_modules ./node_modules
+
+# Copy Prisma schema and generated client
+COPY --from=builder /app/prisma ./prisma
+
+# Copy standalone Next.js output
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# Expose and run
+# Copy BullMQ worker source + configs needed at runtime
+COPY --from=builder /app/bullmq ./bullmq
+COPY --from=builder /app/lib ./lib
+COPY --from=builder /app/context-engine ./context-engine
+COPY --from=builder /app/tsconfig.json ./
+COPY --from=builder /app/package.json ./
+
+# Entrypoint script (starts Next.js server + BullMQ workers)
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+
 EXPOSE 8080
-CMD ["node", "server.js"]
+ENTRYPOINT ["./docker-entrypoint.sh"]

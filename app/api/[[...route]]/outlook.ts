@@ -1,4 +1,4 @@
-import { inngest } from "@/lib/inngest";
+import { outlookMailQueue, outlookMailUpdateQueue } from "@/lib/queue";
 import { Hono } from "hono";
 
 const app = new Hono().post("/webhook", async (ctx) => {
@@ -14,27 +14,28 @@ const app = new Hono().post("/webhook", async (ctx) => {
 
   try {
     const body = await ctx.req.json();
-    const notifications: any[] = body.value ?? [];   
+    const notifications: any[] = body.value ?? [];
 
-    const events = notifications
+    const jobs = notifications
       .filter(
         (n) => n.clientState === process.env.OUTLOOK_WEBHOOK_SECRET,
       )
       .filter((n) => n.resourceData?.id && n.subscriptionId)
-      .map((n) => ({
-        // Setting `id` makes Inngest deduplicate events with the same key,
-        id: `outlook/msg/${n.resourceData.id as string}-${n.changeType}`,
-        name: n.changeType === "updated" 
-          ? ("outlook/mail.updated" as const)
-          : ("outlook/mail.received" as const),
-        data: {
+      .map((n) => {
+        const jobId = `outlook/msg/${n.resourceData.id as string}-${n.changeType}`;
+        const data = {
           messageId: n.resourceData.id as string,
           subscriptionId: n.subscriptionId as string,
-        },
-      }));
+        };
+        const queue =
+          n.changeType === "updated"
+            ? outlookMailUpdateQueue
+            : outlookMailQueue;
+        return queue.add("process-mail", data, { jobId });
+      });
 
-    if (events.length > 0) {
-      await inngest.send(events);
+    if (jobs.length > 0) {
+      await Promise.all(jobs);
     }
 
     // Must return 202 quickly — Graph drops the notification after 3s

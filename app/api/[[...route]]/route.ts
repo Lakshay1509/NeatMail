@@ -20,6 +20,7 @@ import stats from './stats'
 import freeTrial from './freeTrial'
 import integrations from './integrations'
 import digest from './digest'
+import bullboard from './bullboard'
 
 export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
@@ -42,7 +43,6 @@ app.use('*', async (c, next) => {
       path.startsWith('/api/gmail-webhook') ||
       path.startsWith('/api/clerk') ||
       path.startsWith('/api/dodowebhook') ||
-      path.startsWith('/api/inngest') ||
       path.startsWith('/api/outlook') ||
       path.startsWith('/api/telegram/webhook')
     ) {
@@ -90,6 +90,7 @@ const routes = app
     .route('/freeTrial',freeTrial)
     .route('/integrations',integrations)
     .route('/digest',digest)
+    .route('/bullboard',bullboard)
 
 
 

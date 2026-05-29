@@ -1,6 +1,6 @@
 import { deleteGmailDraft, sendGmailDraft, updateGmailDraft } from "@/lib/gmail";
 import { db } from "@/lib/prisma";
-import { inngest } from "@/lib/inngest";
+import { telegramQueue } from "@/lib/queue";
 import {
   sendDraftConfirmationMessage,
   sendTelegramMessage,
@@ -349,20 +349,16 @@ const app = new Hono()
           }
         } else {
           try {
-            // const subscription = await getUserSubscribed(integration.user_id);
-            // if(subscription.subscribed===false){
-            //   await sendTelegramMessage(chatId,"You are not subscribed")
-            //   return ctx.json({ ok: true }, 200);
-            // }
-            // await inngest.send({
-            //   name: "telegram/process.query",
-            //   data: {
-            //     text,
-            //     userId: integration.user_id,
-            //     chatId,
-            //   },
-            // });   //uncomment this code to use chat feature
-            sendTelegramMessage(chatId,"Feature in progress... (aka I'm not ready to talk yet, but soon.)")
+            const subscription = await getUserSubscribed(integration.user_id);
+            if (subscription.subscribed === false) {
+              await sendTelegramMessage(chatId, "You are not subscribed");
+              return ctx.json({ ok: true }, 200);
+            }
+            await telegramQueue.add("process-query", {
+              text,
+              userId: integration.user_id,
+              chatId,
+            });
           } catch (error) {
             console.error("Agent Error:", error);
             await sendTelegramMessage(chatId, "⚠️ Sorry, I encountered an error processing your request.");

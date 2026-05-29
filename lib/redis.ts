@@ -1,6 +1,8 @@
 import Redis from 'ioredis';
 
-export const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+export const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+  maxRetriesPerRequest: null,
+});
 
 export async function isMessageProcessed(messageId: string): Promise<boolean> {
   const exists = await redis.exists(`processed:msg:${messageId}`);

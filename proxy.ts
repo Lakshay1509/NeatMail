@@ -10,11 +10,11 @@ const isPublicApiRoute = createRouteMatcher([
   '/api/clerk/:path*',
   '/api/dodowebhook/:path*',
   '/api/cron/:path*',
-  '/api/inngest/:path*',
   '/api/outlook/:path*',
   '/api/email/all',
   '/api/telegram/webhook',
   '/api/slack/callback',
+  '/api/bullboard/:path*',
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

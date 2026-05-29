@@ -1,4 +1,4 @@
-import { inngest } from "@/lib/inngest";
+import { draftQueue } from "@/lib/queue";
 import { getGmailClient, getGmailMessageBody } from "@/lib/gmail";
 import {
   isMessageProcessed,
@@ -366,21 +366,18 @@ const app = new Hono().post("/", async (ctx) => {
 
       if (shouldDraft) {
         const { senderName, senderEmail } = parseFromHeader(emailData.from);
-        await inngest.send({
-          name: "email/process.draft",
-          data: {
-            userName:fullName,
-            userId: clerkUserId,
-            emailData: {
-              ...emailData,
-              receivedAt: new Date().toISOString(),
-            },
-            senderName: senderName,
-            senderEmail: senderEmail,
-            messageId: messageId,
-            tokenData: tokenData,
-            is_gmail: true,
+        await draftQueue.add("process-draft", {
+          userName: fullName,
+          userId: clerkUserId,
+          emailData: {
+            ...emailData,
+            receivedAt: new Date().toISOString(),
           },
+          senderName: senderName,
+          senderEmail: senderEmail,
+          messageId: messageId,
+          tokenData: tokenData,
+          is_gmail: true,
         });
       }
 
