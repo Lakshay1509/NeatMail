@@ -255,6 +255,9 @@ const app = new Hono()
           return ctx.json(response, 200);
         }
       } catch (_error) {
+        if (_error instanceof Error && _error.message.includes("deleted or moved")) {
+          return ctx.json({ error: "Message already deleted or moved" }, 200);
+        }
         return ctx.json({ error: "Error unsubscribing from this domain" }, 500);
       }
     },
