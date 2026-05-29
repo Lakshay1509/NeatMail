@@ -21,7 +21,12 @@ export const useUnsubscribeDomain = () => {
         throw new Error(errorData.error || "Failed to unsubscribe from this domain");
       }
 
-        return response.json();
+      const data = await response.json();
+      if ("error" in data && data.error) {
+        throw new Error(data.error);
+      }
+
+      return data;
     },
 
     onSuccess:()=>{
