@@ -47,6 +47,16 @@ app.use("*", async (c, next) => {
   console.log("[bullboard] received pass length:", pass.length);
   console.log("[bullboard] expected pass length:", envPass?.length ?? 0);
   console.log(
+    "[bullboard] env hex:",
+    envPass
+      ? [...envPass].map((c) => c.charCodeAt(0).toString(16)).join(" ")
+      : "none",
+  );
+  console.log(
+    "[bullboard] rcvd hex:",
+    [...pass].map((c) => c.charCodeAt(0).toString(16)).join(" "),
+  );
+  console.log(
     "[bullboard] password match:",
     pass === envPass ? "YES" : "NO",
   );
