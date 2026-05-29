@@ -39,8 +39,13 @@ app.use("*", async (c, next) => {
   }
 
   const decoded = Buffer.from(auth.slice(6), "base64").toString();
-  const [, pass] = decoded.split(":");
+  const colonIndex = decoded.indexOf(":");
+  const pass = decoded.slice(colonIndex + 1);
 
+  console.log("[bullboard] decoded length:", decoded.length);
+  console.log("[bullboard] colon index:", colonIndex);
+  console.log("[bullboard] received pass length:", pass.length);
+  console.log("[bullboard] expected pass length:", envPass?.length ?? 0);
   console.log(
     "[bullboard] password match:",
     pass === envPass ? "YES" : "NO",
