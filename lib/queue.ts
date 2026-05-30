@@ -9,7 +9,7 @@ export const outlookMailQueue = new Queue("outlook-mail", {
   defaultJobOptions: {
     attempts: 5,
     backoff: { type: "exponential", delay: 1000 },
-    removeOnComplete: true,
+    removeOnComplete: 50,
     removeOnFail: 100,
   },
 });
@@ -19,7 +19,7 @@ export const outlookMailUpdateQueue = new Queue("outlook-mail-update", {
   defaultJobOptions: {
     attempts: 3,
     backoff: { type: "exponential", delay: 1000 },
-    removeOnComplete: true,
+    removeOnComplete: 50,
     removeOnFail: 100,
   },
 });
@@ -29,7 +29,7 @@ export const draftQueue = new Queue("draft", {
   defaultJobOptions: {
     attempts: 3,
     backoff: { type: "exponential", delay: 1000 },
-    removeOnComplete: true,
+    removeOnComplete: 50,
     removeOnFail: 100,
   },
 });
@@ -39,7 +39,7 @@ export const telegramQueue = new Queue("telegram", {
   defaultJobOptions: {
     attempts: 3,
     backoff: { type: "exponential", delay: 1000 },
-    removeOnComplete: true,
+    removeOnComplete: 50,
     removeOnFail: 100,
   },
 });

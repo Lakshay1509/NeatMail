@@ -10,6 +10,7 @@ const connection = redis;
 const outlookMailWorker = new Worker("outlook-mail", processOutlookMail, {
   connection,
   concurrency: 10,
+  lockDuration: 120_000,
 });
 
 const outlookMailUpdateWorker = new Worker(
@@ -24,6 +25,7 @@ const outlookMailUpdateWorker = new Worker(
 const draftWorker = new Worker("draft", processDraft, {
   connection,
   concurrency: 5,
+  lockDuration: 300_000,
 });
 
 const telegramWorker = new Worker("telegram", telegramAgent, {
