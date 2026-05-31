@@ -123,7 +123,7 @@ export class OutlookCalendarProvider implements ContextProvider {
 		}
 
 		const dateOnly = isoStart.split("T")[0]
-		const timePart = isoStart.split("T")[1]?.split(/[+-Z]/)[0] ?? "00:00:00"
+		const timePart = isoStart.split("T")[1]?.split(/[-+Z]/)[0] ?? "00:00:00"
 
 		const isoOffsetMs = this.extractOffsetMs(isoStart)
 		const expectedOffsetMs = getTimezoneOffset(timezone, new Date(`${dateOnly}T12:00:00Z`))
@@ -149,7 +149,7 @@ export class OutlookCalendarProvider implements ContextProvider {
 		let slotEnd: Date
 		if (isoEnd && needsReinterpret) {
 			const endDateOnly = isoEnd.split("T")[0]
-			const endTimePart = isoEnd.split("T")[1]?.split(/[+-Z]/)[0] ?? "00:00:00"
+			const endTimePart = isoEnd.split("T")[1]?.split(/[-+Z]/)[0] ?? "00:00:00"
 			slotEnd = fromZonedTime(`${endDateOnly}T${endTimePart}`, timezone)
 			console.log(
 				`${TAG}   reinterpreted interval end too → slotEnd=${slotEnd.toISOString()}`
