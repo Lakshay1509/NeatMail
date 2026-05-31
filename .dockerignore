@@ -1,20 +1,52 @@
-# Node/Next
+# Dependencies
 node_modules
+.pnp
+.pnp.js
+
+# Next.js
 .next
-# VCS and metadata
+out
+dist
+build
+.turbo
+
+# Version control
 .git
-.gitignore
-Dockerfile
-.dockerignore
-# Env and logs
-.env*
-npm-debug.log
-yarn-error.log
-pnpm-lock.yaml
-# OS/editor
+.gitattributes
+.github
+
+# Environment (never bake secrets into images)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / IDE
 .DS_Store
+Thumbs.db
 .vscode
 .idea
-# Tests and artifacts
+*.swp
+*.swo
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+compose*.yaml
+
+# Tests and coverage
 coverage
-dist
+.nyc_output
+*.test.ts
+*.spec.ts
+__tests__
+
+# Build context bloat
+node_modules/.cache
+.graphify*
+graphify-out
+AGENTS.md

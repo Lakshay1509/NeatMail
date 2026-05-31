@@ -1,47 +1,39 @@
-# ---- deps: Node 22 + Bun + OpenSSL ----
-FROM node:22-bookworm-slim AS deps
-RUN apt-get update -y && \
-    apt-get install -y curl openssl ca-certificates unzip && \
-    rm -rf /var/lib/apt/lists/*
+# syntax=docker/dockerfile:1
+
+# ---- deps ----
+FROM node:22-alpine AS deps
+RUN apk add --no-cache libc6-compat openssl curl
 WORKDIR /app
 
-# Copy lockfiles for better caching
 COPY package.json bun.lock ./
 COPY prisma ./prisma
 COPY prisma.config.ts ./
 
-# Install Bun
 RUN curl -fsSL https://bun.sh/install | bash
 ENV BUN_INSTALL=/root/.bun
 ENV PATH=$BUN_INSTALL/bin:$PATH
 
-# Install dependencies - skip postinstall scripts to avoid prisma generate
-RUN bun install --frozen-lockfile --ignore-scripts
+RUN --mount=type=cache,target=/root/.bun \
+    bun install --frozen-lockfile --ignore-scripts
 
 
 # ---- build ----
-FROM node:22-bookworm-slim AS builder
-RUN apt-get update -y && \
-    apt-get install -y openssl ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+FROM node:22-alpine AS builder
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
-# Copy Bun
 COPY --from=deps /root/.bun /root/.bun
 ENV BUN_INSTALL=/root/.bun
 ENV PATH=$BUN_INSTALL/bin:$PATH
 
-# Copy deps + source
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Safe for a 4GB VPS shared with Coolify + OS + other services.
-# Build uses ~1.5GB peak; leaves headroom for everything else.
+ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=1536"
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV GENERATE_SOURCEMAP=false
 
-# === Build-time Public Env Variables ===
 ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 ARG NEXT_PUBLIC_CLERK_SIGN_IN_URL
 ARG NEXT_PUBLIC_CLERK_SIGN_UP_URL
@@ -50,7 +42,6 @@ ARG DATABASE_URL
 ARG DIRECT_URL
 ARG REDIS_URL
 ARG OPENAI_API_KEY
-
 
 ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 ENV NEXT_PUBLIC_CLERK_SIGN_IN_URL=$NEXT_PUBLIC_CLERK_SIGN_IN_URL
@@ -61,49 +52,30 @@ ENV DIRECT_URL=$DIRECT_URL
 ENV REDIS_URL=$REDIS_URL
 ENV OPENAI_API_KEY=$OPENAI_API_KEY
 
-# === Build the Next.js app ===
-RUN bunx prisma generate && bun run build
+RUN --mount=type=cache,target=/app/.next/cache \
+    bun run build
 
 
 # ---- runtime ----
-FROM node:22-bookworm-slim AS runner
-RUN apt-get update -y && \
-    apt-get install -y openssl ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+FROM node:22-alpine AS runner
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=8080
 ENV HOSTNAME="0.0.0.0"
-# Cap runtime heap at 768MB — safe for a 4GB VPS with other services running
 ENV NODE_OPTIONS="--max-old-space-size=768"
 
-# Copy Bun from deps stage (needed to run BullMQ worker TS files)
-COPY --from=deps /root/.bun /root/.bun
-ENV BUN_INSTALL=/root/.bun
-ENV PATH=$BUN_INSTALL/bin:$PATH
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-# Copy full node_modules (workers need libs not included in standalone's trimmed set)
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
-# Copy Prisma schema and generated client
-COPY --from=builder /app/prisma ./prisma
-
-# Copy standalone Next.js output
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
-
-# Copy BullMQ worker source + configs needed at runtime
-COPY --from=builder /app/bullmq ./bullmq
-COPY --from=builder /app/lib ./lib
-COPY --from=builder /app/context-engine ./context-engine
-COPY --from=builder /app/tsconfig.json ./
-COPY --from=builder /app/package.json ./
-
-# Entrypoint script (starts Next.js server + BullMQ workers)
-COPY docker-entrypoint.sh ./
-RUN chmod +x docker-entrypoint.sh
+USER nextjs
 
 EXPOSE 8080
-ENTRYPOINT ["./docker-entrypoint.sh"]
+
+CMD ["node", "server.js"]

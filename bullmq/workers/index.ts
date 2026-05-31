@@ -5,51 +5,53 @@ import { updateOutlookMail } from "./update-outlook-mail";
 import { processDraft } from "./process-draft";
 import { telegramAgent } from "./telegram-agent";
 
-const connection = redis;
+let workers: Worker[] = [];
 
-const outlookMailWorker = new Worker("outlook-mail", processOutlookMail, {
-  connection,
-  concurrency: 10,
-  lockDuration: 120_000,
-});
+export async function startWorkers() {
+  const connection = redis;
 
-const outlookMailUpdateWorker = new Worker(
-  "outlook-mail-update",
-  updateOutlookMail,
-  {
+  const outlookMailWorker = new Worker("outlook-mail", processOutlookMail, {
     connection,
     concurrency: 10,
-  },
-);
+    lockDuration: 120_000,
+  });
 
-const draftWorker = new Worker("draft", processDraft, {
-  connection,
-  concurrency: 5,
-  lockDuration: 300_000,
-});
+  const outlookMailUpdateWorker = new Worker(
+    "outlook-mail-update",
+    updateOutlookMail,
+    {
+      connection,
+      concurrency: 10,
+    },
+  );
 
-const telegramWorker = new Worker("telegram", telegramAgent, {
-  connection,
-  concurrency: 5,
-});
+  const draftWorker = new Worker("draft", processDraft, {
+    connection,
+    concurrency: 5,
+    lockDuration: 300_000,
+  });
 
-async function shutdown() {
-  console.log("Shutting down workers...");
-  await Promise.all([
-    outlookMailWorker.close(),
-    outlookMailUpdateWorker.close(),
-    draftWorker.close(),
-    telegramWorker.close(),
-  ]);
-  console.log("Workers shut down.");
-  process.exit(0);
+  const telegramWorker = new Worker("telegram", telegramAgent, {
+    connection,
+    concurrency: 5,
+  });
+
+  workers = [
+    outlookMailWorker,
+    outlookMailUpdateWorker,
+    draftWorker,
+    telegramWorker,
+  ];
+
+  console.log("BullMQ workers started (in-process)");
 }
 
-process.on("SIGTERM", shutdown);
-process.on("SIGINT", shutdown);
+export async function stopWorkers() {
+  console.log("Shutting down BullMQ workers...");
+  await Promise.all(workers.map((w) => w.close()));
+  console.log("BullMQ workers shut down.");
+}
 
-console.log("BullMQ workers started:");
-console.log("  - outlook-mail");
-console.log("  - outlook-mail-update");
-console.log("  - draft");
-console.log("  - telegram");
+if (process.argv[1]?.includes("bullmq/workers/index")) {
+  startWorkers();
+}

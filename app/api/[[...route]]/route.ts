@@ -21,6 +21,7 @@ import freeTrial from './freeTrial'
 import integrations from './integrations'
 import digest from './digest'
 import bullboard from './bullboard'
+import "@/bullmq/workers"
 
 export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
