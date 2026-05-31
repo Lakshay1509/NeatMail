@@ -1,30 +1,22 @@
 # syntax=docker/dockerfile:1
 
 # ---- deps ----
-FROM node:22-alpine AS deps
-RUN apk add --no-cache libc6-compat openssl curl bash
+FROM oven/bun:1-alpine AS deps
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY package.json bun.lock ./
 COPY prisma ./prisma
 COPY prisma.config.ts ./
 
-RUN curl -fsSL https://bun.sh/install | bash
-ENV BUN_INSTALL=/root/.bun
-ENV PATH=$BUN_INSTALL/bin:$PATH
-
 RUN --mount=type=cache,target=/root/.bun \
     bun install --frozen-lockfile --ignore-scripts
 
 
 # ---- build ----
-FROM node:22-alpine AS builder
-RUN apk add --no-cache libc6-compat openssl
+FROM oven/bun:1-alpine AS builder
+RUN apk add --no-cache openssl nodejs
 WORKDIR /app
-
-COPY --from=deps /root/.bun /root/.bun
-ENV BUN_INSTALL=/root/.bun
-ENV PATH=$BUN_INSTALL/bin:$PATH
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
