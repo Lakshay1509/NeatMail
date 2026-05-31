@@ -2,7 +2,7 @@
 
 # ---- deps ----
 FROM node:22-alpine AS deps
-RUN apk add --no-cache libc6-compat openssl curl
+RUN apk add --no-cache libc6-compat openssl curl bash
 WORKDIR /app
 
 COPY package.json bun.lock ./
