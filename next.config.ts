@@ -75,6 +75,10 @@ const nextConfig: NextConfig = {
       'self'
       fonts.gstatic.com;
 
+    media-src
+      'self'
+      *.cloudinary.com;
+
     img-src
       'self'
       data:

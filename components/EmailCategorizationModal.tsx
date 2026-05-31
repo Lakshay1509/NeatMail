@@ -11,6 +11,7 @@ import { toast } from "sonner"
 import UpdateFolderPrefernce from "./UpdateFolderPrefernce"
 import { useAddUserDraftPrefernce } from "@/features/draftPreference/use-add-user-draftPreference"
 import { useSyncHistory } from "@/features/email/use-post-sync-history"
+import { usePostDigestPreferences } from "@/features/digest/use-post-digest-preferences"
 import { Loader2 } from "lucide-react"
 
 export const CATEGORIES = [
@@ -38,6 +39,7 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
     const mutation = addTagstoUser();
 	const watchMutation = addWatch();
 	const draftMutation = useAddUserDraftPrefernce();
+	const digestMutation = usePostDigestPreferences();
 	const syncHistoryMutation = useSyncHistory();
 	
 	const toggleCategory = (categoryName: string) => {
@@ -62,6 +64,11 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 				enabled:true,
 				fontColor:'#000000',
 				fontSize:14,
+				timezone:userTimezone
+			})
+			await digestMutation.mutateAsync({
+				enabled:true,
+				deliveryTime:"10:00",
 				timezone:userTimezone
 			})
 			await syncHistoryMutation.mutateAsync({})
@@ -132,9 +139,9 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 					<Button 
 						className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg relative" 
 						onClick={handleSubmit} 
-						disabled={mutation.isPending || watchMutation.isPending || draftMutation.isPending || syncHistoryMutation.isPending || !isValid}
+						disabled={mutation.isPending || watchMutation.isPending || draftMutation.isPending || digestMutation.isPending || syncHistoryMutation.isPending || !isValid}
 					>
-						{(mutation.isPending || watchMutation.isPending || draftMutation.isPending || syncHistoryMutation.isPending) ? (
+						{(mutation.isPending || watchMutation.isPending || draftMutation.isPending || digestMutation.isPending || syncHistoryMutation.isPending) ? (
 							<div className="flex items-center gap-2">
 								<Loader2 className="h-5 w-5 animate-spin" />
 								{syncHistoryMutation.isPending 

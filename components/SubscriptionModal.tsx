@@ -24,8 +24,6 @@ export const SubscriptionModal = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-
-
   const handlebilling = async () => {
     setIsLoading(true);
     setError("");
@@ -36,17 +34,15 @@ export const SubscriptionModal = ({
         headers: {
           "Content-Type": "application/json",
         },
-
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        toast.success("Free trial activated successfully")
-         window.location.reload()
-
+        toast.success("Free trial activated successfully");
+        window.location.reload();
       } else {
-        toast.error(data.error)
+        toast.error(data.error);
         setError(data.error || "Something went wrong");
       }
     } catch (_err) {
@@ -54,101 +50,88 @@ export const SubscriptionModal = ({
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   const features = [
     {
       icon: Infinity,
       title: "Unlimited email tracking",
-      desc: "Label unlimited emails.",
+      desc: "No limits on email volume or labels.",
     },
     {
       icon: Tag,
-      title: "Gmail/Outlook labeling integration",
-      desc: "Label your emails directly to your Gmail interface.",
+      title: "Gmail and Outlook labels",
+      desc: "Labels sync directly to your Gmail and Outlook inbox.",
     },
     {
       icon: Sliders,
       title: "Custom smart labels",
-      desc: "Stay focused by choosing labels that matter to you.",
+      desc: "Choose the labels that matter to your workflow.",
     },
     {
       icon: Sparkles,
-      title: "AI Draft responses",
-      desc: "Draft responses automatically for any pending replies.",
+      title: "AI draft replies",
+      desc: "AI generates draft responses for emails that need a reply.",
     },
     {
       icon: Settings,
-      title: "Fully customizable",
-      desc: "Tailor the app and its features to fit your unique workflow.",
-    }
+      title: "Full customization",
+      desc: "Tailor the app to fit how you already work.",
+    },
   ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="w-[calc(100%-2rem)] max-w-md p-6 rounded-2xl"
+        className="w-[calc(100%-2rem)] max-w-md rounded-2xl"
         onInteractOutside={(e) => e.preventDefault()}
       >
-        <DialogHeader className="flex flex-col items-center gap-2 text-center">
-
-          <DialogTitle className="text-2xl font-bold sm:text-3xl mt-4">
-            Unlock Premium Features
+        <DialogHeader className="gap-1.5">
+          <DialogTitle className="text-xl font-semibold font-[family-name:var(--font-logo)]">
+            Start your free trial
           </DialogTitle>
-          <DialogDescription className="text-center text-muted-foreground">
-            Supercharge your productivity and take control of your inbox today.
+          <DialogDescription className="text-balance">
+            All features unlocked for 7 days, no card required.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-4 space-y-4 rounded-xl bg-indigo-50/50 p-4 dark:bg-zinc-900 border dark:border-zinc-800">
-          {features.map((feature, i) => (
-            <div key={i} className="flex gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-black/5 dark:bg-zinc-800 dark:ring-white/10">
-                <feature.icon className="h-5 w-5 " />
+        <div className="rounded-xl border bg-secondary/50">
+          <div className="divide-y divide-border">
+            {features.map((feature, i) => (
+              <div key={i} className="flex items-start gap-3 px-4 py-3">
+                <feature.icon className="mt-px h-4 w-4 shrink-0 text-muted-foreground" />
+                <div className="min-w-0">
+                  <h4 className="text-sm font-medium">{feature.title}</h4>
+                  <p className="text-xs text-muted-foreground">
+                    {feature.desc}
+                  </p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <h4 className="text-sm font-semibold leading-none">
-                  {feature.title}
-                </h4>
-                <p className="text-xs text-muted-foreground leading-snug">
-                  {feature.desc}
-                </p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        <div className="mt-6 w-full space-y-4">
-
+        <div className="space-y-3">
           {error && (
-            <span className="block text-center text-xs font-medium text-destructive">
+            <p className="text-center text-xs font-medium text-destructive">
               {error}
-            </span>
+            </p>
           )}
 
-          {/* Primary CTA */}
-          <Button
-            onClick={handlebilling}
-            disabled={isLoading}
-            className="w-full"
-          >
+          <Button onClick={handlebilling} disabled={isLoading} className="w-full">
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
+                Activating trial&hellip;
               </>
             ) : (
               <>
-                Join Now (7-day free trial)
+                Start free trial
                 <ArrowRight className="ml-2 h-4 w-4" />
               </>
-
             )}
           </Button>
-
         </div>
-
-
       </DialogContent>
     </Dialog>
   );
