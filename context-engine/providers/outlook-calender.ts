@@ -114,10 +114,18 @@ export class OutlookCalendarProvider implements ContextProvider {
 	): Promise<OutlookSlotResult> {
 		console.log(`${TAG} checkSlot("${date.raw}")  iso="${date.iso}"  timezone="${timezone}"`)
 
-		const dateOnly = date.iso.split("T")[0]
-		const timePart = date.iso.split("T")[1]?.split(/[+-Z]/)[0] ?? "00:00:00"
+		const isInterval = date.iso.includes("/")
+		const isoStart = isInterval ? date.iso.split("/")[0] : date.iso
+		const isoEnd   = isInterval ? date.iso.split("/")[1] : null
 
-		const isoOffsetMs = this.extractOffsetMs(date.iso)
+		if (isInterval) {
+			console.log(`${TAG}   detected ISO interval; start="${isoStart}" end="${isoEnd}"`)
+		}
+
+		const dateOnly = isoStart.split("T")[0]
+		const timePart = isoStart.split("T")[1]?.split(/[+-Z]/)[0] ?? "00:00:00"
+
+		const isoOffsetMs = this.extractOffsetMs(isoStart)
 		const expectedOffsetMs = getTimezoneOffset(timezone, new Date(`${dateOnly}T12:00:00Z`))
 
 		console.log(
@@ -131,12 +139,29 @@ export class OutlookCalendarProvider implements ContextProvider {
 				`${TAG}   *** MISMATCH — reinterpreted "${dateOnly}T${timePart}" as ${timezone} → slotStart=${slotStart.toISOString()}`
 			)
 		} else {
-			slotStart = new Date(date.iso)
+			slotStart = new Date(isoStart)
 			console.log(
 				`${TAG}   offset match — using as-is → slotStart=${slotStart.toISOString()}`
 			)
 		}
-		const slotEnd = new Date(slotStart.getTime() + 60 * 60 * 1000)
+
+		const needsReinterpret = isoOffsetMs !== expectedOffsetMs
+		let slotEnd: Date
+		if (isoEnd && needsReinterpret) {
+			const endDateOnly = isoEnd.split("T")[0]
+			const endTimePart = isoEnd.split("T")[1]?.split(/[+-Z]/)[0] ?? "00:00:00"
+			slotEnd = fromZonedTime(`${endDateOnly}T${endTimePart}`, timezone)
+			console.log(
+				`${TAG}   reinterpreted interval end too → slotEnd=${slotEnd.toISOString()}`
+			)
+		} else if (isoEnd) {
+			slotEnd = new Date(isoEnd)
+			console.log(
+				`${TAG}   using interval end as-is → slotEnd=${slotEnd.toISOString()}`
+			)
+		} else {
+			slotEnd = new Date(slotStart.getTime() + 60 * 60 * 1000)
+		}
 
 		const fbStart = new Date(slotStart.getTime() - 15 * 60 * 1000)
 		const fbEnd   = new Date(slotEnd.getTime()   + 15 * 60 * 1000)
