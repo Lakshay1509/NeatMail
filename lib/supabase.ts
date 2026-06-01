@@ -1,7 +1,7 @@
 import { WatchedFolder } from "@/app/api/[[...route]]/user";
-import { encryptDomain, encrypt } from "./encode";
 import { getFolderMap } from "./outlook";
 import { db } from "./prisma";
+import { bufferEmail, markBufferedEmailRead } from "@/lib/batch-insert";
 
 export async function getUserByEmail(email: string) {
   try {
@@ -145,37 +145,9 @@ export async function addMailtoDB(
   ai_action?: string,
 ) {
   try {
-    const normalizedDomain = domain?.trim();
-    const encryptedDomain = normalizedDomain
-      ? await encryptDomain(normalizedDomain)
-      : null;
-
-    const encryptedSummary = (ai_summary !== undefined && ai_summary.trim().length>0) ? await encrypt(ai_summary) : undefined;
-    const encryptedAction = (ai_action !== undefined && ai_action.trim().length >0) ? await encrypt(ai_action) : undefined;
-
-    const data = await db.email_tracked.upsert({
-      where: { message_id: message_id },
-      update: {
-        message_id: message_id,
-        ...(encryptedDomain ? { domain: encryptedDomain } : {}),
-        ...(encryptedSummary !== undefined ? { ai_summary: encryptedSummary } : {}),
-        ...(encryptedAction !== undefined ? { ai_action: encryptedAction } : {}),
-      },
-      create: {
-        user_id: user_id,
-        tag_id: tag_id,
-        message_id: message_id,
-        domain: encryptedDomain,
-        ...(encryptedSummary !== undefined ? { ai_summary: encryptedSummary } : {}),
-        ...(encryptedAction !== undefined ? { ai_action: encryptedAction } : {}),
-      },
-    });
-
-    if (!data) {
-      throw new Error(`Failed to add to DB`);
-    }
+    await bufferEmail(user_id, tag_id, message_id, domain, ai_summary, ai_action);
   } catch (error) {
-    console.error("Error adding to db");
+    console.error("Error buffering email to batch");
     throw error;
   }
 }
@@ -317,6 +289,7 @@ export async function updateMessageStatus(
     });
 
     if (exist.length === 0) {
+      await markBufferedEmailRead(message_id, is_read);
       return { updated: false };
     }
 

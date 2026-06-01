@@ -44,6 +44,16 @@ export const telegramQueue = new Queue("telegram", {
   },
 });
 
+export const dbBatchQueue = new Queue("db-batch", {
+  connection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 1000 },
+    removeOnComplete: true,
+    removeOnFail: 100,
+  },
+});
+
 export const flow = new FlowProducer({ connection });
 
 export const queueAdapters = [
@@ -51,4 +61,5 @@ export const queueAdapters = [
   new BullMQAdapter(outlookMailUpdateQueue),
   new BullMQAdapter(draftQueue),
   new BullMQAdapter(telegramQueue),
+  new BullMQAdapter(dbBatchQueue),
 ];

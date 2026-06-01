@@ -4,6 +4,8 @@ import { processOutlookMail } from "./process-outlook-mail";
 import { updateOutlookMail } from "./update-outlook-mail";
 import { processDraft } from "./process-draft";
 import { telegramAgent } from "./telegram-agent";
+import { processDbBatch } from "./process-db-batch";
+import { dbBatchQueue } from "@/lib/queue";
 
 let workers: Worker[] = [];
 
@@ -36,12 +38,28 @@ export async function startWorkers() {
     concurrency: 5,
   });
 
+  const dbBatchWorker = new Worker("db-batch", processDbBatch, {
+    connection,
+    concurrency: 1,
+    lockDuration: 30_000,
+  });
+
   workers = [
     outlookMailWorker,
     outlookMailUpdateWorker,
     draftWorker,
     telegramWorker,
+    dbBatchWorker,
   ];
+
+  await dbBatchQueue.add("flush-db-batch", {}, {
+    repeat: {
+      pattern: "*/10 * * * * *",
+    },
+    removeOnComplete: true,
+    removeOnFail: false,
+    jobId: "flush-db-batch-repeat",
+  });
 
   console.log("BullMQ workers started (in-process)");
 }
