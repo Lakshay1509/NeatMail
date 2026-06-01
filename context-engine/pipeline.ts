@@ -354,7 +354,16 @@ Return ONLY a JSON object strictly matching this schema:
     ],
   });
 
+  const finishReason = completion.choices?.[0]?.finish_reason ?? "unknown";
   const rawContent = completion.choices?.[0]?.message?.content ?? "";
+
+  if (!rawContent) {
+    console.error(
+      "[buildContextAndDraft] Empty model response",
+      `finish_reason=${finishReason}`
+    );
+    return { draft: "", contextSummary: contextBlock };
+  }
 
   // Parse response to extract draft
   let draft = "";
@@ -378,6 +387,7 @@ Return ONLY a JSON object strictly matching this schema:
     console.error(
       "[buildContextAndDraft] JSON parse failed. Raw:",
       rawContent,
+      `finish_reason=${finishReason}`,
       "Error:",
       err
     );
