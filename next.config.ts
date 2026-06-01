@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
+  serverExternalPackages: ["bullmq", "ioredis", "libsodium-wrappers"],
   allowedDevOrigins: process.env.NEXT_PUBLIC_API_URL ? [new URL(process.env.NEXT_PUBLIC_API_URL).host] : [],
   // Skip type-checking during Docker builds on the VPS.
   // tsc spawns a separate worker that consumes ~1.5GB RAM — fatal on a 4GB machine.

@@ -7,6 +7,8 @@ import { telegramAgent } from "./telegram-agent";
 import { processDbBatch } from "./process-db-batch";
 import { dbBatchQueue } from "@/lib/queue";
 
+export const runtime = "nodejs";
+
 let workers: Worker[] = [];
 
 export async function startWorkers() {
