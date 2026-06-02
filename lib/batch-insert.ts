@@ -87,7 +87,16 @@ export async function flushEmailBatch(): Promise<number> {
     const rawItems = await redis.lrange(BATCH_KEY, 0, BATCH_SIZE - 1);
     if (rawItems.length === 0) break;
 
-    const items: BufferedEmail[] = rawItems.map((r) => JSON.parse(r));
+    const items: BufferedEmail[] = [];
+    const seenMessageIds = new Set<string>();
+    // Deduplicate: keep last entry per message_id (later entries are more up-to-date)
+    for (let i = rawItems.length - 1; i >= 0; i--) {
+      const item: BufferedEmail = JSON.parse(rawItems[i]);
+      if (!seenMessageIds.has(item.m)) {
+        seenMessageIds.add(item.m);
+        items.unshift(item);
+      }
+    }
     const messageIds = items.map((i) => i.m);
 
     const pendingReads = await redis.hmget(READ_HASH_KEY, ...messageIds);
@@ -125,7 +134,7 @@ export async function flushEmailBatch(): Promise<number> {
     await db.$executeRawUnsafe(query, ...params);
 
     totalInserted += items.length;
-    await redis.ltrim(BATCH_KEY, items.length, -1);
+    await redis.ltrim(BATCH_KEY, rawItems.length, -1);
     await redis.hdel(READ_HASH_KEY, ...messageIds);
   }
 
