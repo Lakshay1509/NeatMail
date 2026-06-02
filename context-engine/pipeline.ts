@@ -36,7 +36,7 @@ const MAX_BODY_CHARS           = 4000;
 const MAX_HISTORY_BODY_CHARS   = 600;
 const MAX_THREAD_BODY_CHARS    = 800;
 const MAX_PROVIDER_SUMMARY_CHARS = 800;
-  const MAX_OUTPUT_TOKENS        = 600;
+  const MAX_OUTPUT_TOKENS        = 4096;
 
 // ── Helpers ──────────────────────────────────────────────
 
