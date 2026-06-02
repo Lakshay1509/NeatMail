@@ -10,8 +10,8 @@ import {
 } from "../types"
 
 const GITHUB_API = "https://api.github.com"
-const REPO_CACHE_TTL = 3600
-const FETCH_TIMEOUT_MS = 2000
+const REPO_CACHE_TTL = 5600
+const FETCH_TIMEOUT_MS = 7000
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -123,10 +123,15 @@ function isCommonWord(w: string): boolean {
   return ENGLISH_STOPWORDS.has(w.toLowerCase())
 }
 
+interface KnownRepo {
+  name: string
+  full_name: string
+}
+
 function resolveRepo(
   text: string,
   myLogin: string,
-  knownRepos: string[]
+  knownRepos: KnownRepo[]
 ): string | null {
   const lower = text.toLowerCase()
 
@@ -134,9 +139,9 @@ function resolveRepo(
   const m = text.match(/([\w.-]+\/[\w.-]+)/)
   if (m) return m[1]
 
-  // Match against known repos
+  // Match against known repos (return full_name so org repos work)
   for (const r of knownRepos) {
-    if (lower.includes(r.toLowerCase())) return `${myLogin}/${r}`
+    if (lower.includes(r.name.toLowerCase())) return r.full_name
   }
 
   // "X repo" / "repo X" pattern
@@ -205,10 +210,13 @@ export class GitHubProvider implements ContextProvider {
 
     // ── 2. Resolve repo ─────────────────────────────
     const knownRepos = await this.getCachedRepos(profile.login, headers, userId)
+    console.log(`[GitHub] Known repos: ${knownRepos.length}`)
     let repo = resolveRepo(text, profile.login, knownRepos)
     if (!repo) {
-      repo = knownRepos[0] ? `${profile.login}/${knownRepos[0]}` : null
+      repo = knownRepos[0]?.full_name ?? null
+      if (repo) console.log(`[GitHub] Fallback to most recent repo: ${repo}`)
     }
+    console.log(`[GitHub] Resolved repo: ${repo}`)
 
     if (!repo || !isValidRepoSlug(repo)) {
       console.log("[GitHub] No valid repo, returning profile only")
@@ -221,6 +229,40 @@ export class GitHubProvider implements ContextProvider {
       }
     }
 
+    // Verify repo exists and get default branch + last push
+    let repoInfo = await this.fetchWithTimeout<{ default_branch: string; full_name: string; pushed_at: string | null }>(
+      `${GITHUB_API}/repos/${repo}`,
+      headers,
+      "repo info"
+    )
+
+    // If resolved repo 404s, try searching GitHub for it
+    if (!repoInfo) {
+      const searchName = repo.split("/")[1] ?? repo
+      const searchResult = await this.searchRepo(searchName, headers)
+      if (searchResult) {
+        repo = searchResult
+        console.log(`[GitHub] Search fallback repo: ${repo}`)
+        repoInfo = await this.fetchWithTimeout<{ default_branch: string; full_name: string; pushed_at: string | null }>(
+          `${GITHUB_API}/repos/${repo}`,
+          headers,
+          "repo info (fallback)"
+        )
+      }
+      if (!repoInfo) {
+        console.log("[GitHub] Repo not found and search failed, returning profile only")
+        return {
+          providerId: this.id,
+          providerName: this.name,
+          relevance: "low",
+          summary: `GitHub context:\n${parts.join("\n\n")}`,
+          data: { profile },
+        }
+      }
+    }
+
+    const defaultBranch = repoInfo.default_branch
+
     // ── 3. Tiered fetch (all in parallel, bounded timeouts) ─
     const prsPromise = this.fetchWithTimeout<GitHubPullRequest[]>(
       `${GITHUB_API}/repos/${repo}/pulls?state=open&per_page=10&sort=updated&direction=desc`,
@@ -229,9 +271,9 @@ export class GitHubProvider implements ContextProvider {
     )
 
     const mainCommitPromise = this.fetchWithTimeout<GitHubCommit[]>(
-      `${GITHUB_API}/repos/${repo}/commits?sha=main&per_page=1`,
+      `${GITHUB_API}/repos/${repo}/commits?sha=${encodeURIComponent(defaultBranch)}&per_page=1`,
       headers,
-      "main commit"
+      `${defaultBranch} commit`
     )
 
     const issuesPromise = this.fetchWithTimeout<GitHubIssue[]>(
@@ -292,7 +334,7 @@ export class GitHubProvider implements ContextProvider {
       mainChecks = await this.fetchWithTimeout<GitHubCheckRuns>(
         `${GITHUB_API}/repos/${repo}/commits/${mainSha}/check-runs`,
         headers,
-        "main checks"
+        `${defaultBranch} checks`
       )
     }
 
@@ -314,13 +356,17 @@ export class GitHubProvider implements ContextProvider {
       sections.push(`Pull Requests Assigned to You:\n${lines.join("\n")}`)
     }
 
-    // Main branch health
+    // Main branch health — use repoInfo.pushed_at as fallback for last push
+    const lastPush = repoInfo?.pushed_at ? relativeTime(repoInfo.pushed_at) : null
     if (mainCommit.status === "fulfilled" && mainCommit.value?.length) {
       const c = mainCommit.value[0]
       const ci = this.formatChecks(mainChecks)
+      const pushLine = lastPush ? ` | Last push: ${lastPush}` : ""
       sections.push(
-        `Main Branch Health:\n- Latest: \`${truncate(c.commit.message.split("\n")[0], 60)}\` by @${c.author?.login ?? c.commit.author.name} (${relativeTime(c.commit.author.date)})\n- CI: ${ci}`
+        `Main Branch Health:\n- Latest: \`${truncate(c.commit.message.split("\n")[0], 60)}\` by @${c.author?.login ?? c.commit.author.name} (${relativeTime(c.commit.author.date)})${pushLine}\n- CI: ${ci}`
       )
+    } else if (lastPush) {
+      sections.push(`Main Branch Health:\n- Last push: ${lastPush}`)
     }
 
     // Issues
@@ -425,8 +471,7 @@ export class GitHubProvider implements ContextProvider {
       const profile = await this.fetchWithTimeout<GitHubUser>(
         `${GITHUB_API}/user`,
         headers,
-        "/user",
-        3000
+        "/user"
       )
       if (!profile) {
         console.log("[GitHub] Profile fetch failed")
@@ -451,11 +496,12 @@ export class GitHubProvider implements ContextProvider {
     try {
       const res = await fetch(url, { headers, signal: AbortSignal.timeout(timeoutMs) })
       if (!res.ok) {
+        console.log(`[GitHub] ${label ?? url} failed: ${res.status} ${res.statusText}`)
         return null
       }
       return (await res.json()) as T
     } catch (err) {
-      if (label) console.log(`[GitHub] ${label}: timeout or error`, err)
+      console.log(`[GitHub] ${label ?? url}: timeout or error`, err)
       return null
     }
   }
@@ -466,30 +512,56 @@ export class GitHubProvider implements ContextProvider {
     login: string,
     headers: Record<string, string>,
     userId: string
-  ): Promise<string[]> {
+  ): Promise<{ name: string; full_name: string }[]> {
     const key = `github:repos:${userId}`
     try {
       const cached = await redis.get(key)
-      if (cached) return JSON.parse(cached) as string[]
+      if (cached) return JSON.parse(cached) as { name: string; full_name: string }[]
     } catch {
       // ignore
     }
 
+    // Use /user/repos (not /users/{login}/repos) to include private, org and collaborator repos
     const repos = await this.fetchWithTimeout<GitHubRepo[]>(
-      `${GITHUB_API}/users/${login}/repos?type=owner&sort=pushed&per_page=50`,
+      `${GITHUB_API}/user/repos?affiliation=owner,collaborator,organization_member&sort=pushed&per_page=100`,
       headers,
-      "user repos",
-      3000
+      "user repos"
     )
-    const names = repos?.map((r) => r.name) ?? []
+    const mapped = repos?.map((r) => ({ name: r.name, full_name: r.full_name })) ?? []
 
     try {
-      await redis.setex(key, REPO_CACHE_TTL, JSON.stringify(names))
+      await redis.setex(key, REPO_CACHE_TTL, JSON.stringify(mapped))
     } catch {
       // ignore
     }
 
-    return names
+    return mapped
+  }
+
+  // ── Repo search fallback ───────────────────────────────
+
+  private async searchRepo(
+    name: string,
+    headers: Record<string, string>
+  ): Promise<string | null> {
+    try {
+      const res = await fetch(
+        `${GITHUB_API}/search/repositories?q=${encodeURIComponent(name + " in:name")}&per_page=3`,
+        { headers, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }
+      )
+      if (!res.ok) {
+        console.log(`[GitHub] repo search failed: ${res.status}`)
+        return null
+      }
+      const data = (await res.json()) as {
+        items?: Array<{ full_name: string }>
+      }
+      if (!data.items?.length) return null
+      return data.items[0].full_name
+    } catch (err) {
+      console.log("[GitHub] repo search error:", err)
+      return null
+    }
   }
 
   // ── Sender lookup ──────────────────────────────────────────

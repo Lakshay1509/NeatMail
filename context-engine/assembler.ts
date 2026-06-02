@@ -18,6 +18,7 @@ export class ContextAssembler {
     const relevant = this.providers.filter(p =>
       p.relevantIntents.includes(entities.intent)
     )
+    console.log(`[ContextEngine] Intent=${entities.intent} | Relevant providers: ${relevant.map(p => p.name).join(", ") || "none"}`)
 
     // Fire all in parallel with timeout per provider
     const results = await Promise.allSettled(
@@ -30,12 +31,15 @@ export class ContextAssembler {
     )
 
     // Collect non-null cards, sort high → medium → low
-    return results
+    const cards = results
       .filter((r): r is PromiseFulfilledResult<ContextCard> =>
         r.status === "fulfilled" && r.value !== null
       )
       .map(r => r.value)
       .sort((a, b) => score(b.relevance) - score(a.relevance))
+
+    console.log(`[ContextEngine] Cards returned: ${cards.map(c => `${c.providerName}(${c.relevance})`).join(", ") || "none"}`)
+    return cards
   }
 }
 
