@@ -15,6 +15,7 @@ const isPublicApiRoute = createRouteMatcher([
   '/api/telegram/webhook',
   '/api/slack/callback',
   '/api/bullboard/:path*',
+  '/api/health/:path*',
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

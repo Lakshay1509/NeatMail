@@ -21,6 +21,7 @@ import freeTrial from './freeTrial'
 import integrations from './integrations'
 import digest from './digest'
 import bullboard from './bullboard'
+import health from './health'
 import "@/bullmq/workers"
 
 export const runtime = "nodejs";
@@ -92,6 +93,7 @@ const routes = app
     .route('/integrations',integrations)
     .route('/digest',digest)
     .route('/bullboard',bullboard)
+    .route('/health',health)
 
 
 
