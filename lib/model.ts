@@ -1,5 +1,6 @@
 import axios, { AxiosError } from "axios";
 import { throttled } from "./throttle";
+import { bufferClassifyJob, pollForResult } from "@/lib/classify-batch";
 
 export interface Tags{
   name:string,
@@ -74,37 +75,15 @@ export async function getModelResponse(
       throw new Error("user_id is required");
     }
 
-    const response = await throttled("openai", () =>
-      apiClient.post<ModelResponse>("/classify", request),
-    );
+    const requestId = crypto.randomUUID();
 
+    await bufferClassifyJob(requestId, request);
 
-    return response.data;
+    return await pollForResult(requestId, 60_000);
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError<ApiErrorResponse>;
-
-      if (axiosError.response) {
-        const errorMessage =
-          axiosError.response.data?.detail ||
-          axiosError.response.data?.message ||
-          axiosError.response.data?.error ||
-          `API error: ${axiosError.response.status}`;
-
-        throw new Error(errorMessage);
-      } else if (axiosError.request) {
-        throw new Error(
-          "No response from model API. Please check if the service is running.",
-        );
-      } else {
-        throw new Error(`Request setup error: ${axiosError.message}`);
-      }
-    }
-
-    // Handle other errors
     throw error instanceof Error
       ? error
-      : new Error("Unknown error during getting model api");
+      : new Error("Unknown error during classification");
   }
 }
 

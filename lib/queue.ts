@@ -54,6 +54,16 @@ export const dbBatchQueue = new Queue("db-batch", {
   },
 });
 
+export const classifyQueue = new Queue("classify", {
+  connection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 1000 },
+    removeOnComplete: true,
+    removeOnFail: 100,
+  },
+});
+
 export const flow = new FlowProducer({ connection });
 
 export const queueAdapters = [
@@ -62,4 +72,5 @@ export const queueAdapters = [
   new BullMQAdapter(draftQueue),
   new BullMQAdapter(telegramQueue),
   new BullMQAdapter(dbBatchQueue),
+  new BullMQAdapter(classifyQueue),
 ];

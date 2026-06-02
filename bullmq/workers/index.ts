@@ -5,7 +5,8 @@ import { updateOutlookMail } from "./update-outlook-mail";
 import { processDraft } from "./process-draft";
 import { telegramAgent } from "./telegram-agent";
 import { processDbBatch } from "./process-db-batch";
-import { dbBatchQueue } from "@/lib/queue";
+import { processClassify } from "./process-classify";
+import { dbBatchQueue, classifyQueue } from "@/lib/queue";
 
 export const runtime = "nodejs";
 
@@ -46,12 +47,19 @@ export async function startWorkers() {
     lockDuration: 30_000,
   });
 
+  const classifyWorker = new Worker("classify", processClassify, {
+    connection,
+    concurrency: 1,
+    lockDuration: 120_000,
+  });
+
   workers = [
     outlookMailWorker,
     outlookMailUpdateWorker,
     draftWorker,
     telegramWorker,
     dbBatchWorker,
+    classifyWorker,
   ];
 
   await dbBatchQueue.add("flush-db-batch", {}, {
@@ -61,6 +69,15 @@ export async function startWorkers() {
     removeOnComplete: true,
     removeOnFail: false,
     jobId: "flush-db-batch-repeat",
+  });
+
+  await classifyQueue.add("flush-classify", {}, {
+    repeat: {
+      pattern: "*/30 * * * * *",
+    },
+    removeOnComplete: true,
+    removeOnFail: false,
+    jobId: "flush-classify-repeat",
   });
 
   console.log("BullMQ workers started (in-process)");
