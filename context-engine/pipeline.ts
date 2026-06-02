@@ -123,14 +123,20 @@ export function buildStyleInstruction(
 
   return `Tone & Style Mirroring:
 Messages marked "${userName}" in the "Previous emails" section are written by the person you are drafting for.
-You MUST analyze their writing style and replicate it exactly:
-- Sentence length and structure
-- Vocabulary level and formality
-- Punctuation habits (e.g., do they use em-dashes, semicolons, exclamation marks?)
-- Whether they use sign-offs, first names, or no greeting at all
-- How they handle requests (direct vs. polite hedging)
+You MUST analyze their writing style and replicate it exactly. Look closely at their patterns across all history and mirror them:
 
-Do NOT invent a generic assistant voice. If their style is blunt, be blunt. If their style is warm and casual, be warm and casual.`;
+- Sentence length and structure (short/choppy vs. long/flowing)
+- Vocabulary level and formality (casual slang vs. polished professional)
+- Punctuation habits: do they use em-dashes, semicolons, ellipses? How many exclamation marks?
+- Emoji usage: do they use emojis? Which ones? How frequently? Never add emojis they haven't used.
+- Expressiveness: are they enthusiastic (multiple exclamations, "haha"), neutral, or restrained?
+- Capitalization quirks: do they use ALL CAPS for emphasis? Sentence case only? Lowercase everything?
+- Greeting style: "Hey", "Hi", "Dear", first name only, or no greeting at all
+- Sign-off style: "Best", "Thanks", "Cheers", "-Name", or no sign-off
+- Request style: direct ("Do this") vs. polite hedging ("Would you mind...")
+- Do they use abbreviations (lol, tbh, fyi, imo, wrt) or write everything out?
+
+Do NOT invent a generic assistant voice. If their style is blunt, be blunt. If their style is casual with emojis, use emojis the same way. If they write like a laid-back human, write like a laid-back human.`;
 }
 
 // ── Main function your webhook calls ───────────────────────
