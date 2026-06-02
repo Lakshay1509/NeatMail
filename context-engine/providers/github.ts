@@ -236,28 +236,15 @@ export class GitHubProvider implements ContextProvider {
       "repo info"
     )
 
-    // If resolved repo 404s, try searching GitHub for it
+    // If resolved repo 404s, skip repo context — don't search globally
     if (!repoInfo) {
-      const searchName = repo.split("/")[1] ?? repo
-      const searchResult = await this.searchRepo(searchName, headers)
-      if (searchResult) {
-        repo = searchResult
-        console.log(`[GitHub] Search fallback repo: ${repo}`)
-        repoInfo = await this.fetchWithTimeout<{ default_branch: string; full_name: string; pushed_at: string | null }>(
-          `${GITHUB_API}/repos/${repo}`,
-          headers,
-          "repo info (fallback)"
-        )
-      }
-      if (!repoInfo) {
-        console.log("[GitHub] Repo not found and search failed, returning profile only")
-        return {
-          providerId: this.id,
-          providerName: this.name,
-          relevance: "low",
-          summary: `GitHub context:\n${parts.join("\n\n")}`,
-          data: { profile },
-        }
+      console.log(`[GitHub] Repo not found: ${repo}, returning profile only`)
+      return {
+        providerId: this.id,
+        providerName: this.name,
+        relevance: "low",
+        summary: `GitHub context:\n${parts.join("\n\n")}`,
+        data: { profile },
       }
     }
 
@@ -536,32 +523,6 @@ export class GitHubProvider implements ContextProvider {
     }
 
     return mapped
-  }
-
-  // ── Repo search fallback ───────────────────────────────
-
-  private async searchRepo(
-    name: string,
-    headers: Record<string, string>
-  ): Promise<string | null> {
-    try {
-      const res = await fetch(
-        `${GITHUB_API}/search/repositories?q=${encodeURIComponent(name + " in:name")}&per_page=3`,
-        { headers, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }
-      )
-      if (!res.ok) {
-        console.log(`[GitHub] repo search failed: ${res.status}`)
-        return null
-      }
-      const data = (await res.json()) as {
-        items?: Array<{ full_name: string }>
-      }
-      if (!data.items?.length) return null
-      return data.items[0].full_name
-    } catch (err) {
-      console.log("[GitHub] repo search error:", err)
-      return null
-    }
   }
 
   // ── Sender lookup ──────────────────────────────────────────
