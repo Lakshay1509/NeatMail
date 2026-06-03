@@ -50,7 +50,7 @@ class CustomRateLimit {
 
 export const gmailWebhookLimiter = new CustomRateLimit({
   redis,
-  limit: 100,
+  limit: 300,
   window: '1 m',
   prefix: 'ratelimit:gmail-webhook',
 });

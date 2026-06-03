@@ -49,8 +49,7 @@ export default function DailyDigestEmail({
     <Html>
       <Head />
       <Preview>
-        {String(totalEmails)} item{totalEmails > 1 ? "s" : ""} need your
-        attention &mdash; {dateLabel}
+        {dateLabel}
       </Preview>
       <Body style={body}>
         <Container style={container}>

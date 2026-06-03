@@ -957,7 +957,7 @@ Founder, NeatMail`,
               html: `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:24px;max-width:480px;margin:0 auto;">
                 <h2 style="font-size:20px;color:#111;margin:0 0 16px;">Good morning — your inbox is clear.</h2>
                 <p style="font-size:15px;color:#444;line-height:1.6;margin:0 0 24px;">
-                  No Action Needed or Pending Response emails from the last 24 hours. NeatMail kept everything organized while you were away.
+                  No flagged emails from the last 24 hours. NeatMail kept everything organized while you were away.
                 </p>
                 <a href="https://dashboard.neatmail.app" style="display:inline-block;padding:10px 20px;background:#111;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500;">Open Dashboard</a>
                 <p style="font-size:12px;color:#888;margin-top:24px;">Your daily digest from NeatMail</p>
@@ -991,7 +991,7 @@ Founder, NeatMail`,
             await resend.emails.send({
               from: "NeatMail <digest@send.neatmail.app>",
               to: userEmail,
-              subject: `${shownCount} email${shownCount > 1 ? "s" : ""} need your attention`,
+              subject: `NeatMail digest: ${shownCount} email${shownCount > 1 ? "s" : ""}`,
               html: emailHtml,
             });
           }
