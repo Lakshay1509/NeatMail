@@ -57,7 +57,7 @@ export interface ApiErrorResponse {
 
 const API_CONFIG = {
   baseURL: process.env.CLASSIFICATION_API_URL,
-  timeout: 120000,
+  timeout: 240000,
   headers: {
     "Content-Type": "application/json",
     "X-API-Key": process.env.AUTHORIZATION_KEY,

@@ -80,7 +80,6 @@ Rules:
 | `https://www.googleapis.com/auth/gmail.modify` | Read, compose, send, permanently delete threads/messages |
 | `https://www.googleapis.com/auth/gmail.compose` | Create, read, update drafts and send messages |
 | `https://www.googleapis.com/auth/calendar.readonly` | Read all calendar data |
-| `https://www.googleapis.com/auth/calendar.events.readonly` | Read calendar events |
 
 ---
 
@@ -172,16 +171,16 @@ Quotas are enforced on a **sliding window per minute**.
 | `calendarList.list` | `calendar.readonly` | read |
 | `calendarList.get` | `calendar.readonly` | read |
 | `calendars.get` | `calendar.readonly` | read |
-| `events.list` | `calendar.readonly` or `events.readonly` | read |
-| `events.get` | `calendar.readonly` or `events.readonly` | read |
-| `events.instances` | `calendar.readonly` or `events.readonly` | read |
+| `events.list` | `calendar.readonly` | read |
+| `events.get` | `calendar.readonly` | read |
+| `events.instances` | `calendar.readonly` | read |
 | `events.watch` | `calendar.readonly` | write |
 | `freebusy.query` | `calendar.readonly` | read |
 | `settings.list` | `calendar.readonly` | read |
 | `settings.get` | `calendar.readonly` | read |
 | `colors.get` | `calendar.readonly` | read |
 
-> ⚠️ With only `calendar.readonly` + `calendar.events.readonly`, agents **cannot** create, update, or delete events or calendars. Attempting to do so returns a `403 insufficientPermissions` error.
+> ⚠️ With only `calendar.readonly`, agents **cannot** create, update, or delete events or calendars. Attempting to do so returns a `403 insufficientPermissions` error.
 
 ---
 
