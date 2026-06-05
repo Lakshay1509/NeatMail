@@ -16,9 +16,6 @@ import { trashMessages as archiveGmailMessages } from "@/lib/gmail";
 import { archiveMessagesOutlook } from "@/lib/outlook";
 import { Resend } from "resend";
 import { handleWatchDeactivation } from "@/lib/payement";
-import { zValidator } from "@hono/zod-validator";
-import z from "zod";
-import { generateRandomAlphanumericString } from "@/lib/utils";
 import DailyDigestEmail from "@/components/Email/DailyDigestEmail";
 import { getDigestForUser, getDigestCount, trimDigestForEmail } from "@/lib/digest";
 import { formatInTimeZone } from "date-fns-tz";
@@ -590,95 +587,6 @@ const app = new Hono()
     }
   })
 
-  .post(
-    "/sendNewMails",
-    zValidator(
-      "json",
-      z.object({
-        mails: z.array(z.string()).min(1).max(30),
-      }),
-    ),
-    async (ctx) => {
-      const authHeader = ctx.req.header("x-authorization");
-      const expectedToken = `Bearer ${process.env.CRON_SECRET}`;
-
-      if (authHeader !== expectedToken) {
-        return ctx.json({ error: "Unauthorized" }, 401);
-      }
-
-      try {
-        const values = ctx.req.valid("json");
-
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        let successCount = 0;
-        const failedMails = [];
-
-        for (const mail of values.mails) {
-          try {
-            const data = await db.allowedToken.upsert({
-              where: {
-                email: mail.trim(),
-              },
-              create: {
-                email: mail.trim(),
-                token: generateRandomAlphanumericString(),
-                is_used: false,
-              },
-              update: {},
-            });
-
-            const { data: resData, error: resError } = await resend.emails.send(
-              {
-                from: "Lakshay <lakshay@send.neatmail.app>",
-                to: mail,
-                subject: "Your NeatMail invite",
-                text: `Hey,
-
-Your NeatMail access is ready.
-
-https://dashboard.neatmail.app/sign-in?accessToken=${data.token}
-
-Let me know if anything comes up.
-
-— Lakshay
-Founder, NeatMail`,
-              },
-            );
-
-            if (resError) {
-              console.error("Resend API error for", mail, resError);
-              failedMails.push(mail);
-            } else {
-              successCount++;
-            }
-
-            // Sleep for 500ms to avoid hitting Resend rate limits
-            await new Promise((resolve) => setTimeout(resolve, 500));
-          } catch (error) {
-            console.error("Error sending new mail to", mail, error);
-            failedMails.push(mail);
-          }
-        }
-
-        return ctx.json({
-          success: true,
-          count: successCount,
-          failed: failedMails,
-        });
-      } catch (error) {
-        console.error("Error sending new mails to the users:", error);
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        return ctx.json(
-          {
-            error: "Internal server error",
-            details: errorMessage,
-          },
-          500,
-        );
-      }
-    },
-  )
   .post("/archive-messages", async (ctx) => {
     const authHeader = ctx.req.header("x-authorization");
     const expectedToken = `Bearer ${process.env.CRON_SECRET}`;

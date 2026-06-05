@@ -230,7 +230,7 @@ export class GitHubProvider implements ContextProvider {
     }
 
     // Verify repo exists and get default branch + last push
-    let repoInfo = await this.fetchWithTimeout<{ default_branch: string; full_name: string; pushed_at: string | null }>(
+    const repoInfo = await this.fetchWithTimeout<{ default_branch: string; full_name: string; pushed_at: string | null }>(
       `${GITHUB_API}/repos/${repo}`,
       headers,
       "repo info"
