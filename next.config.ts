@@ -59,6 +59,7 @@ const nextConfig: NextConfig = {
       *.google.com
       *.gstatic.com
       *.cloudflareinsights.com
+      https://challenges.cloudflare.com
       *.clerk.dev
       *.clerk.com
       *.clerk.accounts.dev
@@ -103,7 +104,8 @@ const nextConfig: NextConfig = {
       *.google.com
       *.clerk.dev
       *.clerk.com
-      *.dodopayments.com;
+      *.dodopayments.com
+      https://challenges.cloudflare.com;
   `.replace(/\n/g, ""),
           },
           {
