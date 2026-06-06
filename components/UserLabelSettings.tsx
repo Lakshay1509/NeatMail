@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { MoreVertical, Trash } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
-import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
+import { useTierAccess } from "@/features/user/use-tier-access";
 import CreateLabel from "./CreateLabel";
 import UpdateFolderPrefernce from "./UpdateFolderPrefernce";
 import LabelsNotInGmail from "./LabelsNotInGmail";
@@ -34,7 +34,7 @@ const UserLabelSettings = () => {
 	const { data, isLoading, isError } = useGetUserTags();
 	const { data: customData, isLoading: customLoading, isError: customError } = useGetCustomTags();
 	const { data: watchData, isLoading: watchLoading } = useGetUserWatch();
-	const { data: subData } = useGetUserSubscribed();
+	const { isFree, limits } = useTierAccess();
 	const {data:isGmailData}= useGetUserIsGmail();
 
 	const mutation = addTagstoUser();
@@ -77,16 +77,15 @@ const UserLabelSettings = () => {
 		if (!isValid) return;
 		await mutation.mutateAsync({ tags: selectedCategories });
 
-		if (subData?.subscribed === true) {
 
-			if (watch && watch !== watchData?.data.watch_activated) {
-				await addWatchMutation.mutateAsync({});
-			}
-
-			if (!watch && watch !== watchData?.data.watch_activated) {
-				await deleteWatchMutation.mutateAsync({});
-			}
+		if (watch && watch !== watchData?.data.watch_activated) {
+			await addWatchMutation.mutateAsync({});
 		}
+
+		if (!watch && watch !== watchData?.data.watch_activated) {
+			await deleteWatchMutation.mutateAsync({});
+		}
+
 
 	}
 
@@ -114,13 +113,12 @@ const UserLabelSettings = () => {
 						Automatically watch incoming emails and categorize them based on your selected preferences below. When enabled, new emails will be processed in real-time.
 					</p>
 				</div>
-				<div className="flex flex-col items-end gap-3">
+					<div className="flex flex-col items-end gap-3">
 					<div className="flex items-center gap-2 pt-1">
 						<span className="text-sm font-medium text-gray-700">
 							{watch ? 'Active' : 'Inactive'}
 						</span>
 						<Checkbox
-							disabled={subData?.subscribed === false}
 							checked={watch}
 							onCheckedChange={(checked) => setWatch(!!checked)}
 							className="w-5 h-5 border-gray-300"
@@ -128,10 +126,10 @@ const UserLabelSettings = () => {
 					</div>
 
 				</div>
-				
+
 			</div>
 
-			{isGmailData?.is_gmail===false && <WatchedFolderSelect disabled={subData?.subscribed === false} />}
+			{isGmailData?.is_gmail===false && <WatchedFolderSelect disabled={false} />}
 
 			
 
@@ -169,7 +167,6 @@ const UserLabelSettings = () => {
 							<div key={category.name} className="grid grid-cols-[auto_1fr] gap-x-6 items-center group hover:bg-gray-50 p-3 rounded-lg transition-colors -mx-3">
 								<div className="flex justify-center w-24">
 									<Checkbox
-										disabled={subData?.subscribed === false}
 										checked={selectedCategories.includes(category.name)}
 										onCheckedChange={() => toggleCategory(category.name)}
 										className="w-5 h-5 border-gray-300"
@@ -205,7 +202,7 @@ const UserLabelSettings = () => {
 						</p>
 					</div>
 					<div className="flex flex-row space-x-2">
-						<CreateLabel enabled={subData?.subscribed ? subData.subscribed : false}/>
+						<CreateLabel enabled={!isFree || customData?.data.length! < limits.maxCustomLabels}/>
 						{isGmailData?.is_gmail===true && <LabelsNotInGmail />}
 					</div>
 
@@ -225,7 +222,6 @@ const UserLabelSettings = () => {
 							<div key={category.id} className="grid grid-cols-[auto_1fr_auto] gap-x-6 items-center group hover:bg-gray-50 p-3 rounded-lg transition-colors -mx-3">
 								<div className="flex justify-center w-24">
 									<Checkbox
-										disabled={subData?.subscribed === false}
 										checked={selectedCategories.includes(category.name)}
 										onCheckedChange={() => toggleCategory(category.name)}
 										className="w-5 h-5 border-gray-300"
@@ -282,7 +278,7 @@ const UserLabelSettings = () => {
 				<Button
 					className=" text-white min-w-[150px] shadow-sm"
 					onClick={handleSubmit}
-					disabled={mutation.isPending || !isValid || subData?.subscribed === false}
+					disabled={mutation.isPending || !isValid}
 				>
 					{mutation.isPending ? 'Saving...' : isValid ? 'Save Preferences' : `Select ${1 - selectedCategories.length} more`}
 				</Button>

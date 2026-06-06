@@ -38,7 +38,7 @@ import {
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
 import { NotSubscribedState } from "./NotSubscribedState";
-import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
+import { useTierAccess } from "@/features/user/use-tier-access";
 
 type EmailRow = {
   id: string;
@@ -125,8 +125,7 @@ const StorageAnalysis = () => {
   const after = debouncedDate?.from?.toISOString();
   const before = debouncedDate?.to?.toISOString();
 
-  const { data: subscribedData, isLoading: subscribedLoading } =
-    useGetUserSubscribed();
+  const { isFree, isLoading: tierLoading } = useTierAccess();
 
   const {
     data,
@@ -135,7 +134,7 @@ const StorageAnalysis = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useGetFilteredEmails(after, before, selectedSize, 20, undefined, undefined, subscribedData?.subscribed === true);
+  } = useGetFilteredEmails(after, before, selectedSize, 20, undefined, undefined, !isFree);
 
   const rows = React.useMemo<EmailRow[]>(
     () => data?.pages.flatMap((page) => page.emails ?? []) ?? [],
@@ -300,7 +299,7 @@ const StorageAnalysis = () => {
     },
   });
 
-  if (isLoading || subscribedLoading) {
+  if (isLoading || tierLoading) {
     return (
       <div className="flex flex-col gap-3 p-4">
         {[...Array(6)].map((_, i) => (
@@ -310,11 +309,12 @@ const StorageAnalysis = () => {
     );
   }
 
-  if (subscribedData?.subscribed !== true) {
+  if (isFree) {
     return (
       <NotSubscribedState
-        title="Storage cleanup requires a subscription"
-        description="Subscribe to NeatMail Pro to find and delete large emails and free up storage."
+        tier="FREE"
+        title="Storage cleanup requires Pro"
+        description="Upgrade to NeatMail Pro to find and delete large emails and free up storage."
         width={300}
         height={300}
       />

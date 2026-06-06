@@ -31,7 +31,7 @@ import { useReplyMutation } from "@/features/email/use-post-reply";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
 import { NotSubscribedState } from "./NotSubscribedState";
-import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
+import { useTierAccess } from "@/features/user/use-tier-access";
 
 type SentEmailRow = {
   id: string;
@@ -88,8 +88,7 @@ const FollowUps = () => {
   const replyMutation = useReplyMutation();
   const lastMessage = useGetLastMessage(expandedThreadId);
 
-  const { data: subscribedData, isLoading: subscribedLoading } =
-    useGetUserSubscribed();
+  const { isFree, isLoading: tierLoading } = useTierAccess();
 
   const {
     data,
@@ -98,7 +97,7 @@ const FollowUps = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useGetSentEmails(20, parseInt(olderThan), subscribedData?.subscribed === true);
+  } = useGetSentEmails(20, parseInt(olderThan), !isFree);
 
 
   const rows = React.useMemo<SentEmailRow[]>(
@@ -265,7 +264,7 @@ const FollowUps = () => {
     },
   });
 
-  if (isLoading || subscribedLoading) {
+  if (isLoading || tierLoading) {
     return (
       <div className="flex flex-col gap-3 p-4">
         {[...Array(6)].map((_, i) => (
@@ -275,11 +274,12 @@ const FollowUps = () => {
     );
   }
 
-  if (subscribedData?.subscribed !== true) {
+  if (isFree) {
     return (
       <NotSubscribedState
-        title="Follow-ups require a subscription"
-        description="Subscribe to NeatMail Pro to track replies and send follow-up reminders."
+        tier="FREE"
+        title="Follow-ups require Pro"
+        description="Upgrade to NeatMail Pro to track replies and send follow-up reminders."
         width={300}
         height={300}
       />

@@ -18,27 +18,28 @@ const UserLabel = () => {
     const [showPermissions, setShowPermissions] = useState(false);
 
     useEffect(() => {
-        if (!isLoading && !subscribedLoading && !scopesLoading) {
-            // Highest priority: Check permissions first
-            if (scopesData && !scopesData.hasAllScopes) {
-                setShowPermissions(true);
-                setShowSubscription(false);
-                setShowOnboarding(false);
-            } 
-            // Second priority: Check subscription
-            else if(subscribedData?.subscribed===false) {
-                setShowSubscription(true);
-                setShowOnboarding(false);
-                setShowPermissions(false);
-            } 
-            // Lowest priority: Check onboarding
-            else if (subscribedData?.subscribed===true && data?.data.length === 0) {
-                setShowOnboarding(true);
-                setShowSubscription(false);
-                setShowPermissions(false);
-            }
+        if (isLoading || subscribedLoading || scopesLoading) return;
+
+        const hasSeenWelcome = typeof window !== "undefined" && localStorage.getItem("welcome_dialog_seen");
+
+        if (scopesData && !scopesData.hasAllScopes) {
+            setShowPermissions(true);
+            setShowSubscription(false);
+            setShowOnboarding(false);
+        } else if (!hasSeenWelcome) {
+            setShowSubscription(true);
+            setShowOnboarding(false);
+            setShowPermissions(false);
+        } else if (data && data.data.length === 0) {
+            setShowOnboarding(true);
+            setShowSubscription(false);
+            setShowPermissions(false);
+        } else {
+            setShowOnboarding(false);
+            setShowSubscription(false);
+            setShowPermissions(false);
         }
-    }, [isLoading, subscribedData, subscribedLoading, data, scopesData, scopesLoading]);
+    }, [isLoading, subscribedLoading, scopesLoading, data, scopesData]);
 
   return (
     <div>
@@ -47,7 +48,14 @@ const UserLabel = () => {
             onOpenChange={setShowPermissions}
             
         />
-        {showSubscription && <WelcomeDialog />}
+        {showSubscription && (
+            <WelcomeDialog onDismiss={() => {
+                setShowSubscription(false);
+                if (data?.data.length === 0) {
+                    setTimeout(() => setShowOnboarding(true), 200);
+                }
+            }} />
+        )}
         <EmailCategorizationModal 
             open={showOnboarding} 
             onOpenChange={setShowOnboarding} 

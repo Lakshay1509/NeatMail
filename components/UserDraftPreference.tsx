@@ -16,7 +16,7 @@ import { Button } from "./ui/button"
 import { HelpCircle } from "lucide-react"
 import { useAddUserDraftPrefernce } from "@/features/draftPreference/use-add-user-draftPreference"
 import { Checkbox } from "./ui/checkbox"
-import { useGetUserSubscribed } from "@/features/user/use-get-subscribed"
+import { useTierAccess } from "@/features/user/use-tier-access"
 
 
 const SENSITIVITY_OPTIONS = [
@@ -48,7 +48,7 @@ const LANGUAGE_OPTIONS = [
 
 const UserDraftPreference = () => {
   const { data, isLoading, isError } = useGetUserDraftPreference();
-  const { data: subData } = useGetUserSubscribed();
+  const { isFree, isPro, limits } = useTierAccess();
   const muation = useAddUserDraftPrefernce();
 
   const [draftPrompt, setDraftPrompt] = useState<string>("")
@@ -122,13 +122,22 @@ const UserDraftPreference = () => {
 							{enabled ? 'Active' : 'Inactive'}
 						</span>
 						<Checkbox
-							disabled={subData?.subscribed === false}
+							disabled={isFree}
 							checked={enabled}
 							onCheckedChange={(checked) => setEnabled(!!checked)}
 							className="w-5 h-5 border-gray-300"
 						/>
 					</div>
-
+					{isFree && (
+						<p className="text-xs text-muted-foreground">
+							Upgrade to Pro for AI drafts
+						</p>
+					)}
+					{isPro && (
+						<p className="text-xs text-muted-foreground">
+							{limits.maxAiDraftsPerMonth} drafts/mo · Upgrade to Max for unlimited
+						</p>
+					)}
 				</div>
 			</div>
       {/* Draft Prompt */}

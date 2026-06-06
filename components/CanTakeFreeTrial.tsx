@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useGetUserTrialStatus } from "@/features/trial/use-get-trial-status"
+import { useTierAccess } from "@/features/user/use-tier-access";
 import { client } from "@/lib/hono";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -10,6 +11,7 @@ import { toast } from "sonner";
 const CanTakeFreeTrial = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { isFree } = useTierAccess();
 
   const { data, isLoading, isError } = useGetUserTrialStatus();
 
@@ -41,7 +43,7 @@ const CanTakeFreeTrial = () => {
     },
   });
 
-  if (isLoading || isError || !data?.canTake) {
+  if (isLoading || isError || !data?.canTake || !isFree) {
     return null;
   }
 

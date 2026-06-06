@@ -37,7 +37,7 @@ const steps = [
   },
 ];
 
-const WelcomeDialog = () => {
+const WelcomeDialog = ({ onDismiss }: { onDismiss?: () => void }) => {
   const [open, setOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false);
@@ -71,7 +71,12 @@ const WelcomeDialog = () => {
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
+      <Dialog open={open} onOpenChange={(v) => {
+        if (!v) {
+          handleClose();
+          setTimeout(() => onDismiss?.(), 100);
+        }
+      }}>
         <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-xl p-0 gap-0 overflow-hidden">
           <div className="p-6 pb-0">
             <DialogTitle className="text-xl font-semibold">{step.title}</DialogTitle>
@@ -142,7 +147,10 @@ const WelcomeDialog = () => {
       </Dialog>
       <SubscriptionModal
         open={isSubscriptionOpen}
-        onOpenChange={setIsSubscriptionOpen}
+        onOpenChange={(v) => {
+          setIsSubscriptionOpen(v);
+          if (!v) onDismiss?.();
+        }}
       />
     </>
   );

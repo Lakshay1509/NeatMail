@@ -10,10 +10,15 @@ import { Button } from "@/components/ui/button"
 import { Plus} from "lucide-react"
 import CreateLabel from "./CreateLabel"
 import LabelsNotInGmail from "./LabelsNotInGmail"
-import { useGetUserSubscribed } from "@/features/user/use-get-subscribed"
+import { useTierAccess } from "@/features/user/use-tier-access"
+import { useGetCustomTags } from "@/features/tags/use-get-custom-tag"
 
 export default function AddDropdown() {
-  const { data: subData } = useGetUserSubscribed();
+  const { isFree, limits } = useTierAccess();
+  const { data: customData } = useGetCustomTags();
+  const labelCount = customData?.data?.length ?? 0;
+  const canCreateLabel = !isFree || labelCount < limits.maxCustomLabels;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -24,7 +29,6 @@ export default function AddDropdown() {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-56">
-        {/* Sync from Google */}
         <DropdownMenuItem
           onSelect={(e) => e.preventDefault()}
           className="gap-2"
@@ -33,13 +37,12 @@ export default function AddDropdown() {
           <LabelsNotInGmail/>
         </DropdownMenuItem>
 
-        {/* Create Label Component */}
         <DropdownMenuItem
           onSelect={(e) => e.preventDefault()}
           className="gap-2"
         >
          
-          <CreateLabel enabled={subData?.subscribed ? subData.subscribed : false} />
+          <CreateLabel enabled={canCreateLabel} />
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

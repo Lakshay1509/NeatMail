@@ -5,16 +5,18 @@ import Link from 'next/link'
 import { SidebarTrigger } from './ui/sidebar';
 import { usePathname } from 'next/navigation';
 import { useGetUserSubscribed } from '@/features/user/use-get-subscribed';
+import { useTierAccess } from '@/features/user/use-tier-access';
 import Image from 'next/image';
 
 const Navbar = () => {
   const { isSignedIn } = useUser();
   const pathname = usePathname();
   const {data,isLoading,isError} = useGetUserSubscribed();
+  const { tier, isFree } = useTierAccess();
   
-  const isSubscribed = data?.subscribed===false;
-  const showUnsubscribedMessage = isSignedIn && isSubscribed && !isLoading && !pathname.includes('/sign-in');
+  const tierLoaded = isSignedIn && !isLoading && !isError;
   const signInPage = pathname.includes('/sign-in');
+  const showTierBadge = tierLoaded && !signInPage;
 
   return (
     <>
@@ -43,26 +45,7 @@ const Navbar = () => {
         </div>
     </div>
     
-      {showUnsubscribedMessage && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 fade-in duration-500">
-           <div className="bg-white p-4 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 max-w-xs group">
-              <div className="flex items-center gap-2 mb-1">
-                 <div className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse"/>
-                 <p className="text-sm font-semibold text-gray-800">
-                    Not Subscribed
-                 </p>
-              </div>
-            
-              <Link 
-                href="/billing" 
-                className="text-xs font-medium text-blue-600 group-hover:underline flex items-center gap-1 ml-4"
-              >
-                Go to Billing
-                <span className="group-hover:translate-x-0.5 transition-transform">→</span>
-              </Link>
-           </div>
-        </div>
-      )}
+      
     </>
   )
 }
