@@ -9,9 +9,18 @@ datasource db {
   schemas  = ["public"]
 }
 
+enum Tier {
+  FREE
+  PRO
+  MAX
+
+  @@schema("public")
+}
+
 model user_tokens {
   clerk_user_id              String                 @id @unique
   email                      String                 @unique
+  tier                       Tier                   @default(FREE)
   created_at                 DateTime               @default(now()) @db.Timestamp(6)
   updated_at                 DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
   last_history_id            String?
