@@ -6,7 +6,6 @@ import {
 import { db } from "@/lib/prisma";
 import {
   activeFolder,
-  getUserSubscribed,
   updateHistoryId,
   updateOutlookId,
 } from "@/lib/supabase";
@@ -20,11 +19,6 @@ const app = new Hono()
 
       if (!userId) {
         return ctx.json({ error: "Unauthorized" }, 401);
-      }
-
-      const subscription = await getUserSubscribed(userId);
-      if (subscription.subscribed === false) {
-        return ctx.json({ error: "No active subscription" }, 403);
       }
 
       const userData = await db.user_tokens.findUnique({

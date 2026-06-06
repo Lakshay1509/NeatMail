@@ -20,6 +20,8 @@ import DailyDigestEmail from "@/components/Email/DailyDigestEmail";
 import { getDigestForUser, getDigestCount, trimDigestForEmail } from "@/lib/digest";
 import { formatInTimeZone } from "date-fns-tz";
 import { render } from "@react-email/render";
+import { zValidator } from "@hono/zod-validator";
+import z from "zod";
 
 const app = new Hono()
   .get("/delete-user", async (ctx) => {
@@ -456,6 +458,16 @@ const app = new Hono()
 
       for (const trial of trials) {
         try {
+          const hasActiveSub = await db.subscription.findFirst({
+            where: { clerkUserId: trial.user_id, status: "active" },
+          });
+
+          if (!hasActiveSub) {
+            await db.user_tokens.update({
+              where: { clerk_user_id: trial.user_id },
+              data: { tier: "FREE" },
+            });
+          }
           const client = await clerkClient();
           const clerkUser = await client.users.getUser(trial.user_id);
 
@@ -796,6 +808,87 @@ const app = new Hono()
       );
     }
   })
+  .post(
+    "/sendNewMails",
+    zValidator(
+      "json",
+      z.object({
+        mails: z.array(z.string()).min(1).max(30),
+      }),
+    ),
+    async (ctx) => {
+      const authHeader = ctx.req.header("x-authorization");
+      const expectedToken = `Bearer ${process.env.CRON_SECRET}`;
+
+      if (authHeader !== expectedToken) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      try {
+        const values = ctx.req.valid("json");
+
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        let successCount = 0;
+        const failedMails = [];
+
+        for (const mail of values.mails) {
+          try {
+            
+            const { data: resData, error: resError } = await resend.emails.send(
+              {
+                from: "Lakshay <lakshay@send.neatmail.app>",
+                to: mail,
+                subject: "Your NeatMail invite",
+                text: `Hey,
+
+Your NeatMail access is ready — dive in here:
+https://dashboard.neatmail.app/
+
+Also wanted to share: NeatMail just got officially verified by Google, so the sign-in experience is fully clean now, no warnings.
+
+Since you're among the first users, I'd love to keep you on the current plan long-term. 
+
+Let me know if anything comes up.
+
+— Lakshay
+Founder, NeatMail`,
+              },
+            );
+
+            if (resError) {
+              console.error("Resend API error for", mail, resError);
+              failedMails.push(mail);
+            } else {
+              successCount++;
+            }
+
+            // Sleep for 500ms to avoid hitting Resend rate limits
+            await new Promise((resolve) => setTimeout(resolve, 600));
+          } catch (error) {
+            console.error("Error sending new mail to", mail, error);
+            failedMails.push(mail);
+          }
+        }
+
+        return ctx.json({
+          success: true,
+          count: successCount,
+          failed: failedMails,
+        });
+      } catch (error) {
+        console.error("Error sending new mails to the users:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        return ctx.json(
+          {
+            error: "Internal server error",
+            details: errorMessage,
+          },
+          500,
+        );
+      }
+    },
+  )
   .get("/send-daily-digest", async (ctx) => {
     const authHeader = ctx.req.header("x-authorization");
     const expectedToken = `Bearer ${process.env.CRON_SECRET}`;

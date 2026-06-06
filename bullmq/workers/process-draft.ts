@@ -7,6 +7,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { getDraftContext } from "@/lib/draft";
 import { createOutlookDraft, getOutlookMessageBody } from "@/lib/outlook";
 import { sendDraftNotification } from "@/lib/telegram";
+import { getUserTier } from "@/lib/tier-guard";
 
 interface ProcessDraftData {
   userName: string;
@@ -37,6 +38,12 @@ export async function processDraft(job: Job<ProcessDraftData>) {
     tokenData,
     is_gmail,
   } = job.data;
+
+  const tier = await getUserTier(userId);
+
+  if (tier === "FREE") {
+    return { status: "skipped", reason: "Free tier does not include AI drafts" };
+  }
 
   const draftPreference = await useGetUserDraftPreference(userId);
 

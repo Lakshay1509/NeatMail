@@ -41,6 +41,11 @@ const app = new Hono()
         },
       });
 
+      await db.user_tokens.update({
+        where: { clerk_user_id: userId },
+        data: { tier: "PRO" },
+      });
+
       await handleWatchActivation(userId);
       return ctx.json({ message: "Free trial started" }, 200);
     } catch (_error) {

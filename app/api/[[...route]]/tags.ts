@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { colors, outlook_colors } from "@/lib/colors";
 import { getGmailClient } from "@/lib/gmail";
+import { checkFeatureLimit } from "@/lib/tier-guard";
 import z from "zod";
 
 
@@ -174,6 +175,16 @@ const app = new Hono()
       }
 
       const values = ctx.req.valid("json");
+
+      const labelCount = await db.tag.count({
+        where: { user_id: userId },
+      });
+
+      const limitCheck = await checkFeatureLimit(userId, "maxCustomLabels", labelCount);
+
+      if (!limitCheck.allowed) {
+        return ctx.json({ error: limitCheck.reason }, 402);
+      }
 
       const exist = await db.tag.findFirst({
         where: {

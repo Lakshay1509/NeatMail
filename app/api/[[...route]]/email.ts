@@ -25,6 +25,7 @@ import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { checkFeatureLimit } from "@/lib/tier-guard";
 import z from "zod";
 
 const dateQuerySchema = z.object({
@@ -281,6 +282,27 @@ const app = new Hono()
       }
 
       const values = ctx.req.valid("json");
+
+      const existingRule = await db.archiveRule.findUnique({
+        where: {
+          user_id_domain: {
+            user_id: userId,
+            domain: values.domain,
+          },
+        },
+      });
+
+      if (!existingRule) {
+        const ruleCount = await db.archiveRule.count({
+          where: { user_id: userId },
+        });
+
+        const limitCheck = await checkFeatureLimit(userId, "maxArchiveRules", ruleCount);
+
+        if (!limitCheck.allowed) {
+          return ctx.json({ error: limitCheck.reason }, 402);
+        }
+      }
 
       const data = await db.$transaction(async (tx) => {
         const updatedData = await db.archiveRule.upsert({

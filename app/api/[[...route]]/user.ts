@@ -60,20 +60,29 @@ const app = new Hono()
       return ctx.json({ error: "Unauthorized" }, 401);
     }
 
-    const [data, freeTrial] = await Promise.all([
+    const [data, freeTrial, user] = await Promise.all([
       db.subscription.findFirst({
         where: { clerkUserId: userId },
         select: {
           cancelAtNextBillingDate: true,
           nextBillingDate: true,
           status: true,
+          recurringAmount: true,
+          paymentFrequencyInterval: true,
+          paymentFrequencyCount: true,
         },
         orderBy: { updatedAt: "desc" },
       }),
       db.free_trial.findUnique({
         where: { user_id: userId },
       }),
+      db.user_tokens.findUnique({
+        where: { clerk_user_id: userId },
+        select: { tier: true },
+      }),
     ]);
+
+    const tier = user?.tier ?? "FREE";
 
     const hasActiveTrial =
       freeTrial &&
@@ -81,7 +90,7 @@ const app = new Hono()
       freeTrial.expires_at > new Date();
 
     if (!data && !hasActiveTrial) {
-      return ctx.json({ success: false, subscribed: false }, 200);
+      return ctx.json({ success: false, subscribed: false, tier }, 200);
     }
 
     if (!data && hasActiveTrial) {
@@ -89,6 +98,7 @@ const app = new Hono()
         {
           success: true,
           subscribed: true,
+          tier,
           status: "trial",
           next_billing_date: freeTrial.expires_at,
           cancel_at_next_billing_date: null,
@@ -103,6 +113,7 @@ const app = new Hono()
         {
           success: true,
           subscribed: true,
+          tier,
           status: "trial",
           next_billing_date: freeTrial.expires_at,
           cancel_at_next_billing_date: null,
@@ -112,11 +123,20 @@ const app = new Hono()
       );
     }
 
+    const isAnnual =
+      data!.paymentFrequencyInterval === "Year" ||
+      data!.paymentFrequencyCount >= 12;
+
+    const periodPrice = data!.recurringAmount / 100;
+
     return ctx.json(
       {
         success: true,
         subscribed: data!.status === "active",
+        tier,
         status: data!.status,
+        price: periodPrice,
+        interval: isAnnual ? "annual" : "monthly",
         next_billing_date: data!.nextBillingDate,
         cancel_at_next_billing_date: data!.cancelAtNextBillingDate,
         freeTrial: false,

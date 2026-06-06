@@ -1,6 +1,8 @@
 import { db } from "@/lib/prisma";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import DodoPayments from "dodopayments";
+import { getProductId, type Tier } from "@/lib/tiers";
+import { getUserTier } from "@/lib/tier-guard";
 
 import { Hono } from "hono";
 
@@ -21,17 +23,24 @@ const app = new Hono()
         return ctx.json({ error: "Unauthorized" }, 401);
       }
 
-      // Check for existing subscription with various statuses
+      const body = await ctx.req.json().catch(() => ({}));
+      const tier: Tier = body.tier === "PRO" || body.tier === "MAX" ? body.tier : "PRO";
+      const interval: "monthly" | "annual" = body.interval === "annual" ? "annual" : "monthly";
+
       const subscription = await db.subscription.findFirst({
         where: {
           clerkUserId: userId,
+        },
+        select: {
+          status: true,
+          cancelAtNextBillingDate: true,
+          dodoSubscriptionId: true,
         },
         orderBy: {
           updatedAt: "desc",
         },
       });
 
-      // Check for processing payment
       const payment = await db.paymentHistory.findFirst({
         where: {
           clerkUserId: userId,
@@ -39,9 +48,12 @@ const app = new Hono()
         },
       });
 
-      // Block if active, pending, or payment processing
+      const isCancelling = subscription?.cancelAtNextBillingDate === true;
+      const hasActiveSub =
+        subscription?.status === "active" && !isCancelling;
+
       if (
-        subscription?.status === "active" ||
+        hasActiveSub ||
         subscription?.status === "pending" ||
         payment
       ) {
@@ -56,7 +68,6 @@ const app = new Hono()
       const emailAddress = user?.emailAddresses[0]?.emailAddress ?? "";
       const dodopayments = getDodoPayments();
 
-      // Handle on_hold status - update payment method
       if (subscription?.status === "on_hold") {
         const response = await dodopayments.subscriptions.updatePaymentMethod(
           subscription.dodoSubscriptionId,
@@ -72,23 +83,16 @@ const app = new Hono()
         }
       }
 
-      
-
-      // Detect country from Vercel's geo header and pick the right product
       const country = ctx.req.header("cf-ipcountry") ?? "";
-      const productId =
-        country === "IN"
-          ? process.env.DODO_PRODUCT_ID_INDIA
-          : process.env.DODO_PRODUCT_ID_GLOBAL;
+      const productId = getProductId(tier, country, interval);
 
       if (!productId) {
         console.error(
-          `Missing product ID env var for country "${country}": expected ${country === "IN" ? "DODO_PRODUCT_ID_INDIA" : "DODO_PRODUCT_ID_GLOBAL"}`,
+          `Missing product ID for tier="${tier}" country="${country}" interval="${interval}"`,
         );
         return ctx.json({ error: "Payment configuration error" }, 500);
       }
 
-      // Create new checkout session
       const checkout = await dodopayments.checkoutSessions.create({
         product_cart: [
           {
@@ -105,6 +109,8 @@ const app = new Hono()
         },
         metadata: {
           clerk_user_id: userId,
+          tier,
+          interval,
         },
         return_url: `${process.env.NEXT_PUBLIC_API_URL!}`,
       });
@@ -126,7 +132,6 @@ const app = new Hono()
 
       const renewQuery = ctx.req.query("renew");
 
-      // Allow cancellation for both active and on_hold subscriptions
       const subscription = await db.subscription.findFirst({
         where: {
           clerkUserId: userId,
@@ -135,11 +140,43 @@ const app = new Hono()
       });
 
       if (!subscription) {
+        if (renewQuery === "false") {
+          const tier = await getUserTier(userId);
+          if (tier === "FREE") {
+            return ctx.json({ error: "No subscription to renew" }, 400);
+          }
+
+          const country = ctx.req.header("cf-ipcountry") ?? "";
+          const interval = "monthly" as const;
+          const targetTier: Tier = tier;
+          const productId = getProductId(targetTier, country, interval);
+
+          if (!productId) {
+            return ctx.json({ error: "Payment configuration error" }, 500);
+          }
+
+          const user = await currentUser();
+          const dodopayments = getDodoPayments();
+          const checkout = await dodopayments.checkoutSessions.create({
+            product_cart: [{ product_id: productId, quantity: 1 }],
+            subscription_data: { trial_period_days: 0 },
+            customer: {
+              email: user?.emailAddresses[0]?.emailAddress ?? "",
+              name: user?.fullName ?? "",
+            },
+            metadata: {
+              clerk_user_id: userId,
+              tier: targetTier,
+              interval,
+            },
+            return_url: `${process.env.NEXT_PUBLIC_API_URL!}`,
+          });
+
+          return ctx.json({ url: checkout.checkout_url, redirect: true }, 200);
+        }
+
         return ctx.json(
-          {
-            error:
-              "You do not have an active or on-hold subscription to cancel",
-          },
+          { error: "You do not have an active or on-hold subscription to cancel" },
           409,
         );
       }
@@ -170,6 +207,145 @@ const app = new Hono()
     } catch (error) {
       console.error("Cancel subscription error:", error);
       return ctx.json({ error: "Failed to cancel subscription" }, 500);
+    }
+  })
+
+  .post("/changePlan", async (ctx) => {
+    try {
+      const { userId } = await auth();
+
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const body = await ctx.req.json().catch(() => ({}));
+      const targetTier: Tier = body.tier === "PRO" || body.tier === "MAX" ? body.tier : "PRO";
+      const interval: "monthly" | "annual" = body.interval === "annual" ? "annual" : "monthly";
+
+      const subscription = await db.subscription.findFirst({
+        where: { clerkUserId: userId, status: "active" },
+      });
+
+      if (!subscription) {
+        return ctx.json({ error: "No active subscription found" }, 400);
+      }
+
+      const currentTier = await getUserTier(userId);
+      const currentInterval =
+        subscription.paymentFrequencyInterval === "Year" ||
+        subscription.paymentFrequencyCount >= 12
+          ? "annual"
+          : "monthly";
+
+      if (currentTier === targetTier && currentInterval === interval) {
+        return ctx.json(
+          { error: `Already on ${targetTier} ${interval} plan` },
+          409,
+        );
+      }
+
+      const cooldownSeconds = 30;
+      const lastUpdated = subscription.updatedAt.getTime();
+      if (Date.now() - lastUpdated < cooldownSeconds * 1000) {
+        return ctx.json(
+          { error: `Plan was recently changed. Please wait ${cooldownSeconds}s before changing again.` },
+          429,
+        );
+      }
+
+      const country = ctx.req.header("cf-ipcountry") ?? "";
+      const productId = getProductId(targetTier, country, interval);
+
+      if (!productId) {
+        return ctx.json(
+          { error: `No product configured for tier="${targetTier}" region="${country === "IN" ? "IN" : "GLOBAL"}"` },
+          500,
+        );
+      }
+
+      const dodopayments = getDodoPayments();
+      await dodopayments.subscriptions.changePlan(subscription.dodoSubscriptionId, {
+        product_id: productId,
+        proration_billing_mode: "difference_immediately",
+        quantity: 1,
+      });
+
+      await db.user_tokens.update({
+        where: { clerk_user_id: userId },
+        data: { tier: targetTier },
+      });
+
+      return ctx.json({ success: true }, 200);
+    } catch (error) {
+      console.error("Change plan error:", error);
+      return ctx.json({ error: "Failed to change plan" }, 500);
+    }
+  })
+
+  .post("/preview", async (ctx) => {
+    try {
+      const { userId } = await auth();
+
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const body = await ctx.req.json().catch(() => ({}));
+      const targetTier: Tier = body.tier === "PRO" || body.tier === "MAX" ? body.tier : "PRO";
+      const interval: "monthly" | "annual" = body.interval === "annual" ? "annual" : "monthly";
+
+      const subscription = await db.subscription.findFirst({
+        where: { clerkUserId: userId, status: "active" },
+      });
+
+      if (!subscription) {
+        return ctx.json({ error: "No active subscription found" }, 400);
+      }
+
+      const country = ctx.req.header("cf-ipcountry") ?? "";
+      const productId = getProductId(targetTier, country, interval);
+
+      if (!productId) {
+        return ctx.json({ error: "Product not configured" }, 500);
+      }
+
+      const dodopayments = getDodoPayments();
+      const preview = await dodopayments.subscriptions.previewChangePlan(
+        subscription.dodoSubscriptionId,
+        {
+          product_id: productId,
+          proration_billing_mode: "difference_immediately",
+          quantity: 1,
+        },
+      );
+
+      const s = preview.immediate_charge.summary;
+      const p = preview.new_plan;
+      const dbCurrency = subscription.currency;
+
+      return ctx.json(
+        {
+          summary: {
+            totalAmount: s.total_amount,
+            customerCredits: s.customer_credits,
+            settlementAmount: s.settlement_amount,
+          },
+          newPlan: {
+            recurringAmount: p.recurring_pre_tax_amount,
+            currency: dbCurrency,
+            nextBillingDate: p.next_billing_date,
+            interval:
+              p.payment_frequency_interval === "Year" ||
+              p.payment_frequency_count >= 12
+                ? "year"
+                : "month",
+          },
+        },
+        200,
+      );
+    } catch (error) {
+      console.error("Preview plan change error:", error);
+      return ctx.json({ error: "Failed to preview plan change" }, 500);
     }
   })
 
