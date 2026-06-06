@@ -125,7 +125,7 @@ const app = new Hono()
     }
 
     try {
-      const [activeSubscriptions, activeTrials] = await Promise.all([
+      const [activeSubscriptions, activeTrials, freeUsers] = await Promise.all([
         db.subscription.findMany({
           where: {
             status: "active",
@@ -159,11 +159,27 @@ const app = new Hono()
             },
           },
         }),
+        db.user_tokens.findMany({
+          where: {
+            tier: "FREE",
+            watch_activated: true,
+            deleted_flag: false,
+            free_trial: null,
+            subscriptions: { none: { status: "active" } },
+          },
+          select: {
+            clerk_user_id: true,
+            email: true,
+            is_gmail: true,
+          },
+        }),
       ]);
 
       const results = {
-        total: activeSubscriptions.length + activeTrials.length,
-        successful: 0,
+        total: activeSubscriptions.length + activeTrials.length + freeUsers.length,
+        subscribed: 0,
+        trials: 0,
+        free: 0,
         failed: 0,
         errors: [] as string[],
       };
@@ -175,7 +191,7 @@ const app = new Hono()
 
             await updateHistoryId(sub.customerEmail, response.history_id, true);
 
-            results.successful++;
+            results.subscribed++;
             console.log(`✅ Watch renewed for: ${sub.customerEmail}`);
           } else {
             const activeFolderData = await activeFolder(sub.user_tokens.clerk_user_id);
@@ -192,7 +208,7 @@ const app = new Hono()
             );
             await updateOutlookId(sub.customerEmail, response?.map(r => r.id).join(",") || null, true);
 
-            results.successful++;
+            results.subscribed++;
             console.log(`✅ Watch renewed outlook for: ${sub.customerEmail}`);
           }
         } catch (error) {
@@ -216,7 +232,7 @@ const app = new Hono()
 
             await updateHistoryId(sub.email, response.history_id, true);
 
-            results.successful++;
+            results.trials++;
             console.log(`✅ Watch renewed for: ${sub.email}`);
           } else {
             const activeFolderData = await activeFolder(sub.user_id);
@@ -234,7 +250,7 @@ const app = new Hono()
             );
             await updateOutlookId(sub.email, response?.map(r => r.id).join(",") || null, true);
 
-            results.successful++;
+            results.trials++;
             console.log(`✅ Watch renewed outlook for: ${sub.email}`);
           }
         } catch (error) {
@@ -245,6 +261,41 @@ const app = new Hono()
             `Failed to renew watch for ${sub.email}: ${errorMessage}`,
           );
           console.error(`❌ Watch renewal failed for ${sub.email}:`, error);
+        }
+      }
+
+      for (const user of freeUsers) {
+        try {
+          if (user.is_gmail === true) {
+            const response = await activateWatch(user.clerk_user_id);
+            await updateHistoryId(user.email!, response.history_id, true);
+            results.free++;
+            console.log(`✅ Watch renewed for free user: ${user.email}`);
+          } else {
+            const activeFolderData = await activeFolder(user.clerk_user_id);
+            const foldersData = activeFolderData
+              .filter((folder) => folder.isActive === true)
+              .map((folder) => ({
+                id: folder.id,
+                name: folder.name,
+              }));
+
+            const response = await createOutlookSubscription(
+              user.clerk_user_id,
+              foldersData,
+            );
+            await updateOutlookId(user.email!, response?.map(r => r.id).join(",") || null, true);
+            results.free++;
+            console.log(`✅ Watch renewed outlook for free user: ${user.email}`);
+          }
+        } catch (error) {
+          results.failed++;
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          results.errors.push(
+            `Failed to renew watch for free user ${user.email}: ${errorMessage}`,
+          );
+          console.error(`❌ Watch renewal failed for free user ${user.email}:`, error);
         }
       }
 
