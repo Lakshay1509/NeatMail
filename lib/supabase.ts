@@ -2,6 +2,7 @@ import { WatchedFolder } from "@/app/api/[[...route]]/user";
 import { getFolderMap } from "./outlook";
 import { db } from "./prisma";
 import { bufferEmail, markBufferedEmailRead } from "@/lib/batch-insert";
+import { TIER_LIMITS } from "./tiers";
 
 export async function getUserByEmail(email: string) {
   try {
@@ -145,6 +146,29 @@ export async function addMailtoDB(
   ai_action?: string,
 ) {
   try {
+    const user = await db.user_tokens.findUnique({
+      where: { clerk_user_id: user_id },
+      select: { tier: true },
+    });
+
+    if (user?.tier === "FREE") {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const count = await db.email_tracked.count({
+
+        where: {
+          user_id,
+          created_at: { gte: startOfMonth },
+        },
+      });
+
+      if (count >= TIER_LIMITS.FREE.maxTrackedEmails) {
+        return;
+      }
+    }
+
     await bufferEmail(user_id, tag_id, message_id, domain, ai_summary, ai_action);
   } catch (error) {
     console.error("Error buffering email to batch");

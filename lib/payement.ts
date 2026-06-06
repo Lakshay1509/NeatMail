@@ -11,6 +11,7 @@ import {
 } from "./outlook";
 import { activeFolder, getUserIsGmail } from "./supabase";
 import { sendSubExpiredEmail } from "./resend";
+import { getTierFromProductId } from "./tiers";
 
 export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
   try {
@@ -81,6 +82,45 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
     ) {
       await handleWatchDeactivation(data.metadata?.clerk_user_id);
       await sendSubExpiredEmail(data.customer.email, data.customer.name);
+    }
+
+    // Step 3: Update user_tokens.tier based on subscription status
+    const clerkUserId = data.metadata?.clerk_user_id;
+    const metadata = data.metadata as { clerk_user_id?: string; tier?: string } | undefined;
+    if (clerkUserId) {
+      if (data.status === "active") {
+        const tier = getTierFromProductId(data.product_id)
+          ?? (metadata?.tier as "PRO" | "MAX" | undefined)
+          ?? "PRO";
+
+        await db.user_tokens.update({
+          where: { clerk_user_id: clerkUserId },
+          data: { tier },
+        });
+      } else if (
+        ["expired", "cancelled", "failed", "on_hold", "pending"].includes(
+          data.status
+        )
+      ) {
+        const otherActive = await db.subscription.findFirst({
+          where: {
+            clerkUserId,
+            status: "active",
+            dodoSubscriptionId: { not: data.subscription_id },
+          },
+        });
+
+        if (!otherActive) {
+          const hasActiveTrial = await db.free_trial.findFirst({
+            where: { user_id: clerkUserId, status: "ACTIVE", expires_at: { gt: new Date() } },
+          });
+
+          await db.user_tokens.update({
+            where: { clerk_user_id: clerkUserId },
+            data: { tier: hasActiveTrial ? "PRO" : "FREE" },
+          });
+        }
+      }
     }
 
     return subscription;
