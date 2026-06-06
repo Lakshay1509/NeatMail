@@ -2,6 +2,7 @@ import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { getUserTier } from "@/lib/tier-guard";
 import z from "zod";
 
 
@@ -73,6 +74,13 @@ const app = new Hono()
       }
 
       const values = ctx.req.valid("json");
+
+      if (values.enabled) {
+        const tier = await getUserTier(userId);
+        if (tier === "FREE") {
+          return ctx.json({ error: "AI drafts require Pro or Max tier" }, 402);
+        }
+      }
 
       const data = await db.draft_preference.upsert({
         where: { user_id: userId },

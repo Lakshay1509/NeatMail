@@ -31,19 +31,21 @@ const app = new Hono()
     }
 
     try {
-      await db.free_trial.create({
-        data: {
-          user_id: userId,
-          email: email,
-          started_at: new Date(),
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          status: "ACTIVE",
-        },
-      });
+      await db.$transaction(async (tx) => {
+        await tx.free_trial.create({
+          data: {
+            user_id: userId,
+            email: email,
+            started_at: new Date(),
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            status: "ACTIVE",
+          },
+        });
 
-      await db.user_tokens.update({
-        where: { clerk_user_id: userId },
-        data: { tier: "PRO" },
+        await tx.user_tokens.update({
+          where: { clerk_user_id: userId },
+          data: { tier: "PRO" },
+        });
       });
 
       await handleWatchActivation(userId);

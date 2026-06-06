@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
-import { TIER_PRICES } from "@/lib/tiers";
+import { TIER_PRICES, TIER_LIMITS, type TierLimits } from "@/lib/tiers";
 
 interface SubscriptionModalProps {
   open: boolean;
@@ -66,16 +66,28 @@ const formatPriceTotal = (tier: "PRO" | "MAX", interval: BillingInterval) =>
     ? `$${TIER_PRICES[tier].annual}/yr`
     : `$${TIER_PRICES[tier].monthly}/mo`;
 
-const columns = [
-  { label: "Email tracking", free: "100/mo", pro: "Unlimited", max: "Unlimited" },
-  { label: "Custom labels", free: "3", pro: "Unlimited", max: "Unlimited" },
-  { label: "AI draft replies", free: "—", pro: "20/mo", max: "Unlimited" },
-  { label: "Email digest", free: "—", pro: <Check className="h-4 w-4 mx-auto" />, max: <Check className="h-4 w-4 mx-auto" /> },
-  { label: "Follow-up tracking", free: "—", pro: <Check className="h-4 w-4 mx-auto" />, max: <Check className="h-4 w-4 mx-auto" /> },
-  { label: "Telegram & Slack", free: "—", pro: <Check className="h-4 w-4 mx-auto" />, max: <Check className="h-4 w-4 mx-auto" /> },
-  { label: "Archive rules", free: "—", pro: "5", max: "Unlimited" },
-  { label: "Advanced analytics", free: "—", pro: "—", max: <Check className="h-4 w-4 mx-auto" /> },
-  { label: "Priority support", free: "—", pro: "—", max: <Check className="h-4 w-4 mx-auto" /> },
+const formatLimitValue = (tier: "FREE" | "PRO" | "MAX", limitKey: keyof TierLimits) => {
+  const value = TIER_LIMITS[tier][limitKey];
+  if (typeof value === "boolean") {
+    return value ? <Check className="h-4 w-4 mx-auto" /> : "—";
+  }
+  if (value === Infinity) return "Unlimited";
+  if (value === 0) return "—";
+  const suffix =
+    limitKey === "maxAiDraftsPerMonth" || limitKey === "maxTrackedEmails" ? "/mo" : "";
+  return `${value}${suffix}`;
+};
+
+const columns: { label: string; limitKey: keyof TierLimits }[] = [
+  { label: "Email tracking", limitKey: "maxTrackedEmails" },
+  { label: "Custom labels", limitKey: "maxCustomLabels" },
+  { label: "AI draft replies", limitKey: "maxAiDraftsPerMonth" },
+  { label: "Email digest", limitKey: "hasDigest" },
+  { label: "Follow-up tracking", limitKey: "hasFollowUps" },
+  { label: "Telegram & Slack", limitKey: "hasTelegramSlack" },
+  { label: "Archive rules", limitKey: "maxArchiveRules" },
+  { label: "Advanced analytics", limitKey: "hasAdvancedAnalytics" },
+  { label: "Priority support", limitKey: "hasPrioritySupport" },
 ];
 
 export const SubscriptionModal = ({
@@ -174,9 +186,9 @@ export const SubscriptionModal = ({
               {columns.map((col, i) => (
                 <tr key={i} className="border-b last:border-0">
                   <td className="py-2.5 px-3 text-muted-foreground">{col.label}</td>
-                  <td className="py-2.5 px-3 text-center text-muted-foreground">{col.free}</td>
-                  <td className="py-2.5 px-3 text-center bg-zinc-50 font-medium">{col.pro}</td>
-                  <td className="py-2.5 px-3 text-center font-medium">{col.max}</td>
+                  <td className="py-2.5 px-3 text-center text-muted-foreground">{formatLimitValue("FREE", col.limitKey)}</td>
+                  <td className="py-2.5 px-3 text-center bg-zinc-50 font-medium">{formatLimitValue("PRO", col.limitKey)}</td>
+                  <td className="py-2.5 px-3 text-center font-medium">{formatLimitValue("MAX", col.limitKey)}</td>
                 </tr>
               ))}
             </tbody>

@@ -204,19 +204,21 @@ model Refund {
 }
 
 model draft_preference {
-  id          String      @id @default(uuid())
-  user_id     String      @unique
-  draftPrompt String?
-  signature   String?
-  fontSize    Int         @default(14) @db.SmallInt
-  fontColor   String      @default("#000000")
-  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
-  enabled     Boolean     @default(true)
-  timezone    String?
-  senstivity  String?
-  language    String   @default("english")
-  user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+  id                   String      @id @default(uuid())
+  user_id              String      @unique
+  draftPrompt          String?
+  signature            String?
+  fontSize             Int         @default(14) @db.SmallInt
+  fontColor            String      @default("#000000")
+  createdAt            DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  enabled              Boolean     @default(true)
+  timezone             String?
+  senstivity           String?
+  language             String      @default("english")
+  draft_count          Int         @default(0)
+  draft_count_reset_at DateTime?
+  user_tokens          user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
   @@schema("public")
 }

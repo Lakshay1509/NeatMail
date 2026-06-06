@@ -25,7 +25,7 @@ import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { checkFeatureLimit } from "@/lib/tier-guard";
+import { checkFeatureLimit, getUserTier } from "@/lib/tier-guard";
 import z from "zod";
 
 const dateQuerySchema = z.object({
@@ -72,6 +72,11 @@ const app = new Hono()
 
     if (!userId) {
       return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const tier = await getUserTier(userId);
+    if (tier === "FREE") {
+      return ctx.json({ error: "Upgrade to Pro to access tracked emails" }, 402);
     }
 
     const limitQuery = ctx.req.query("limit");
@@ -133,6 +138,11 @@ const app = new Hono()
 
     if (!userId) {
       return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const tier = await getUserTier(userId);
+    if (tier === "FREE") {
+      return ctx.json({ error: "Upgrade to Pro to access email analytics" }, 402);
     }
 
     const fromStr = ctx.req.query("from");
@@ -451,6 +461,11 @@ const app = new Hono()
       return ctx.json({ error: "Unauthorized" }, 401);
     }
 
+    const tier = await getUserTier(userId);
+    if (tier === "FREE") {
+      return ctx.json({ error: "Upgrade to Pro to access storage analysis" }, 402);
+    }
+
     const query = filteredQuerySchema.safeParse(ctx.req.query());
     if (!query.success) {
       return ctx.json({ error: z.treeifyError(query.error) }, 400);
@@ -486,6 +501,11 @@ const app = new Hono()
     const { userId } = await auth();
     if (!userId) {
       return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const tier = await getUserTier(userId);
+    if (tier === "FREE") {
+      return ctx.json({ error: "Upgrade to Pro to access follow-ups" }, 402);
     }
 
     const maxResults = ctx.req.query("maxResults")

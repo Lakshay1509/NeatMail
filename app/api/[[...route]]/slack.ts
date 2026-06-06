@@ -5,6 +5,7 @@ import { redis } from "@/lib/redis";
 import { encrypt } from "@/lib/encode";
 import crypto from "crypto";
 import z from "zod";
+import { getUserTier } from "@/lib/tier-guard";
 
 const SLACK_API = "https://slack.com/api";
 
@@ -34,6 +35,9 @@ const app = new Hono()
     const { userId } = await auth();
     if (!userId) return ctx.json({ error: "Unauthorized" }, 401);
 
+    const tier = await getUserTier(userId);
+    if (tier === "FREE") return ctx.json({ error: "Upgrade to Pro to access integrations" }, 402);
+
     const integration = await db.slack_integration.findUnique({
       where: { user_id: userId },
     });
@@ -44,6 +48,9 @@ const app = new Hono()
   .get("/authorize", async (ctx) => {
     const { userId } = await auth();
     if (!userId) return ctx.json({ error: "Unauthorized" }, 401);
+
+    const tier = await getUserTier(userId);
+    if (tier === "FREE") return ctx.json({ error: "Upgrade to Pro to access integrations" }, 402);
 
     const state = crypto.randomBytes(32).toString("hex");
     await redis.setex(`slack_oauth_state:${state}`, 600, userId);
@@ -146,6 +153,9 @@ const app = new Hono()
   .delete("/", async (ctx) => {
     const { userId } = await auth();
     if (!userId) return ctx.json({ error: "Unauthorized" }, 401);
+
+    const tier = await getUserTier(userId);
+    if (tier === "FREE") return ctx.json({ error: "Upgrade to Pro to access integrations" }, 402);
 
     const integration = await db.slack_integration.findUnique({
       where: { user_id: userId },

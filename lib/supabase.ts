@@ -137,6 +137,20 @@ export async function getTagsUser(id: string) {
   }
 }
 
+export async function getTaggedEmailCount(user_id: string): Promise<number> {
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  return db.email_tracked.count({
+    where: {
+      user_id,
+      tag_id: { not: null },
+      created_at: { gte: startOfMonth },
+    },
+  });
+}
+
 export async function addMailtoDB(
   user_id: string,
   tag_id: string | null,
@@ -152,17 +166,7 @@ export async function addMailtoDB(
     });
 
     if (user?.tier === "FREE") {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-
-      const count = await db.email_tracked.count({
-
-        where: {
-          user_id,
-          created_at: { gte: startOfMonth },
-        },
-      });
+      const count = await getTaggedEmailCount(user_id);
 
       if (count >= TIER_LIMITS.FREE.maxTrackedEmails) {
         return;
@@ -253,6 +257,8 @@ export async function useGetUserDraftPreference(userId: string) {
         timezone: true,
         senstivity: true,
         language: true,
+        draft_count: true,
+        draft_count_reset_at: true,
       },
     });
 
@@ -266,6 +272,8 @@ export async function useGetUserDraftPreference(userId: string) {
         timezone: null,
         senstivity: "",
         language: "english",
+        draftCount: 0,
+        draftCountResetAt: null as Date | null,
       };
     }
 
@@ -278,11 +286,43 @@ export async function useGetUserDraftPreference(userId: string) {
       timezone: data.timezone,
       senstivity: data.senstivity,
       language: data.language,
+      draftCount: data.draft_count,
+      draftCountResetAt: data.draft_count_reset_at,
     };
   } catch (error) {
     console.error("Error getting draft prefernces ");
     throw error;
   }
+}
+
+export async function incrementDraftCount(userId: string): Promise<number> {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const pref = await db.draft_preference.upsert({
+    where: { user_id: userId },
+    update: {},
+    create: {
+      user_id: userId,
+      draft_count: 0,
+      draft_count_reset_at: startOfMonth,
+    },
+    select: { draft_count: true, draft_count_reset_at: true },
+  });
+
+  const needsReset =
+    !pref.draft_count_reset_at || new Date(pref.draft_count_reset_at) < startOfMonth;
+
+  const updated = await db.draft_preference.update({
+    where: { user_id: userId },
+    data: {
+      draft_count: needsReset ? 1 : pref.draft_count + 1,
+      draft_count_reset_at: startOfMonth,
+    },
+    select: { draft_count: true },
+  });
+
+  return updated.draft_count;
 }
 
 export async function getUserIsGmail(userId: string) {

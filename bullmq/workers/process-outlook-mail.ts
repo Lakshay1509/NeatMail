@@ -3,15 +3,18 @@ import { getGraphClient } from "@/lib/outlook";
 import { db } from "@/lib/prisma";
 import {
   addMailtoDB,
+  getTaggedEmailCount,
   getUserSubscribed,
   labelColor,
   useGetUserDraftPreference,
 } from "@/lib/supabase";
 import { clerkClient } from "@clerk/nextjs/server";
 import { isMessageProcessed, markMessageProcessed } from "@/lib/redis";
-import { getModelResponse } from "@/lib/model";
+import { getModelResponse, ModelResponse } from "@/lib/model";
 import { checkAndForwardToTelegram } from "@/lib/telegram";
 import { flow } from "@/lib/queue";
+import { getUserTier } from "@/lib/tier-guard";
+import { TIER_LIMITS } from "@/lib/tiers";
 
 interface ProcessOutlookMailData {
   messageId: string;
@@ -85,23 +88,49 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
     await useGetUserDraftPreference(clerkUser.id)
   ).senstivity;
 
-  const classification = await getModelResponse({
-    bodySnippet: body,
-    from: from,
-    subject: subject,
-    user_id: subscription.clerk_user_id,
-    tags: tagsOfUser.map((t) => ({
-      name: t.tag.name,
-      description: t.tag.description ?? "",
-    })),
-    sensitivity: draftsenstivity || "if actionable",
-  });
+  let labelName = "";
+  let responseRequired = false;
+  let classification: ModelResponse | undefined;
 
-  const labelName = classification.category;
+  const tier = await getUserTier(subscription.clerk_user_id);
+  if (tier === "FREE") {
+    const taggedCount = await getTaggedEmailCount(subscription.clerk_user_id);
+    if (taggedCount >= TIER_LIMITS.FREE.maxTrackedEmails) {
+      labelName = "";
+    } else {
+      classification = await getModelResponse({
+        bodySnippet: body,
+        from: from,
+        subject: subject,
+        user_id: subscription.clerk_user_id,
+        tags: tagsOfUser.map((t) => ({
+          name: t.tag.name,
+          description: t.tag.description ?? "",
+        })),
+        sensitivity: draftsenstivity || "if actionable",
+      });
+      labelName = classification.category;
+      responseRequired = classification.response_required === true;
+    }
+  } else {
+    classification = await getModelResponse({
+      bodySnippet: body,
+      from: from,
+      subject: subject,
+      user_id: subscription.clerk_user_id,
+      tags: tagsOfUser.map((t) => ({
+        name: t.tag.name,
+        description: t.tag.description ?? "",
+      })),
+      sensitivity: draftsenstivity || "if actionable",
+    });
+    labelName = classification.category;
+    responseRequired = classification.response_required === true;
+  }
 
   const shouldDraft =
     (labelName === "Pending Response" || labelName === "Action Needed") &&
-    classification.response_required;
+    responseRequired;
 
   let movedMessageId: string = messageId;
 
@@ -184,8 +213,8 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
       tagProperties.id,
       movedMessageId,
       from,
-      classification.ai_summary,
-      classification.ai_action,
+      classification?.ai_summary,
+      classification?.ai_action,
     );
 
     checkAndForwardToTelegram(

@@ -1,5 +1,5 @@
 import { Job } from "bullmq";
-import { useGetUserDraftPreference } from "@/lib/supabase";
+import { useGetUserDraftPreference, incrementDraftCount } from "@/lib/supabase";
 import { createGmailDraft, getGmailMessageBody } from "@/lib/gmail";
 import { buildContextAndDraft } from "@/context-engine/pipeline";
 import { IncomingEmail } from "@/context-engine/types";
@@ -7,7 +7,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { getDraftContext } from "@/lib/draft";
 import { createOutlookDraft, getOutlookMessageBody } from "@/lib/outlook";
 import { sendDraftNotification } from "@/lib/telegram";
-import { getUserTier } from "@/lib/tier-guard";
+import { getUserTier, getTierLimits } from "@/lib/tier-guard";
 
 interface ProcessDraftData {
   userName: string;
@@ -49,6 +49,26 @@ export async function processDraft(job: Job<ProcessDraftData>) {
 
   if (!draftPreference.enabled) {
     return { status: "skipped", reason: "Drafts disabled" };
+  }
+
+  if (tier === "PRO") {
+    const limits = await getTierLimits(userId);
+    if (limits.maxAiDraftsPerMonth !== Infinity) {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      const needsReset =
+        !draftPreference.draftCountResetAt ||
+        new Date(draftPreference.draftCountResetAt) < startOfMonth;
+      const currentCount = needsReset ? 0 : draftPreference.draftCount;
+
+      if (currentCount >= limits.maxAiDraftsPerMonth) {
+        return {
+          status: "skipped",
+          reason: `AI draft limit reached (${limits.maxAiDraftsPerMonth}/month) for ${tier} tier`,
+        };
+      }
+    }
   }
 
   const { draftPrompt, fontColor, fontSize, signature, language } =
@@ -161,6 +181,10 @@ export async function processDraft(job: Job<ProcessDraftData>) {
         draft_id,
       );
     }
+  }
+
+  if (drafted) {
+    await incrementDraftCount(userId);
   }
 
   return { status: "success", drafted, draft_id };

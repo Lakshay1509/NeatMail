@@ -679,6 +679,9 @@ const app = new Hono()
           user_id: true,
           domain: true,
           archiveAfterDays: true,
+          user_tokens: {
+            select: { tier: true },
+          },
         },
       });
 
@@ -687,6 +690,11 @@ const app = new Hono()
       // Process each rule
       for (const rule of activeRules) {
         try {
+          // Skip users on FREE tier
+          if (rule.user_tokens.tier === "FREE") {
+            continue;
+          }
+
           // Skip users who are not subscribed
           const subStatus = await getUserSubscribed(rule.user_id);
           if (!subStatus.subscribed) {
@@ -959,10 +967,13 @@ Founder, NeatMail`,
 
     try {
       const preferences = await db.digest_preference.findMany({
-        where: { enabled: true },
+        where: {
+          enabled: true,
+          user_tokens: { tier: { not: "FREE" }, deleted_flag: false },
+        },
         include: {
           user_tokens: {
-            select: { email: true, clerk_user_id: true },
+            select: { email: true, clerk_user_id: true, tier: true },
           },
         },
       });

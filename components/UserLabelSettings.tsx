@@ -202,7 +202,7 @@ const UserLabelSettings = () => {
 						</p>
 					</div>
 					<div className="flex flex-row space-x-2">
-						<CreateLabel enabled={!isFree || customData?.data.length! < limits.maxCustomLabels}/>
+						<CreateLabel enabled={!isFree || (customData?.data?.length ?? 0) < limits.maxCustomLabels}/>
 						{isGmailData?.is_gmail===true && <LabelsNotInGmail />}
 					</div>
 

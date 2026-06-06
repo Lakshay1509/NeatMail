@@ -11,6 +11,7 @@ import {
 import {
   addMailtoDB,
   getLastHistoryId,
+  getTaggedEmailCount,
   getTagsUser,
   getUserByEmail,
   getUserSubscribed,
@@ -19,6 +20,8 @@ import {
   updateMessageStatus,
   useGetUserDraftPreference,
 } from "@/lib/supabase";
+import { getUserTier } from "@/lib/tier-guard";
+import { TIER_LIMITS } from "@/lib/tiers";
 import { clerkClient } from "@clerk/nextjs/server";
 import { Hono } from "hono";
 import { OAuth2Client } from "google-auth-library";
@@ -240,7 +243,7 @@ const app = new Hono().post("/", async (ctx) => {
         .senstivity;
 
       // Check if Gmail already classified this as Promotions
-      let labelName: string;
+      let labelName = "";
       let responseRequired = false;
       let classificationResult: ModelResponse | null = null;
       const hasMarketingTag = tagsOfUser.some(
@@ -271,21 +274,33 @@ const app = new Hono().post("/", async (ctx) => {
       ) {
         labelName = "Automated alerts";
       } else {
-        const classification = await getModelResponse({
-          bodySnippet: emailData.bodySnippet,
-          from: emailData.from,
-          subject: emailData.subject,
-          user_id: emailData.userId,
-          tags: tagsOfUser.map((t) => ({
-            name: t.tag.name,
-            description: t.tag.description ?? "",
-          })),
-          sensitivity: draftsenstivity || "if actionable",
-        });
-        classificationResult = classification;
-        labelName = classification.category;
+        let skipModel = false;
+        const tier = await getUserTier(clerkUserId);
+        if (tier === "FREE") {
+          const taggedCount = await getTaggedEmailCount(clerkUserId);
+          if (taggedCount >= TIER_LIMITS.FREE.maxTrackedEmails) {
+            labelName = "";
+            skipModel = true;
+          }
+        }
 
-        responseRequired = classification.response_required === true;
+        if (!skipModel) {
+          const classification = await getModelResponse({
+            bodySnippet: emailData.bodySnippet,
+            from: emailData.from,
+            subject: emailData.subject,
+            user_id: emailData.userId,
+            tags: tagsOfUser.map((t) => ({
+              name: t.tag.name,
+              description: t.tag.description ?? "",
+            })),
+            sensitivity: draftsenstivity || "if actionable",
+          });
+          classificationResult = classification;
+          labelName = classification.category;
+
+          responseRequired = classification.response_required === true;
+        }
       }
 
       const shouldDraft =

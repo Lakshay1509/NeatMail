@@ -10,6 +10,7 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import z from "zod";
 import { getUserSubscribed } from "@/lib/supabase";
+import { getUserTier } from "@/lib/tier-guard";
 
 async function answerCallbackQuery(callbackQueryId: string) {
   await fetch(
@@ -51,6 +52,9 @@ const app = new Hono()
       return ctx.json({ error: "Unauthorized" }, 401);
     }
 
+    const tier = await getUserTier(userId);
+    if (tier === "FREE") return ctx.json({ error: "Upgrade to Pro to access integrations" }, 402);
+
     const data = await db.telegramIntegration.findUnique({
       where: { user_id: userId },
     });
@@ -68,6 +72,9 @@ const app = new Hono()
     if (!userId) {
       return ctx.json({ error: "Unauthorized" }, 401);
     }
+
+    const tier = await getUserTier(userId);
+    if (tier === "FREE") return ctx.json({ error: "Upgrade to Pro to access integrations" }, 402);
 
     const data = await db.telegramIntegration.delete({
       where: { user_id: userId },
@@ -87,6 +94,9 @@ const app = new Hono()
         return ctx.json({ error: "Unauthorized" }, 401);
       }
 
+      const tier = await getUserTier(userId);
+      if (tier === "FREE") return ctx.json({ error: "Upgrade to Pro to access integrations" }, 402);
+
       const data = await db.integrationRules.findMany({
         where:{user_id:userId}
       })
@@ -102,6 +112,9 @@ const app = new Hono()
       if (!userId) {
         return ctx.json({ error: "Unauthorized" }, 401);
       }
+
+      const tier = await getUserTier(userId);
+      if (tier === "FREE") return ctx.json({ error: "Upgrade to Pro to access integrations" }, 402);
 
       const data = await db.telegramIntegration.findMany({
         where:{user_id:userId}
@@ -123,6 +136,9 @@ const app = new Hono()
       if (!userId) {
         return ctx.json({ error: "Unauthorized" }, 401);
       }
+
+      const tier = await getUserTier(userId);
+      if (tier === "FREE") return ctx.json({ error: "Upgrade to Pro to access integrations" }, 402);
 
       const values = ctx.req.valid("json");
 
@@ -164,6 +180,9 @@ const app = new Hono()
       if (!userId) {
         return ctx.json({ error: "Unauthorized" }, 401);
       }
+
+      const tier = await getUserTier(userId);
+      if (tier === "FREE") return ctx.json({ error: "Upgrade to Pro to access integrations" }, 402);
 
       const values = ctx.req.valid("json");
 
