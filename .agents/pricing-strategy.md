@@ -29,7 +29,7 @@
 | Email digest        | —               | ✓                     | ✓                        |
 | Follow-up tracking  | —               | ✓                     | ✓                        |
 | Telegram / Slack    | —               | ✓                     | ✓                        |
-| Analytics           |Advanced         | Advanced                 | Advanced                 |
+| Dashboard           |Advanced         | Advanced              | Advanced                 |
 | Archive rules       | —               | 5                     | Unlimited                |
 | Support             | —               | —                     | Priority                 |
 
