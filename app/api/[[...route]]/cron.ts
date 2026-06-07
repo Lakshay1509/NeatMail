@@ -15,7 +15,7 @@ import { createOutlookSubscription } from "@/lib/outlook";
 import { trashMessages as archiveGmailMessages } from "@/lib/gmail";
 import { archiveMessagesOutlook } from "@/lib/outlook";
 import { Resend } from "resend";
-import { handleWatchDeactivation } from "@/lib/payement";
+
 import DailyDigestEmail from "@/components/Email/DailyDigestEmail";
 import { getDigestForUser, getDigestCount, trimDigestForEmail } from "@/lib/digest";
 import { formatInTimeZone } from "date-fns-tz";
@@ -576,79 +576,7 @@ const app = new Hono()
       );
     }
   })
-  .get("/deactivate-expired-watch", async (ctx) => {
-    const authHeader = ctx.req.header("x-authorization");
-    const expectedToken = `Bearer ${process.env.CRON_SECRET}`;
 
-    if (authHeader !== expectedToken) {
-      return ctx.json({ error: "Unauthorized" }, 401);
-    }
-
-    try {
-      const usersToDeactivate = await db.user_tokens.findMany({
-        where: {
-          deleted_flag: false,
-          watch_activated: true,
-          free_trial: {
-            status: "EXPIRED",
-          },
-          subscriptions: {
-            none: {
-              status: "active",
-            },
-          },
-        },
-        select: {
-          clerk_user_id: true,
-        },
-      });
-
-      const results = {
-        total: usersToDeactivate.length,
-        successful: 0,
-        failed: 0,
-        errors: [] as string[],
-      };
-
-      for (const user of usersToDeactivate) {
-        try {
-          await handleWatchDeactivation(user.clerk_user_id);
-          results.successful++;
-          console.log(
-            `Successfully deactivated watch for user: ${user.clerk_user_id}`,
-          );
-        } catch (error) {
-          results.failed++;
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
-          results.errors.push(
-            `Failed to deactivate watch for user ${user.clerk_user_id}: ${errorMessage}`,
-          );
-          console.error(
-            `Failed to deactivate watch for user ${user.clerk_user_id}:`,
-            error,
-          );
-        }
-      }
-
-      return ctx.json({
-        message: "Expired watch deactivation completed",
-        timestamp: new Date().toISOString(),
-        ...results,
-      });
-    } catch (error) {
-      console.error("Expired watch deactivation cron job error:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      return ctx.json(
-        {
-          error: "Internal server error",
-          details: errorMessage,
-        },
-        500,
-      );
-    }
-  })
 
   .post("/archive-messages", async (ctx) => {
     const authHeader = ctx.req.header("x-authorization");
