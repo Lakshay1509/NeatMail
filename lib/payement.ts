@@ -80,7 +80,7 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
       data.status === "on_hold" ||
       data.status === "pending"
     ) {
-      await handleWatchDeactivation(data.metadata?.clerk_user_id);
+      // await handleWatchDeactivation(data.metadata?.clerk_user_id);  //don't deactivate watch degrade the tier to free tier 
       await sendSubExpiredEmail(data.customer.email, data.customer.name);
     }
 
@@ -91,7 +91,7 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
       if (data.status === "active") {
         const tier = getTierFromProductId(data.product_id)
           ?? (metadata?.tier as "PRO" | "MAX" | undefined)
-          ?? "PRO";
+          ?? "MAX";
 
         await db.user_tokens.update({
           where: { clerk_user_id: clerkUserId },

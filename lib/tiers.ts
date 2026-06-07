@@ -43,7 +43,7 @@ export const TIER_LIMITS: Record<Tier, TierLimits> = {
     hasFollowUps: true,
     hasTelegramSlack: true,
     hasAdvancedAnalytics: false,
-    hasPrioritySupport: false,
+    hasPrioritySupport: true,
   },
   MAX: {
     maxTrackedEmails: Infinity,
