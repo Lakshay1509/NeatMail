@@ -50,7 +50,7 @@ const CanTakeFreeTrial = () => {
   return (
     <div className="w-full flex justify-between items-center mb-4 rounded-lg border border-zinc-200  bg-zinc-50 p-6">
       <div>
-        <p className="text-base font-semibold text-zinc-900">Try Pro free for 7 days</p>
+        <p className="text-base font-semibold text-zinc-900">Try Max free for 7 days</p>
         <p className="text-sm text-zinc-600">No upfront payment. Cancel before trial ends.</p>
       </div>
     <Button

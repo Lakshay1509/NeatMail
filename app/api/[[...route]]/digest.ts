@@ -82,9 +82,6 @@ const app = new Hono()
     const { userId } = await auth();
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-    const tier = await getUserTier(userId);
-    if (tier === "FREE") return c.json({ error: "Upgrade to Pro to access digest" }, 402);
-
     const pref = await db.digest_preference.findUnique({
       where: { user_id: userId },
     });
@@ -107,9 +104,6 @@ const app = new Hono()
     async (c) => {
       const { userId } = await auth();
       if (!userId) return c.json({ error: "Unauthorized" }, 401);
-
-      const tier = await getUserTier(userId);
-      if (tier === "FREE") return c.json({ error: "Upgrade to Pro to access digest" }, 402);
 
       const body = c.req.valid("json");
 
