@@ -24,6 +24,20 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import { useTierAccess } from "@/features/user/use-tier-access"
+import type { Tier } from "@/lib/tiers"
+
+const TIER_LABELS: Record<Tier, string> = {
+  FREE: "Free",
+  PRO: "Pro",
+  MAX: "Max",
+}
+
+const TIER_COLORS: Record<Tier, string> = {
+  FREE: "#6B7280",
+  PRO: "#2563EB",
+  MAX: "#D97706",
+}
 
 type SidebarItem = {
   title: string
@@ -60,6 +74,7 @@ const cleanupItems: SidebarItem[] = [
 export function AppSidebar() {
   const { isMobile, setOpenMobile } = useSidebar()
   const pathname = usePathname()
+  const { tier } = useTierAccess()
 
   const handleLinkClick = () => {
     if (isMobile) setOpenMobile(false)
@@ -134,6 +149,20 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton className="pointer-events-none">
+              <span
+                className="h-1.5 w-1.5 rounded-full shrink-0"
+                style={{ backgroundColor: TIER_COLORS[tier] }}
+              />
+              <span
+                className="text-xs font-medium"
+                style={{ color: TIER_COLORS[tier] }}
+              >
+                {TIER_LABELS[tier]} plan
+              </span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <Collapsible className="group/collapsible w-full">
             <SidebarMenuItem>
               <CollapsibleTrigger asChild>
