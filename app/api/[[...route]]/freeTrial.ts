@@ -44,7 +44,7 @@ const app = new Hono()
 
         await tx.user_tokens.update({
           where: { clerk_user_id: userId },
-          data: { tier: "PRO" },
+          data: { tier: "MAX" },
         });
       });
 

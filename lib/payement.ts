@@ -117,7 +117,7 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
 
           await db.user_tokens.update({
             where: { clerk_user_id: clerkUserId },
-            data: { tier: hasActiveTrial ? "PRO" : "FREE" },
+            data: { tier: hasActiveTrial ? "MAX" : "FREE" },
           });
         }
       }
