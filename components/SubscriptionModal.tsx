@@ -11,7 +11,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
-import { TIER_PRICES, TIER_LIMITS, type TierLimits } from "@/lib/tiers";
+import { TIER_LIMITS, getTierPrices, type TierLimits, type BillingRegion } from "@/lib/tiers";
+import { useGeo } from "@/features/geo/use-geo";
 
 interface SubscriptionModalProps {
   open: boolean;
@@ -54,17 +55,20 @@ const BillingToggle = ({
   </div>
 );
 
-const formatPrice = (tier: "PRO" | "MAX", interval: BillingInterval) => {
-  const price = TIER_PRICES[tier][interval];
+const formatPrice = (tier: "PRO" | "MAX", interval: BillingInterval, region: BillingRegion) => {
+  const prices = getTierPrices(region);
+  const price = prices[tier][interval];
   return interval === "annual"
-    ? `$${(price / 12).toFixed(2)}/mo`
-    : `$${price}/mo`;
+    ? `${prices[tier].symbol}${(price / 12).toFixed(2)}/mo`
+    : `${prices[tier].symbol}${price}/mo`;
 };
 
-const formatPriceTotal = (tier: "PRO" | "MAX", interval: BillingInterval) =>
-  interval === "annual"
-    ? `$${TIER_PRICES[tier].annual}/yr`
-    : `$${TIER_PRICES[tier].monthly}/mo`;
+const formatPriceTotal = (tier: "PRO" | "MAX", interval: BillingInterval, region: BillingRegion) => {
+  const prices = getTierPrices(region);
+  return interval === "annual"
+    ? `${prices[tier].symbol}${prices[tier].annual}/yr`
+    : `${prices[tier].symbol}${prices[tier].monthly}/mo`;
+};
 
 const formatLimitValue = (tier: "FREE" | "PRO" | "MAX", limitKey: keyof TierLimits) => {
   const value = TIER_LIMITS[tier][limitKey];
@@ -97,6 +101,7 @@ export const SubscriptionModal = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [interval, setInterval] = useState<BillingInterval>("monthly");
+  const { region } = useGeo();
 
   const handleTrial = async () => {
     setIsLoading(true);
@@ -176,7 +181,7 @@ export const SubscriptionModal = ({
                 <th className="text-center py-3 px-3 font-semibold bg-zinc-50 rounded-t-lg">
                   <span className="text-zinc-900">Pro</span>
                   <div className="text-xs font-normal text-muted-foreground mt-0.5">
-                    {formatPrice("PRO", interval)}
+                    {formatPrice("PRO", interval, region)}
                   </div>
                 </th>
                 <th className="text-center py-3 px-3 font-semibold">Max</th>
@@ -226,14 +231,14 @@ export const SubscriptionModal = ({
               disabled={isLoading}
               variant="outline"
             >
-              Get Pro {formatPriceTotal("PRO", interval)}
+              Get Pro {formatPriceTotal("PRO", interval, region)}
             </Button>
             <Button
               onClick={() => handleCheckout("MAX")}
               disabled={isLoading}
               variant="outline"
             >
-              Get Max {formatPriceTotal("MAX", interval)}
+              Get Max {formatPriceTotal("MAX", interval, region)}
             </Button>
           </div>
 

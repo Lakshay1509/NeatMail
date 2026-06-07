@@ -21,6 +21,7 @@ import freeTrial from './freeTrial'
 import integrations from './integrations'
 import digest from './digest'
 import bullboard from './bullboard'
+import geo from './geo'
 import health from './health'
 
 export const runtime = "nodejs";
@@ -93,6 +94,7 @@ const routes = app
     .route('/digest',digest)
     .route('/bullboard',bullboard)
     .route('/health',health)
+    .route('/geo',geo)
 
 
 

@@ -1,26 +1,29 @@
 # NeatMail Pricing Strategy
 
 > **Last updated:** June 2026
-> **Status:** Proposed — not yet implemented
+> **Status:** Implemented
 > **Payment provider:** DodoPay
 
 ---
 
 ## Current State
 
-- **Single tier:** $7/mo (Pro)
-- **Free trial:** 7 days, no card required
-- **Regional pricing:** Separate DodoPay product IDs for India vs Global
-- **No public pricing page** — users discover pricing through the subscription modal
+- **Two paid tiers:** Pro ($9 / ₹299) and Max ($15 / ₹499)
+- **Free trial:** 7 days of Max, no card required
+- **Regional pricing:** Separate DodoPay product IDs for India vs Global (INR vs USD)
+- **Annual billing:** Supported with ~17% discount
+- **Pricing page:** `/billing` with region-aware tier cards
 
 ---
 
-## Recommended Tiers
+## Tiers
 
 |                     | **Free**        | **Pro**               | **Max**                  |
 | ------------------- | --------------- | --------------------- | ------------------------ |
-| **Monthly**         | $0              | **$9/mo**             | **$15/mo**               |
-| **Annual**          | —               | $7.50/mo ($90/yr)     | $12.50/mo ($150/yr)      |
+| **Monthly (USD)**   | $0              | $9/mo                 | $15/mo                   |
+| **Annual (USD)**    | —               | $7.50/mo ($90/yr)     | $12.50/mo ($150/yr)      |
+| **Monthly (INR)**   | —               | ₹299/mo               | ₹499/mo                   |
+| **Annual (INR)**    | —               | ₹208.25/mo (₹2,499/yr) | ₹415.83/mo (₹4,990/yr)  |
 | **Annual discount** | —               | ~17%                  | ~17%                     |
 |                     |                 |                       |                          |
 | Email tracking      | 100 emails/mo   | Unlimited             | Unlimited                |
@@ -29,9 +32,9 @@
 | Email digest        | —               | ✓                     | ✓                        |
 | Follow-up tracking  | —               | ✓                     | ✓                        |
 | Telegram / Slack    | —               | ✓                     | ✓                        |
-| Dashboard           | ✓               | ✓                     | ✓                |
 | Archive rules       | —               | 5                     | Unlimited                |
-| Support             | —               | —                     | Priority                 |
+| Dashboard           | ✓               | ✓                      | ✓                        |
+| Priority support    | —               | —                     | ✓                        |
 
 ### Upgrade triggers
 
@@ -48,31 +51,33 @@
 - **$15 Max:** Upper end of competitor range. AI drafts are the premium differentiator — power users will pay $6 more for unlimited.
 - **Free tier:** Serves as acquisition funnel. The 3-label limit is the primary upgrade trigger — once users taste auto-categorization, they want more.
 - **Decoy effect:** Max exists as much to make Pro look like great value as it does to be bought outright.
+- **India pricing:** ~90% discount from USD. Pro ₹299 (~$3.50), Max ₹499 (~$5.80). Priced for the Indian market while maintaining tier differentiation.
 
 ---
 
-## DodoPay Setup Required
+## Region-Aware Pricing
 
-Each tier × region needs a separate product in DodoPay:
-
-| Product | Env Var | Tier | Region |
-| ------- | ------- | ---- | ------ |
-| Pro India | `DODO_PRODUCT_ID_PRO_INDIA` | Pro | IN |
-| Pro Global | `DODO_PRODUCT_ID_PRO_GLOBAL` | Pro | Non-IN |
-| Max India | `DODO_PRODUCT_ID_MAX_INDIA` | Max | IN |
-| Max Global | `DODO_PRODUCT_ID_MAX_GLOBAL` | Max | Non-IN |
-
-Remove old `DODO_PRODUCT_ID_INDIA` and `DODO_PRODUCT_ID_GLOBAL`.
+- **Detection:** `cf-ipcountry` header (Cloudflare). India users get INR prices; all others get USD.
+- **Backend:** `lib/tiers.ts` — `getProductId(tier, country, interval)` maps to the correct DodoPay product. `getTierPrices(region)` returns `{ symbol, currency, monthly, annual }` for UI display.
+- **Frontend:** `features/geo/use-geo.ts` fetches `GET /api/geo`. `components/Billing.tsx` and `components/SubscriptionModal.tsx` use `getTierPrices(region)` for region-aware display.
+- **Checkout:** All endpoints read `cf-ipcountry` directly and call `getProductId()` — no dependency on the geo API.
 
 ---
 
-## Annual Pricing (optional, phase 2)
+## DodoPay Products
 
-DodoPay supports billing intervals. When implementing annual:
+8 products total — 2 tiers (PRO, MAX) × 2 intervals (monthly, annual) × 2 regions (IN, GLOBAL):
 
-1. Create annual-priced product variants in DodoPay (4 additional products)
-2. Add monthly/annual toggle on the pricing page
-3. Offer ~17% discount (2 months free) to lock in revenue and reduce churn
+| Product | Env Var | Tier | Interval | Region |
+| ------- | ------- | ---- | -------- | ------ |
+| Pro Monthly India | `DODO_PRODUCT_ID_PRO_MONTHLY_INDIA` | Pro | Monthly | IN |
+| Pro Monthly Global | `DODO_PRODUCT_ID_PRO_MONTHLY_GLOBAL` | Pro | Monthly | Non-IN |
+| Pro Annual India | `DODO_PRODUCT_ID_PRO_ANNUAL_INDIA` | Pro | Annual | IN |
+| Pro Annual Global | `DODO_PRODUCT_ID_PRO_ANNUAL_GLOBAL` | Pro | Annual | Non-IN |
+| Max Monthly India | `DODO_PRODUCT_ID_MAX_MONTHLY_INDIA` | Max | Monthly | IN |
+| Max Monthly Global | `DODO_PRODUCT_ID_MAX_MONTHLY_GLOBAL` | Max | Monthly | Non-IN |
+| Max Annual India | `DODO_PRODUCT_ID_MAX_ANNUAL_INDIA` | Max | Annual | IN |
+| Max Annual Global | `DODO_PRODUCT_ID_MAX_ANNUAL_GLOBAL` | Max | Annual | Non-IN |
 
 ---
 
@@ -111,7 +116,7 @@ Feature enforcement points in the codebase:
 
 **What happens when I hit a limit?** We'll let you know and you can upgrade instantly. No data is lost on downgrade.
 
-**Is there a free trial?** Yes — 7 days of Pro, no card required.
+**Is there a free trial?** Yes — 7 days of Max, no card required.
 
 **What payment methods do you accept?** Cards and UPI (India) via DodoPay.
 
@@ -121,16 +126,33 @@ Feature enforcement points in the codebase:
 
 ## Implementation Checklist
 
-- [ ] Create 4 DodoPay products (Pro/Max × India/Global)
-- [ ] Update `.env.example` with new product ID env vars
-- [ ] Add env vars to `.env.local` and deployment
-- [ ] Build pricing page (`app/pricing/page.tsx`)
-- [ ] Update checkout API to accept tier selection (`/api/checkout`)
-- [ ] Add feature gating logic on Free tier
-- [ ] Update `SubscriptionModal` to show tier options
-- [ ] Add monthly/annual toggle (phase 2)
+- [x] Create 8 DodoPay products (Pro/Max × Monthly/Annual × India/Global)
+- [x] Update `.env.example` with product ID env vars
+- [x] Add env vars to `.env.local` and deployment
+- [x] Build billing page (`app/billing/page.tsx`) with `components/Billing.tsx`
+- [x] Update checkout API with tier selection and plan change (`/api/checkout`)
+- [x] Add feature gating logic (`lib/tier-guard.ts`)
+- [x] Update `SubscriptionModal` with region-aware pricing
+- [x] Add monthly/annual toggle
+- [x] Add India region-aware pricing via `GET /api/geo` and `features/geo/use-geo.ts`
+- [x] Free trial gives Max-tier features
 
 ---
+
+## Files
+
+| File | Role |
+|---|---|
+| `lib/tiers.ts` | Tiers, limits, prices (USD + INR), product ID mapping, region helpers |
+| `lib/tier-guard.ts` | Tier checks, feature access gating |
+| `app/api/[[...route]]/geo.ts` | `GET /api/geo` → `{ region: "IN" \| "GLOBAL" }` |
+| `features/geo/use-geo.ts` | Client hook for region detection |
+| `components/Billing.tsx` | Billing page with region-aware tier cards |
+| `components/SubscriptionModal.tsx` | Upsell modal with region-aware pricing table |
+| `components/PlanChangeDialog.tsx` | Plan change confirmation with proration preview |
+| `app/api/[[...route]]/checkout.ts` | Checkout, plan change, preview (all region-aware) |
+| `lib/payement.ts` | DodoPay webhook handler, subscription tier assignment |
+| `app/api/[[...route]]/freeTrial.ts` | Free trial activation |
 
 ## Competitor Reference
 

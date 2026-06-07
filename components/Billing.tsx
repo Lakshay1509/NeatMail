@@ -8,7 +8,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import CanTakeFreeTrial from "./CanTakeFreeTrial";
 import { PlanChangeDialog } from "./PlanChangeDialog";
-import { TIER_PRICES, TIER_LIMITS, type Tier } from "@/lib/tiers";
+import { TIER_LIMITS, getTierPrices, type Tier, type BillingRegion } from "@/lib/tiers";
+import { useGeo } from "@/features/geo/use-geo";
 
 const TIER_LABELS: Record<Tier, string> = {
   FREE: "Free",
@@ -94,12 +95,18 @@ const BillingToggle = ({
   </div>
 );
 
-const formatPrice = (tier: "PRO" | "MAX", interval: BillingInterval) => {
-  const price = TIER_PRICES[tier][interval];
-  return interval === "annual" ? `$${(price / 12).toFixed(2)}/mo` : `$${price}/mo`;
+const formatPrice = (tier: "PRO" | "MAX", interval: BillingInterval, region: BillingRegion) => {
+  const prices = getTierPrices(region);
+  const price = prices[tier][interval];
+  return interval === "annual"
+    ? `${prices[tier].symbol}${(price / 12).toFixed(2)}/mo`
+    : `${prices[tier].symbol}${price}/mo`;
 };
 
-const formatPriceAnnual = (tier: "PRO" | "MAX") => `$${TIER_PRICES[tier].annual}/yr`;
+const formatPriceAnnual = (tier: "PRO" | "MAX", region: BillingRegion) => {
+  const prices = getTierPrices(region);
+  return `${prices[tier].symbol}${prices[tier].annual}/yr`;
+};
 
 function TierCard({
   tier,
@@ -107,6 +114,7 @@ function TierCard({
   currentInterval,
   activeInterval,
   isFreeTrial,
+  region,
   onSelect,
   isLoading,
   disabled,
@@ -116,6 +124,7 @@ function TierCard({
   currentInterval: BillingInterval;
   activeInterval: BillingInterval;
   isFreeTrial: boolean;
+  region: BillingRegion;
   onSelect: (tier: "PRO" | "MAX", interval: BillingInterval) => void;
   isLoading: boolean;
   disabled: boolean;
@@ -147,16 +156,16 @@ function TierCard({
         {isPaid ? (
           <div>
             <span className="text-2xl font-bold text-foreground">
-              {formatPrice(tier as "PRO" | "MAX", activeInterval)}
+              {formatPrice(tier as "PRO" | "MAX", activeInterval, region)}
             </span>
             {activeInterval === "annual" && (
               <span className="ml-1.5 text-xs text-muted-foreground line-through">
-                {formatPrice(tier as "PRO" | "MAX", "monthly")}
+                {formatPrice(tier as "PRO" | "MAX", "monthly", region)}
               </span>
             )}
             {activeInterval === "annual" && (
               <p className="mt-0.5 text-[11px] text-muted-foreground">
-                {formatPriceAnnual(tier as "PRO" | "MAX")} billed annually
+                {formatPriceAnnual(tier as "PRO" | "MAX", region)} billed annually
               </p>
             )}
           </div>
@@ -220,6 +229,7 @@ function TierCard({
 const Billing = () => {
   const { data, isLoading: dataLoading, isError: _isError } = useGetUserSubscribed();
   const { tier, isFree, isPro } = useTierAccess();
+  const { region } = useGeo();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [interval, setInterval] = useState<BillingInterval>("monthly");
@@ -437,6 +447,7 @@ const Billing = () => {
             currentInterval={currentInterval}
             activeInterval={interval}
             isFreeTrial={!!isFreeTrial}
+            region={region}
             onSelect={(data?.subscribed === false || isFreeTrial) ? handleCheckout : handleChangePlanClick}
             isLoading={isLoading}
             disabled={

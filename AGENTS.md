@@ -38,6 +38,39 @@
 - **Docker memory caps:** Build uses `NODE_OPTIONS=--max-old-space-size=1536`, runtime uses `768`.
 - `output: "standalone"` is set for Docker/VPS deployment.
 
+## Pricing & Tiers
+
+### Tiers
+
+| Tier | Monthly | Annual | Features |
+|---|---|---|---|
+| **Free** | — | — | 100 tracked emails, 3 custom labels, no AI drafts, no digest, no integrations |
+| **Pro** | $9 / ₹299 | $90 / ₹2,499 | Unlimited emails/labels, 20 AI drafts/mo, 5 archive rules, digest, follow-ups, Telegram & Slack |
+| **Max** | $15 / ₹499 | $150 / ₹4,990 | Unlimited everything, advanced analytics, priority support |
+
+### Region-aware pricing
+
+- **Detection:** `cf-ipcountry` header (Cloudflare). India users get INR prices; all others get USD prices.
+- **Env vars:** 8 DodoPay product IDs — 2 tiers (PRO, MAX) × 2 intervals (monthly, annual) × 2 regions (IN, GLOBAL). See `.env.example` for the full list.
+- **Backend:** `lib/tiers.ts` — `getProductId(tier, country, interval)` maps region to the correct DodoPay product. `getTierPrices(region)` returns the price constants for UI display.
+- **Frontend:** `features/geo/use-geo.ts` fetches region from `GET /api/geo`. Components use `getTierPrices(region)` for `{ symbol, currency, monthly, annual }`.
+- **Checkout:** All checkout endpoints read `cf-ipcountry` and call `getProductId()` to select the correct DodoPay product. The DodoPay dashboard holds the actual prices.
+- **Free trial:** 7 days of MAX-tier features. No region gating.
+
+### Files
+
+| File | Role |
+|---|---|
+| `lib/tiers.ts` | Tiers, limits, prices (USD + INR), product ID mapping, region helpers |
+| `lib/tier-guard.ts` | Tier checks, feature access gating |
+| `app/api/[[...route]]/geo.ts` | `GET /api/geo` → `{ region: "IN" \| "GLOBAL" }` |
+| `features/geo/use-geo.ts` | Client hook for region detection |
+| `components/Billing.tsx` | Billing page with region-aware tier cards |
+| `components/SubscriptionModal.tsx` | Upsell modal with region-aware pricing table |
+| `app/api/[[...route]]/checkout.ts` | Checkout, plan change, preview (all region-aware) |
+| `lib/payement.ts` | DodoPay webhook handler, subscription tier assignment |
+| `app/api/[[...route]]/freeTrial.ts` | Free trial activation |
+
 ## Env Setup
 - Copy `.env.example` to `.env.local` and fill all values.
 - Required infra: PostgreSQL, Redis, Clerk, BullMQ (Redis-backed), OpenAI/Azure, Google Cloud (Gmail/PubSub), Microsoft Entra (Outlook), DodoPay, Resend, Telegram Bot.

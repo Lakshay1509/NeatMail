@@ -2,13 +2,32 @@ export const TIERS = ["FREE", "PRO", "MAX"] as const;
 
 export type Tier = (typeof TIERS)[number];
 
-export const TIER_PRICES: Record<
-  Exclude<Tier, "FREE">,
-  { monthly: number; annual: number }
-> = {
-  PRO: { monthly: 9, annual: 90 },
-  MAX: { monthly: 15, annual: 150 },
+export type BillingRegion = "IN" | "GLOBAL";
+
+export interface TierPrices {
+  monthly: number;
+  annual: number;
+  currency: string;
+  symbol: string;
+}
+
+export const TIER_PRICES: Record<Exclude<Tier, "FREE">, TierPrices> = {
+  PRO:  { monthly: 9,   annual: 90,   currency: "USD", symbol: "$" },
+  MAX:  { monthly: 15,  annual: 150,  currency: "USD", symbol: "$" },
 };
+
+export const TIER_PRICES_INR: Record<Exclude<Tier, "FREE">, TierPrices> = {
+  PRO:  { monthly: 299, annual: 2499, currency: "INR", symbol: "₹" },
+  MAX:  { monthly: 499, annual: 4990, currency: "INR", symbol: "₹" },
+};
+
+export function getRegionFromCountry(country: string): BillingRegion {
+  return country === "IN" ? "IN" : "GLOBAL";
+}
+
+export function getTierPrices(region: BillingRegion): Record<Exclude<Tier, "FREE">, TierPrices> {
+  return region === "IN" ? TIER_PRICES_INR : TIER_PRICES;
+}
 
 export interface TierLimits {
   maxTrackedEmails: number;
