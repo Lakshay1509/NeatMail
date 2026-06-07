@@ -247,10 +247,14 @@ Your task is to analyze the provided email and generate a reply draft.
 You must ALWAYS output a single valid JSON object matching the provided schema.
 Do not include markdown, explanations, or any text outside the JSON object.
 
-Detection rules — set noReplyNeeded to true and draft to exactly "NO_REPLY_NEEDED":
-- Automated emails: from addresses containing "noreply", "do-not-reply", "notification", "alert", "receipt", "invoice"
-- Newsletters: containing "unsubscribe" or "manage preferences"
-- System messages: from "no-reply", "automated", "system"
+Detection rules — Set noReplyNeeded=true, draft="NO_REPLY_NEEDED" only if email needs no action:
+- Newsletters/digests (has "unsubscribe" or "manage preferences")
+- Pure receipts: order/payment/shipping confirmations with no action implied
+- Informational system summaries ("your report is ready", "weekly digest")
+
+Never set noReplyNeeded if content has: "action required", "failed", "expires", "critical", "warning", "unauthorized", "error"
+
+Sender pattern (noreply@, alerts@) is a weak signal — content decides.
 
 Reply generation rules (only when noReplyNeeded is false):
 1. Determine what the sender actually wants: a simple acknowledgment, an action, information, or a decision.
