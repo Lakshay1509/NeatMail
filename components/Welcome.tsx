@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { SubscriptionModal } from "./SubscriptionModal";
+import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
 
 const steps = [
   {
@@ -41,6 +42,7 @@ const WelcomeDialog = ({ onDismiss }: { onDismiss?: () => void }) => {
   const [open, setOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false);
+  const { data: subscription } = useGetUserSubscribed();
 
   useEffect(() => {
     const hasVisited = localStorage.getItem("welcome_dialog_seen");
@@ -59,7 +61,11 @@ const WelcomeDialog = ({ onDismiss }: { onDismiss?: () => void }) => {
       setCurrentStep((s) => s + 1);
     } else {
       handleClose();
-      setIsSubscriptionOpen(true);
+      if (subscription?.subscribed) {
+        onDismiss?.();
+      } else {
+        setIsSubscriptionOpen(true);
+      }
     }
   };
 

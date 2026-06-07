@@ -2,7 +2,7 @@
 
 import { UserButton, useUser, useClerk } from '@clerk/nextjs'
 import Link from 'next/link'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { SidebarTrigger } from './ui/sidebar';
 import { usePathname } from 'next/navigation';
 import { useGetUserSubscribed } from '@/features/user/use-get-subscribed';
@@ -11,13 +11,16 @@ import Image from 'next/image';
 
 const Navbar = () => {
   const { isSignedIn } = useUser();
-  const { addListener } = useClerk();
+  const { addListener, session } = useClerk();
+  const prevSession = useRef(!!session);
 
   useEffect(() => {
-    return addListener((session) => {
-      if (!session) {
+    return addListener((resources) => {
+      const hasSession = !!resources.session;
+      if (prevSession.current && !hasSession) {
         localStorage.removeItem("welcome_dialog_seen");
       }
+      prevSession.current = hasSession;
     });
   }, [addListener]);
   const pathname = usePathname();
