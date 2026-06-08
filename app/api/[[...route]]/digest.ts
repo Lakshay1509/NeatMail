@@ -14,15 +14,10 @@ import { Resend } from "resend";
 import DailyDigestEmail from "@/components/Email/DailyDigestEmail";
 import { render } from "@react-email/render";
 import { formatInTimeZone } from "date-fns-tz";
-import { getUserTier } from "@/lib/tier-guard";
-
 const app = new Hono()
   .get("/", async (c) => {
     const { userId } = await auth();
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
-
-    const tier = await getUserTier(userId);
-    if (tier === "FREE") return c.json({ error: "Upgrade to Pro to access digest" }, 402);
 
     const digest = await getDigestForUser(userId);
     return c.json({ digest });
@@ -30,9 +25,6 @@ const app = new Hono()
   .get("/count", async (c) => {
     const { userId } = await auth();
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
-
-    const tier = await getUserTier(userId);
-    if (tier === "FREE") return c.json({ error: "Upgrade to Pro to access digest" }, 402);
 
     const count = await getDigestCount(userId);
     return c.json({ count });
@@ -48,9 +40,6 @@ const app = new Hono()
     async (c) => {
       const { userId } = await auth();
       if (!userId) return c.json({ error: "Unauthorized" }, 401);
-
-      const tier = await getUserTier(userId);
-      if (tier === "FREE") return c.json({ error: "Upgrade to Pro to access digest" }, 402);
 
       const { messageId } = c.req.valid("json");
       await markEmailAsDone(userId, messageId);
@@ -69,9 +58,6 @@ const app = new Hono()
     async (c) => {
       const { userId } = await auth();
       if (!userId) return c.json({ error: "Unauthorized" }, 401);
-
-      const tier = await getUserTier(userId);
-      if (tier === "FREE") return c.json({ error: "Upgrade to Pro to access digest" }, 402);
 
       const { messageId, until } = c.req.valid("json");
       await snoozeEmail(userId, messageId, new Date(until));
@@ -140,9 +126,6 @@ const app = new Hono()
   .post("/test", async (c) => {
     const { userId } = await auth();
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
-
-    const tier = await getUserTier(userId);
-    if (tier === "FREE") return c.json({ error: "Upgrade to Pro to access digest" }, 402);
 
     try {
       const resend = new Resend(process.env.RESEND_API_KEY);

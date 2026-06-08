@@ -72,7 +72,6 @@ const cleanupItems: SidebarItem[] = [
 ]
 
 const FREE_GATED_TITLES = new Set([
-  "Draft preference",
   "Integrations",
   "Follow ups",
   "Unsubscribe",

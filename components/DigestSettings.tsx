@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useGetDigestPreferences } from "@/features/digest/use-get-digest-preferences";
 import { usePostDigestPreferences } from "@/features/digest/use-post-digest-preferences";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { useTierAccess } from "@/features/user/use-tier-access";
-import { NotSubscribedState } from "./NotSubscribedState";
 
 function generateTimeSlots() {
   const slots: { value: string; label: string }[] = [];
@@ -35,7 +33,6 @@ const TIME_SLOTS = generateTimeSlots();
 
 
 export default function DigestSettings() {
-  const { isFree } = useTierAccess();
   const { data, isLoading } = useGetDigestPreferences();
   const postPreferences = usePostDigestPreferences();
 
@@ -95,16 +92,6 @@ export default function DigestSettings() {
           ))}
         </div>
       </div>
-    );
-  }
-
-  if (isFree) {
-    return (
-      <NotSubscribedState
-        tier="FREE"
-        title="Daily digest requires Pro"
-        description="Upgrade to Pro to receive a curated morning briefing of your emails."
-      />
     );
   }
 

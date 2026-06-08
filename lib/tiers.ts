@@ -45,9 +45,9 @@ export const TIER_LIMITS: Record<Tier, TierLimits> = {
   FREE: {
     maxTrackedEmails: 100,
     maxCustomLabels: 3,
-    maxAiDraftsPerMonth: 0,
+    maxAiDraftsPerMonth: 5,
     maxArchiveRules: 0,
-    hasDigest: false,
+    hasDigest: true,
     hasFollowUps: false,
     hasTelegramSlack: false,
     hasAdvancedAnalytics: false,

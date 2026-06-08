@@ -41,17 +41,13 @@ export async function processDraft(job: Job<ProcessDraftData>) {
 
   const tier = await getUserTier(userId);
 
-  if (tier === "FREE") {
-    return { status: "skipped", reason: "Free tier does not include AI drafts" };
-  }
-
   const draftPreference = await useGetUserDraftPreference(userId);
 
   if (!draftPreference.enabled) {
     return { status: "skipped", reason: "Drafts disabled" };
   }
 
-  if (tier === "PRO") {
+  if (tier !== "MAX") {
     const limits = await getTierLimits(userId);
     if (limits.maxAiDraftsPerMonth !== Infinity) {
       const now = new Date();

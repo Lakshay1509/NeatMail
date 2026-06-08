@@ -897,7 +897,7 @@ Founder, NeatMail`,
       const preferences = await db.digest_preference.findMany({
         where: {
           enabled: true,
-          user_tokens: { tier: { not: "FREE" }, deleted_flag: false },
+          user_tokens: { deleted_flag: false },
         },
         include: {
           user_tokens: {

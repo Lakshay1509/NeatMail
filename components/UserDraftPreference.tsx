@@ -122,7 +122,6 @@ const UserDraftPreference = () => {
 							{enabled ? 'Active' : 'Inactive'}
 						</span>
 						<Checkbox
-							disabled={isFree}
 							checked={enabled}
 							onCheckedChange={(checked) => setEnabled(!!checked)}
 							className="w-5 h-5 border-gray-300"
@@ -130,7 +129,7 @@ const UserDraftPreference = () => {
 					</div>
 					{isFree && (
 						<p className="text-xs text-muted-foreground">
-							Upgrade to Pro for AI drafts
+							{limits.maxAiDraftsPerMonth} drafts/mo · Upgrade to Pro for more
 						</p>
 					)}
 					{isPro && (
