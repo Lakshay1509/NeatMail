@@ -54,18 +54,24 @@ export async function handleOutlookLabelCorrection(
       }
     }
 
-    // 3. Fire the correction API
+    // 3. Verify both tags exist in the database before sending correction
+    if (!correct_label || !wrong_label) return;
 
-    if (correct_label && wrong_label) {
-      await correctLabel({
-        user_id: clerkUserId,
-        subject: subject || "No Subject",
-        body: bodyPreview || "",
-        correct_label,
-        wrong_label,
-      });
+    const [correctTag, wrongTag] = await Promise.all([
+      db.tag.findFirst({ where: { name: correct_label, user_id: clerkUserId } }),
+      db.tag.findFirst({ where: { name: wrong_label, user_id: clerkUserId } }),
+    ]);
 
-    }
+    if (!correctTag || !wrongTag) return;
+
+    // 4. Fire the correction API
+    await correctLabel({
+      user_id: clerkUserId,
+      subject: subject || "No Subject",
+      body: bodyPreview || "",
+      correct_label,
+      wrong_label,
+    });
   } catch (error) {
     console.error(
       `[Outlook Correction] Error processing correction for msg ${messageId}:`,

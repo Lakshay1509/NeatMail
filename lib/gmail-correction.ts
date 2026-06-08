@@ -2,6 +2,7 @@ import { gmail_v1 } from "googleapis";
 import { correctLabel } from "./model";
 import { getGmailMessageBody } from "./gmail";
 import { escapeHtml } from "./telegram";
+import { db } from "./prisma";
 
 export async function handleLabelCorrections(
   gmail: gmail_v1.Gmail,
@@ -75,6 +76,16 @@ export async function handleLabelCorrections(
     const wrong_label =
       removedUserLabels.length > 0 ? removedUserLabels[0] : undefined;
 
+    // Only send correction if both tags exist in the database
+    if (!correct_label || !wrong_label) continue;
+
+    const [correctTag, wrongTag] = await Promise.all([
+      db.tag.findFirst({ where: { name: correct_label, user_id: clerkUserId } }),
+      db.tag.findFirst({ where: { name: wrong_label, user_id: clerkUserId } }),
+    ]);
+
+    if (!correctTag || !wrongTag) continue;
+
     try {
       // Fetch the message to get subject & body
       const message = await gmail.users.messages.get({
@@ -89,21 +100,16 @@ export async function handleLabelCorrections(
         "No Subject";
 
       const fullBody = await getGmailMessageBody(clerkUserId, messageId);
-      const bodySnippet = escapeHtml(fullBody?.slice(0, 1000) ?? ""); // Capture large enough snippet for the API
-      
+      const bodySnippet = escapeHtml(fullBody?.slice(0, 1000) ?? "");
 
       // Fire the correction API
-
-      if (correct_label && wrong_label) {
-        await correctLabel({
-          user_id: clerkUserId,
-          subject,
-          body: bodySnippet,
-          correct_label,
-          wrong_label,
-        });
-
-      }
+      await correctLabel({
+        user_id: clerkUserId,
+        subject,
+        body: bodySnippet,
+        correct_label,
+        wrong_label,
+      });
     } catch (error) {
       console.error(
         `[Correction] Error processing correction for msg ${messageId}:`,
