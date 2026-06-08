@@ -13,6 +13,7 @@ import { useAddUserDraftPrefernce } from "@/features/draftPreference/use-add-use
 import { useSyncHistory } from "@/features/email/use-post-sync-history"
 import { usePostDigestPreferences } from "@/features/digest/use-post-digest-preferences"
 import { Loader2 } from "lucide-react"
+import { useActivateFreeTrial } from "@/features/trial/use-post-trial-activate"
 
 export const CATEGORIES = [
 	{ name: 'Action Needed', color: '#cc3a21', outlookColor: 'preset0', description: 'Direct request to complete a task, approve, sign, submit, or decide.' },
@@ -36,11 +37,15 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 	const [selectedCategories, setSelectedCategories] = useState<string[]>([])
 	
 	const [showSuccessDialog, setShowSuccessDialog] = useState<boolean>(false);
+	const [step, setStep] = useState<string | null>(null);
     const mutation = addTagstoUser();
 	const watchMutation = addWatch();
 	const draftMutation = useAddUserDraftPrefernce();
 	const digestMutation = usePostDigestPreferences();
 	const syncHistoryMutation = useSyncHistory();
+	const freeTrialMutation = useActivateFreeTrial();
+
+	const isPending = mutation.isPending || watchMutation.isPending || draftMutation.isPending || digestMutation.isPending || syncHistoryMutation.isPending || freeTrialMutation.isPending;
 	
 	const toggleCategory = (categoryName: string) => {
 		setSelectedCategories(prev =>
@@ -58,34 +63,42 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 		const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 		
 		try {
-			await mutation.mutateAsync({tags:selectedCategories});
+			
+			setStep("Activating free trial...");
+			await freeTrialMutation.mutateAsync();
+			setStep("Setting up inbox watch...");
 			await watchMutation.mutateAsync({});
+			setStep("Creating draft preferences...");
 			await draftMutation.mutateAsync({
 				enabled:true,
 				fontColor:'#000000',
 				fontSize:14,
 				timezone:userTimezone
 			})
+			setStep("Setting up daily digest...");
 			await digestMutation.mutateAsync({
 				enabled:true,
 				deliveryTime:"10:00",
 				timezone:userTimezone
 			})
+			setStep("Syncing email history...");
 			await syncHistoryMutation.mutateAsync({})
-			
+			setStep("Saving categories...");
+			await mutation.mutateAsync({tags:selectedCategories});
+			setStep(null);
 			onOpenChange(false);
 			setShowSuccessDialog(true);
 		} catch (error) {
-			// Handle error if needed
-			onOpenChange(false);
-			toast.error('Failed to complete onboarding please go to settings')
-			console.error('Failed to complete onboarding:', error);
+			const message = error instanceof Error ? error.message : "Something went wrong. Please try again.";
+			setStep(null);
+			toast.error(message)
+			console.error('Onboarding error:', error);
 		}
 	}
 
 	return (
 		<>
-			<Dialog open={open} onOpenChange={onOpenChange}>
+			<Dialog open={open} onOpenChange={(v) => { if (!isPending) onOpenChange(v); }}>
 				<DialogContent
 					className="sm:max-w-3xl max-h-[90vh] overflow-y-auto [&>button]:hidden"
 					onInteractOutside={(e) => e.preventDefault()}
@@ -139,14 +152,12 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 					<Button 
 						className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg relative" 
 						onClick={handleSubmit} 
-						disabled={mutation.isPending || watchMutation.isPending || draftMutation.isPending || digestMutation.isPending || syncHistoryMutation.isPending || !isValid}
+						disabled={isPending || !isValid}
 					>
-						{(mutation.isPending || watchMutation.isPending || draftMutation.isPending || digestMutation.isPending || syncHistoryMutation.isPending) ? (
+						{isPending ? (
 							<div className="flex items-center gap-2">
 								<Loader2 className="h-5 w-5 animate-spin" />
-								{syncHistoryMutation.isPending 
-									? "Syncing history with your inbox, please hold on..." 
-									: "Updating preferences..."}
+								{step ?? "Processing..."}
 							</div>
 						) : (
 							isValid ? 'Update preferences' : `Select ${1 - selectedCategories.length} more categories`

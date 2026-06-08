@@ -3,43 +3,41 @@
 import { useGetUserTags } from "@/features/tags/use-get-user-tags"
 import { EmailCategorizationModal } from "./EmailCategorizationModal";
 import { useState, useEffect } from "react";
-import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
 import { useGetScopes } from "@/features/user/use-get-scopes";
 import { PermissionsModal } from "./PermissionsModal";
 import WelcomeDialog from "./Welcome";
 
 const UserLabel = () => {
 
-    const {data,isLoading,isError} = useGetUserTags();
-    const {data:subscribedData,isLoading:subscribedLoading} = useGetUserSubscribed();
+    const {data,isLoading} = useGetUserTags();
     const {data:scopesData,isLoading:scopesLoading} = useGetScopes();
     const [showOnboarding, setShowOnboarding] = useState(false);
-    const [showSubscription, setShowSubscription] = useState(false);
+    const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
     const [showPermissions, setShowPermissions] = useState(false);
 
     useEffect(() => {
-        if (isLoading || subscribedLoading || scopesLoading) return;
+        if (isLoading || scopesLoading) return;
 
         const hasSeenWelcome = typeof window !== "undefined" && localStorage.getItem("welcome_dialog_seen");
 
         if (scopesData && !scopesData.hasAllScopes) {
             setShowPermissions(true);
-            setShowSubscription(false);
+            setShowWelcomeDialog(false);
             setShowOnboarding(false);
         } else if (!hasSeenWelcome) {
-            setShowSubscription(true);
+            setShowWelcomeDialog(true);
             setShowOnboarding(false);
             setShowPermissions(false);
         } else if (data && data.data.length === 0) {
             setShowOnboarding(true);
-            setShowSubscription(false);
+            setShowWelcomeDialog(false);
             setShowPermissions(false);
         } else {
             setShowOnboarding(false);
-            setShowSubscription(false);
+            setShowWelcomeDialog(false);
             setShowPermissions(false);
         }
-    }, [isLoading, subscribedLoading, scopesLoading, data, scopesData]);
+    }, [isLoading, scopesLoading, data, scopesData]);
 
   return (
     <div>
@@ -48,9 +46,9 @@ const UserLabel = () => {
             onOpenChange={setShowPermissions}
             
         />
-        {showSubscription && (
+        {showWelcomeDialog && (
             <WelcomeDialog onDismiss={() => {
-                setShowSubscription(false);
+                setShowWelcomeDialog(false);
                 if (data?.data.length === 0) {
                     setTimeout(() => setShowOnboarding(true), 200);
                 }
