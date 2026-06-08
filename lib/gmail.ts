@@ -3,6 +3,12 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { extractUnsubscribeLinkFromBodyGmail } from "./unsubscribe";
 import { applyCorrectionsToText } from "./openai";
 
+export class OAuthError extends Error {
+  constructor(msg: string) {
+    super(msg);
+    this.name = "OAuthError";
+  }
+}
 
 interface Attachment {
   filename: string;
@@ -36,7 +42,7 @@ export async function getGmailClient(userId: string) {
     const accessToken = externalAccounts.data[0]?.token;
 
     if (!accessToken) {
-      throw new Error(
+      throw new OAuthError(
         "No Google access token found. User needs to reconnect their Google account.",
       );
     }
@@ -46,17 +52,18 @@ export async function getGmailClient(userId: string) {
 
     return google.gmail({ version: "v1", auth: oauth2Client });
   } catch (error: any) {
-    console.error("Failed to get Gmail client:", {
-      userId,
-      error: error.message,
-      code: error.code,
-      status: error.status,
-      clerkTraceId: error.clerkTraceId,
-    });
+    const oauthError = error.errors?.some?.(
+      (e: any) =>
+        e.code === "oauth_token_retrieval_error" ||
+        e.code === "oauth_missing_refresh_token",
+    );
 
-    if (error.code === "api_response_error" && error.status === 400) {
-      throw new Error(
-        "Google OAuth token has expired or is invalid. Please reconnect your Google account in your user profile.",
+    if (
+      (error.code === "api_response_error" && error.status === 400) ||
+      oauthError
+    ) {
+      throw new OAuthError(
+        "Google OAuth token has expired or is invalid. Please reconnect your Google account.",
       );
     }
 

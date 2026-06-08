@@ -1,5 +1,5 @@
 import { draftQueue } from "@/lib/queue";
-import { getGmailClient, getGmailMessageBody } from "@/lib/gmail";
+import { getGmailClient, getGmailMessageBody, OAuthError } from "@/lib/gmail";
 import {
   isMessageProcessed,
   // isThreadProcessed,
@@ -120,15 +120,19 @@ const app = new Hono().post("/", async (ctx) => {
     const userDataFromClerk = await client.users.getUser(user.clerk_user_id);
     const fullName = `${userDataFromClerk.fullName ?? ""}`.trim();
 
-    const tokenResponse = await client.users.getUserOauthAccessToken(
-      clerkUserId,
-      "google",
-    );
-
-    const tokenData = tokenResponse.data[0]?.token;
+    let tokenData: string | undefined;
+    try {
+      const tokenResponse = await client.users.getUserOauthAccessToken(
+        clerkUserId,
+        "google",
+      );
+      tokenData = tokenResponse.data[0]?.token;
+    } catch {
+      console.log(`[webhook] OAuth token unavailable for ${emailAddress} — acking`);
+    }
 
     if (!tokenData) {
-      console.log(`No token found for user, ${clerkUserId}`);
+      console.log(`[webhook] No token for ${clerkUserId} — acking`);
       return ctx.json({ success: true }, 200);
     }
 
@@ -139,7 +143,17 @@ const app = new Hono().post("/", async (ctx) => {
       return ctx.json({ success: true }, 200);
     }
 
-    const gmail = await getGmailClient(clerkUserId);
+    let gmail;
+    try {
+      gmail = await getGmailClient(clerkUserId);
+    } catch (err: any) {
+      if (err instanceof OAuthError) {
+        console.log(`[webhook] Gmail client OAuth error for ${emailAddress}`);
+        await updateHistoryId(emailAddress, String(newHistoryId), true);
+        return ctx.json({ success: true }, 200);
+      }
+      throw err;
+    }
 
     let history;
     try {
@@ -402,42 +416,47 @@ const app = new Hono().post("/", async (ctx) => {
 
     return ctx.json({ success: true }, 200);
   } catch (error: any) {
-    console.error(
-      `❌ Error processing webhook for user: ${errorUserId} (${errorEmail})`,
-    );
-    console.error("❌ Error Message:", error.message || String(error));
+    const isAuthError =
+      error instanceof OAuthError ||
+      (error.code === "api_response_error" && error.status === 400);
 
-    if (error.clerkError) {
-      console.error(
-        "❌ Clerk API Error details:",
-        JSON.stringify(
-          {
-            status: error.status,
-            code: error.code,
-            clerkTraceId: error.clerkTraceId,
-            errors: error.errors,
-          },
-          null,
-          2,
-        ),
-      );
-    } else if (error.errors) {
-      console.error(
-        "❌ Detailed errors payload:",
-        JSON.stringify(error.errors, null, 2),
-      );
-    } else if (error.stack) {
-      console.error("❌ Stack trace:", error.stack);
+    if (isAuthError) {
+      console.log(`[webhook] OAuth error for ${errorUserId} (${errorEmail})`);
     } else {
-      console.error("❌ Error Object:", error);
+      console.error(
+        `❌ Error processing webhook for user: ${errorUserId} (${errorEmail})`,
+      );
+      console.error("❌ Error Message:", error.message || String(error));
+
+      if (error.clerkError) {
+        console.error(
+          "❌ Clerk API Error details:",
+          JSON.stringify(
+            {
+              status: error.status,
+              code: error.code,
+              clerkTraceId: error.clerkTraceId,
+              errors: error.errors,
+            },
+            null,
+            2,
+          ),
+        );
+      } else if (error.errors) {
+        console.error(
+          "❌ Detailed errors payload:",
+          JSON.stringify(error.errors, null, 2),
+        );
+      } else if (error.stack) {
+        console.error("❌ Stack trace:", error.stack);
+      } else {
+        console.error("❌ Error Object:", error);
+      }
     }
 
     if (currentMessageId) {
       await unmarkMessageProcessed(currentMessageId);
     }
-    // if (currentThreadId) {
-    //   await unmarkThreadProcessed(currentThreadId);
-    // }
 
     return ctx.json(
       { success: false, error: "Processing failed of webhook" },
