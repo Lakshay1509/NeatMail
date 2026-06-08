@@ -1,8 +1,10 @@
 import { Job } from "bullmq";
 import { getGraphClient } from "@/lib/outlook";
 import { db } from "@/lib/prisma";
-import { getUserSubscribed, updateMessageStatus } from "@/lib/supabase";
+import { getTaggedEmailCount, updateMessageStatus } from "@/lib/supabase";
 import { handleOutlookLabelCorrection } from "@/lib/outlook-correction";
+import { getUserTier } from "@/lib/tier-guard";
+import { TIER_LIMITS } from "@/lib/tiers";
 
 interface UpdateOutlookMailData {
   messageId: string;
@@ -21,12 +23,12 @@ export async function updateOutlookMail(job: Job<UpdateOutlookMailData>) {
     return { skipped: true };
   }
 
-  const activeSubcription = await getUserSubscribed(
-    subscription.clerk_user_id,
-  );
-
-  if (activeSubcription.subscribed === false) {
-    return { skipped: true, reason: "not subscribed" };
+  const tier = await getUserTier(subscription.clerk_user_id);
+  if (tier === "FREE") {
+    const taggedCount = await getTaggedEmailCount(subscription.clerk_user_id);
+    if (taggedCount >= TIER_LIMITS.FREE.maxTrackedEmails) {
+      return { skipped: true, reason: "not subscribed" };
+    }
   }
 
   let messageData;
