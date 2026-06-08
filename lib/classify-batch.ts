@@ -7,7 +7,7 @@ import type { ModelRequest, ModelResponse } from "@/lib/model";
 const QUEUE_KEY = "classify:queue";
 const RESULT_PREFIX = "classify:result:";
 const FLUSH_LOCK_KEY = "classify:flush-lock";
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 5;
 const RESULT_TTL = 120;
 
 interface QueuedRequest {
