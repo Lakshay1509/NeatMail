@@ -42,13 +42,23 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
     return { skipped: true };
   }
 
-  const activeSubcription = await getUserSubscribed(
-    subscription.clerk_user_id,
-  );
+  // const activeSubcription = await getUserSubscribed(
+  //   subscription.clerk_user_id,
+  // );
 
-  if (activeSubcription.subscribed === false) {
-    return { skipped: true, reason: "not subscribed" };
+  // if (activeSubcription.subscribed === false) {
+  //   return { skipped: true, reason: "not subscribed" };
+  // }
+
+  const tier = await getUserTier(subscription.clerk_user_id);
+  if (tier === "FREE") {
+    const taggedCount = await getTaggedEmailCount(subscription.clerk_user_id);
+    if (taggedCount >= TIER_LIMITS.FREE.maxTrackedEmails) {
+      return { skipped: true, reason: "not subscribed" };
+    } 
   }
+
+
 
   const client = await getGraphClient(subscription.clerk_user_id);
   const mail = await client
@@ -92,27 +102,8 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
   let responseRequired = false;
   let classification: ModelResponse | undefined;
 
-  const tier = await getUserTier(subscription.clerk_user_id);
-  if (tier === "FREE") {
-    const taggedCount = await getTaggedEmailCount(subscription.clerk_user_id);
-    if (taggedCount >= TIER_LIMITS.FREE.maxTrackedEmails) {
-      labelName = "";
-    } else {
-      classification = await getModelResponse({
-        bodySnippet: body,
-        from: from,
-        subject: subject,
-        user_id: subscription.clerk_user_id,
-        tags: tagsOfUser.map((t) => ({
-          name: t.tag.name,
-          description: t.tag.description ?? "",
-        })),
-        sensitivity: draftsenstivity || "if actionable",
-      });
-      labelName = classification.category;
-      responseRequired = classification.response_required === true;
-    }
-  } else {
+  
+  
     classification = await getModelResponse({
       bodySnippet: body,
       from: from,
@@ -126,7 +117,7 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
     });
     labelName = classification.category;
     responseRequired = classification.response_required === true;
-  }
+  
 
   const shouldDraft =
     (labelName === "Pending Response" || labelName === "Action Needed") &&

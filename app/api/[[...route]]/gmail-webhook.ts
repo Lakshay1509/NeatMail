@@ -88,8 +88,8 @@ const app = new Hono().post("/", async (ctx) => {
     const { emailAddress, historyId: newHistoryId } = notification;
     errorEmail = emailAddress;
 
-    if(emailAddress===process.env.GOOGLE_VERIFICATION_EMAIL){
-      return ctx.json({"success":true},200);
+    if (emailAddress === process.env.GOOGLE_VERIFICATION_EMAIL) {
+      return ctx.json({ success: true }, 200);
     }
 
     const user = await getUserByEmail(emailAddress);
@@ -99,10 +99,18 @@ const app = new Hono().post("/", async (ctx) => {
       return ctx.json({ success: true }, 200);
     }
 
-    const subscribed = await getUserSubscribed(user.clerk_user_id);
+    // const subscribed = await getUserSubscribed(user.clerk_user_id);
 
-    if (subscribed.subscribed === false) {
-      return ctx.json({ error: "user not subscribed" }, 200);
+    // if (subscribed.subscribed === false) {
+    //   return ctx.json({ error: "user not subscribed" }, 200);
+    // }
+
+    const tier = await getUserTier(user.clerk_user_id);
+    if (tier === "FREE") {
+      const taggedCount = await getTaggedEmailCount(user.clerk_user_id);
+      if (taggedCount >= TIER_LIMITS.FREE.maxTrackedEmails) {
+        return ctx.json({ error: "user not subscribed" }, 200);
+      }
     }
 
     const clerkUserId = user.clerk_user_id;
@@ -110,7 +118,7 @@ const app = new Hono().post("/", async (ctx) => {
 
     const client = await clerkClient();
     const userDataFromClerk = await client.users.getUser(user.clerk_user_id);
-    const fullName = `${userDataFromClerk.fullName?? ""}`.trim();
+    const fullName = `${userDataFromClerk.fullName ?? ""}`.trim();
 
     const tokenResponse = await client.users.getUserOauthAccessToken(
       clerkUserId,
@@ -274,33 +282,21 @@ const app = new Hono().post("/", async (ctx) => {
       ) {
         labelName = "Automated alerts";
       } else {
-        let skipModel = false;
-        const tier = await getUserTier(clerkUserId);
-        if (tier === "FREE") {
-          const taggedCount = await getTaggedEmailCount(clerkUserId);
-          if (taggedCount >= TIER_LIMITS.FREE.maxTrackedEmails) {
-            labelName = "";
-            skipModel = true;
-          }
-        }
+        const classification = await getModelResponse({
+          bodySnippet: emailData.bodySnippet,
+          from: emailData.from,
+          subject: emailData.subject,
+          user_id: emailData.userId,
+          tags: tagsOfUser.map((t) => ({
+            name: t.tag.name,
+            description: t.tag.description ?? "",
+          })),
+          sensitivity: draftsenstivity || "if actionable",
+        });
+        classificationResult = classification;
+        labelName = classification.category;
 
-        if (!skipModel) {
-          const classification = await getModelResponse({
-            bodySnippet: emailData.bodySnippet,
-            from: emailData.from,
-            subject: emailData.subject,
-            user_id: emailData.userId,
-            tags: tagsOfUser.map((t) => ({
-              name: t.tag.name,
-              description: t.tag.description ?? "",
-            })),
-            sensitivity: draftsenstivity || "if actionable",
-          });
-          classificationResult = classification;
-          labelName = classification.category;
-
-          responseRequired = classification.response_required === true;
-        }
+        responseRequired = classification.response_required === true;
       }
 
       const shouldDraft =
