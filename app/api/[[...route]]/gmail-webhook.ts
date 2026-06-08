@@ -135,7 +135,7 @@ const app = new Hono().post("/", async (ctx) => {
     const lastHistoryId = await getLastHistoryId(emailAddress);
 
     if (!lastHistoryId || !lastHistoryId.last_history_id) {
-      await updateHistoryId(emailAddress, newHistoryId, true);
+      await updateHistoryId(emailAddress, String(newHistoryId), true);
       return ctx.json({ success: true }, 200);
     }
 

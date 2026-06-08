@@ -25,6 +25,9 @@ export async function getLastHistoryId(email: string) {
   try {
     const data = await db.user_tokens.findUnique({
       where: { email: email },
+      select:{
+        last_history_id:true
+      }
     });
 
     if (!data) {
