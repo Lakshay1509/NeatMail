@@ -71,10 +71,18 @@ const cleanupItems: SidebarItem[] = [
   { title: "Large emails", url: "/storage", icon: Inbox },
 ]
 
+const FREE_GATED_TITLES = new Set([
+  "Draft preference",
+  "Integrations",
+  "Follow ups",
+  "Unsubscribe",
+  "Large emails",
+])
+
 export function AppSidebar() {
   const { isMobile, setOpenMobile } = useSidebar()
   const pathname = usePathname()
-  const { tier } = useTierAccess()
+  const { tier, isFree } = useTierAccess()
 
   const handleLinkClick = () => {
     if (isMobile) setOpenMobile(false)
@@ -83,13 +91,18 @@ export function AppSidebar() {
   const renderItems = (items: SidebarItem[]) =>
     items.map((item) => {
       const isActive = pathname === item.url || (item.url !== "/" && pathname.startsWith(item.url))
+      const isDisabled = isFree && FREE_GATED_TITLES.has(item.title)
       const Icon = item.icon
       return (
         <SidebarMenuItem key={item.title}>
           <SidebarMenuButton
             asChild
             isActive={isActive}
-            className={cn("group/menu-button relative", item.danger && "text-red-600 hover:text-red-700")}
+            className={cn(
+              "group/menu-button relative",
+              item.danger && "text-red-600 hover:text-red-700",
+              isDisabled && "opacity-40 pointer-events-none",
+            )}
           >
             <Link href={item.url} onClick={handleLinkClick} {...("external" in item && item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
               {isActive && (
