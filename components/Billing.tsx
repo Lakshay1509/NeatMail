@@ -452,11 +452,11 @@ const Billing = () => {
             isLoading={isLoading}
             disabled={
               t === "FREE" ||
-              (tier === "MAX" && t === "PRO") ||
-              (tier === "MAX" && currentInterval === "annual" && t === "MAX") ||
-              (!isFreeTrial && tier === "PRO" && t === "PRO" && currentInterval === "annual" && interval === "annual") ||
-              (!isFreeTrial && tier === "PRO" && t === "PRO" && currentInterval === "monthly" && interval === "monthly") ||
-              (!isFreeTrial && tier === "MAX" && t === "MAX" && currentInterval === "monthly" && interval === "monthly")
+              (activeTier === "MAX" && t === "PRO") ||
+              (activeTier === "MAX" && currentInterval === "annual" && t === "MAX") ||
+              (!isFreeTrial && activeTier === "PRO" && t === "PRO" && currentInterval === "annual" && interval === "annual") ||
+              (!isFreeTrial && activeTier === "PRO" && t === "PRO" && currentInterval === "monthly" && interval === "monthly") ||
+              (!isFreeTrial && activeTier === "MAX" && t === "MAX" && currentInterval === "monthly" && interval === "monthly")
             }
           />
         ))}
