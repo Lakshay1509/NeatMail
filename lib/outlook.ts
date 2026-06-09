@@ -240,11 +240,13 @@ export async function createOutlookDraft(
 ) {
   const formattedBody = draftBody.replace(/\n/g, "<br>");
   const formattedSignature = signature ? signature.replace(/\n/g, "<br>") : "";
+  const neatmailFooter = `<br><br><span style="font-size:11px;color:#888;">Sent with <a href="https://www.neatmail.app" style="color:#888;text-decoration:underline;">NeatMail</a></span>`;
 
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; font-size: ${fontSize || 14}px; color: ${fontColor || "#000000"};">
       ${formattedBody}
       ${formattedSignature ? `<br><br>--<br>${formattedSignature}` : ""}
+      ${neatmailFooter}
     </div>
   `.trim();
 
