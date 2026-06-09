@@ -80,8 +80,12 @@ export async function handleLabelCorrections(
     if (!correct_label || !wrong_label) continue;
 
     const [correctTag, wrongTag] = await Promise.all([
-      db.tag.findFirst({ where: { name: correct_label, user_id: clerkUserId } }),
-      db.tag.findFirst({ where: { name: wrong_label, user_id: clerkUserId } }),
+      db.tag.findFirst({
+        where: { name: correct_label, OR: [{ user_id: clerkUserId }, { user_id: null }] },
+      }),
+      db.tag.findFirst({
+        where: { name: wrong_label, OR: [{ user_id: clerkUserId }, { user_id: null }] },
+      }),
     ]);
 
     if (!correctTag || !wrongTag) continue;
@@ -102,7 +106,9 @@ export async function handleLabelCorrections(
       const fullBody = await getGmailMessageBody(clerkUserId, messageId);
       const bodySnippet = escapeHtml(fullBody?.slice(0, 1000) ?? "");
 
-      // Fire the correction API
+      console.log(
+        `[Correction] Sending: "${correct_label}" → "${wrong_label}"`,
+      );
       await correctLabel({
         user_id: clerkUserId,
         subject,
