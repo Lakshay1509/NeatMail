@@ -102,8 +102,17 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
   let responseRequired = false;
   let classification: ModelResponse | undefined;
 
-  
-  
+  if (from === "digest@send.neatmail.app") {
+    const hasActionNeededTag = tagsOfUser.some(
+      (tag) => tag.tag.name === "Action Needed",
+    );
+    if (!hasActionNeededTag) {
+      return { skipped: true, reason: "digest email, no action needed tag" };
+    }
+    labelName = "Action Needed";
+  }
+
+  if (!labelName) {
     classification = await getModelResponse({
       bodySnippet: body,
       from: from,
@@ -117,7 +126,7 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
     });
     labelName = classification.category;
     responseRequired = classification.response_required === true;
-  
+  }
 
   const shouldDraft =
     (labelName === "Pending Response" || labelName === "Action Needed") &&

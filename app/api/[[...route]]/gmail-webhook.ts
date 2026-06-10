@@ -268,49 +268,63 @@ const app = new Hono().post("/", async (ctx) => {
       let labelName = "";
       let responseRequired = false;
       let classificationResult: ModelResponse | null = null;
-      const hasMarketingTag = tagsOfUser.some(
-        (tag) => tag.tag.name === "Marketing",
-      );
-      const hasReadonlyTag = tagsOfUser.some(
-        (tag) => tag.tag.name === "Read only",
-      );
 
-      const hasAutomatedAlertTag = tagsOfUser.some(
-        (tag) => tag.tag.name === "Automated alerts",
-      );
+      const { senderEmail: fromEmail } = parseFromHeader(emailData.from);
+      if (fromEmail === "digest@send.neatmail.app") {
+        const hasActionNeededTag = tagsOfUser.some(
+          (tag) => tag.tag.name === "Action Needed",
+        );
+        if (!hasActionNeededTag) {
+          currentMessageId = null;
+          continue;
+        }
+        labelName = "Action Needed";
+      }
+      if (!labelName) {
+        const hasMarketingTag = tagsOfUser.some(
+          (tag) => tag.tag.name === "Marketing",
+        );
+        const hasReadonlyTag = tagsOfUser.some(
+          (tag) => tag.tag.name === "Read only",
+        );
 
-      if (
-        email.data.labelIds?.includes("CATEGORY_PROMOTIONS") &&
-        hasMarketingTag
-      ) {
-        labelName = "Marketing";
-      } else if (
-        hasReadonlyTag &&
-        email.data.labelIds?.includes("CATEGORY_SOCIAL")
-      ) {
-        labelName = "Read only";
-      } else if (
-        (email.data.labelIds?.includes("CATEGORY_PROMOTIONS") ||
-          email.data.labelIds?.includes("CATEGORY_SOCIAL")) &&
-        hasAutomatedAlertTag
-      ) {
-        labelName = "Automated alerts";
-      } else {
-        const classification = await getModelResponse({
-          bodySnippet: emailData.bodySnippet,
-          from: emailData.from,
-          subject: emailData.subject,
-          user_id: emailData.userId,
-          tags: tagsOfUser.map((t) => ({
-            name: t.tag.name,
-            description: t.tag.description ?? "",
-          })),
-          sensitivity: draftsenstivity || "if actionable",
-        });
-        classificationResult = classification;
-        labelName = classification.category;
+        const hasAutomatedAlertTag = tagsOfUser.some(
+          (tag) => tag.tag.name === "Automated alerts",
+        );
 
-        responseRequired = classification.response_required === true;
+        if (
+          email.data.labelIds?.includes("CATEGORY_PROMOTIONS") &&
+          hasMarketingTag
+        ) {
+          labelName = "Marketing";
+        } else if (
+          hasReadonlyTag &&
+          email.data.labelIds?.includes("CATEGORY_SOCIAL")
+        ) {
+          labelName = "Read only";
+        } else if (
+          (email.data.labelIds?.includes("CATEGORY_PROMOTIONS") ||
+            email.data.labelIds?.includes("CATEGORY_SOCIAL")) &&
+          hasAutomatedAlertTag
+        ) {
+          labelName = "Automated alerts";
+        } else {
+          const classification = await getModelResponse({
+            bodySnippet: emailData.bodySnippet,
+            from: emailData.from,
+            subject: emailData.subject,
+            user_id: emailData.userId,
+            tags: tagsOfUser.map((t) => ({
+              name: t.tag.name,
+              description: t.tag.description ?? "",
+            })),
+            sensitivity: draftsenstivity || "if actionable",
+          });
+          classificationResult = classification;
+          labelName = classification.category;
+
+          responseRequired = classification.response_required === true;
+        }
       }
 
       const shouldDraft =
