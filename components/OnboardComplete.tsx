@@ -1,161 +1,105 @@
-import { useEffect, useState } from 'react';
-import { Mail, Check } from 'lucide-react';
+'use client'
+
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import ReactConfetti from 'react-confetti'
+import { Check } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface OnboardingSuccessDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-interface Confetti {
-  id: number;
-  left: number;
-  delay: number;
-  duration: number;
-  color: string;
+  isOpen: boolean
+  onClose: () => void
 }
 
 export default function OnboardingSuccessDialog({ isOpen, onClose }: OnboardingSuccessDialogProps) {
-  const [confetti, setConfetti] = useState<Confetti[]>([]);
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 })
+  const [showConfetti, setShowConfetti] = useState(false)
+  const prefersReducedMotion = useRef(false)
 
   useEffect(() => {
-    if (isOpen) {
-      const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
-      const pieces: Confetti[] = Array.from({ length: 50 }, (_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        delay: Math.random() * 0.5,
-        duration: 2 + Math.random() * 1,
-        color: colors[Math.floor(Math.random() * colors.length)],
-      }));
-      setConfetti(pieces);
-    }
-  }, [isOpen]);
+    prefersReducedMotion.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  }, [])
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    const onResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight })
+    onResize()
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  useEffect(() => {
+    if (!isOpen || prefersReducedMotion.current) return
+    const timer = setTimeout(() => setShowConfetti(true), 100)
+    return () => clearTimeout(timer)
+  }, [isOpen])
+
+  const handleConfettiComplete = useCallback(() => {
+    setShowConfetti(false)
+  }, [])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-transparent bg-opacity-50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate-scale-in overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {confetti.map((piece) => (
-            <div
-              key={piece.id}
-              className="confetti-piece"
-              style={{
-                left: `${piece.left}%`,
-                animationDelay: `${piece.delay}s`,
-                animationDuration: `${piece.duration}s`,
-                backgroundColor: piece.color,
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="relative z-10">
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center animate-bounce-in">
-                <Check className="w-10 h-10 text-white" strokeWidth={3} />
-              </div>
-              <div className="absolute -top-1 -right-1 w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center animate-scale-in-delayed">
-                <Mail className="w-4 h-4 text-white" />
-              </div>
-            </div>
-          </div>
-
-          <h2 className="text-2xl font-bold text-gray-900 text-center mb-3">
-            Your account is setup!
-          </h2>
-
-          <p className="text-gray-600 text-center mb-8 leading-relaxed">
-            NeatMail will watch the incoming mails in your inbox and keep everything organized for you.
-          </p>
-
-          <button
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
+        >
+          <motion.div
+            className="absolute inset-0 bg-black/40"
             onClick={onClose}
-            className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          />
+
+          {showConfetti && windowSize.width > 0 && (
+            <ReactConfetti
+              width={windowSize.width}
+              height={windowSize.height}
+              numberOfPieces={300}
+              recycle={false}
+              colors={['#1a1a1a', '#4d4d4d', '#808080', '#cccccc']}
+              gravity={0.12}
+              tweenDuration={3000}
+              onConfettiComplete={handleConfettiComplete}
+              style={{ position: 'fixed', top: 0, left: 0, zIndex: 60, pointerEvents: 'none' }}
+            />
+          )}
+
+          <motion.div
+            className="relative z-50 bg-background rounded-xl shadow-floating max-w-sm w-full p-8"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
           >
-            Get Started
-          </button>
-        </div>
-      </div>
+            <div className="text-center">
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-foreground">
+                <Check className="h-7 w-7 text-background" strokeWidth={2.5} />
+              </div>
 
-      <style>{`
-        @keyframes scale-in {
-          from {
-            opacity: 0;
-            transform: scale(0.9);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
+              <h2 className="text-xl font-semibold tracking-tight text-foreground mb-2">
+                Your account is set up
+              </h2>
 
-        @keyframes bounce-in {
-          0% {
-            opacity: 0;
-            transform: scale(0);
-          }
-          50% {
-            transform: scale(1.1);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
+              <p className="text-muted-foreground text-sm leading-relaxed mb-7">
+                NeatMail is now sorting your inbox. You&apos;ll get a daily digest and alerts wherever you prefer.
+              </p>
 
-        @keyframes scale-in-delayed {
-          0%, 20% {
-            opacity: 0;
-            transform: scale(0);
-          }
-          50% {
-            transform: scale(1.2);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-
-        @keyframes confetti-fall {
-          0% {
-            transform: translateY(-100vh) rotate(0deg);
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(100vh) rotate(720deg);
-            opacity: 0;
-          }
-        }
-
-        .animate-scale-in {
-          animation: scale-in 0.3s ease-out;
-        }
-
-        .animate-bounce-in {
-          animation: bounce-in 0.6s ease-out;
-        }
-
-        .animate-scale-in-delayed {
-          animation: scale-in-delayed 0.8s ease-out;
-        }
-
-        .confetti-piece {
-          position: absolute;
-          width: 10px;
-          height: 10px;
-          animation: confetti-fall linear forwards;
-          border-radius: 2px;
-        }
-      `}</style>
-    </div>
-  );
+              <Button
+                onClick={onClose}
+                className="w-full h-11 text-base font-medium"
+              >
+                Get Started
+              </Button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
 }

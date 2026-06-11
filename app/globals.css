@@ -92,6 +92,8 @@ body{
 
     --color-sidebar-ring: var(--sidebar-ring);
 
+    --shadow-floating: 0 4px 16px rgba(0, 0, 0, 0.12);
+
 }
 
 :root {
