@@ -937,6 +937,23 @@ Founder, NeatMail`,
 
           const userEmail = pref.user_tokens.email;
           const userId = pref.user_tokens.clerk_user_id;
+
+          // Skip free users with no tracked emails in last 24 hours
+          if (pref.user_tokens.tier === "FREE") {
+            const recentCount = await db.email_tracked.count({
+              where: {
+                user_id: userId,
+                created_at: {
+                  gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+                },
+              },
+            });
+            if (recentCount === 0) {
+              results.skipped++;
+              continue;
+            }
+          }
+
           const count = await getDigestCount(userId);
 
           if (count === 0) {
