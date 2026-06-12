@@ -518,7 +518,7 @@ const app = new Hono()
               where: { clerk_user_id: trial.user_id },
               data: { tier: "FREE" },
             });
-          }
+          
           const client = await clerkClient();
           const clerkUser = await client.users.getUser(trial.user_id);
 
@@ -551,6 +551,7 @@ const app = new Hono()
               },
             },
           });
+        }
         } catch (error) {
           console.error(
             `Failed to send free trial  reminder to ${trial.user_tokens.email}:`,
