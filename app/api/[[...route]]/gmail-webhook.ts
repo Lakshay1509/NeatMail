@@ -271,14 +271,14 @@ const app = new Hono().post("/", async (ctx) => {
 
       const { senderEmail: fromEmail } = parseFromHeader(emailData.from);
       if (fromEmail === "digest@send.neatmail.app") {
-        const hasActionNeededTag = tagsOfUser.some(
+        const hasAumNeededTag = tagsOfUser.some(
           (tag) => tag.tag.name === "Automated alerts",
         );
-        if (!hasActionNeededTag) {
+        if (!hasAumNeededTag) {
           currentMessageId = null;
           continue;
         }
-        labelName = "Action Needed";
+        labelName = "Automated alerts";
       }
       if (!labelName) {
         const hasMarketingTag = tagsOfUser.some(

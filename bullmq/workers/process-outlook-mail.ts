@@ -103,13 +103,13 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
   let classification: ModelResponse | undefined;
 
   if (from === "digest@send.neatmail.app") {
-    const hasActionNeededTag = tagsOfUser.some(
+    const hasAumNeededTag = tagsOfUser.some(
       (tag) => tag.tag.name === "Automated alerts",
     );
-    if (!hasActionNeededTag) {
+    if (!hasAumNeededTag) {
       return { skipped: true, reason: "digest email, no auomated alert tag" };
     }
-    labelName = "Action Needed";
+    labelName = "Automated alerts";
   }
 
   if (!labelName) {
