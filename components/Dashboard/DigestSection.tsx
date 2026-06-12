@@ -108,9 +108,7 @@ function DigestRow({
   };
 
   return (
-    <div
-      className="group border-b border-border last:border-b-0 transition-shadow duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
-    >
+    <div className="group border-b border-border last:border-b-0">
       <div className="flex items-start justify-between gap-3 px-1 py-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold leading-snug text-foreground">
