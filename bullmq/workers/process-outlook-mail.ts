@@ -104,10 +104,10 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
 
   if (from === "digest@send.neatmail.app") {
     const hasActionNeededTag = tagsOfUser.some(
-      (tag) => tag.tag.name === "Action Needed",
+      (tag) => tag.tag.name === "Automated alerts",
     );
     if (!hasActionNeededTag) {
-      return { skipped: true, reason: "digest email, no action needed tag" };
+      return { skipped: true, reason: "digest email, no auomated alert tag" };
     }
     labelName = "Action Needed";
   }
