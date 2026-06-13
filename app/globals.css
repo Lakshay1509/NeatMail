@@ -255,7 +255,140 @@ body{
     @apply bg-background text-foreground antialiased;
     font-family: 'Bricolage Grotesque', system-ui, sans-serif;
   }
-  
-  
+}
+
+/* ── Hayes chat markdown ─────────────────────────────────────── */
+.chat-markdown {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #1a1a1a;
+  word-break: break-word;
+}
+
+.chat-markdown > *:first-child {
+  margin-top: 0;
+}
+
+.chat-markdown > *:last-child {
+  margin-bottom: 0;
+}
+
+.chat-markdown p {
+  margin: 0.4em 0;
+}
+
+.chat-markdown h1,
+.chat-markdown h2,
+.chat-markdown h3,
+.chat-markdown h4 {
+  font-weight: 700;
+  margin: 0.8em 0 0.3em;
+  line-height: 1.25;
+  color: #000;
+}
+
+.chat-markdown h1 { font-size: 1.15em; }
+.chat-markdown h2 { font-size: 1.08em; }
+.chat-markdown h3 { font-size: 1em; }
+
+.chat-markdown strong,
+.chat-markdown b {
+  font-weight: 600;
+  color: #000;
+}
+
+.chat-markdown em,
+.chat-markdown i {
+  font-style: italic;
+}
+
+.chat-markdown a {
+  color: #0075de;
+  text-decoration: none;
+}
+
+.chat-markdown a:hover {
+  text-decoration: underline;
+}
+
+.chat-markdown ul,
+.chat-markdown ol {
+  margin: 0.4em 0;
+  padding-left: 1.4em;
+}
+
+.chat-markdown li {
+  margin: 0.15em 0;
+}
+
+.chat-markdown li::marker {
+  color: #a39e98;
+}
+
+.chat-markdown code {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 0.88em;
+  background: #f6f5f4;
+  border: 1px solid #e6e6e6;
+  border-radius: 4px;
+  padding: 0.15em 0.35em;
+  color: #31302e;
+}
+
+.chat-markdown pre {
+  margin: 0.5em 0;
+  padding: 0.75em 1em;
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.chat-markdown pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.85em;
+  color: #e6e6e6;
+}
+
+.chat-markdown blockquote {
+  margin: 0.4em 0;
+  padding: 0.25em 0.75em;
+  border-left: 3px solid #e6e6e6;
+  color: #615d59;
+}
+
+.chat-markdown hr {
+  margin: 0.75em 0;
+  border: none;
+  border-top: 1px solid #e6e6e6;
+}
+
+.chat-markdown table {
+  width: 100%;
+  margin: 0.5em 0;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.chat-markdown th,
+.chat-markdown td {
+  padding: 0.35em 0.6em;
+  border: 1px solid #e6e6e6;
+  text-align: left;
+}
+
+.chat-markdown th {
+  font-weight: 600;
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.125px;
+  background: #f6f5f4;
+  color: #31302e;
+}
+
+.chat-markdown img {
+  max-width: 100%;
+  border-radius: 8px;
 }
 

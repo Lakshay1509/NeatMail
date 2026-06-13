@@ -1,5 +1,5 @@
 "use client"
-import { Home, Receipt, Tag, PenLine, Plug, MailX, Inbox, MessageSquareDashed, AlertCircle, Send, Bell, CheckSquare, ChevronDown } from "lucide-react"
+import { Home, Receipt, Tag, PenLine, Plug, MailX, Inbox, MessageSquareDashed, AlertCircle, Send, Bell, CheckSquare, ChevronDown, MessageSquareDashedIcon } from "lucide-react"
 import { motion, LayoutGroup } from "framer-motion"
 
 import {
@@ -49,6 +49,7 @@ type SidebarItem = {
 
 const items: SidebarItem[] = [
   { title: "Home", url: "/", icon: Home },
+  { title: "Chat", url: "/chat", icon: MessageSquareDashedIcon },
   { title: "Todos", url: "/todos", icon: CheckSquare },
   { title: "Labels", url: "/settings/labels", icon: Tag },
   { title: "Draft preference", url: "/settings/draft-preference", icon: PenLine },
@@ -62,9 +63,9 @@ const userSettingsItems: SidebarItem[] = [
   { title: "Danger Zone", url: "/danger", icon: AlertCircle, danger: true },
 ]
 
-const followUpItems: SidebarItem[] = [
-  { title: "Follow ups", url: "/follow-ups", icon: Send },
-]
+// const followUpItems: SidebarItem[] = [
+//   { title: "Follow ups", url: "/follow-ups", icon: Send },
+// ]
 
 const cleanupItems: SidebarItem[] = [
   { title: "Unsubscribe", url: "/unsubscribe", icon: MailX },
@@ -72,6 +73,7 @@ const cleanupItems: SidebarItem[] = [
 ]
 
 const FREE_GATED_TITLES = new Set([
+  "AI Chat",
   "Labels",
   "Draft preference",
   "Daily Digest",
@@ -117,6 +119,11 @@ export function AppSidebar() {
               )}
               <Icon size={16} className="shrink-0 opacity-70 group-data-[active=true]/menu-button:opacity-100 group-hover:opacity-100" aria-hidden="true" />
               <span>{item.title}</span>
+              {item.title === "Chat" && (
+                <span className="text-[9px] font-semibold tracking-wider uppercase text-[#a39e98] ml-auto px-1.5 py-0.5 rounded-full border border-[#e6e6e6] leading-none">
+                  beta
+                </span>
+              )}
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -136,7 +143,7 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarSeparator />
+        {/* <SidebarSeparator />
         <SidebarGroup>
           <SidebarGroupLabel className="text-[10.5px] font-medium tracking-widest uppercase text-sidebar-foreground/50 pb-1">
             Review
@@ -148,7 +155,7 @@ export function AppSidebar() {
               </LayoutGroup>
             </SidebarMenu>
           </SidebarGroupContent>
-        </SidebarGroup>
+        </SidebarGroup> */}
         <SidebarSeparator />
         <SidebarGroup>
           <SidebarGroupLabel className="text-[10.5px] font-medium tracking-widest uppercase text-sidebar-foreground/50 pb-1">
