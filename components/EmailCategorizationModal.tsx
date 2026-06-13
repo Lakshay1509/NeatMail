@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
@@ -9,6 +9,15 @@ import { toast } from "sonner"
 import UpdateFolderPrefernce from "./UpdateFolderPrefernce"
 import { useOnboard } from "@/features/onboard/use-onboard"
 import { Loader2 } from "lucide-react"
+
+const STEPS = [
+  "Activating free trial...",
+  "Setting up inbox watch...",
+  "Creating draft preferences...",
+  "Setting up daily digest...",
+  "Syncing email history...",
+  "Saving categories...",
+]
 
 export const CATEGORIES = [
 	{ name: 'Action Needed', color: '#cc3a21', outlookColor: 'preset0', description: 'Direct request to complete a task, approve, sign, submit, or decide.' },
@@ -32,9 +41,26 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 	const [selectedCategories, setSelectedCategories] = useState<string[]>([])
 	
 	const [showSuccessDialog, setShowSuccessDialog] = useState<boolean>(false);
+	const [stepIndex, setStepIndex] = useState(0);
+	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 	const onboardMutation = useOnboard();
 
 	const isPending = onboardMutation.isPending;
+
+	useEffect(() => {
+		if (isPending) {
+			setStepIndex(0);
+			intervalRef.current = setInterval(() => {
+				setStepIndex((prev) => (prev + 1) % STEPS.length);
+			}, 2000);
+		} else {
+			if (intervalRef.current) clearInterval(intervalRef.current);
+			intervalRef.current = null;
+		}
+		return () => {
+			if (intervalRef.current) clearInterval(intervalRef.current);
+		};
+	}, [isPending]);
 	
 	const toggleCategory = (categoryName: string) => {
 		setSelectedCategories(prev =>
@@ -135,8 +161,8 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 					>
 						{isPending ? (
 							<div className="flex items-center gap-2">
-								<Loader2 className="h-5 w-5 animate-spin" />
-								Setting up...
+								<Loader2 className="h-5 w-5 animate-spin shrink-0" />
+								<span className="animate-pulse">{STEPS[stepIndex]}</span>
 							</div>
 						) : (
 							isValid ? 'Update preferences' : `Select ${1 - selectedCategories.length} more categories`
