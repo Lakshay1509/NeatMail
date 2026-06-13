@@ -529,7 +529,10 @@ const app = new Hono()
           tier: "FREE",
           watch_activated: true,
           deleted_flag: false,
-          free_trial: null,
+          OR: [
+            { free_trial: null },
+            { free_trial: { status: { not: "ACTIVE" } } },
+          ],
           subscriptions: { none: { status: "active" } },
         },
         select: {
