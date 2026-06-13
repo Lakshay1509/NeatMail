@@ -49,7 +49,7 @@ function ChatMessageComponent({ message, userName }: ChatMessageProps) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-      className={`flex items-start gap-3 px-4 py-2 max-w-[720px] ${
+      className={`flex items-start gap-2 sm:gap-3 px-2 sm:px-4 py-1.5 sm:py-2 max-w-[720px] ${
         isUser ? "ml-auto flex-row-reverse" : ""
       }`}
     >

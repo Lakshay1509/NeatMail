@@ -102,7 +102,7 @@ export function ChatPage() {
             <ChatEmptyState onSuggestionClick={handleSuggestionClick} />
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto py-6 space-y-1">
+          <div className="max-w-4xl mx-auto px-0 sm:px-4 py-3 sm:py-6 space-y-1">
             {messages.map((msg) => (
               <ChatMessage
                 key={msg.id}

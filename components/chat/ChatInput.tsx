@@ -65,7 +65,7 @@ export function ChatInput({ value, onChange, onSend, onNewChat, disabled }: Chat
   const nearLimit = charCount >= 1800
 
   return (
-    <div className="w-full flex flex-col items-center px-4 pt-2" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 1rem))" }}>
+    <div className="w-full flex flex-col items-center px-2 sm:px-4 pt-2" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 1rem))" }}>
       <div className="w-full max-w-4xl">
         {/* White card floats off the canvas via shadow — no hard divider */}
         <div className="flex items-end gap-2 bg-white rounded-2xl px-4 py-3
