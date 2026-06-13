@@ -23,6 +23,7 @@ import digest from './digest'
 import bullboard from './bullboard'
 import geo from './geo'
 import health from './health'
+import chat from './chat'
 
 export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
@@ -95,6 +96,7 @@ const routes = app
     .route('/bullboard',bullboard)
     .route('/health',health)
     .route('/geo',geo)
+    .route('/chat',chat)
 
 
 

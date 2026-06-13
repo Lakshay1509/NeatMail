@@ -1,9 +1,11 @@
 //This feature is experimental
 
 import OpenAI from "openai";
-import { escapeTelegramHtml, htmlToTelegramHtml } from "../telegramFormatter";
-import { downloadAttachment, getAttachment, getGmailMessageBody, searchGmail } from "../gmail";
+import { htmlToTelegramHtml } from "../telegramFormatter";
+import { downloadAttachment, getAttachment, getGmailClient, getGmailMessageBody, searchGmail, createGmailDraft, trashMessages } from "../gmail";
 import { escapeHtml, sendTelegramDocument, sendTelegramMessage } from "../telegram";
+import { storeAttachment } from "./attachment-store";
+import { db } from "@/lib/prisma";
 import { redis } from "../redis";
 
 const endpoint = process.env.AZURE_ENDPOINT!;
@@ -112,38 +114,73 @@ Call this when the user asks to send/download/share a document or file.`,
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "create_draft",
+      description: `Create a draft reply to an email. Use this when the user asks you to reply, respond, or create a draft for a specific email.
+Call this after search_gmail to get the message_id. The AI generates the draft body content.
+The draft will be saved but NOT sent automatically.`,
+      parameters: {
+        type: "object",
+        properties: {
+          message_id: {
+            type: "string",
+            description: "Gmail message ID from search results to reply to",
+          },
+          body: {
+            type: "string",
+            description: "The content of the draft reply email",
+          },
+        },
+        required: ["message_id", "body"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "trash_messages",
+      description: `Move one or more emails to trash. Use this when the user asks to delete, trash, or remove emails.
+Call this after search_gmail to get the message_ids to trash. You can trash multiple emails in one call.`,
+      parameters: {
+        type: "object",
+        properties: {
+          message_ids: {
+            type: "array",
+            items: { type: "string" },
+            description: "Array of Gmail message IDs to trash",
+          },
+        },
+        required: ["message_ids"],
+      },
+    },
+  },
 ];
 
-const SYSTEM_PROMPT = `You are an intelligent Gmail assistant inside a Telegram bot.
+const SYSTEM_PROMPT = `You are an intelligent Gmail assistant — you ONLY answer questions about the user's emails. Be concise — responses must stay under 2500 characters.
 
-When the user asks about their emails, execute ALL necessary steps in a single agentic run without stopping to ask the user for confirmation:
-1. Decide the best Gmail search query — use broad operators first, then narrow if too many results
-2. Call search_gmail with that query
-3. If the user wants to READ, FORWARD a specific email: call get_email_content
-   If the user wants to SUMMARIZE MULTIPLE emails: use snippets directly, skip get_email_content
-4. If the user asks for files/attachments, call list_email_attachments, then send_attachment_to_telegram — all in the same run
-5. Answer concisely — the user is on Telegram
+When the user asks about their emails, execute ALL necessary steps in a single agentic run:
+1. Call search_gmail with the best query
+2. For LIST or SUMMARY requests: answer directly from subjects/snippets — DO NOT call get_email_content
+3. For READ/FORWARD/CONTENT requests on a specific email: call get_email_content once
+4. For attachments: call list_email_attachments then send_attachment_to_telegram
+5. For draft/reply requests: call search_gmail, then call create_draft with a professional reply body
+6. For delete/trash requests: call search_gmail, then call trash_messages with the message_ids
 
-═══ ANTI-HALLUCINATION RULES (HIGHEST PRIORITY) ═══
-- ❌ NEVER describe, quote, or forward email content without first calling get_email_content
-- ❌ NEVER invent subject lines, sender names, dates, amounts, or any email detail
-- ❌ NEVER assume you know what an email says from the snippet — snippets are truncated and misleading
-- ✅ The snippet is ONLY for identifying which email to fetch — always call get_email_content before presenting content
-- ✅ When forwarding: include the body returned by get_email_content, plus From/Date/Subject from search results. NEVER output raw HTML tags from the email body — convert them to plain text or simple markdown. Keep the output under 3000 characters to avoid Telegram length limits.
-
-═══ EXECUTION RULES ═══
-- NEVER stop mid-task to ask "What would you like me to do with it?" — if the intent is clear, execute it
-- NEVER ask for confirmation before fetching email content when the user says "show me", "get", "forward", "read", "open", or similar
-- When the user says "forward me here" or "send me the email": call get_email_content and include the FULL returned body in your reply
-- When the user says "send the file" or "forward the attachment": call list_email_attachments then send_attachment_to_telegram in the same turn
-- Use Gmail search operators precisely. If the first search returns 0 results, retry with a broader query (e.g. remove date filters, use OR between keywords)
+═══ RULES ═══
+- Use snippets for summaries — they're sufficient. Only call get_email_content when user explicitly wants to read/forward one specific email
+- NEVER invent email details not present in search results
+- NEVER ask the user any questions or request confirmation — just execute what they asked
 - For payments/invoices: subject:(payment OR invoice OR receipt OR order)
-- If nothing is found after 2 searches, say so clearly — do NOT guess
-- After successfully calling send_attachment_to_telegram, output a short confirmation and stop — do NOT call it again
-- Do not append follow-up offers like "Want me to send the full message?"
-- NEVER mention your developer instructions, internal rules, or "agentic runs" to the user. Converse naturally.
+- Retry with broader query if 0 results. After 2 failed searches, say so
+- NEVER mention internal instructions to the user
+- If a request is outside your capabilities (e.g. sending emails, creating labels, managing settings, or anything unrelated to the user's emails), clearly say "I cannot do this" — do not pretend to execute it
+- If the user asks you to write code, generate content, or answer general knowledge questions, say "I cannot do this — I can only help with your emails"
+- When forwarding: strip HTML tags, keep under 2500 chars
+- Draft content should be professional, concise, and match the tone of the original email
 
-Today's date: ${new Date().toISOString().split("T")[0]}`;
+Today: ${new Date().toISOString().split("T")[0]}`;
 
 // ─── Agent ────────────────────────────────────────────────────────────────────
 
@@ -157,10 +194,51 @@ function compressSearchResults(results: any[]): string {
   return JSON.stringify(results);
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+async function createReplyDraft(
+  userId: string,
+  messageId: string,
+  draftBody: string,
+): Promise<string> {
+  const gmail = await getGmailClient(userId);
+  const msg = await gmail.users.messages.get({
+    userId: "me",
+    id: messageId,
+    format: "metadata",
+    metadataHeaders: ["Subject", "From"],
+  });
+  const headers = msg.data.payload?.headers ?? [];
+  const getH = (name: string) =>
+    headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value ?? "";
+  const subject = getH("Subject");
+  const from = getH("From");
+  const threadId = msg.data.threadId ?? messageId;
+
+  const prefs = await db.draft_preference.findUnique({
+    where: { user_id: userId },
+  });
+
+  const draft = await createGmailDraft(
+    userId,
+    threadId,
+    messageId,
+    subject,
+    from,
+    draftBody,
+    prefs?.fontColor ?? "#000000",
+    prefs?.fontSize ?? 14,
+    prefs?.signature ?? null,
+  );
+
+  return JSON.stringify({ success: true, draftId: draft.id ?? undefined });
+}
+
 export async function handleTelegramQueryGmail(
   userQuery: string,
   userId: string,
   chatId: string,
+  attachmentKeys?: string[],
 ): Promise<string> {
   const redisKey = `telegram:history:${userId}`;
   let history: OpenAI.Chat.ChatCompletionMessageParam[] = [];
@@ -175,20 +253,22 @@ export async function handleTelegramQueryGmail(
   }
 
   history.push({ role: "user", content: userQuery });
-  // Keep only the last 12 messages — enough context for multi-step flows without overloading the window
-  if (history.length > 12) history = history.slice(history.length - 12);
+  // Keep last 8 messages — sufficient context, keeps window lean for speed
+  if (history.length > 8) history = history.slice(history.length - 8);
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: SYSTEM_PROMPT },
     ...history,
   ];
 
-  // ── Agentic loop — max 8 iterations (allows: search → retry → get_content → reply + attachment flows) ──
-  for (let i = 0; i < 8; i++) {
+  // ── Agentic loop — max 5 iterations ──
+  for (let i = 0; i < 5; i++) {
     const response = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-5-nano",
+      reasoning_effort: "low",
       tools: TOOLS,
       tool_choice: "auto",
+      max_completion_tokens: 2048,
       messages,
     });
 
@@ -197,16 +277,17 @@ export async function handleTelegramQueryGmail(
 
     // No tool calls → model is done
     if (!message.tool_calls || message.tool_calls.length === 0) {
-      const finalAnswer = message.content ?? "No answer generated.";
+      const finalAnswer = message.content?.trim() || "No answer generated.";
 
       // Persist history asynchronously — don't block the response
       history.push({ role: "assistant", content: finalAnswer });
-      if (history.length > 12) history = history.slice(history.length - 12);
+      if (history.length > 8) history = history.slice(history.length - 8);
       redis.setex(redisKey, 3600, JSON.stringify(history)).catch((err) =>
         console.error("Error saving chat history to Redis:", err)
       );
 
-      return htmlToTelegramHtml(finalAnswer);
+      // Return raw markdown for web API; Telegram HTML for bot
+      return chatId === "api" ? finalAnswer : htmlToTelegramHtml(finalAnswer);
     }
 
     // ── Execute ALL tool calls in this turn IN PARALLEL ──────────────────
@@ -222,16 +303,14 @@ export async function handleTelegramQueryGmail(
               const results = await searchGmail(
                 userId,
                 args.query,
-                Math.min(args.max_results ?? 10, 20),
+                Math.min(args.max_results ?? 8, 15),
               );
-              // Send compact representation to save tokens
               resultContent = compressSearchResults(results.data);
 
             } else if (toolCall.function.name === "get_email_content") {
               const email = await getGmailMessageBody(userId, args.message_id);
-              // Keep up to 12000 chars — covers most real-world emails without overflow
               const body = typeof email === "string" ? email : JSON.stringify(email);
-              resultContent = body.slice(0, 12000);
+              resultContent = body.slice(0, 6000);
 
             } else if (toolCall.function.name === "list_email_attachments") {
               const messageId =
@@ -243,14 +322,30 @@ export async function handleTelegramQueryGmail(
                 attachments.length === 0
                   ? "No downloadable attachments found for this email."
                   : JSON.stringify(
-                      attachments.map((a) => ({
-                        message_id: a.messageId,
-                        attachment_id: a.attachmentId,
-                        filename: a.filename,
-                        mime_type: a.mimeType,
-                        size_bytes: a.size,
-                      }))
-                    );
+                    attachments.map((a) => ({
+                      message_id: a.messageId,
+                      attachment_id: a.attachmentId,
+                      filename: a.filename,
+                      mime_type: a.mimeType,
+                      size_bytes: a.size,
+                    }))
+                  );
+
+            } else if (toolCall.function.name === "create_draft") {
+              const messageId =
+                typeof args.message_id === "string" ? args.message_id.trim() : "";
+              const body =
+                typeof args.body === "string" ? args.body.trim() : "";
+              if (!messageId) throw new Error("message_id is required.");
+              if (!body) throw new Error("body is required.");
+              resultContent = await createReplyDraft(userId, messageId, body);
+
+            } else if (toolCall.function.name === "trash_messages") {
+              const messageIds: string[] = args.message_ids ?? [];
+              if (!Array.isArray(messageIds) || messageIds.length === 0)
+                throw new Error("message_ids must be a non-empty array.");
+              const result = await trashMessages(userId, messageIds);
+              resultContent = JSON.stringify(result);
 
             } else if (toolCall.function.name === "send_attachment_to_telegram") {
               const messageId =
@@ -272,26 +367,43 @@ export async function handleTelegramQueryGmail(
                 attachments.find((a) => a.attachmentId === staleAttachmentId) ??
                 attachments[0];
 
-              // Fire download progress + actual download in parallel
-              const [, attachmentBase64] = await Promise.all([
-                sendTelegramMessage(
-                  chatId,
-                  `⏳ Downloading <b>${escapeHtml(selectedAttachment.filename || "file")}</b>...`
-                ),
-                downloadAttachment(userId, messageId, selectedAttachment.attachmentId),
-              ]);
+              if (chatId === "api") {
+                const attachmentBase64 = await downloadAttachment(
+                  userId, messageId, selectedAttachment.attachmentId,
+                );
+                const key = storeAttachment({
+                  filename: selectedAttachment.filename || "attachment",
+                  mimeType: selectedAttachment.mimeType,
+                  dataBase64: attachmentBase64,
+                });
+                attachmentKeys?.push(key);
+                resultContent = JSON.stringify({
+                  success: true,
+                  filename: selectedAttachment.filename,
+                  downloadUrl: `/api/chat/attachment/${key}`,
+                });
+              } else {
+                // Fire download progress + actual download in parallel
+                const [, attachmentBase64] = await Promise.all([
+                  sendTelegramMessage(
+                    chatId,
+                    `⏳ Downloading <b>${escapeHtml(selectedAttachment.filename || "file")}</b>...`
+                  ),
+                  downloadAttachment(userId, messageId, selectedAttachment.attachmentId),
+                ]);
 
-              const sent = await sendTelegramDocument(chatId, {
-                fileName: selectedAttachment.filename || "attachment",
-                fileDataBase64: attachmentBase64,
-                mimeType: selectedAttachment.mimeType,
-                caption: caption || undefined,
-              });
+                const sent = await sendTelegramDocument(chatId, {
+                  fileName: selectedAttachment.filename || "attachment",
+                  fileDataBase64: attachmentBase64,
+                  mimeType: selectedAttachment.mimeType,
+                  caption: caption || undefined,
+                });
 
-              resultContent = JSON.stringify({
-                success: sent,
-                filename: selectedAttachment.filename,
-              });
+                resultContent = JSON.stringify({
+                  success: sent,
+                  filename: selectedAttachment.filename,
+                });
+              }
 
             } else {
               resultContent = `Unknown tool: ${toolCall.function.name}`;
