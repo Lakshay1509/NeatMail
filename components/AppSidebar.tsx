@@ -72,10 +72,14 @@ const cleanupItems: SidebarItem[] = [
 ]
 
 const FREE_GATED_TITLES = new Set([
+  "Labels",
+  "Draft preference",
+  "Daily Digest",
   "Integrations",
   "Follow ups",
   "Unsubscribe",
   "Large emails",
+  "Todos"
 ])
 
 export function AppSidebar() {
@@ -165,13 +169,13 @@ export function AppSidebar() {
             <SidebarMenuButton className="pointer-events-none">
               <span
                 className="h-1.5 w-1.5 rounded-full shrink-0"
-                style={{ backgroundColor: TIER_COLORS[tier] }}
+                style={{ backgroundColor: isFree ? "#6B7280" : TIER_COLORS[tier] }}
               />
               <span
                 className="text-xs font-medium"
-                style={{ color: TIER_COLORS[tier] }}
+                style={{ color: isFree ? "#6B7280" : TIER_COLORS[tier] }}
               >
-                {TIER_LABELS[tier]} plan
+                {isFree ? "Not subscribed" : `${TIER_LABELS[tier]} plan`}
               </span>
             </SidebarMenuButton>
           </SidebarMenuItem>

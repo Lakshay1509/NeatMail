@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { getDodoPayments } from "./checkout";
 import { zValidator } from "@hono/zod-validator";
 import z from "zod";
+import { getUserTier } from "@/lib/tier-guard";
 import { createOutlookSubscription, getFolderMap } from "@/lib/outlook";
 import { updateOutlookId } from "@/lib/supabase";
 
@@ -413,6 +414,11 @@ const app = new Hono()
 
       if (!userId) {
         return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const tier = await getUserTier(userId);
+      if (tier === "FREE") {
+        return ctx.json({ error: "Upgrade to Pro to manage watched folders" }, 403);
       }
 
       const userData = await db.user_tokens.findUnique({

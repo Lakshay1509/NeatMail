@@ -68,58 +68,51 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
       return sub;
     });
 
-    // Step 2: Handle watch operations outside transaction
+    // Step 2: Handle watch operations & tier updates outside transaction
+    const clerkUserId = data.metadata?.clerk_user_id;
+    const metadata = data.metadata as { clerk_user_id?: string; tier?: string } | undefined;
+
     if (data.status === "active") {
-      await handleWatchActivation(data.metadata?.clerk_user_id);
+      await handleWatchActivation(clerkUserId);
+
+      const tier = getTierFromProductId(data.product_id)
+        ?? (metadata?.tier as "PRO" | "MAX" | undefined)
+        ?? "MAX";
+
+      await db.user_tokens.update({
+        where: { clerk_user_id: clerkUserId },
+        data: { tier },
+      });
     }
 
     if (
-      data.status === "expired" ||
-      data.status === "cancelled" ||
-      data.status === "failed" ||
-      data.status === "on_hold" ||
-      data.status === "pending"
+      clerkUserId &&
+      (data.status === "expired" ||
+        data.status === "cancelled" ||
+        data.status === "failed" ||
+        data.status === "on_hold" ||
+        data.status === "pending")
     ) {
-      // await handleWatchDeactivation(data.metadata?.clerk_user_id);  //don't deactivate watch degrade the tier to free tier 
-      await sendSubExpiredEmail(data.customer.email, data.customer.name);
-    }
+      const otherActive = await db.subscription.findFirst({
+        where: {
+          clerkUserId,
+          status: "active",
+          dodoSubscriptionId: { not: data.subscription_id },
+        },
+      });
 
-    // Step 3: Update user_tokens.tier based on subscription status
-    const clerkUserId = data.metadata?.clerk_user_id;
-    const metadata = data.metadata as { clerk_user_id?: string; tier?: string } | undefined;
-    if (clerkUserId) {
-      if (data.status === "active") {
-        const tier = getTierFromProductId(data.product_id)
-          ?? (metadata?.tier as "PRO" | "MAX" | undefined)
-          ?? "MAX";
+      if (!otherActive) {
+        await handleWatchDeactivation(clerkUserId);
+        await sendSubExpiredEmail(data.customer.email, data.customer.name);
+
+        const hasActiveTrial = await db.free_trial.findFirst({
+          where: { user_id: clerkUserId, status: "ACTIVE", expires_at: { gt: new Date() } },
+        });
 
         await db.user_tokens.update({
           where: { clerk_user_id: clerkUserId },
-          data: { tier },
+          data: { tier: hasActiveTrial ? "MAX" : "FREE" },
         });
-      } else if (
-        ["expired", "cancelled", "failed", "on_hold", "pending"].includes(
-          data.status
-        )
-      ) {
-        const otherActive = await db.subscription.findFirst({
-          where: {
-            clerkUserId,
-            status: "active",
-            dodoSubscriptionId: { not: data.subscription_id },
-          },
-        });
-
-        if (!otherActive) {
-          const hasActiveTrial = await db.free_trial.findFirst({
-            where: { user_id: clerkUserId, status: "ACTIVE", expires_at: { gt: new Date() } },
-          });
-
-          await db.user_tokens.update({
-            where: { clerk_user_id: clerkUserId },
-            data: { tier: hasActiveTrial ? "MAX" : "FREE" },
-          });
-        }
       }
     }
 

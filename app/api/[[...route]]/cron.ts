@@ -5,6 +5,7 @@ import { deleteUser as deleteDraftUser } from "@/lib/draft";
 import { deleteUser as deleteModelUser } from "@/lib/model";
 import { clerkClient } from "@clerk/nextjs/server";
 import { activateWatch } from "@/lib/gmail";
+import { handleWatchDeactivation } from "@/lib/payement";
 import {
   updateHistoryId,
   updateOutlookId,
@@ -125,7 +126,7 @@ const app = new Hono()
     }
 
     try {
-      const [activeSubscriptions, activeTrials, freeUsers] = await Promise.all([
+      const [activeSubscriptions, activeTrials] = await Promise.all([
         db.subscription.findMany({
           where: {
             status: "active",
@@ -159,24 +160,10 @@ const app = new Hono()
             },
           },
         }),
-        db.user_tokens.findMany({
-          where: {
-            tier: "FREE",
-            watch_activated: true,
-            deleted_flag: false,
-            free_trial: null,
-            subscriptions: { none: { status: "active" } },
-          },
-          select: {
-            clerk_user_id: true,
-            email: true,
-            is_gmail: true,
-          },
-        }),
       ]);
 
       const results = {
-        total: activeSubscriptions.length + activeTrials.length + freeUsers.length,
+        total: activeSubscriptions.length + activeTrials.length,
         subscribed: 0,
         trials: 0,
         free: 0,
@@ -264,40 +251,7 @@ const app = new Hono()
         }
       }
 
-      for (const user of freeUsers) {
-        try {
-          if (user.is_gmail === true) {
-            const response = await activateWatch(user.clerk_user_id);
-            await updateHistoryId(user.email!, response.history_id, true);
-            results.free++;
-            console.log(`✅ Watch renewed for free user: ${user.email}`);
-          } else {
-            const activeFolderData = await activeFolder(user.clerk_user_id);
-            const foldersData = activeFolderData
-              .filter((folder) => folder.isActive === true)
-              .map((folder) => ({
-                id: folder.id,
-                name: folder.name,
-              }));
-
-            const response = await createOutlookSubscription(
-              user.clerk_user_id,
-              foldersData,
-            );
-            await updateOutlookId(user.email!, response?.map(r => r.id).join(",") || null, true);
-            results.free++;
-            console.log(`✅ Watch renewed outlook for free user: ${user.email}`);
-          }
-        } catch (error) {
-          results.failed++;
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
-          results.errors.push(
-            `Failed to renew watch for free user ${user.email}: ${errorMessage}`,
-          );
-          console.error(`❌ Watch renewal failed for free user ${user.email}:`, error);
-        }
-      }
+      // Free tier users no longer get watch renewed — they are deactivated
 
       return ctx.json({
         message: "Watch renewal completed",
@@ -480,9 +434,16 @@ const app = new Hono()
 
     const resend = new Resend(process.env.RESEND_API_KEY);
     const now = new Date();
+    const results = {
+      trialsExpired: 0,
+      trialsDeactivated: 0,
+      freeDeactivated: 0,
+      errors: [] as string[],
+    };
 
     try {
-      const [trials] = await db.$transaction(async (tx) => {
+      // Step 1: Deactivate expired trials
+      const [expiredTrials] = await db.$transaction(async (tx) => {
         const trials = await tx.free_trial.findMany({
           where: {
             status: "ACTIVE",
@@ -507,71 +468,106 @@ const app = new Hono()
         return [trials, count];
       });
 
-      for (const trial of trials) {
+      results.trialsExpired = expiredTrials.length;
+
+      for (const trial of expiredTrials) {
         try {
           const hasActiveSub = await db.subscription.findFirst({
             where: { clerkUserId: trial.user_id, status: "active" },
           });
 
           if (!hasActiveSub) {
-            await db.user_tokens.update({
-              where: { clerk_user_id: trial.user_id },
-              data: { tier: "FREE" },
+            await handleWatchDeactivation(trial.user_id);
+            results.trialsDeactivated++;
+
+            const client = await clerkClient();
+            const clerkUser = await client.users.getUser(trial.user_id);
+
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const startOfNextMonth = new Date(
+              now.getFullYear(),
+              now.getMonth() + 1,
+              1,
+            );
+
+            const data = await db.email_tracked.count({
+              where: {
+                user_id: trial.user_id,
+                created_at: {
+                  gte: startOfMonth,
+                  lt: startOfNextMonth,
+                },
+              },
             });
-          
-          const client = await clerkClient();
-          const clerkUser = await client.users.getUser(trial.user_id);
 
-          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-          const startOfNextMonth = new Date(
-            now.getFullYear(),
-            now.getMonth() + 1,
-            1,
-          );
-
-          const data = await db.email_tracked.count({
-            where: {
-              user_id: trial.user_id,
-              created_at: {
-                gte: startOfMonth,
-                lt: startOfNextMonth,
+            await resend.emails.send({
+              to: trial.user_tokens.email,
+              template: {
+                id: "free-trial-ended",
+                variables: {
+                  firstName: clerkUser.fullName ?? "User",
+                  last30DaysCount: String(data),
+                  renewalLink: "https://dashboard.neatmail.app/billing",
+                },
               },
-            },
-          });
-
-          await resend.emails.send({
-            to: trial.user_tokens.email,
-            template: {
-              id: "free-trial-ended",
-              variables: {
-                firstName: clerkUser.fullName ?? "User",
-                last30DaysCount: String(data),
-                renewalLink: "https://dashboard.neatmail.app/billing",
-              },
-            },
-          });
-        }
+            });
+          }
         } catch (error) {
+          results.errors.push(
+            `Failed to deactivate trial for ${trial.user_id}: ${error}`,
+          );
           console.error(
-            `Failed to send free trial  reminder to ${trial.user_tokens.email}:`,
+            `Failed to deactivate trial for ${trial.user_tokens.email}:`,
+            error,
+          );
+        }
+      }
+
+      // Step 2: Deactivate free tier users with watch activated
+      const freeUsers = await db.user_tokens.findMany({
+        where: {
+          tier: "FREE",
+          watch_activated: true,
+          deleted_flag: false,
+          free_trial: null,
+          subscriptions: { none: { status: "active" } },
+        },
+        select: {
+          clerk_user_id: true,
+          email: true,
+        },
+      });
+
+      for (const user of freeUsers) {
+        try {
+          await handleWatchDeactivation(user.clerk_user_id);
+          results.freeDeactivated++;
+          console.log(`Deactivated watch for free user: ${user.email}`);
+        } catch (error) {
+          results.errors.push(
+            `Failed to deactivate free user ${user.clerk_user_id}: ${error}`,
+          );
+          console.error(
+            `Failed to deactivate watch for free user ${user.email}:`,
             error,
           );
         }
       }
 
       return ctx.json({
-        message: "Free trial deactivation completed",
+        message: "Deactivation completed",
         timestamp: new Date().toISOString(),
+        ...results,
       });
     } catch (error) {
-      console.error("Deactivate free trials cron job error:", error);
+      console.error("Deactivate cron job error:", error);
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       return ctx.json(
         {
           error: "Internal server error",
           details: errorMessage,
+          ...results,
         },
         500,
       );
@@ -939,20 +935,10 @@ Founder, NeatMail`,
           const userEmail = pref.user_tokens.email;
           const userId = pref.user_tokens.clerk_user_id;
 
-          // Skip free users with no tracked emails in last 24 hours
+          // Skip free users entirely
           if (pref.user_tokens.tier === "FREE") {
-            const recentCount = await db.email_tracked.count({
-              where: {
-                user_id: userId,
-                created_at: {
-                  gte: new Date(Date.now() - 24 * 60 * 60 * 1000),
-                },
-              },
-            });
-            if (recentCount === 0) {
-              results.skipped++;
-              continue;
-            }
+            results.skipped++;
+            continue;
           }
 
           const count = await getDigestCount(userId);

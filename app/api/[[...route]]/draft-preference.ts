@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import z from "zod";
+import { getUserTier } from "@/lib/tier-guard";
 
 
 const app = new Hono()
@@ -70,6 +71,11 @@ const app = new Hono()
 
       if (!userId) {
         return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const tier = await getUserTier(userId);
+      if (tier === "FREE") {
+        return ctx.json({ error: "Upgrade to Pro to set draft preferences" }, 403);
       }
 
       const values = ctx.req.valid("json");

@@ -11,7 +11,6 @@ import {
 import {
   addMailtoDB,
   getLastHistoryId,
-  getTaggedEmailCount,
   getTagsUser,
   getUserByEmail,
   getUserSubscribed,
@@ -21,7 +20,6 @@ import {
   useGetUserDraftPreference,
 } from "@/lib/supabase";
 import { getUserTier } from "@/lib/tier-guard";
-import { TIER_LIMITS } from "@/lib/tiers";
 import { clerkClient } from "@clerk/nextjs/server";
 import { Hono } from "hono";
 import { OAuth2Client } from "google-auth-library";
@@ -107,10 +105,7 @@ const app = new Hono().post("/", async (ctx) => {
 
     const tier = await getUserTier(user.clerk_user_id);
     if (tier === "FREE") {
-      const taggedCount = await getTaggedEmailCount(user.clerk_user_id);
-      if (taggedCount >= TIER_LIMITS.FREE.maxTrackedEmails) {
-        return ctx.json({ error: "user not subscribed" }, 200);
-      }
+      return ctx.json({ error: "user not subscribed" }, 200);
     }
 
     const clerkUserId = user.clerk_user_id;

@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { auth } from "@clerk/nextjs/server";
 import { zValidator } from "@hono/zod-validator";
 import z from "zod";
+import { getUserTier } from "@/lib/tier-guard";
 import {
   getDigestForUser,
   getDigestCount,
@@ -41,6 +42,9 @@ const app = new Hono()
       const { userId } = await auth();
       if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
+      const tier = await getUserTier(userId);
+      if (tier === "FREE") return c.json({ error: "Upgrade to use digest" }, 403);
+
       const { messageId } = c.req.valid("json");
       await markEmailAsDone(userId, messageId);
       return c.json({ success: true });
@@ -58,6 +62,9 @@ const app = new Hono()
     async (c) => {
       const { userId } = await auth();
       if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+      const tier = await getUserTier(userId);
+      if (tier === "FREE") return c.json({ error: "Upgrade to use digest" }, 403);
 
       const { messageId, until } = c.req.valid("json");
       await snoozeEmail(userId, messageId, new Date(until));
@@ -90,6 +97,9 @@ const app = new Hono()
     async (c) => {
       const { userId } = await auth();
       if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+      const tier = await getUserTier(userId);
+      if (tier === "FREE") return c.json({ error: "Upgrade to use digest" }, 403);
 
       const body = c.req.valid("json");
 
@@ -126,6 +136,9 @@ const app = new Hono()
   .post("/test", async (c) => {
     const { userId } = await auth();
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+    const tier = await getUserTier(userId);
+    if (tier === "FREE") return c.json({ error: "Upgrade to use digest" }, 403);
 
     try {
       const resend = new Resend(process.env.RESEND_API_KEY);

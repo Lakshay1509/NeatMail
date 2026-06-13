@@ -233,6 +233,11 @@ const app = new Hono()
         return ctx.json({ error: "Unauthorized" }, 401);
       }
 
+      const tier = await getUserTier(userId);
+      if (tier === "FREE") {
+        return ctx.json({ error: "Upgrade to Pro to use this feature" }, 403);
+      }
+
       const values = ctx.req.valid("json");
 
       const messageId = await db.email_tracked.findFirst({
@@ -291,6 +296,11 @@ const app = new Hono()
         return ctx.json({ error: "Unauthorized" }, 401);
       }
 
+      const tier = await getUserTier(userId);
+      if (tier === "FREE") {
+        return ctx.json({ error: "Upgrade to Pro to use archive rules" }, 403);
+      }
+
       const values = ctx.req.valid("json");
 
       const existingRule = await db.archiveRule.findUnique({
@@ -315,7 +325,7 @@ const app = new Hono()
       }
 
       const data = await db.$transaction(async (tx) => {
-        const updatedData = await db.archiveRule.upsert({
+        const updatedData = await tx.archiveRule.upsert({
           where: {
             user_id_domain: {
               user_id: userId,
@@ -351,6 +361,11 @@ const app = new Hono()
 
     if (!userId) {
       return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const tier = await getUserTier(userId);
+    if (tier === "FREE") {
+      return ctx.json({ error: "Upgrade to Pro to sync email history" }, 403);
     }
 
     const user = await db.user_tokens.findUnique({
@@ -554,6 +569,12 @@ const app = new Hono()
       if (!userId) {
         return ctx.json({ error: "Unauthorized" }, 401);
       }
+
+      const tier = await getUserTier(userId);
+      if (tier === "FREE") {
+        return ctx.json({ error: "Upgrade to Pro to use this feature" }, 403);
+      }
+
       const values = ctx.req.valid("json");
 
       const userData = await db.user_tokens.findUnique({
@@ -601,6 +622,11 @@ const app = new Hono()
 
       if (!userId) {
         return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const tier = await getUserTier(userId);
+      if (tier === "FREE") {
+        return ctx.json({ error: "Upgrade to Pro to reply from the dashboard" }, 403);
       }
 
       const { id, message, to } = ctx.req.valid("json");

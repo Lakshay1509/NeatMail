@@ -3,8 +3,6 @@ import { getGraphClient } from "@/lib/outlook";
 import { db } from "@/lib/prisma";
 import {
   addMailtoDB,
-  getTaggedEmailCount,
-  getUserSubscribed,
   labelColor,
   useGetUserDraftPreference,
 } from "@/lib/supabase";
@@ -14,7 +12,6 @@ import { getModelResponse, ModelResponse } from "@/lib/model";
 import { checkAndForwardToTelegram } from "@/lib/telegram";
 import { flow } from "@/lib/queue";
 import { getUserTier } from "@/lib/tier-guard";
-import { TIER_LIMITS } from "@/lib/tiers";
 
 interface ProcessOutlookMailData {
   messageId: string;
@@ -52,10 +49,7 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
 
   const tier = await getUserTier(subscription.clerk_user_id);
   if (tier === "FREE") {
-    const taggedCount = await getTaggedEmailCount(subscription.clerk_user_id);
-    if (taggedCount >= TIER_LIMITS.FREE.maxTrackedEmails) {
-      return { skipped: true, reason: "not subscribed" };
-    } 
+    return { skipped: true, reason: "not subscribed" };
   }
 
 

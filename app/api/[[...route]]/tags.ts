@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { colors, outlook_colors } from "@/lib/colors";
 import { getGmailClient } from "@/lib/gmail";
-import { checkFeatureLimit } from "@/lib/tier-guard";
+import { getUserTier, checkFeatureLimit } from "@/lib/tier-guard";
 import z from "zod";
 
 
@@ -119,7 +119,10 @@ const app = new Hono()
         return ctx.json({ error: "Unuathorized" }, 401);
       }
 
-      //use txn
+      const tier = await getUserTier(userId);
+      if (tier === "FREE") {
+        return ctx.json({ error: "Upgrade to Pro to set up categories" }, 403);
+      }
 
       const values = ctx.req.valid("json");
 

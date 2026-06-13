@@ -177,7 +177,6 @@ export const SubscriptionModal = ({
             <thead>
               <tr className="border-b">
                 <th className="text-left py-3 px-3 font-medium" />
-                <th className="text-center py-3 px-3 font-semibold">Free</th>
                 <th className="text-center py-3 px-3 font-semibold bg-zinc-50 rounded-t-lg">
                   <span className="text-zinc-900">Pro</span>
                   <div className="text-xs font-normal text-muted-foreground mt-0.5">
@@ -191,7 +190,6 @@ export const SubscriptionModal = ({
               {columns.map((col, i) => (
                 <tr key={i} className="border-b last:border-0">
                   <td className="py-2.5 px-3 text-muted-foreground">{col.label}</td>
-                  <td className="py-2.5 px-3 text-center text-muted-foreground">{formatLimitValue("FREE", col.limitKey)}</td>
                   <td className="py-2.5 px-3 text-center bg-zinc-50 font-medium">{formatLimitValue("PRO", col.limitKey)}</td>
                   <td className="py-2.5 px-3 text-center font-medium">{formatLimitValue("MAX", col.limitKey)}</td>
                 </tr>
@@ -251,7 +249,7 @@ export const SubscriptionModal = ({
               onClick={() => onOpenChange(false)}
               className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
             >
-              Continue with Free
+              Maybe later
             </button>
           </div>
         </div>

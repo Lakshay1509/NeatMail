@@ -9,6 +9,7 @@ import {
   updateHistoryId,
   updateOutlookId,
 } from "@/lib/supabase";
+import { getUserTier } from "@/lib/tier-guard";
 import { auth } from "@clerk/nextjs/server";
 import { Hono } from "hono";
 
@@ -19,6 +20,11 @@ const app = new Hono()
 
       if (!userId) {
         return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const userTier = await getUserTier(userId);
+      if (userTier === "FREE") {
+        return ctx.json({ error: "Upgrade to Pro to activate watch" }, 403);
       }
 
       const userData = await db.user_tokens.findUnique({

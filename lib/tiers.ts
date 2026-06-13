@@ -43,11 +43,11 @@ export interface TierLimits {
 
 export const TIER_LIMITS: Record<Tier, TierLimits> = {
   FREE: {
-    maxTrackedEmails: 100,
-    maxCustomLabels: 3,
-    maxAiDraftsPerMonth: 5,
+    maxTrackedEmails: 0,
+    maxCustomLabels: 0,
+    maxAiDraftsPerMonth: 0,
     maxArchiveRules: 0,
-    hasDigest: true,
+    hasDigest: false,
     hasFollowUps: false,
     hasTelegramSlack: false,
     hasAdvancedAnalytics: false,

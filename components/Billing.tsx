@@ -18,7 +18,7 @@ const TIER_LABELS: Record<Tier, string> = {
 };
 
 const TIER_DESCRIPTIONS: Record<Tier, string> = {
-  FREE: "Get started with basic email organization.",
+  FREE: "",
   PRO: "AI-powered inbox for busy professionals.",
   MAX: "Unlimited everything. For power users.",
 };
@@ -438,8 +438,8 @@ const Billing = () => {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {(["FREE", "PRO", "MAX"] as const).map((t) => (
+      <div className="grid gap-4 md:grid-cols-2">
+        {(["PRO", "MAX"] as const).map((t) => (
           <TierCard
             key={t}
             tier={t}
@@ -451,7 +451,6 @@ const Billing = () => {
             onSelect={(data?.subscribed === false || isFreeTrial) ? handleCheckout : handleChangePlanClick}
             isLoading={isLoading}
             disabled={
-              t === "FREE" ||
               (activeTier === "MAX" && t === "PRO") ||
               (activeTier === "MAX" && currentInterval === "annual" && t === "MAX") ||
               (!isFreeTrial && activeTier === "PRO" && t === "PRO" && currentInterval === "annual" && interval === "annual") ||
@@ -504,8 +503,8 @@ const Billing = () => {
             </>
           ) : (
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Current plan</span>
-              <span className="font-medium text-foreground">Free</span>
+              <span className="text-muted-foreground">Status</span>
+              <span className="font-medium text-muted-foreground">Not subscribed</span>
             </div>
           )}
         </div>
