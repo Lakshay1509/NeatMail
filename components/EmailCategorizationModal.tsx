@@ -4,16 +4,11 @@ import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
-import { addTagstoUser } from "@/features/tags/use-add-tag-user"
-import { addWatch } from "@/features/watch/use-post-watch"
 import OnboardingSuccessDialog from "@/components/OnboardComplete"
 import { toast } from "sonner"
 import UpdateFolderPrefernce from "./UpdateFolderPrefernce"
-import { useAddUserDraftPrefernce } from "@/features/draftPreference/use-add-user-draftPreference"
-import { useSyncHistory } from "@/features/email/use-post-sync-history"
-import { usePostDigestPreferences } from "@/features/digest/use-post-digest-preferences"
+import { useOnboard } from "@/features/onboard/use-onboard"
 import { Loader2 } from "lucide-react"
-import { useActivateFreeTrial } from "@/features/trial/use-post-trial-activate"
 
 export const CATEGORIES = [
 	{ name: 'Action Needed', color: '#cc3a21', outlookColor: 'preset0', description: 'Direct request to complete a task, approve, sign, submit, or decide.' },
@@ -37,15 +32,9 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 	const [selectedCategories, setSelectedCategories] = useState<string[]>([])
 	
 	const [showSuccessDialog, setShowSuccessDialog] = useState<boolean>(false);
-	const [step, setStep] = useState<string | null>(null);
-    const mutation = addTagstoUser();
-	const watchMutation = addWatch();
-	const draftMutation = useAddUserDraftPrefernce();
-	const digestMutation = usePostDigestPreferences();
-	const syncHistoryMutation = useSyncHistory();
-	const freeTrialMutation = useActivateFreeTrial();
+	const onboardMutation = useOnboard();
 
-	const isPending = mutation.isPending || watchMutation.isPending || draftMutation.isPending || digestMutation.isPending || syncHistoryMutation.isPending || freeTrialMutation.isPending;
+	const isPending = onboardMutation.isPending;
 	
 	const toggleCategory = (categoryName: string) => {
 		setSelectedCategories(prev =>
@@ -57,40 +46,30 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 
 	const isValid = selectedCategories.length >= 1;
 
-    const handleSubmit = async()=>{
+	const handleSubmit = async()=>{
 		if (!isValid) return;
 		
 		const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 		
 		try {
-			
-			setStep("Activating free trial...");
-			await freeTrialMutation.mutateAsync();
-			setStep("Setting up inbox watch...");
-			await watchMutation.mutateAsync({});
-			setStep("Creating draft preferences...");
-			await draftMutation.mutateAsync({
-				enabled:true,
-				fontColor:'#000000',
-				fontSize:14,
-				timezone:userTimezone
-			})
-			setStep("Setting up daily digest...");
-			await digestMutation.mutateAsync({
-				enabled:true,
-				deliveryTime:"10:00",
-				timezone:userTimezone
-			})
-			setStep("Syncing email history...");
-			await syncHistoryMutation.mutateAsync({})
-			setStep("Saving categories...");
-			await mutation.mutateAsync({tags:selectedCategories});
-			setStep(null);
+			await onboardMutation.mutateAsync({
+				tags: selectedCategories,
+				draftPrefs: {
+					enabled: true,
+					fontColor: '#000000',
+					fontSize: 14,
+					timezone: userTimezone,
+				},
+				digestPrefs: {
+					enabled: true,
+					deliveryTime: "10:00",
+					timezone: userTimezone,
+				},
+			});
 			onOpenChange(false);
 			setShowSuccessDialog(true);
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Something went wrong. Please try again.";
-			setStep(null);
 			toast.error(message)
 			console.error('Onboarding error:', error);
 		}
@@ -157,7 +136,7 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 						{isPending ? (
 							<div className="flex items-center gap-2">
 								<Loader2 className="h-5 w-5 animate-spin" />
-								{step ?? "Processing..."}
+								Setting up...
 							</div>
 						) : (
 							isValid ? 'Update preferences' : `Select ${1 - selectedCategories.length} more categories`
