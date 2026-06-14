@@ -33,7 +33,7 @@ const app = new Hono().post(
   async (ctx) => {
     const { userId } = await auth();
     const user = await currentUser();
-    const email = user?.emailAddresses[0]?.emailAddress;
+    const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
 
     if (!userId || !email) {
       return ctx.json({ error: "Unauthorized" }, 401);

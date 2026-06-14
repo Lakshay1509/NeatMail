@@ -65,7 +65,7 @@ const app = new Hono()
 
       const user = await currentUser();
       const name = user?.fullName ?? "";
-      const emailAddress = user?.emailAddresses[0]?.emailAddress ?? "";
+      const emailAddress = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress ?? "";
       const dodopayments = getDodoPayments();
 
       if (subscription?.status === "on_hold") {
@@ -161,7 +161,7 @@ const app = new Hono()
             product_cart: [{ product_id: productId, quantity: 1 }],
             subscription_data: { trial_period_days: 0 },
             customer: {
-              email: user?.emailAddresses[0]?.emailAddress ?? "",
+              email: user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress ?? "",
               name: user?.fullName ?? "",
             },
             metadata: {

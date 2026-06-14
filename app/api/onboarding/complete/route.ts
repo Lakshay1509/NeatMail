@@ -15,7 +15,7 @@ export async function GET() {
     user = await currentUser();
   }
 
-  const email = user?.emailAddresses[0]?.emailAddress ?? `${userId}@pending.neatmail`;
+  const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress ?? `${userId}@pending.neatmail`;
 
   await db.user_tokens.upsert({
     where: { clerk_user_id: userId },

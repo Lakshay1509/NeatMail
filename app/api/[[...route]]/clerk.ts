@@ -38,21 +38,21 @@ const app = new Hono().post("/webhook", async (ctx) => {
   const eventType = evt.type;
 
   if (eventType === "user.created") {
-    const { id, email_addresses, external_accounts } = evt.data;
+    const { id, email_addresses, external_accounts, primary_email_address_id } = evt.data;
 
     const provider = external_accounts?.[0]?.provider ?? "";
     const is_gmail = provider === "oauth_google";
-    
+    const primaryEmail = email_addresses?.find((e) => e.id === primary_email_address_id)?.email_address ?? email_addresses[0]?.email_address;
 
     const data = await db.user_tokens.upsert({
       where: { clerk_user_id: id },
       update: {
-        email: email_addresses[0]?.email_address,
+        email: primaryEmail,
         is_gmail,
       },
       create: {
         clerk_user_id: id,
-        email: email_addresses[0]?.email_address,
+        email: primaryEmail,
         is_gmail,
       },
     });

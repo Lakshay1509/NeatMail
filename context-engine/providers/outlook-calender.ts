@@ -52,7 +52,7 @@ export class OutlookCalendarProvider implements ContextProvider {
 		try {
 			const client = await clerkClient()
 			const user = await client.users.getUser(userId)
-			userEmail = user.emailAddresses[0]?.emailAddress
+			userEmail = user.primaryEmailAddress?.emailAddress ?? user.emailAddresses[0]?.emailAddress
 
 			const tokenResponse = await client.users.getUserOauthAccessToken(
 				userId,
