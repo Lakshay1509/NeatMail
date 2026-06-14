@@ -38,7 +38,7 @@ export default function OnboardingPage() {
     <div className="flex items-center justify-center min-h-[calc(100vh-100px)]">
       <div className="flex flex-col items-center gap-6 text-center max-w-sm">
         <h1 className="text-xl font-logo text-foreground">
-          Setting up your inbox
+          Setting up your profile
         </h1>
 
         <p className="text-sm text-muted-foreground leading-relaxed max-w-[28ch]">
