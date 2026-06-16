@@ -8,6 +8,7 @@ import { getPreviousMails } from "@/lib/gmail";
 import { getPreviousOutlookMails } from "@/lib/outlook";
 import { encryptDomain } from "@/lib/encode";
 import { getUserIsGmail } from "@/lib/supabase";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 const app = new Hono().post(
   "/",
@@ -199,9 +200,28 @@ const app = new Hono().post(
         });
       });
 
+      const posthog = getPostHogClient();
+      posthog.capture({
+        distinctId: userId,
+        event: "onboarding_completed",
+        properties: {
+          tagCount: body.tags.length,
+          draftEnabled: body.draftPrefs.enabled,
+          digestEnabled: body.digestPrefs.enabled,
+        },
+      });
+      await posthog.shutdown();
+
       return ctx.json({ success: true }, 200);
     } catch (error) {
       console.error("Onboarding error:", error);
+      const posthog = getPostHogClient();
+      posthog.capture({
+        distinctId: userId || "unknown",
+        event: "onboarding_failed",
+        properties: { error: error instanceof Error ? error.message : "Unknown error" },
+      });
+      await posthog.shutdown();
       return ctx.json(
         {
           error:

@@ -2,11 +2,14 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import posthog from "posthog-js";
+import { useUser } from "@clerk/nextjs";
 
 const MAX_RETRIES = 3;
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { user } = useUser();
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<"loading" | "retrying" | "redirecting">("loading");
 
@@ -14,8 +17,11 @@ export default function OnboardingPage() {
     const res = await fetch("/api/onboarding/complete");
     if (!res.ok) throw new Error("API returned " + res.status);
     setState("redirecting");
+    posthog.capture("onboarding_completed", {
+      distinctId: user?.id,
+    });
     router.push("/");
-  }, [router]);
+  }, [router, user]);
 
   useEffect(() => {
     let cancelled = false;

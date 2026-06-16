@@ -8,6 +8,7 @@ import { Toaster } from "sonner";
 import { SidebarProvider} from "@/components/ui/sidebar";
 import { ConditionalSidebar } from "@/components/ConditionalSidebar";
 import PageTransition from "@/components/PageTransition";
+import { PostHogIdentify } from "@/components/PostHogIdentify";
 
 
 const geistSans = Geist({
@@ -64,6 +65,7 @@ export default async function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
+          <PostHogIdentify />
           <QueryProviders>
             <SidebarProvider>
               <ConditionalSidebar />

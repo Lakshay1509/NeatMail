@@ -10,6 +10,7 @@ import CanTakeFreeTrial from "./CanTakeFreeTrial";
 import { PlanChangeDialog } from "./PlanChangeDialog";
 import { TIER_LIMITS, getTierPrices, type Tier, type BillingRegion } from "@/lib/tiers";
 import { useGeo } from "@/features/geo/use-geo";
+import posthog from "posthog-js";
 
 const TIER_LABELS: Record<Tier, string> = {
   FREE: "Free",
@@ -281,6 +282,12 @@ const Billing = () => {
     if (!pendingAction) return;
     setPreviewLoading(true);
 
+    posthog.capture("plan_changed", {
+      fromTier: pendingAction.fromLabel,
+      toTier: pendingAction.toLabel,
+      interval: pendingAction.interval,
+    });
+
     try {
       const response = await fetch("/api/checkout/changePlan", {
         method: "POST",
@@ -309,6 +316,11 @@ const Billing = () => {
     setIsLoading(true);
     setError("");
 
+    posthog.capture("checkout_started", {
+      tier: selectedTier,
+      interval: targetInterval,
+    });
+
     try {
       const response = await fetch("/api/checkout", {
         method: "POST",
@@ -334,6 +346,10 @@ const Billing = () => {
     setIsLoading(true);
     setError("");
 
+    posthog.capture(renew === "true" ? "subscription_cancelled" : "subscription_renewed", {
+      tier,
+    });
+
     try {
       const response = await fetch(`/api/checkout/cancelSubscription?renew=${renew}`, {
         method: "POST",
@@ -358,6 +374,7 @@ const Billing = () => {
         setError(resData.error || "Something went wrong");
       }
     } catch (err) {
+      posthog.captureException(err);
       setError("Network error. Please try again.");
       console.log(err);
     } finally {

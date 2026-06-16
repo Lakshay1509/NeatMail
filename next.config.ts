@@ -8,6 +8,23 @@ const nextConfig: NextConfig = {
   // Run `tsc --noEmit` locally or in CI (GitHub Actions) instead.
   poweredByHeader: false,
   typescript: { ignoreBuildErrors: true },
+  async rewrites() {
+    return [
+      {
+        source: "/ingest/static/:path*",
+        destination: "https://us-assets.i.posthog.com/static/:path*",
+      },
+      {
+        source: "/ingest/array/:path*",
+        destination: "https://us-assets.i.posthog.com/array/:path*",
+      },
+      {
+        source: "/ingest/:path*",
+        destination: "https://us.i.posthog.com/:path*",
+      },
+    ];
+  },
+  skipTrailingSlashRedirect: true,
   images: {
     remotePatterns: [],
     localPatterns: [
@@ -51,7 +68,7 @@ const nextConfig: NextConfig = {
             value: `
     default-src 'self';
 
-    script-src
+      script-src
       'self'
       'unsafe-inline'
       'unsafe-eval'
@@ -65,6 +82,7 @@ const nextConfig: NextConfig = {
       *.clerk.accounts.dev
       *.neatmail.app
       *.dodopayments.com
+      *.posthog.com
       http://localhost:8400
       blob:;
 
@@ -86,7 +104,8 @@ const nextConfig: NextConfig = {
       data:
       blob:
       *.clerk.dev
-      *.clerk.com;
+      *.clerk.com
+      *.posthog.com;
 
     connect-src
       'self'
@@ -96,6 +115,7 @@ const nextConfig: NextConfig = {
       *.neatmail.app
       *.dodopayments.com
       *.dodo.com
+      *.posthog.com
       http://localhost:8400
       https:;
 

@@ -6,6 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import Image from "next/image";
 import { useEffect } from "react";
+import posthog from "posthog-js";
 
 export const SlackCard = () => {
   const { data, isLoading, isError } = useGetSlackEnabled();
@@ -29,10 +30,12 @@ export const SlackCard = () => {
   }, []);
 
   const handleClickDelete = () => {
+    posthog.capture("integration_disconnected", { provider: "slack" });
     mutation.mutateAsync();
   };
 
   const handleClickEnable = async () => {
+    posthog.capture("integration_connected", { provider: "slack" });
     toast.info("Redirecting to Slack for authorization...");
     window.location.href = "/api/slack/authorize";
   };

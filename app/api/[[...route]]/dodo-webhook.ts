@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { Webhook } from "standardwebhooks";
 import { addPaymenttoDb, addRefundtoDb, addSubscriptiontoDb } from "@/lib/payement";
 import { isDodoWebhookProcessed, markDodoWebhookProcessed, unmarkDodoWebhookProcessed } from "@/lib/redis";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 const app = new Hono().post("/", async (ctx) => {
   let webhook_id = "";
@@ -48,67 +49,139 @@ const app = new Hono().post("/", async (ctx) => {
       return ctx.json({ error: err }, 400);
     }
 
+    const posthog = getPostHogClient();
+    const clerkUserId = payload.data?.metadata?.clerk_user_id || payload.data?.clerkUserId || "";
+
     switch (payload.type) {
-      case "subscription.created": 
+      case "subscription.created": {
         await addSubscriptiontoDb(payload);
+        posthog.capture({
+          distinctId: clerkUserId || "system",
+          event: "subscription_created",
+          properties: { tier: payload.data?.metadata?.tier, interval: payload.data?.metadata?.interval },
+        });
         break;
+      }
 
-      case "subscription.cancelled":
+      case "subscription.cancelled": {
         await addSubscriptiontoDb(payload);
+        posthog.capture({
+          distinctId: clerkUserId || "system",
+          event: "subscription_cancelled",
+          properties: { tier: payload.data?.metadata?.tier },
+        });
         break;
+      }
 
-      case "subscription.updated":
+      case "subscription.updated": {
         await addSubscriptiontoDb(payload);
+        posthog.capture({
+          distinctId: clerkUserId || "system",
+          event: "subscription_updated",
+          properties: { tier: payload.data?.metadata?.tier },
+        });
         break;
+      }
       
-      case "subscription.active":
+      case "subscription.active": {
         await addSubscriptiontoDb(payload);
+        posthog.capture({
+          distinctId: clerkUserId || "system",
+          event: "subscription_activated",
+          properties: { tier: payload.data?.metadata?.tier },
+        });
         break;
+      }
       
-      case "subscription.renewed":
+      case "subscription.renewed": {
         await addSubscriptiontoDb(payload);
+        posthog.capture({
+          distinctId: clerkUserId || "system",
+          event: "subscription_renewed",
+          properties: { tier: payload.data?.metadata?.tier },
+        });
         break;
+      }
       
-      case "subscription.failed":
+      case "subscription.failed": {
         await addSubscriptiontoDb(payload);
+        posthog.capture({
+          distinctId: clerkUserId || "system",
+          event: "subscription_failed",
+          properties: { tier: payload.data?.metadata?.tier },
+        });
         break;
+      }
 
-      case "subscription.expired":
+      case "subscription.expired": {
         await addSubscriptiontoDb(payload);
+        posthog.capture({
+          distinctId: clerkUserId || "system",
+          event: "subscription_expired",
+        });
         break;
+      }
 
-      case "subscription.on_hold":
+      case "subscription.on_hold": {
         await addSubscriptiontoDb(payload);
+        posthog.capture({
+          distinctId: clerkUserId || "system",
+          event: "subscription_on_hold",
+        });
         break;
+      }
       
-      case "payment.succeeded":
+      case "payment.succeeded": {
+        await addPaymenttoDb(payload);
+        posthog.capture({
+          distinctId: clerkUserId || "system",
+          event: "payment_succeeded",
+          properties: { amount: payload.data?.amount, currency: payload.data?.currency },
+        });
+        break;
+      }
+
+      case "payment.processing": {
         await addPaymenttoDb(payload);
         break;
+      }
 
-      case "payment.processing":
+      case "payment.cancelled": {
         await addPaymenttoDb(payload);
+        posthog.capture({
+          distinctId: clerkUserId || "system",
+          event: "payment_cancelled",
+        });
         break;
+      }
 
-
-      case "payment.cancelled":
+      case "payment.failed": {
         await addPaymenttoDb(payload);
+        posthog.capture({
+          distinctId: clerkUserId || "system",
+          event: "payment_failed",
+        });
         break;
-
-      case "payment.failed":
-        await addPaymenttoDb(payload);
-        break;
+      }
 
       case "refund.failed":
         await addRefundtoDb(payload);
         break;
       
-      case "refund.succeeded":
+      case "refund.succeeded": {
         await addRefundtoDb(payload);
+        posthog.capture({
+          distinctId: clerkUserId || "system",
+          event: "refund_succeeded",
+        });
         break;
+      }
 
       default:
         console.log("Unhandled webhook event:", payload.type);
     }
+
+    await posthog.shutdown();
 
     return ctx.json({ success: true }, 200);
   } catch (error) {

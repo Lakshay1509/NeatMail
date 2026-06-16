@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,7 @@ import { ArrowRight, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { TIER_LIMITS, getTierPrices, type TierLimits, type BillingRegion } from "@/lib/tiers";
 import { useGeo } from "@/features/geo/use-geo";
+import posthog from "posthog-js";
 
 interface SubscriptionModalProps {
   open: boolean;
@@ -103,9 +104,16 @@ export const SubscriptionModal = ({
   const [interval, setInterval] = useState<BillingInterval>("monthly");
   const { region } = useGeo();
 
+  useEffect(() => {
+    if (open) {
+      posthog.capture("upsell_modal_viewed");
+    }
+  }, [open]);
+
   const handleTrial = async () => {
     setIsLoading(true);
     setError("");
+    posthog.capture("free_trial_started");
 
     try {
       const response = await fetch("/api/freeTrial/activate", {
@@ -132,6 +140,7 @@ export const SubscriptionModal = ({
   const handleCheckout = async (tier: "PRO" | "MAX") => {
     setIsLoading(true);
     setError("");
+    posthog.capture("checkout_started", { tier, interval, source: "upsell_modal" });
 
     try {
       const response = await fetch("/api/checkout", {

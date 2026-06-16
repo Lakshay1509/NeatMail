@@ -825,20 +825,24 @@ const app = new Hono()
               {
                 from: "Lakshay <lakshay@send.neatmail.app>",
                 to: mail,
-                subject: "Your NeatMail invite",
+                subject: "Your inbox just met its match",
                 text: `Hey,
 
-Your NeatMail access is ready — dive in here:
-https://dashboard.neatmail.app/
+You signed up for NeatMail — here's why people are excited about it:
 
-Also wanted to share: NeatMail just got officially verified by Google, so the sign-in experience is fully clean now, no warnings.
+NeatMail reads every email that lands in your Gmail/Outlook inbox and uses AI to:
+→ Auto-label everything (Action Needed, Waiting, etc.) — labels sync back to Gmail
+→ Generate draft replies in your tone with context from your calendar + Slack
+→ One-click unsubscribe, auto-archive rules, follow-up reminders
+→ Telegram integration so you can triage without opening your inbox
 
-Since you're among the first users, I'd love to keep you on the current plan long-term. 
+And yes — it actually works with Google's verification now. Clean sign-in, no warnings.
 
-Let me know if anything comes up.
+Your access is ready: https://dashboard.neatmail.app/
 
-— Lakshay
-Founder, NeatMail`,
+Also — as an early user, I'm locking in your current plan at a rate I can't offer again.
+
+— Lakshay`,
               },
             );
 

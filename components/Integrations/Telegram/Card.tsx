@@ -5,6 +5,7 @@ import { useGetTelegramEnabled } from "@/features/telegram/use-get-telegram-enab
 import { Switch } from "@/components/ui/switch"
 import { useUser } from "@clerk/nextjs";
 import Rules from "./Rules";
+import posthog from "posthog-js";
 
 const TelegramIcon = ({ className }: { className?: string }) => (
   <svg
@@ -24,13 +25,13 @@ export const TelegramCard = () => {
     const { user, isLoaded } = useUser();
 
     const handleClickDelete = ()=>{
+        posthog.capture("integration_disconnected", { provider: "telegram" });
         mutation.mutateAsync()
     }
 
     const handleClickEnable = () =>{
+        posthog.capture("integration_connected", { provider: "telegram" });
         window.open(`https://t.me/NeatMail_Bot?start=${user?.id}`,"_blank")
-
-        
     }
 
   return (

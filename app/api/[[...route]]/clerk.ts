@@ -2,6 +2,7 @@ import { db } from "@/lib/prisma";
 import { WebhookEvent } from "@clerk/nextjs/server";
 import { Hono } from "hono";
 import { Webhook } from "svix";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 const app = new Hono().post("/webhook", async (ctx) => {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
@@ -60,6 +61,18 @@ const app = new Hono().post("/webhook", async (ctx) => {
     if (!data) {
       return ctx.json({ error: "Error creating user" }, 500);
     }
+
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: id,
+      event: "user_signed_up",
+      properties: {
+        email: primaryEmail,
+        isGmail: is_gmail,
+        provider,
+      },
+    });
+    await posthog.shutdown();
 
     return ctx.json({ success: true, message: "User created" }, 200);
   }
