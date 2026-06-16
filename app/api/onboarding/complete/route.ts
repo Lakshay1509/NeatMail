@@ -1,5 +1,6 @@
 import { db } from "@/lib/prisma";
 import { auth, currentUser } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 export async function GET() {
   const { userId } = await auth();
@@ -15,16 +16,23 @@ export async function GET() {
     user = await currentUser();
   }
 
-  const email = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress ?? `${userId}@pending.neatmail`;
+  const email =
+    user?.primaryEmailAddress?.emailAddress ??
+    user?.emailAddresses?.[0]?.emailAddress ??
+    "";
+
+  const provider = user?.externalAccounts?.[0]?.provider ?? "";
+  const is_gmail = provider === "oauth_google";
 
   await db.user_tokens.upsert({
     where: { clerk_user_id: userId },
-    update: { email },
+    update: { email,is_gmail },
     create: {
       clerk_user_id: userId,
       email,
+      is_gmail
     },
   });
 
-  return Response.json({ ok: true });
+  return NextResponse.json({ ok: true });
 }
