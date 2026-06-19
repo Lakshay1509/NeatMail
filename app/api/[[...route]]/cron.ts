@@ -905,7 +905,7 @@ Also — as an early user, I'm locking in your current plan at a rate I can't of
         },
         include: {
           user_tokens: {
-            select: { email: true, clerk_user_id: true, tier: true },
+            select: { email: true, clerk_user_id: true, tier: true, is_gmail: true },
           },
         },
       });
@@ -976,11 +976,13 @@ Also — as an early user, I'm locking in your current plan at a rate I can't of
               DailyDigestEmail({
                 totalEmails: shownCount,
                 dateLabel,
+                isGmail: pref.user_tokens.is_gmail,
                 remainingCount: trimmed.remainingCount,
                 groups: trimmed.groups.map((g) => ({
                   urgency: g.urgency,
                   label: g.label,
                   emails: g.emails.map((e) => ({
+                    message_id: e.message_id,
                     ai_summary: e.ai_summary,
                     ai_action: e.ai_action,
                     from: e.from,

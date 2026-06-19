@@ -152,7 +152,7 @@ const app = new Hono()
       const resend = new Resend(process.env.RESEND_API_KEY);
       const user = await db.user_tokens.findUnique({
         where: { clerk_user_id: userId },
-        select: { email: true },
+        select: { email: true, is_gmail: true },
       });
 
       if (!user?.email) {
@@ -181,15 +181,19 @@ const app = new Hono()
         const shownCount = trimmed.groups.reduce((sum, g) => sum + g.emails.length, 0);
         const dateLabel = formatInTimeZone(new Date(), "UTC", "EEEE, MMMM d");
 
+        const isGmail = user?.is_gmail ?? true;
+
         const emailHtml = await render(
           DailyDigestEmail({
             totalEmails: shownCount,
             dateLabel,
+            isGmail,
             remainingCount: trimmed.remainingCount,
             groups: trimmed.groups.map((g) => ({
               urgency: g.urgency,
               label: g.label,
               emails: g.emails.map((e) => ({
+                message_id: e.message_id,
                 ai_summary: e.ai_summary,
                 ai_action: e.ai_action,
                 from: e.from,

@@ -11,6 +11,7 @@ import {
 } from "@react-email/components";
 
 interface DigestEmail {
+  message_id: string;
   ai_summary: string | null;
   ai_action: string | null;
   from: string;
@@ -26,6 +27,7 @@ interface DigestGroup {
 interface DailyDigestEmailProps {
   totalEmails: number;
   dateLabel: string;
+  isGmail: boolean;
   groups: DigestGroup[];
   remainingCount?: number;
 }
@@ -36,9 +38,16 @@ const COLORS = {
   new_today: "#059669",
 };
 
+function emailUrl(messageId: string, isGmail: boolean): string {
+  return isGmail
+    ? `https://mail.google.com/mail/u/0/#search/${messageId}`
+    : `https://outlook.office.com/mail/deeplink/read/${encodeURIComponent(messageId)}`;
+}
+
 export default function DailyDigestEmail({
   totalEmails,
   dateLabel,
+  isGmail,
   groups,
   remainingCount,
 }: DailyDigestEmailProps) {
@@ -73,16 +82,23 @@ export default function DailyDigestEmail({
 
               {group.emails.map((email, i) => (
                 <Section key={i} style={item}>
-                  <Text style={itemTitle}>
-                    {email.ai_summary || "Action needed"}
-                  </Text>
-                  <Text style={itemMeta}>
-                    {email.from}
-                    <span style={dot}> · </span>
-                    {email.ai_action || "Review"}
-                    <span style={dot}> · </span>
-                    {email.ageText}
-                  </Text>
+                  <a
+                    href={emailUrl(email.message_id, isGmail)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={itemLink}
+                  >
+                    <Text style={itemTitle}>
+                      {email.ai_summary || "Action needed"}
+                    </Text>
+                    <Text style={itemMeta}>
+                      {email.from}
+                      <span style={dot}> · </span>
+                      {email.ai_action || "Review"}
+                      <span style={dot}> · </span>
+                      {email.ageText}
+                    </Text>
+                  </a>
                 </Section>
               ))}
             </Section>
@@ -179,6 +195,12 @@ const groupCount = {
 const item = {
   padding: "12px 0",
   borderBottom: "1px solid #f5f5f4",
+};
+
+const itemLink = {
+  display: "block",
+  textDecoration: "none",
+  color: "inherit",
 };
 
 const itemTitle = {
