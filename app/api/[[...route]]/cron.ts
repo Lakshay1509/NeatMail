@@ -1006,6 +1006,9 @@ Also — as an early user, I'm locking in your current plan at a rate I can't of
           });
 
           results.sent++;
+
+          // Throttle: 2s between users to avoid rate limits
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
