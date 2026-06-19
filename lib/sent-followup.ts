@@ -26,7 +26,24 @@ Do NOT consider this as requiring follow-up if:
 - The email is purely informational with no expected response (e.g., status update, notification)
 - The email is a thank-you note, acknowledgment, or brief confirmation with no question asked
 
-Reply with exactly one word: true or false. No punctuation, no explanation, no extra text.
+Examples:
+
+Subject: Quick question about the deploy
+To: devin@company.com
+Body: Hey! Are we deploying to staging today? Also, do you have the new env vars handy?
+-> true
+
+Subject: Fwd: Q3 planning notes
+To: team@company.com
+Body: Just sharing the meeting notes from today. No action needed.
+-> false
+
+Subject: Checking in
+To: priya@company.com
+Body: Hey — wanted to ask about the dashboard feedback, and also can you share the Figma link when you get a sec? Are you free for a sync this week?
+-> true
+
+Now classify the email below. Reply with exactly one word: true or false. No punctuation, no explanation, no extra text.
 
 Subject: ${request.subject}
 To: ${request.to}
@@ -35,7 +52,7 @@ Body:
 ${request.body.slice(0, 2000)}`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5-nano",
+    model: "gpt-5-mini",
     messages: [
       {
         role: "system",
@@ -44,7 +61,7 @@ ${request.body.slice(0, 2000)}`;
       },
       { role: "user", content: prompt },
     ],
-    reasoning_effort: "low",
+    reasoning_effort: "medium",
     max_completion_tokens: 10,
     seed: 42,
   });
@@ -69,7 +86,7 @@ ${request.body.slice(0, 2000)}
 Write only the follow-up message body, no subject line, no greeting, no sign-off. Just 2-3 lines of natural follow-up text.`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5-nano",
+    model: "gpt-5-mini",
     messages: [
       {
         role: "system",

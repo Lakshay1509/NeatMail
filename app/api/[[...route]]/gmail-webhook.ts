@@ -468,7 +468,7 @@ const app = new Hono().post("/", async (ctx) => {
 
       const needsFollowUp = await checkSentRequiresFollowUp({
         subject,
-        body: body ?? "",
+        body: body,
         to,
       });
 
