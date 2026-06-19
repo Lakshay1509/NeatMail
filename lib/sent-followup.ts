@@ -52,7 +52,7 @@ Body:
 ${request.body.slice(0, 2000)}`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5-mini",
+    model: "gpt-5-nano",
     messages: [
       {
         role: "system",
@@ -61,12 +61,16 @@ ${request.body.slice(0, 2000)}`;
       },
       { role: "user", content: prompt },
     ],
-    reasoning_effort: "medium",
-    max_completion_tokens: 10,
+    reasoning_effort: "low",
+    max_completion_tokens: 200,
     seed: 42,
   });
 
   const content = completion.choices[0]?.message?.content?.trim().toLowerCase();
+  const raw = completion.choices[0]?.message?.content;
+  console.log("raw response:", JSON.stringify(raw));
+  console.log("finish_reason:", completion.choices[0]?.finish_reason);
+
   return content === "true";
 }
 
@@ -96,8 +100,8 @@ Write only the follow-up message body, no subject line, no greeting, no sign-off
       { role: "user", content: prompt },
     ],
     reasoning_effort: "low",
-    max_completion_tokens: 150,
-    seed:42
+    max_completion_tokens: 500,
+    seed: 42,
   });
 
   return completion.choices[0]?.message?.content?.trim() ?? "";
