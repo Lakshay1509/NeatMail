@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
+import { AnimatePresence, motion } from "framer-motion";
 import { useGetDigest } from "@/features/digest/use-get-digest";
 import { useGetDigestCompleted } from "@/features/digest/use-get-digest-completed";
 import { usePostDigestDone } from "@/features/digest/use-post-digest-done";
@@ -147,6 +148,60 @@ function CompletionRing({
   );
 }
 
+function BeamAvatar({ seed, size = 36 }: { seed: string; size?: number }) {
+  const palette = [
+    { bg: "#E06C75", accent: "#BE5046", glow: "#F29E9E" },
+    { bg: "#61AFEF", accent: "#3B8EEA", glow: "#9CC8F7" },
+    { bg: "#98C379", accent: "#6FAD4E", glow: "#B8D9A0" },
+    { bg: "#D19A66", accent: "#C0823E", glow: "#E4BB8C" },
+    { bg: "#C678DD", accent: "#A855C4", glow: "#DBA4E8" },
+    { bg: "#56B6C2", accent: "#39949E", glow: "#8CD0D8" },
+    { bg: "#E5C07B", accent: "#D4A84B", glow: "#F0D69E" },
+    { bg: "#7EC8E3", accent: "#4DA8C9", glow: "#A8DCF0" },
+  ];
+  const hash = seed.split("").reduce((a, c) => a * 31 + c.charCodeAt(0), 0);
+  const { bg, accent, glow } = palette[Math.abs(hash) % palette.length];
+  const variant = Math.abs(hash >> 4) % 4;
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 40 40"
+      className="shrink-0 rounded-full"
+      aria-hidden="true"
+    >
+      <rect width="40" height="40" rx="20" fill={bg} />
+      {variant === 0 && (
+        <>
+          <path d="M12 20 Q12 6 20 6 Q28 6 28 20 Q26 14 20 14 Q14 14 12 20Z" fill={accent} opacity={0.5} />
+          <circle cx="20" cy="18" r="10" fill={glow} opacity={0.3} />
+        </>
+      )}
+      {variant === 1 && (
+        <>
+          <rect x="10" y="4" width="20" height="14" rx="5" fill={accent} opacity={0.5} />
+          <rect x="14" y="26" width="12" height="14" rx="4" fill={glow} opacity={0.3} />
+        </>
+      )}
+      {variant === 2 && (
+        <>
+          <circle cx="20" cy="10" r="10" fill={accent} opacity={0.4} />
+          <rect x="12" y="24" width="16" height="16" rx="6" fill={glow} opacity={0.25} />
+        </>
+      )}
+      {variant === 3 && (
+        <>
+          <rect x="8" y="4" width="24" height="12" rx="6" fill={accent} opacity={0.45} />
+          <circle cx="14" cy="28" r="6" fill={glow} opacity={0.25} />
+          <circle cx="26" cy="28" r="6" fill={glow} opacity={0.25} />
+        </>
+      )}
+      <circle cx="20" cy="18" r="8" fill={glow} opacity={0.2} />
+    </svg>
+  );
+}
+
 function DigestRow({
   email,
   urgency,
@@ -172,6 +227,26 @@ function DigestRow({
   );
   const [replyText, setReplyText] = useState("");
   const replyMutation = useReplyMutation();
+
+  const formattedDate = useMemo(
+    () =>
+      new Date(email.created_at).toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
+    [email.created_at],
+  );
+
+  const formattedTime = useMemo(
+    () =>
+      new Date(email.created_at).toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    [email.created_at],
+  );
 
   const handleSendReply = useCallback(() => {
     replyMutation.mutate(
@@ -269,48 +344,82 @@ function DigestRow({
         </div>
       </div>
 
-      {isExpanded && !isAnimatingOut && (
-        <div className="px-2 pb-5 pl-[38px] flex flex-col gap-3">
-          {bodyLoading ? (
-            <div className="h-8 animate-pulse rounded bg-muted" />
-          ) : (
-            <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap break-words">
-              {bodyData?.body
-                ? bodyData.body.replace(/\r\n/g, "\n").replace(/\r/g, "\n")
-                : "No body content available."}
-            </p>
-          )}
+      <AnimatePresence>
+        {isExpanded && !isAnimatingOut && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
+            <div className="px-2 pb-5 pl-[38px]">
+              <div className="rounded-lg border border-border bg-card overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                <div className="flex items-start gap-3.5 p-4 pb-3">
+                  <BeamAvatar seed={email.from} size={36} />
+                  <div className="min-w-0 flex-1 pt-0.5">
+                    <p className="text-sm font-medium text-foreground">
+                      {email.from}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                      {formattedDate}
+                      {" · "}
+                      {formattedTime}
+                    </p>
+                  </div>
+                </div>
 
-          <Textarea
-            placeholder="Write your reply..."
-            value={replyText}
-            onChange={(e) => setReplyText(e.target.value)}
-            className="min-h-[80px]"
-          />
+                <div className="px-4 pb-4">
+                  {bodyLoading ? (
+                    <div className="space-y-2.5">
+                      <div className="h-3 w-full animate-pulse rounded bg-muted-foreground/15" />
+                      <div className="h-3 w-11/12 animate-pulse rounded bg-muted-foreground/15" />
+                      <div className="h-3 w-4/5 animate-pulse rounded bg-muted-foreground/15" />
+                      <div className="h-3 w-3/4 animate-pulse rounded bg-muted-foreground/15" />
+                      <div className="h-3 w-5/6 animate-pulse rounded bg-muted-foreground/15" />
+                    </div>
+                  ) : (
+                    <div className="text-sm text-foreground leading-[1.7] whitespace-pre-wrap break-words max-w-[68ch]">
+                      {bodyData?.body
+                        ? bodyData.body.replace(/\r\n/g, "\n").replace(/\r/g, "\n")
+                        : "No body content available."}
+                    </div>
+                  )}
+                </div>
+              </div>
 
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground/70">
-              {replyText.length}/1000
-            </span>
-            <Button
-              size="sm"
-              onClick={handleSendReply}
-              disabled={
-                replyText.length < 10 ||
-                replyText.length > 1000 ||
-                replyMutation.isPending
-              }
-            >
-              {replyMutation.isPending ? (
-                <Loader2 className="mr-2 size-3.5 animate-spin" />
-              ) : (
-                <SendHorizontal className="mr-2 size-3.5" />
-              )}
-              Send reply
-            </Button>
-          </div>
-        </div>
-      )}
+              <div className="mt-3 flex flex-col gap-2">
+                <Textarea
+                  placeholder={`Reply to ${email.from}...`}
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  className="min-h-[40px] text-sm resize-none"
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground/60">
+                    {replyText.length > 0 && `${replyText.length}/1000`}
+                  </span>
+                  <Button
+                    size="sm"
+                    onClick={handleSendReply}
+                    disabled={
+                      replyText.length < 10 ||
+                      replyText.length > 1000 ||
+                      replyMutation.isPending
+                    }
+                  >
+                    {replyMutation.isPending ? (
+                      <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                    ) : (
+                      <SendHorizontal className="mr-1.5 size-3.5" />
+                    )}
+                    Send reply
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -380,7 +489,7 @@ function TabBar({
   onTabChange: (tab: TabKey) => void;
 }) {
   return (
-    <div className="flex gap-1 border-b border-border mb-1">
+    <div className="flex gap-1 mb-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
       {TABS.map((tab) => (
         <button
           key={tab.key}
@@ -581,6 +690,34 @@ export default function DigestSection() {
   }
 
   function renderAllTab() {
+    if (visibleGroups.length === 0) {
+      return (
+        <div className="mt-16 text-center">
+          <Image
+            src="/all-clear.svg"
+            alt=""
+            width={240}
+            height={240}
+            className="mx-auto mb-4"
+            priority
+          />
+          <p className="text-sm font-medium text-foreground">
+            Good {getTimeOfDay()}, you are clear
+          </p>
+          {clearedCount > 0 ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              You cleared {clearedCount} item
+              {clearedCount !== 1 ? "s" : ""} today.
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-muted-foreground max-w-sm mx-auto">
+              No emails need your attention from the last 24 hours.
+            </p>
+          )}
+        </div>
+      );
+    }
+
     return visibleGroups.map((group, groupIndex) => {
       const badgeColor = BADGE_COLORS[group.urgency];
       return (
@@ -676,39 +813,6 @@ export default function DigestSection() {
     );
   }
 
-  function renderEmptyState() {
-    return (
-      <div>
-        {renderHeader()}
-        <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
-        <Separator />
-        <div className="mt-16 text-center">
-          <Image
-            src="/all-clear.svg"
-            alt=""
-            width={240}
-            height={240}
-            className="mx-auto mb-4"
-            priority
-          />
-          <p className="text-sm font-medium text-foreground">
-            Good {getTimeOfDay()}, you are clear
-          </p>
-          {clearedCount > 0 ? (
-            <p className="mt-1 text-sm text-muted-foreground">
-              You cleared {clearedCount} item
-              {clearedCount !== 1 ? "s" : ""} today.
-            </p>
-          ) : (
-            <p className="mt-1 text-sm text-muted-foreground max-w-sm mx-auto">
-              No emails need your attention from the last 24 hours.
-            </p>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   if (isLoading) {
     return (
       <div>
@@ -768,10 +872,6 @@ export default function DigestSection() {
         </div>
       </div>
     );
-  }
-
-  if (!digest || allEmails.length === 0) {
-    return renderEmptyState();
   }
 
   return (
