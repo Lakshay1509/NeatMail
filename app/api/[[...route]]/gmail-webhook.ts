@@ -474,14 +474,6 @@ const app = new Hono().post("/", async (ctx) => {
         `[sent-followup] ${messageId} → ${needsFollowUp ? "follow-up needed" : "no follow-up needed"}`,
       );
 
-      await addMailtoDB(
-        clerkUserId,
-        null,
-        String(messageId),
-        to,
-        needsFollowUp ? "Sent - follow-up may be needed" : "Sent - no follow-up needed",
-      );
-
       if (needsFollowUp) {
         const pref = await db.follow_up_preference.findUnique({
           where: { user_id: clerkUserId },

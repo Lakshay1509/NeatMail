@@ -1,7 +1,7 @@
 import { Job } from "bullmq";
 import { createGmailDraft, getGmailClient } from "@/lib/gmail";
 import { createOutlookDraft, getGraphClient } from "@/lib/outlook";
-import { useGetUserDraftPreference } from "@/lib/supabase";
+import { useGetUserDraftPreference, addMailtoDB } from "@/lib/supabase";
 import { generateFollowUpMessage } from "@/lib/sent-followup";
 
 interface FollowUpDraftData {
@@ -103,6 +103,8 @@ export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
       categories: ["Follow up"],
     });
   }
+
+  await addMailtoDB(userId, null, messageId, to, `send follow up to ${to}`, "follow up required");
 
   console.log(
     `[follow-up-draft] Applied "Follow up" label to ${messageId} (${isGmail ? "gmail" : "outlook"})`,

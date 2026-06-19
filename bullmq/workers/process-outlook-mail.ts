@@ -100,16 +100,6 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
       `[outlook-sent-followup] ${messageId} → ${needsFollowUp ? "follow-up needed" : "no follow-up needed"}`,
     );
 
-    await addMailtoDB(
-      subscription.clerk_user_id,
-      null,
-      messageId,
-      mail.toRecipients?.[0]?.emailAddress?.address ?? "",
-      needsFollowUp
-        ? "Sent - follow-up may be needed"
-        : "Sent - no follow-up needed",
-    );
-
     if (needsFollowUp) {
       const pref = await db.follow_up_preference.findUnique({
         where: { user_id: subscription.clerk_user_id },
