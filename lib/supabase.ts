@@ -328,6 +328,65 @@ export async function incrementDraftCount(userId: string): Promise<number> {
   return updated.draft_count;
 }
 
+export async function checkFollowUpLimit(userId: string): Promise<boolean> {
+  const { getUserTier, getTierLimits } = await import("./tier-guard");
+  const tier = await getUserTier(userId);
+
+  if (tier === "MAX") return true;
+
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const pref = await db.follow_up_preference.findUnique({
+    where: { user_id: userId },
+    select: { follow_up_count: true, follow_up_count_reset_at: true },
+  });
+
+  const needsReset =
+    !pref?.follow_up_count_reset_at ||
+    new Date(pref.follow_up_count_reset_at) < startOfMonth;
+  const currentCount = needsReset ? 0 : (pref?.follow_up_count ?? 0);
+
+  const limits = await getTierLimits(userId);
+  const max = limits.maxFollowUpsPerMonth;
+
+  if (max === Infinity) return true;
+  if (currentCount >= max) return false;
+
+  return true;
+}
+
+export async function incrementFollowUpCount(userId: string): Promise<number> {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const pref = await db.follow_up_preference.upsert({
+    where: { user_id: userId },
+    update: {},
+    create: {
+      user_id: userId,
+      follow_up_count: 0,
+      follow_up_count_reset_at: startOfMonth,
+    },
+    select: { follow_up_count: true, follow_up_count_reset_at: true },
+  });
+
+  const needsReset =
+    !pref.follow_up_count_reset_at ||
+    new Date(pref.follow_up_count_reset_at) < startOfMonth;
+
+  const updated = await db.follow_up_preference.update({
+    where: { user_id: userId },
+    data: {
+      follow_up_count: needsReset ? 1 : pref.follow_up_count + 1,
+      follow_up_count_reset_at: startOfMonth,
+    },
+    select: { follow_up_count: true },
+  });
+
+  return updated.follow_up_count;
+}
+
 export async function getUserIsGmail(userId: string) {
   try {
     const user = await db.user_tokens.findUnique({

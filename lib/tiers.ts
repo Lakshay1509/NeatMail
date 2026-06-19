@@ -34,6 +34,7 @@ export interface TierLimits {
   maxCustomLabels: number;
   maxAiDraftsPerMonth: number;
   maxArchiveRules: number;
+  maxFollowUpsPerMonth: number;
   hasDigest: boolean;
   hasFollowUps: boolean;
   hasTelegramSlack: boolean;
@@ -47,6 +48,7 @@ export const TIER_LIMITS: Record<Tier, TierLimits> = {
     maxCustomLabels: 0,
     maxAiDraftsPerMonth: 0,
     maxArchiveRules: 0,
+    maxFollowUpsPerMonth: 0,
     hasDigest: false,
     hasFollowUps: false,
     hasTelegramSlack: false,
@@ -58,6 +60,7 @@ export const TIER_LIMITS: Record<Tier, TierLimits> = {
     maxCustomLabels: Infinity,
     maxAiDraftsPerMonth: 20,
     maxArchiveRules: 5,
+    maxFollowUpsPerMonth: 10,
     hasDigest: true,
     hasFollowUps: true,
     hasTelegramSlack: true,
@@ -69,6 +72,7 @@ export const TIER_LIMITS: Record<Tier, TierLimits> = {
     maxCustomLabels: Infinity,
     maxAiDraftsPerMonth: Infinity,
     maxArchiveRules: Infinity,
+    maxFollowUpsPerMonth: Infinity,
     hasDigest: true,
     hasFollowUps: true,
     hasTelegramSlack: true,

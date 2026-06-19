@@ -18,6 +18,8 @@ import {
   updateHistoryId,
   updateMessageStatus,
   useGetUserDraftPreference,
+  checkFollowUpLimit,
+  incrementFollowUpCount,
 } from "@/lib/supabase";
 import { getUserTier } from "@/lib/tier-guard";
 import { clerkClient } from "@clerk/nextjs/server";
@@ -493,6 +495,14 @@ const app = new Hono().post("/", async (ctx) => {
           );
 
           if (!shouldSkip) {
+            const withinLimit = await checkFollowUpLimit(clerkUserId);
+            if (!withinLimit) {
+              console.log(
+                `[sent-followup] ${messageId} → skipped (monthly limit reached)`,
+              );
+              continue;
+            }
+            await incrementFollowUpCount(clerkUserId);
             await followUpQueue.remove(`follow-up:gmail:${threadId}`);
             await followUpQueue.add(
               "follow-up",

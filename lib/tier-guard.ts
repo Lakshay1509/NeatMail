@@ -45,7 +45,7 @@ export async function checkFeatureLimit(
   userId: string,
   feature: keyof Pick<
     TierLimits,
-    "maxCustomLabels" | "maxAiDraftsPerMonth" | "maxArchiveRules"
+    "maxCustomLabels" | "maxAiDraftsPerMonth" | "maxArchiveRules" | "maxFollowUpsPerMonth"
   >,
   currentCount: number,
 ): Promise<TierCheckResult> {

@@ -51,13 +51,15 @@ model user_tokens {
 }
 
 model follow_up_preference {
-  id          String     @id @default(cuid())
-  user_id     String     @unique
-  enabled     Boolean    @default(false)
-  ai_drafts   Boolean    @default(true)
-  days        Int        @default(3)
-  skip_emails String     @default("")
-  user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+  id                    String     @id @default(cuid())
+  user_id               String     @unique
+  enabled               Boolean    @default(false)
+  ai_drafts             Boolean    @default(true)
+  days                  Int        @default(3)
+  skip_emails           String     @default("")
+  follow_up_count       Int        @default(0)
+  follow_up_count_reset_at DateTime?
+  user_tokens           user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
   @@schema("public")
 }

@@ -17,6 +17,7 @@ const STEPS = [
   "Setting up daily digest...",
   "Syncing email history...",
   "Saving categories...",
+  "Setting up follow ups"
 ]
 
 export const CATEGORIES = [

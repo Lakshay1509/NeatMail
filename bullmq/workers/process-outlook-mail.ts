@@ -5,6 +5,8 @@ import {
   addMailtoDB,
   labelColor,
   useGetUserDraftPreference,
+  checkFollowUpLimit,
+  incrementFollowUpCount,
 } from "@/lib/supabase";
 import { clerkClient } from "@clerk/nextjs/server";
 import { isMessageProcessed, markMessageProcessed } from "@/lib/redis";
@@ -116,6 +118,14 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
         const shouldSkip = skipList.some((skip) => toEmail.includes(skip));
 
         if (!shouldSkip) {
+          const withinLimit = await checkFollowUpLimit(subscription.clerk_user_id);
+          if (!withinLimit) {
+            console.log(
+              `[outlook-sent-followup] ${messageId} → skipped (monthly limit reached)`,
+            );
+            return { success: true, sent: true, needsFollowUp, skippedDueToLimit: true };
+          }
+          await incrementFollowUpCount(subscription.clerk_user_id);
           await followUpQueue.remove(`follow-up:outlook:${threadId}`);
           await followUpQueue.add(
             "follow-up",
