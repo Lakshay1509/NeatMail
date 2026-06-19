@@ -968,7 +968,7 @@ Also — as an early user, I'm locking in your current plan at a rate I can't of
           } else {
             const digest = await getDigestForUser(userId);
             const totalEmails = digest.reduce((sum, g) => sum + g.emails.length, 0);
-            const trimmed = trimDigestForEmail(digest, 5);
+            const trimmed = trimDigestForEmail(digest, 10);
             const shownCount = trimmed.groups.reduce((sum, g) => sum + g.emails.length, 0);
             const dateLabel = formatInTimeZone(now, pref.timezone, "EEEE, MMMM d");
 

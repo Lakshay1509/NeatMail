@@ -6,7 +6,6 @@ import {
   Heading,
   Text,
   Section,
-  Button,
   Hr,
   Preview,
 } from "@react-email/components";
@@ -29,7 +28,6 @@ interface DailyDigestEmailProps {
   dateLabel: string;
   groups: DigestGroup[];
   remainingCount?: number;
-  dashboardUrl?: string;
 }
 
 const COLORS = {
@@ -43,7 +41,6 @@ export default function DailyDigestEmail({
   dateLabel,
   groups,
   remainingCount,
-  dashboardUrl = "https://dashboard.neatmail.app",
 }: DailyDigestEmailProps) {
   return (
     <Html>
@@ -94,17 +91,11 @@ export default function DailyDigestEmail({
           {remainingCount != null && remainingCount > 0 && (
             <Section style={overflowSection}>
               <Text style={overflowText}>
-                +{remainingCount} more item{remainingCount > 1 ? "s" : ""} in
-                your dashboard
+                  +{remainingCount} more item{remainingCount > 1 ? "s" : ""} not
+                shown
               </Text>
             </Section>
           )}
-
-          <Section style={ctaSection}>
-            <Button style={button} href={dashboardUrl}>
-              Open Dashboard
-            </Button>
-          </Section>
 
           <Hr style={divider} />
 
@@ -218,21 +209,6 @@ const overflowText = {
   fontSize: "13px",
   color: "#78716c",
   margin: "0",
-};
-
-const ctaSection = {
-  textAlign: "center" as const,
-};
-
-const button = {
-  backgroundColor: "#1c1917",
-  color: "#ffffff",
-  borderRadius: "6px",
-  padding: "10px 20px",
-  fontSize: "13px",
-  fontWeight: 500,
-  textDecoration: "none",
-  display: "inline-block",
 };
 
 const footer = {

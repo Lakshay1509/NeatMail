@@ -177,7 +177,7 @@ const app = new Hono()
         });
       } else {
         const digest = await getDigestForUser(userId);
-        const trimmed = trimDigestForEmail(digest, 5);
+        const trimmed = trimDigestForEmail(digest, 10);
         const shownCount = trimmed.groups.reduce((sum, g) => sum + g.emails.length, 0);
         const dateLabel = formatInTimeZone(new Date(), "UTC", "EEEE, MMMM d");
 

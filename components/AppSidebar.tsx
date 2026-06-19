@@ -50,7 +50,7 @@ type SidebarItem = {
 const items: SidebarItem[] = [
   { title: "Home", url: "/", icon: Home },
   { title: "Chat", url: "/chat", icon: MessageSquareDashedIcon },
-  { title: "Todos", url: "/todos", icon: CheckSquare },
+  // { title: "Todos", url: "/todos", icon: CheckSquare },
   { title: "Labels", url: "/settings/labels", icon: Tag },
   { title: "Draft preference", url: "/settings/draft-preference", icon: PenLine },
   { title: "Integrations", url: "/integrations", icon: Plug },

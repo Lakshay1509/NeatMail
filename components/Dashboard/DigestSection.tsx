@@ -1,3 +1,5 @@
+//we are still shipping this section so stay with us
+
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
