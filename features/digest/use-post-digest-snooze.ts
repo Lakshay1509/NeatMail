@@ -26,6 +26,7 @@ export const usePostDigestSnooze = () => {
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["digest"] });
+      queryClient.invalidateQueries({ queryKey: ["digest-completed"] });
       toast.success("Snoozed");
     },
 

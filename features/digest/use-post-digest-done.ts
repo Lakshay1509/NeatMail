@@ -26,6 +26,7 @@ export const usePostDigestDone = () => {
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["digest"] });
+      queryClient.invalidateQueries({ queryKey: ["digest-completed"] });
       toast.success("Marked as done");
     },
 

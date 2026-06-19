@@ -6,6 +6,7 @@ import { getUserTier } from "@/lib/tier-guard";
 import {
   getDigestForUser,
   getDigestCount,
+  getDigestCompleted,
   trimDigestForEmail,
   markEmailAsDone,
   snoozeEmail,
@@ -29,6 +30,13 @@ const app = new Hono()
 
     const count = await getDigestCount(userId);
     return c.json({ count });
+  })
+  .get("/completed", async (c) => {
+    const { userId } = await auth();
+    if (!userId) return c.json({ error: "Unauthorized" }, 401);
+
+    const digest = await getDigestCompleted(userId);
+    return c.json({ digest });
   })
   .post(
     "/done",

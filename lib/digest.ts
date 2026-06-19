@@ -167,6 +167,69 @@ export function trimDigestForEmail(
   };
 }
 
+export async function getDigestCompleted(
+  userId: string,
+): Promise<DigestGroup[]> {
+  const rows = await db.email_tracked.findMany({
+    where: {
+      user_id: userId,
+      isDone: true,
+      archive_at: null,
+      tag: {
+        name: { in: ["Action Needed", "Pending Response"] },
+      },
+    },
+    include: {
+      tag: {
+        select: { name: true, color: true },
+      },
+    },
+    orderBy: { created_at: "desc" },
+    take: 50,
+  });
+
+  const emails: DigestEmail[] = await Promise.all(
+    rows.map(async (r): Promise<DigestEmail> => ({
+      message_id: r.message_id,
+      subject: r.message_id,
+      from: r.domain ? await decryptDomain(r.domain) : "Unknown",
+      domain: r.domain,
+      ai_summary: r.ai_summary ? await decrypt(r.ai_summary) : null,
+      ai_action: r.ai_action ? await decrypt(r.ai_action) : null,
+      created_at: r.created_at,
+      tag_name: r.tag?.name || "",
+      tag_color: r.tag?.color || "",
+    })),
+  );
+
+  const urgent: DigestEmail[] = [];
+  const needsReply: DigestEmail[] = [];
+  const newToday: DigestEmail[] = [];
+
+  for (const email of emails) {
+    if (isUrgent(email)) {
+      urgent.push(email);
+    } else if (isNeedsReply(email)) {
+      needsReply.push(email);
+    } else {
+      newToday.push(email);
+    }
+  }
+
+  const groups: DigestGroup[] = [];
+  if (urgent.length > 0) {
+    groups.push({ urgency: "urgent", label: "Urgent — Do now", emails: urgent });
+  }
+  if (needsReply.length > 0) {
+    groups.push({ urgency: "needs_reply", label: "Needs Your Response", emails: needsReply });
+  }
+  if (newToday.length > 0) {
+    groups.push({ urgency: "new_today", label: "New Since Yesterday", emails: newToday });
+  }
+
+  return groups;
+}
+
 export async function getDigestCount(userId: string): Promise<number> {
   const since = new Date();
   since.setDate(since.getDate() - 1);
