@@ -53,6 +53,7 @@ const items: SidebarItem[] = [
   // { title: "Todos", url: "/todos", icon: CheckSquare },
   { title: "Labels", url: "/settings/labels", icon: Tag },
   { title: "Draft preference", url: "/settings/draft-preference", icon: PenLine },
+  { title: "Follow-up", url: "/settings/follow-up", icon: Send },
   { title: "Integrations", url: "/integrations", icon: Plug },
 ]
 

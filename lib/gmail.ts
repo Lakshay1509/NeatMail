@@ -323,7 +323,7 @@ export async function activateWatch(userId: string) {
     const response = await gmail.users.watch({
       userId: "me",
       requestBody: {
-        labelIds: ["INBOX"],
+        labelIds: ["INBOX", "SENT"],
         topicName: process.env.GMAIL_WEBHOOK_TOPIC,
       },
     });

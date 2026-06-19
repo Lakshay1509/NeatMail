@@ -1,4 +1,4 @@
-import { draftQueue } from "@/lib/queue";
+import { draftQueue, followUpQueue } from "@/lib/queue";
 import { getGmailClient, getGmailMessageBody, OAuthError } from "@/lib/gmail";
 import {
   isMessageProcessed,
@@ -26,6 +26,8 @@ import { OAuth2Client } from "google-auth-library";
 import { getModelResponse, ModelResponse } from "@/lib/model";
 import { handleLabelCorrections } from "@/lib/gmail-correction";
 import { checkAndForwardToTelegram } from "@/lib/telegram";
+import { checkSentRequiresFollowUp } from "@/lib/sent-followup";
+import { db } from "@/lib/prisma";
 
 export function parseFromHeader(fromHeader: string): {
   senderName: string;
@@ -202,6 +204,15 @@ const app = new Hono().post("/", async (ctx) => {
           ) || [],
       ) || [];
 
+    const sentMessages =
+      history.data.history?.flatMap(
+        (h) =>
+          h.messagesAdded?.filter((m) =>
+            m.message?.labelIds?.includes("SENT") &&
+            !m.message?.labelIds?.includes("INBOX"),
+          ) || [],
+      ) || [];
+
     for (const msg of messages) {
       const messageId = msg.message?.id;
       if (!messageId) continue;
@@ -245,6 +256,10 @@ const app = new Hono().post("/", async (ctx) => {
         bodySnippet: truncatedBody,
         threadId: email.data.threadId || "",
       };
+
+      if (emailData.threadId) {
+        await followUpQueue.remove(`follow-up:gmail:${emailData.threadId}`);
+      }
 
       // currentThreadId = String(emailData.threadId);
 
@@ -419,6 +434,94 @@ const app = new Hono().post("/", async (ctx) => {
 
       currentMessageId = null;
       // currentThreadId = null;
+    }
+
+    for (const msg of sentMessages) {
+      const messageId = msg.message?.id;
+      if (!messageId) continue;
+
+      if (await isMessageProcessed(messageId)) {
+        continue;
+      }
+
+      await markMessageProcessed(messageId);
+
+      let email;
+      try {
+        email = await gmail.users.messages.get({
+          userId: "me",
+          id: messageId,
+        });
+      } catch {
+        continue;
+      }
+
+      const subject =
+        email.data.payload?.headers?.find((h) => h.name === "Subject")?.value ||
+        "";
+      const body = await getGmailMessageBody(clerkUserId, messageId);
+      const to =
+        email.data.payload?.headers?.find((h) => h.name === "To")?.value || "";
+      const threadId = email.data.threadId ?? "";
+
+      const needsFollowUp = await checkSentRequiresFollowUp({
+        subject,
+        body: body ?? "",
+        to,
+      });
+
+      console.log(
+        `[sent-followup] ${messageId} → ${needsFollowUp ? "follow-up needed" : "no follow-up needed"}`,
+      );
+
+      await addMailtoDB(
+        clerkUserId,
+        null,
+        String(messageId),
+        to,
+        needsFollowUp ? "Sent - follow-up may be needed" : "Sent - no follow-up needed",
+      );
+
+      if (needsFollowUp) {
+        const pref = await db.follow_up_preference.findUnique({
+          where: { user_id: clerkUserId },
+        });
+
+        if (pref?.enabled) {
+          const toEmail = to.includes("<")
+            ? (to.match(/<([^>]+)>/)?.[1] ?? to)
+            : to;
+          const skipList = (pref.skip_emails ?? "")
+            .split(",")
+            .map((s) => s.trim().toLowerCase())
+            .filter(Boolean);
+
+          const shouldSkip = skipList.some((skip) =>
+            toEmail.toLowerCase().includes(skip),
+          );
+
+          if (!shouldSkip) {
+            await followUpQueue.remove(`follow-up:gmail:${threadId}`);
+            await followUpQueue.add(
+              "follow-up",
+              {
+                userId: clerkUserId,
+                messageId,
+                threadId,
+                subject,
+                to,
+                body: body ?? "",
+                isGmail: true,
+                aiDrafts: pref.ai_drafts,
+              },
+              {
+                delay: pref.days * 24 * 60 * 60 * 1000,
+                jobId: `follow-up:gmail:${threadId}`,
+              },
+            );
+          }
+        }
+      }
     }
 
     await updateHistoryId(emailAddress, String(newHistoryId), true);

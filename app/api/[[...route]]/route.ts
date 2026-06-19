@@ -20,6 +20,7 @@ import stats from './stats'
 import freeTrial from './freeTrial'
 import integrations from './integrations'
 import digest from './digest'
+import followUp from './follow-up'
 import bullboard from './bullboard'
 import geo from './geo'
 import health from './health'
@@ -94,6 +95,7 @@ const routes = app
     .route('/freeTrial',freeTrial)
     .route('/integrations',integrations)
     .route('/digest',digest)
+    .route('/follow-up',followUp)
     .route('/bullboard',bullboard)
     .route('/health',health)
     .route('/geo',geo)

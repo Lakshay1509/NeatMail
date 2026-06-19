@@ -112,7 +112,7 @@ const UserDraftPreference = () => {
       <div className="flex items-start justify-between">
 				<div>
 					<h2 className="text-lg font-semibold text-gray-900 mb-1">Enable Drafts</h2>
-					<p className="text-gray-600 text-sm md:text-base max-w-2xl">
+					<p className="text-gray-600 text-sm  max-w-2xl">
 						Automatically watch incoming emails and draft suitable response for them if needed.
 					</p>
 				</div>

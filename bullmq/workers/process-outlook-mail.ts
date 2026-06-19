@@ -10,8 +10,9 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { isMessageProcessed, markMessageProcessed } from "@/lib/redis";
 import { getModelResponse, ModelResponse } from "@/lib/model";
 import { checkAndForwardToTelegram } from "@/lib/telegram";
-import { flow } from "@/lib/queue";
+import { flow, followUpQueue } from "@/lib/queue";
 import { getUserTier } from "@/lib/tier-guard";
+import { checkSentRequiresFollowUp } from "@/lib/sent-followup";
 
 interface ProcessOutlookMailData {
   messageId: string;
@@ -84,6 +85,75 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
   const subject: string = mail.subject ?? "";
   const body: string = mail.body?.content ?? "";
   const threadId: string = mail.conversationId ?? messageId;
+
+  const sentItemsFolder = await client.api("/me/mailFolders/SentItems").get();
+  const isSentMessage = mail.parentFolderId === sentItemsFolder.id;
+
+  if (isSentMessage) {
+    const needsFollowUp = await checkSentRequiresFollowUp({
+      subject,
+      body,
+      to: mail.toRecipients?.[0]?.emailAddress?.address ?? "",
+    });
+
+    console.log(
+      `[outlook-sent-followup] ${messageId} → ${needsFollowUp ? "follow-up needed" : "no follow-up needed"}`,
+    );
+
+    await addMailtoDB(
+      subscription.clerk_user_id,
+      null,
+      messageId,
+      mail.toRecipients?.[0]?.emailAddress?.address ?? "",
+      needsFollowUp
+        ? "Sent - follow-up may be needed"
+        : "Sent - no follow-up needed",
+    );
+
+    if (needsFollowUp) {
+      const pref = await db.follow_up_preference.findUnique({
+        where: { user_id: subscription.clerk_user_id },
+      });
+
+      if (pref?.enabled) {
+        const toEmail =
+          mail.toRecipients?.[0]?.emailAddress?.address?.toLowerCase() ?? "";
+        const skipList = (pref.skip_emails ?? "")
+          .split(",")
+          .map((s) => s.trim().toLowerCase())
+          .filter(Boolean);
+
+        const shouldSkip = skipList.some((skip) => toEmail.includes(skip));
+
+        if (!shouldSkip) {
+          await followUpQueue.remove(`follow-up:outlook:${threadId}`);
+          await followUpQueue.add(
+            "follow-up",
+            {
+              userId: subscription.clerk_user_id,
+              messageId,
+              threadId,
+              subject,
+              to: mail.toRecipients?.[0]?.emailAddress?.address ?? "",
+              body,
+              isGmail: false,
+              aiDrafts: pref.ai_drafts,
+            },
+            {
+              delay: pref.days * 24 * 60 * 60 * 1000,
+              jobId: `follow-up:outlook:${threadId}`,
+            },
+          );
+        }
+      }
+    }
+
+    return { success: true, sent: true, needsFollowUp };
+  }
+
+  if (threadId) {
+    await followUpQueue.remove(`follow-up:outlook:${threadId}`);
+  }
 
   const clerk = await clerkClient();
   const clerkUser = await clerk.users.getUser(subscription.clerk_user_id);

@@ -45,6 +45,19 @@ model user_tokens {
   archive_rules              ArchiveRule[]
   slack_integration          slack_integration?
   digest_preference          digest_preference?
+  follow_up_preference       follow_up_preference?
+
+  @@schema("public")
+}
+
+model follow_up_preference {
+  id          String     @id @default(cuid())
+  user_id     String     @unique
+  enabled     Boolean    @default(false)
+  ai_drafts   Boolean    @default(true)
+  days        Int        @default(3)
+  skip_emails String     @default("")
+  user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
   @@schema("public")
 }

@@ -57,6 +57,7 @@ export async function createOutlookSubscription(
     const seen = new Set<string>();
     const targets = [
       { resource: "me/mailFolders/Inbox/messages", name: "Inbox" },
+      { resource: "me/mailFolders/SentItems/messages", name: "Sent Items" },
       ...(folders ?? []).map(f => ({ resource: `me/mailFolders/${f.id}/messages`, name: f.name })),
     ].filter(t => {
       if (seen.has(t.resource)) return false;

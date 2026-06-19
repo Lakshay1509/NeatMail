@@ -66,6 +66,16 @@ export const classifyQueue = new Queue("classify", {
 
 export const flow = new FlowProducer({ connection });
 
+export const followUpQueue = new Queue("follow-up-draft", {
+  connection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 1000 },
+    removeOnComplete: true,
+    removeOnFail: 100,
+  },
+});
+
 export const queueAdapters = [
   new BullMQAdapter(outlookMailQueue),
   new BullMQAdapter(outlookMailUpdateQueue),
@@ -73,4 +83,5 @@ export const queueAdapters = [
   new BullMQAdapter(telegramQueue),
   new BullMQAdapter(dbBatchQueue),
   new BullMQAdapter(classifyQueue),
+  new BullMQAdapter(followUpQueue),
 ];
