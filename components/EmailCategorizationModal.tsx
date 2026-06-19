@@ -91,6 +91,11 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 					deliveryTime: "10:00",
 					timezone: userTimezone,
 				},
+				followUpPrefs: {
+					enabled: true,
+					days: 3,
+					ai_drafts:true
+				},
 			});
 			onOpenChange(false);
 			setShowSuccessDialog(true);
@@ -150,8 +155,6 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 				</div>
 
 				<UpdateFolderPrefernce/>
-
-				
 
 				<DialogFooter className="mt-6 flex flex-col gap-2">
 					<Button 

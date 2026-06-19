@@ -29,6 +29,11 @@ const app = new Hono().post(
           .regex(/^([01]?\d|2[0-3]):([0-5]\d)$/),
         timezone: z.string(),
       }),
+      followUpPrefs: z.object({
+        enabled: z.boolean(),
+        days: z.number().int().min(1).max(30),
+        ai_drafts:z.boolean()
+      }).optional(),
     }),
   ),
   async (ctx) => {
@@ -198,6 +203,24 @@ const app = new Hono().post(
           })),
           skipDuplicates: true,
         });
+
+        // 2f. Follow-up preferences (upsert)
+        if (body.followUpPrefs) {
+          await tx.follow_up_preference.upsert({
+            where: { user_id: userId },
+            update: {
+              enabled: body.followUpPrefs.enabled,
+              days: body.followUpPrefs.days,
+              ai_drafts:body.followUpPrefs.ai_drafts
+            },
+            create: {
+              user_id: userId,
+              enabled: body.followUpPrefs.enabled,
+              days: body.followUpPrefs.days,
+              ai_drafts:body.followUpPrefs.ai_drafts
+            },
+          });
+        }
       });
 
       const posthog = getPostHogClient();
@@ -208,6 +231,7 @@ const app = new Hono().post(
           tagCount: body.tags.length,
           draftEnabled: body.draftPrefs.enabled,
           digestEnabled: body.digestPrefs.enabled,
+          followUpEnabled: body.followUpPrefs?.enabled ?? false,
         },
       });
       await posthog.shutdown();
