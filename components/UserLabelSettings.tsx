@@ -129,7 +129,7 @@ const UserLabelSettings = () => {
 
 			</div>
 
-			{isGmailData?.is_gmail===false && <WatchedFolderSelect disabled={false} />}
+			{/* {isGmailData?.is_gmail===false && <WatchedFolderSelect disabled={false} />} */}
 
 			
 
