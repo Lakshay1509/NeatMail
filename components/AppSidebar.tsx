@@ -79,7 +79,7 @@ const FREE_GATED_TITLES = new Set([
   "Draft preference",
   "Daily Digest",
   "Integrations",
-  "Follow ups",
+  "Follow-up",
   "Unsubscribe",
   "Large emails",
   "Todos"

@@ -21,10 +21,10 @@ export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
 
   const prefs = await useGetUserDraftPreference(userId);
 
-  if (aiDrafts !== false) {
-    const followUpBody = await generateFollowUpMessage({ subject, body, to });
-    if (followUpBody) {
-      if (isGmail) {
+  if (isGmail) {
+    if (aiDrafts !== false) {
+      const followUpBody = await generateFollowUpMessage({ subject, body, to });
+      if (followUpBody) {
         await createGmailDraft(
           userId,
           threadId,
@@ -36,22 +36,9 @@ export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
           prefs.fontSize,
           prefs.signature,
         );
-      } else {
-        await createOutlookDraft(
-          userId,
-          messageId,
-          subject,
-          to,
-          followUpBody,
-          prefs.fontColor,
-          prefs.fontSize,
-          prefs.signature,
-        );
       }
     }
-  }
 
-  if (isGmail) {
     const gmail = await getGmailClient(userId);
 
     const labelsResponse = await gmail.users.labels.list({ userId: "me" });
@@ -82,32 +69,62 @@ export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
         addLabelIds: [labelId],
       },
     });
-  } else {
-    const graphClient = await getGraphClient(userId);
 
-    const categoriesResponse = await graphClient
-      .api("/me/outlook/masterCategories")
-      .get();
-    const existingCategory = categoriesResponse.value?.find(
-      (c: { displayName?: string }) => c.displayName === "Follow up",
+    await addMailtoDB(userId, null, messageId, to, `send follow up to ${to}`, "follow up required");
+
+    console.log(
+      `[follow-up-draft] Applied "Follow up" label to ${messageId} (gmail)`,
     );
 
-    if (!existingCategory) {
-      await graphClient.api("/me/outlook/masterCategories").post({
-        displayName: "Follow up",
-        color: "preset5",
-      });
-    }
-
-    await graphClient.api(`/me/messages/${messageId}`).patch({
-      categories: ["Follow up"],
-    });
+    return { status: "success" };
   }
 
-  await addMailtoDB(userId, null, messageId, to, `send follow up to ${to}`, "follow up required");
+  // --- Outlook path: remove from Sent Items → "Follow up" folder → draft ---
+  const graphClient = await getGraphClient(userId);
+
+  const foldersResponse = await graphClient
+    .api("/me/mailFolders")
+    .filter("displayName eq 'Follow up'")
+    .get();
+
+  let folderId: string;
+  if (foldersResponse.value && foldersResponse.value.length > 0) {
+    folderId = foldersResponse.value[0].id;
+  } else {
+    const newFolder = await graphClient.api("/me/mailFolders").post({
+      displayName: "Follow up",
+    });
+    folderId = newFolder.id;
+  }
+
+  const movedMessage = await graphClient
+    .api(`/me/messages/${messageId}/move`)
+    .post({
+      destinationId: folderId,
+    });
+
+  const targetMessageId = movedMessage.id as string;
+
+  if (aiDrafts !== false) {
+    const followUpBody = await generateFollowUpMessage({ subject, body, to });
+    if (followUpBody) {
+      await createOutlookDraft(
+        userId,
+        targetMessageId,
+        subject,
+        to,
+        followUpBody,
+        prefs.fontColor,
+        prefs.fontSize,
+        prefs.signature,
+      );
+    }
+  }
+
+  await addMailtoDB(userId, null, targetMessageId, to, `send follow up to ${to}`, "follow up required");
 
   console.log(
-    `[follow-up-draft] Applied "Follow up" label to ${messageId} (${isGmail ? "gmail" : "outlook"})`,
+    `[follow-up-draft] Moved to "Follow up" folder (id=${targetMessageId}) and applied category (outlook)`,
   );
 
   return { status: "success" };
