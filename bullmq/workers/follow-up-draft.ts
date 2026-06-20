@@ -3,6 +3,7 @@ import { createGmailDraft, getGmailClient } from "@/lib/gmail";
 import { createOutlookDraft, getGraphClient } from "@/lib/outlook";
 import { useGetUserDraftPreference, addMailtoDB } from "@/lib/supabase";
 import { generateFollowUpMessage } from "@/lib/sent-followup";
+import { clerkClient } from "@clerk/nextjs/server";
 
 interface FollowUpDraftData {
   userId: string;
@@ -70,6 +71,14 @@ export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
       },
     });
 
+    await gmail.users.messages.modify({
+      userId: "me",
+      id: messageId,
+      requestBody: {
+        addLabelIds: ["UNREAD"],
+      },
+    });
+
     await addMailtoDB(userId, null, messageId, to, `send follow up to ${to}`, "follow up required");
 
     console.log(
@@ -79,7 +88,7 @@ export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
     return { status: "success" };
   }
 
-  // --- Outlook path: remove from Sent Items → "Follow up" folder → draft ---
+  // --- Outlook path: remove from Sent Items → "Follow up" folder → draft → mark unread ---
   const graphClient = await getGraphClient(userId);
 
   const foldersResponse = await graphClient
@@ -105,6 +114,34 @@ export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
 
   const targetMessageId = movedMessage.id as string;
 
+  const clerk = await clerkClient();
+  const externalAccounts = await clerk.users.getUserOauthAccessToken(
+    userId,
+    "microsoft",
+  );
+  const accessToken = externalAccounts.data[0]?.token;
+
+  async function markUnread(messageId: string) {
+    const res = await fetch(
+      `https://graph.microsoft.com/v1.0/me/messages/${messageId}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isRead: false }),
+      },
+    );
+    if (!res.ok) {
+      console.warn(
+        `[follow-up-draft] markUnread failed: ${res.status} ${await res.text()}`,
+      );
+    }
+  }
+
+  await markUnread(targetMessageId);
+
   if (aiDrafts !== false) {
     const followUpBody = await generateFollowUpMessage({ subject, body, to });
     if (followUpBody) {
@@ -121,10 +158,12 @@ export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
     }
   }
 
+  await markUnread(targetMessageId);
+
   await addMailtoDB(userId, null, targetMessageId, to, `send follow up to ${to}`, "follow up required");
 
   console.log(
-    `[follow-up-draft] Moved to "Follow up" folder (id=${targetMessageId}) and applied category (outlook)`,
+    `[follow-up-draft] Moved to "Follow up" folder (id=${targetMessageId}) and marked unread (outlook)`,
   );
 
   return { status: "success" };

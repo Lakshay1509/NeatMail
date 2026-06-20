@@ -192,6 +192,44 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
     responseRequired = classification.response_required === true;
   }
 
+  if (threadId) {
+    const followUpFolderResponse = await client
+      .api("/me/mailFolders")
+      .filter("displayName eq 'Follow up'")
+      .get();
+
+    const followUpFolderId = followUpFolderResponse.value?.[0]?.id;
+    if (followUpFolderId) {
+      const messagesInFollowUp = await client
+        .api(`/me/mailFolders/${followUpFolderId}/messages`)
+        .filter(`conversationId eq '${threadId}'`)
+        .select("id,subject")
+        .get();
+
+      if (messagesInFollowUp.value?.length > 0) {
+        const inbox = await client.api("/me/mailFolders/inbox").get();
+
+        for (const msg of messagesInFollowUp.value) {
+          const moved = await client
+            .api(`/me/messages/${msg.id}/move`)
+            .post({ destinationId: inbox.id });
+
+          if (labelName && labelName.trim().length > 0) {
+            await client.api(`/me/messages/${moved.id}`).patch({
+              categories: [labelName],
+            });
+          }
+
+          console.log(
+            `[outlook-followup] Moved ${msg.id} from "Follow up" to Inbox`,
+          );
+
+          await markMessageProcessed(moved.id);
+        }
+      }
+    }
+  }
+
   const shouldDraft =
     (labelName === "Pending Response" || labelName === "Action Needed") &&
     responseRequired;

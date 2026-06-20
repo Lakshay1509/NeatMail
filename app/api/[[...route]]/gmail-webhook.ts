@@ -339,6 +339,45 @@ const app = new Hono().post("/", async (ctx) => {
         }
       }
 
+      if (emailData.threadId) {
+        try {
+          const threadData = await gmail.users.threads.get({
+            userId: "me",
+            id: emailData.threadId,
+          });
+
+          const labelsResponse = await gmail.users.labels.list({ userId: "me" });
+          const followUpLabelId = labelsResponse.data.labels?.find(
+            (l) => l.name === "Follow up",
+          )?.id;
+
+          if (followUpLabelId) {
+            const messagesWithFollowUp = threadData.data.messages?.filter(
+              (m) => m.labelIds?.includes(followUpLabelId),
+            );
+
+            if (messagesWithFollowUp?.length) {
+              for (const msg of messagesWithFollowUp) {
+                await gmail.users.messages.modify({
+                  userId: "me",
+                  id: msg.id!,
+                  requestBody: {
+                    removeLabelIds: [followUpLabelId],
+                  },
+                });
+                console.log(
+                  `[gmail-followup] Removed "Follow up" from ${msg.id}`,
+                );
+              }
+            }
+          }
+        } catch (err: any) {
+          console.error(
+            `[gmail-followup] Error removing "Follow up" for thread ${emailData.threadId}: ${err.message}`,
+          );
+        }
+      }
+
       const shouldDraft =
         (labelName === "Pending Response" || labelName === "Action Needed") &&
         responseRequired;
