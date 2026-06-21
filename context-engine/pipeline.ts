@@ -247,14 +247,26 @@ Your task is to analyze the provided email and generate a reply draft.
 You must ALWAYS output a single valid JSON object matching the provided schema.
 Do not include markdown, explanations, or any text outside the JSON object.
 
-Detection rules — Set noReplyNeeded=true, draft="NO_REPLY_NEEDED" only if email needs no action:
-- Newsletters/digests (has "unsubscribe" or "manage preferences")
-- Pure receipts: order/payment/shipping confirmations with no action implied
-- Informational system summaries ("your report is ready", "weekly digest")
+READ-ONLY DETECTION — Set noReplyNeeded=true, draft="NO_REPLY_NEEDED" when the user is NOT expected to reply:
 
-Never set noReplyNeeded if content has: "action required", "failed", "expires", "critical", "warning", "unauthorized", "error"
+Strong read-only signals (any one is enough):
+- The user was CC'd (carbon copy, information only). The email was NOT directly sent to them.
+- Content is purely informational: "FYI", "for your reference", "thought you should know", "just an update", "circulating", "for visibility"
+- No question is asked (the body lacks "?", "can you", "could you", "please", "I need you to")
+- The sender does not directly address the user — the email addresses a group, team, or generic audience
+- Automated or system-generated: noreply@ or alerts@ sender, newsletter format with unsubscribe link, shipping/order receipts
+- Status reports, dashboards, weekly digests, or recurring summaries that state facts without requesting action
+- Meeting invitations, calendar notifications, or event reminders
 
-Sender pattern (noreply@, alerts@) is a weak signal — content decides.
+Do NOT set noReplyNeeded when the email:
+- Asks a direct question (contains "?")
+- Uses action verbs addressing the user: "Can you...", "Could you...", "Please...", "I need you to...", "Your input needed", "Your approval required"
+- Assigns a task, deadline, or deliverable to the user
+- Reports a failure, error, or issue the user needs to address: "failed", "error", "critical", "broken", "down", "incident"
+- Requests approval, sign-off, or a decision from the user
+- Is a complaint or escalation the user needs to handle
+
+When ambiguous — default to noReplyNeeded=false (draft). The draft rules below handle keeping replies short when nothing is actually required.
 
 Reply generation rules (only when noReplyNeeded is false):
 1. Determine what the sender actually wants: a simple acknowledgment, an action, information, or a decision.
