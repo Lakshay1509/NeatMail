@@ -184,24 +184,35 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
   }
 
   if (!labelName) {
-    const tagsForClassification = tagsOfUser
-      .filter((t) =>
-        isDirectTo ? true : t.tag.name !== "Action Needed" && t.tag.name !== "Pending Response",
-      )
-      .map((t) => ({
-        name: t.tag.name,
-        description: t.tag.description ?? "",
-      }));
-    classification = await getModelResponse({
-      bodySnippet: body,
-      from: from,
-      subject: subject,
-      user_id: subscription.clerk_user_id,
-      tags: tagsForClassification,
-      sensitivity: draftsenstivity || "if actionable",
-    });
-    labelName = classification.category;
-    responseRequired = classification.response_required === true;
+    if (isDirectTo) {
+      classification = await getModelResponse({
+        bodySnippet: body,
+        from: from,
+        subject: subject,
+        user_id: subscription.clerk_user_id,
+        tags: tagsOfUser.map((t) => ({
+          name: t.tag.name,
+          description: t.tag.description ?? "",
+        })),
+        sensitivity: draftsenstivity || "if actionable",
+      });
+      labelName = classification.category;
+      responseRequired = classification.response_required === true;
+    } else {
+      const hasReadOnlyTag = tagsOfUser.some(
+        (tag) => tag.tag.name === "Read only",
+      );
+      const hasDiscussionTag = tagsOfUser.some(
+        (tag) => tag.tag.name === "Discussion",
+      );
+
+      if (hasReadOnlyTag) {
+        labelName = "Read only";
+      } else if (hasDiscussionTag) {
+        labelName = "Discussion";
+      }
+      responseRequired = false;
+    }
   }
 
   if (threadId) {

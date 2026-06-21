@@ -343,27 +343,36 @@ const app = new Hono().post("/", async (ctx) => {
           hasAutomatedAlertTag
         ) {
           labelName = "Automated alerts";
-        } else {
-          const tagsForClassification = tagsOfUser
-            .filter((t) =>
-              isDirectTo ? true : t.tag.name !== "Action Needed" && t.tag.name !== "Pending Response",
-            )
-            .map((t) => ({
-              name: t.tag.name,
-              description: t.tag.description ?? "",
-            }));
+        } else if (isDirectTo) {
           const classification = await getModelResponse({
             bodySnippet: emailData.bodySnippet,
             from: emailData.from,
             subject: emailData.subject,
             user_id: emailData.userId,
-            tags: tagsForClassification,
+            tags: tagsOfUser.map((t) => ({
+              name: t.tag.name,
+              description: t.tag.description ?? "",
+            })),
             sensitivity: draftsenstivity || "if actionable",
           });
           classificationResult = classification;
           labelName = classification.category;
 
           responseRequired = classification.response_required === true;
+        } else {
+          const hasReadOnlyTag = tagsOfUser.some(
+            (tag) => tag.tag.name === "Read only",
+          );
+          const hasDiscussionTag = tagsOfUser.some(
+            (tag) => tag.tag.name === "Discussion",
+          );
+
+          if (hasReadOnlyTag) {
+            labelName = "Read only";
+          } else if (hasDiscussionTag) {
+            labelName = "Discussion";
+          }
+          responseRequired = false;
         }
       }
 
