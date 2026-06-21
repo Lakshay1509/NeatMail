@@ -151,6 +151,13 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
     return { success: true, sent: true, needsFollowUp };
   }
 
+  const userEmail = subscription.email.toLowerCase();
+  const toEmails = (mail.toRecipients ?? []).map(
+    (r: any) => r.emailAddress?.address?.toLowerCase(),
+  ).filter(Boolean);
+
+  const isDirectTo = toEmails.includes(userEmail);
+
   if (threadId) {
     await followUpQueue.remove(`follow-up:outlook:${threadId}`);
   }
@@ -329,7 +336,7 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
     );
   }
 
-  if (shouldDraft) {
+  if (shouldDraft && isDirectTo) {
     const clerk = await clerkClient();
     const externalAccounts = await clerk.users.getUserOauthAccessToken(
       clerkUser.id,

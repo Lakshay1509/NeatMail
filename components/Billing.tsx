@@ -30,9 +30,8 @@ const FEATURE_LABELS: { key: keyof ReturnType<typeof formatFeatures>; label: str
   { key: "aiDrafts", label: "AI drafts per month" },
   { key: "archiveRules", label: "Archive rules" },
   { key: "digest", label: "Daily digest" },
-  { key: "followUps", label: "Follow-up tracking" },
+  { key: "followUps", label: "Follow-ups per month" },
   { key: "integrations", label: "Telegram & Slack" },
-  { key: "analytics", label: "Advanced analytics" },
   { key: "support", label: "Priority support" },
 ];
 
@@ -44,9 +43,8 @@ function formatFeatures(tier: Tier) {
     aiDrafts: limits.maxAiDraftsPerMonth === Infinity ? "Unlimited" : String(limits.maxAiDraftsPerMonth),
     archiveRules: limits.maxArchiveRules === Infinity ? "Unlimited" : String(limits.maxArchiveRules),
     digest: limits.hasDigest,
-    followUps: limits.hasFollowUps,
+    followUps: limits.maxFollowUpsPerMonth === Infinity ? "Unlimited" : String(limits.maxFollowUpsPerMonth),
     integrations: limits.hasTelegramSlack,
-    analytics: limits.hasAdvancedAnalytics,
     support: limits.hasPrioritySupport,
   };
 }
@@ -480,7 +478,7 @@ const Billing = () => {
 
   
 
-      <div className="rounded-lg border bg-card p-5">
+      {/* <div className="rounded-lg border bg-card p-5">
         <h3 className="text-sm font-semibold text-foreground">Subscription details</h3>
         <div className="mt-3 space-y-2 text-sm">
           {data?.subscribed === true && data.freeTrial === false ? (
@@ -563,7 +561,7 @@ const Billing = () => {
             )}
           </div>
         )}
-      </div>
+      </div> */}
 
       <PlanChangeDialog
         open={confirmDialog}

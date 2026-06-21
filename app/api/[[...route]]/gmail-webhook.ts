@@ -48,6 +48,23 @@ export function parseFromHeader(fromHeader: string): {
   };
 }
 
+function extractEmailsFromHeader(header: string): string[] {
+  const emails: string[] = [];
+  const angleMatches = header.matchAll(/<([^>]+)>/g);
+  for (const match of angleMatches) {
+    emails.push(match[1].toLowerCase().trim());
+  }
+  if (emails.length === 0) {
+    for (const part of header.split(",")) {
+      const trimmed = part.trim().toLowerCase();
+      if (trimmed.includes("@")) {
+        emails.push(trimmed);
+      }
+    }
+  }
+  return emails;
+}
+
 const authClient = new OAuth2Client();
 
 const app = new Hono().post("/", async (ctx) => {
@@ -259,6 +276,12 @@ const app = new Hono().post("/", async (ctx) => {
         threadId: email.data.threadId || "",
       };
 
+      const toHeader = email.data.payload?.headers?.find((h) => h.name === "To")?.value || "";
+
+      const toEmails = extractEmailsFromHeader(toHeader);
+      const userEmailLower = emailAddress.toLowerCase();
+      const isDirectTo = toEmails.includes(userEmailLower);
+
       if (emailData.threadId) {
         await followUpQueue.remove(`follow-up:gmail:${emailData.threadId}`);
       }
@@ -454,7 +477,7 @@ const app = new Hono().post("/", async (ctx) => {
         );
       }
 
-      if (shouldDraft) {
+      if (shouldDraft && isDirectTo) {
         const { senderName, senderEmail } = parseFromHeader(emailData.from);
         await draftQueue.add("process-draft", {
           userName: fullName,
