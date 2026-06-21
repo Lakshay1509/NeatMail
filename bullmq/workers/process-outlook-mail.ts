@@ -184,15 +184,20 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
   }
 
   if (!labelName) {
+    const tagsForClassification = tagsOfUser
+      .filter((t) =>
+        isDirectTo ? true : t.tag.name !== "Action Needed" && t.tag.name !== "Pending Response",
+      )
+      .map((t) => ({
+        name: t.tag.name,
+        description: t.tag.description ?? "",
+      }));
     classification = await getModelResponse({
       bodySnippet: body,
       from: from,
       subject: subject,
       user_id: subscription.clerk_user_id,
-      tags: tagsOfUser.map((t) => ({
-        name: t.tag.name,
-        description: t.tag.description ?? "",
-      })),
+      tags: tagsForClassification,
       sensitivity: draftsenstivity || "if actionable",
     });
     labelName = classification.category;

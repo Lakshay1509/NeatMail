@@ -344,15 +344,20 @@ const app = new Hono().post("/", async (ctx) => {
         ) {
           labelName = "Automated alerts";
         } else {
+          const tagsForClassification = tagsOfUser
+            .filter((t) =>
+              isDirectTo ? true : t.tag.name !== "Action Needed" && t.tag.name !== "Pending Response",
+            )
+            .map((t) => ({
+              name: t.tag.name,
+              description: t.tag.description ?? "",
+            }));
           const classification = await getModelResponse({
             bodySnippet: emailData.bodySnippet,
             from: emailData.from,
             subject: emailData.subject,
             user_id: emailData.userId,
-            tags: tagsOfUser.map((t) => ({
-              name: t.tag.name,
-              description: t.tag.description ?? "",
-            })),
+            tags: tagsForClassification,
             sensitivity: draftsenstivity || "if actionable",
           });
           classificationResult = classification;
