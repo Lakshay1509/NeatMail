@@ -942,8 +942,9 @@ Also — as an early user, I'm locking in your current plan at a rate I can't of
           const userEmail = pref.user_tokens.email;
           const userId = pref.user_tokens.clerk_user_id;
 
-          // Skip free users entirely
-          if (pref.user_tokens.tier === "FREE") {
+          // Only send digest to users with active subscription or active free trial
+          const subStatus = await getUserSubscribed(userId);
+          if (!subStatus.subscribed) {
             results.skipped++;
             continue;
           }
