@@ -72,6 +72,7 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
         select: {
           name: true,
           description: true,
+          user_id: true,
         },
       },
     },
@@ -193,6 +194,7 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
         tags: tagsOfUser.map((t) => ({
           name: t.tag.name,
           description: t.tag.description ?? "",
+          user_defined: t.tag.user_id !== null,
         })),
         sensitivity: draftsenstivity || "if actionable",
       });

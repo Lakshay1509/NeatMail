@@ -124,6 +124,7 @@ export async function getTagsUser(id: string) {
           select: {
             name: true,
             description: true,
+            user_id: true,
           },
         },
       },

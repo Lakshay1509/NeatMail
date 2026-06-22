@@ -4,7 +4,8 @@ import { bufferClassifyJob, pollForResult } from "@/lib/classify-batch";
 
 export interface Tags{
   name:string,
-  description:string
+  description:string,
+  user_defined:boolean
 }
 
 export interface ModelRequest{

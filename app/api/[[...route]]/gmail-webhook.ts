@@ -352,6 +352,7 @@ const app = new Hono().post("/", async (ctx) => {
             tags: tagsOfUser.map((t) => ({
               name: t.tag.name,
               description: t.tag.description ?? "",
+              user_defined: t.tag.user_id !== null,
             })),
             sensitivity: draftsenstivity || "if actionable",
           });
