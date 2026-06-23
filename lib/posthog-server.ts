@@ -1,8 +1,18 @@
 import { PostHog } from 'posthog-node'
 
-let posthogClient: PostHog | null = null
+type PostHogClient = Pick<PostHog, 'capture' | 'shutdown'>
 
-export function getPostHogClient() {
+let posthogClient: PostHogClient | null = null
+
+const noopClient: PostHogClient = {
+  capture() {},
+  async shutdown() {},
+}
+
+export function getPostHogClient(): PostHogClient {
+  if (process.env.NODE_ENV === 'development') {
+    return noopClient
+  }
   if (!posthogClient) {
     posthogClient = new PostHog(
       process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN!,
