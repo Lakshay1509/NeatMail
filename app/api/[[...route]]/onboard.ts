@@ -21,6 +21,7 @@ const app = new Hono().post(
         fontColor: z.string(),
         fontSize: z.number().min(8).max(72),
         timezone: z.string(),
+        draftPrompt: z.string().optional(),
       }),
       digestPrefs: z.object({
         enabled: z.boolean(),
@@ -154,6 +155,9 @@ const app = new Hono().post(
             fontColor: body.draftPrefs.fontColor,
             fontSize: body.draftPrefs.fontSize,
             timezone: body.draftPrefs.timezone,
+            ...(body.draftPrefs.draftPrompt !== undefined && {
+              draftPrompt: body.draftPrefs.draftPrompt,
+            }),
           },
           create: {
             user_id: userId,
@@ -161,6 +165,9 @@ const app = new Hono().post(
             fontColor: body.draftPrefs.fontColor,
             fontSize: body.draftPrefs.fontSize,
             timezone: body.draftPrefs.timezone,
+            ...(body.draftPrefs.draftPrompt !== undefined && {
+              draftPrompt: body.draftPrefs.draftPrompt,
+            }),
           },
         });
 
