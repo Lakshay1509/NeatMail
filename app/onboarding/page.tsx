@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useUser, useReverification } from "@clerk/nextjs";
+
 import { Separator } from "@/components/ui/separator"
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { toast } from "sonner";
@@ -90,21 +90,18 @@ const MASCOTS = [
   "/mascot/labels.svg",
   "/mascot/draft.svg",
   "/mascot/follow.svg",
-  "/mascot/spam.svg",
 ];
 
 const STEP_TITLES = [
   "Helps Ray understand your context",
   "Active labels",
   "Follow-up detection",
-  "Connect your inbox",
 ];
 
 const STEP_SUBTITLES = [
   "Tell us about your role so Ray can tailor suggestions to your workflow.",
   "Choose labels to classify emails",
   "Ray labels emails as Follow-up due when a sent email gets no reply after your set window.",
-  "Link your email provider to start organizing with Ray.",
 ];
 
 interface OnboardingData {
@@ -122,7 +119,6 @@ const stepVariants = {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user } = useUser();
   const { saveStep } = useOnboarding();
   const dirRef = useRef(1);
   const [step, setStep] = useState(0);
@@ -166,6 +162,10 @@ export default function OnboardingPage() {
     setSaving(true);
     try {
       await saveStep(payload);
+      if (step === 2) {
+        router.push("/onboard-complete");
+        return;
+      }
       dirRef.current = 1;
       setStep((s) => s + 1);
     } catch {
@@ -180,56 +180,7 @@ export default function OnboardingPage() {
     setStep((s) => s - 1);
   };
 
-  const [connecting, setConnecting] = useState(false);
-  const provider = user?.externalAccounts?.[0]?.provider ?? "";
-  const is_gmail = provider === "google";
 
-  const reauthorize = useReverification(
-    (params: { additionalScopes: string[]; redirectUrl: string }) =>
-      user?.externalAccounts?.[0]?.reauthorize(params),
-  );
-
-  const handleConnectGmail = async () => {
-    setConnecting(true);
-    try {
-      const res = await reauthorize({
-        additionalScopes: [
-          "https://www.googleapis.com/auth/gmail.readonly",
-          "https://www.googleapis.com/auth/gmail.labels",
-          "https://www.googleapis.com/auth/gmail.modify",
-          "https://www.googleapis.com/auth/gmail.compose",
-          "https://www.googleapis.com/auth/calendar.readonly",
-        ],
-        redirectUrl: "/onboard-complete",
-      });
-      if (res?.verification?.externalVerificationRedirectURL) {
-        router.push(res.verification.externalVerificationRedirectURL.href);
-      }
-    } catch (err) {
-      console.error("Gmail reauthorize failed", err);
-      setConnecting(false);
-    }
-  };
-
-  const handleConnectOutlook = async () => {
-    setConnecting(true);
-    try {
-      const res = await reauthorize({
-        additionalScopes: [
-          "Mail.ReadWrite",
-          "MailboxSettings.ReadWrite",
-          "Calendars.Read"
-        ],
-        redirectUrl: "/onboard-complete",
-      });
-      if (res?.verification?.externalVerificationRedirectURL) {
-        router.push(res.verification.externalVerificationRedirectURL.href);
-      }
-    } catch (err) {
-      console.error("Outlook reauthorize failed", err);
-      setConnecting(false);
-    }
-  };
 
   return (
     <div className="-mt-[100px] min-h-screen flex flex-col md:flex-row bg-white">
@@ -263,7 +214,7 @@ export default function OnboardingPage() {
         <div className="px-12 pb-10">
           <div className="flex items-center justify-center">
             <div className="flex items-center gap-2">
-              {[0, 1, 2, 3].map((i) => (
+              {[0, 1, 2].map((i) => (
                 <div
                   key={i}
                   className={`h-1.5 rounded-full transition-all duration-500 ${
@@ -319,7 +270,7 @@ export default function OnboardingPage() {
           </AnimatePresence>
           <div className="flex items-center justify-center w-full max-w-xs pt-2">
             <div className="flex items-center gap-2">
-              {[0, 1, 2, 3].map((i) => (
+              {[0, 1, 2].map((i) => (
                 <div
                   key={i}
                   className={`h-1.5 rounded-full transition-all duration-500 ${
@@ -486,64 +437,7 @@ export default function OnboardingPage() {
                     </>
                   )}
 
-                  {/* ── Step 4: Connect inbox ── */}
-                  {step === 3 && (
-                    <div className="space-y-4">
-                      {is_gmail ? (
-                        <button
-                          type="button"
-                          onClick={handleConnectGmail}
-                          disabled={connecting}
-                          className="w-full flex items-center gap-4 p-5 rounded-xl border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <div className="relative w-10 h-10 shrink-0">
-                            <Image
-                              src="/gmail.svg"
-                              alt="Gmail"
-                              fill
-                              className="object-contain"
-                              unoptimized
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-neutral-900">
-                              {connecting ? "Redirecting…" : "Connect Gmail inbox"}
-                            </div>
-                            <div className="text-xs text-neutral-500">
-                              Grant Ray access to organize and manage your
-                              emails
-                            </div>
-                          </div>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleConnectOutlook}
-                          disabled={connecting}
-                          className="w-full flex items-center gap-4 p-5 rounded-xl border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <div className="relative w-10 h-10 shrink-0">
-                            <Image
-                              src="/outlook.svg"
-                              alt="Outlook"
-                              fill
-                              className="object-contain"
-                              unoptimized
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-neutral-900">
-                              {connecting ? "Redirecting…" : "Connect Outlook inbox"}
-                            </div>
-                            <div className="text-xs text-neutral-500">
-                              Grant Ray access to organize and manage your
-                              emails
-                            </div>
-                          </div>
-                        </button>
-                      )}
-                    </div>
-                  )}
+
                 </div>
               </motion.div>
             </AnimatePresence>
@@ -561,16 +455,14 @@ export default function OnboardingPage() {
             <ChevronLeft className="w-4 h-4" />
             Back
           </Button>
-          {step < 3 && (
-            <Button
-              onClick={goNext}
-              disabled={!canContinue() || saving}
-              className="gap-1.5 bg-neutral-900 text-white hover:bg-neutral-800 rounded-full px-7 disabled:opacity-40"
-            >
-              Continue
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          )}
+          <Button
+            onClick={goNext}
+            disabled={!canContinue() || saving}
+            className="gap-1.5 bg-neutral-900 text-white hover:bg-neutral-800 rounded-full px-7 disabled:opacity-40"
+          >
+            Continue
+            <ChevronRight className="w-4 h-4" />
+          </Button>
         </div>
       </div>
     </div>

@@ -8,7 +8,7 @@ export function ConditionalSidebar() {
   const pathname = usePathname()
 
   // Hide sidebar on auth pages
-  if (pathname?.startsWith('/sign-in') || pathname?.startsWith('/sign-up') || pathname?.startsWith('/onboarding')) {
+  if (pathname?.startsWith('/sign-in') || pathname?.startsWith('/sign-up') || pathname?.startsWith('/onboarding') || pathname?.startsWith('/onboard-complete')) {
     return null
   }
 
