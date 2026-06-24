@@ -1,5 +1,6 @@
 import { db } from "@/lib/prisma";
 import { auth, clerkClient } from "@clerk/nextjs/server";
+import { google } from "googleapis";
 import { Hono } from "hono";
 import { getDodoPayments } from "./checkout";
 import { zValidator } from "@hono/zod-validator";
@@ -218,7 +219,7 @@ const app = new Hono()
 
         const googleAccount = tokenResponse.data[0];
 
-        if (!googleAccount) {
+        if (!googleAccount?.token) {
           return ctx.json(
             {
               hasAllScopes: false,
@@ -241,17 +242,47 @@ const app = new Hono()
           "https://www.googleapis.com/auth/gmail.readonly",
         ];
 
-        // scopes is already an array, no need to split
-        const grantedScopes = googleAccount.scopes || [];
-        const missingScopes = requiredScopes.filter(
-          (scope) => !grantedScopes.includes(scope),
-        );
+        const oauth2 = new google.auth.OAuth2();
+        oauth2.setCredentials({ access_token: googleAccount.token });
+
+        
+
+        try {
+          const info = await oauth2.getTokenInfo(googleAccount.token);
+          console.log("[scopes] Google tokeninfo scopes:", info.scopes);
+        } catch (err) {
+          console.log("[scopes] tokeninfo failed:", (err as Error)?.message);
+        }
+
+        console.log("[scopes] Clerk stored scopes:", googleAccount.scopes);
+
+        let hasGmailAccess = false;
+        try {
+          const probe = await oauth2.request({
+            url: "https://gmail.googleapis.com/gmail/v1/users/me/profile",
+          });
+          console.log("[scopes] Gmail API probe OK — status:", probe.status);
+          hasGmailAccess = true;
+        } catch (err) {
+          console.log("[scopes] Gmail API probe FAILED:", (err as any)?.response?.data || (err as Error)?.message);
+        }
+
+        if (hasGmailAccess) {
+          return ctx.json(
+            {
+              hasAllScopes: true,
+              scopes: requiredScopes,
+              missingScopes: [],
+            },
+            200,
+          );
+        }
 
         return ctx.json(
           {
-            hasAllScopes: missingScopes.length === 0,
-            scopes: grantedScopes,
-            missingScopes,
+            hasAllScopes: false,
+            scopes: [],
+            missingScopes: requiredScopes,
           },
           200,
         );
