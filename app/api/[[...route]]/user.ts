@@ -196,8 +196,11 @@ const app = new Hono()
     const { userId } = await auth();
 
     if (!userId) {
+      console.log("[scopes] STEP: no userId — returning 401");
       return ctx.json({ error: "Unauthorized" }, 401);
     }
+
+    console.log("[scopes] STEP: entry — userId:", userId);
 
     try {
       const user = await db.user_tokens.findUnique({
@@ -206,20 +209,30 @@ const app = new Hono()
       });
 
       if (!user) {
+        console.log("[scopes] STEP: user_tokens not found — throwing");
         throw Error("User not found");
       }
+
+      console.log("[scopes] STEP: db user — is_gmail:", user.is_gmail);
 
       if (user.is_gmail) {
         const client = await clerkClient();
 
+        console.log("[scopes] STEP: calling getUserOauthAccessToken(google)...");
         const tokenResponse = await client.users.getUserOauthAccessToken(
           userId,
           "google",
         );
 
+        console.log("[scopes] STEP: tokenResponse data length:", tokenResponse?.data?.length);
+        console.log("[scopes] STEP: tokenResponse raw:", JSON.stringify(tokenResponse?.data));
+
         const googleAccount = tokenResponse.data[0];
+        console.log("[scopes] STEP: googleAccount:", googleAccount ? `exists (token length: ${googleAccount.token?.length})` : "undefined");
+        console.log("[scopes] STEP: googleAccount?.token:", googleAccount?.token ? `present (${googleAccount.token.substring(0, 20)}...)` : "MISSING");
 
         if (!googleAccount?.token) {
+          console.log("[scopes] CHECK: no token — returning false with 200");
           return ctx.json(
             {
               hasAllScopes: false,
@@ -242,20 +255,21 @@ const app = new Hono()
           "https://www.googleapis.com/auth/gmail.readonly",
         ];
 
+        console.log("[scopes] STEP: building OAuth2 client...");
         const oauth2 = new google.auth.OAuth2();
         oauth2.setCredentials({ access_token: googleAccount.token });
 
-        
-
+        console.log("[scopes] STEP: calling getTokenInfo...");
         try {
           const info = await oauth2.getTokenInfo(googleAccount.token);
-          console.log("[scopes] Google tokeninfo scopes:", info.scopes);
+          console.log("[scopes] tokeninfo OK — scopes:", info.scopes);
         } catch (err) {
-          console.log("[scopes] tokeninfo failed:", (err as Error)?.message);
+          console.log("[scopes] tokeninfo FAILED:", (err as Error)?.message);
         }
 
-        console.log("[scopes] Clerk stored scopes:", googleAccount.scopes);
+        console.log("[scopes] STEP: Clerk stored scopes:", googleAccount.scopes);
 
+        console.log("[scopes] STEP: probing Gmail API...");
         let hasGmailAccess = false;
         try {
           const probe = await oauth2.request({
@@ -267,7 +281,10 @@ const app = new Hono()
           console.log("[scopes] Gmail API probe FAILED:", (err as any)?.response?.data || (err as Error)?.message);
         }
 
+        console.log("[scopes] CHECK: hasGmailAccess:", hasGmailAccess);
+
         if (hasGmailAccess) {
+          console.log("[scopes] RESULT: returning true (has all scopes)");
           return ctx.json(
             {
               hasAllScopes: true,
@@ -278,6 +295,7 @@ const app = new Hono()
           );
         }
 
+        console.log("[scopes] RESULT: returning false (probe failed)");
         return ctx.json(
           {
             hasAllScopes: false,
@@ -289,14 +307,19 @@ const app = new Hono()
       } else {
         const client = await clerkClient();
 
+        console.log("[scopes] STEP: calling getUserOauthAccessToken(microsoft)...");
         const tokenResponse = await client.users.getUserOauthAccessToken(
           userId,
           "microsoft",
         );
 
+        console.log("[scopes] STEP: microsoft tokenResponse data length:", tokenResponse?.data?.length);
+
         const microsoftAccount = tokenResponse.data[0];
+        console.log("[scopes] STEP: microsoftAccount:", microsoftAccount ? "exists" : "undefined");
 
         if (!microsoftAccount) {
+          console.log("[scopes] CHECK: no microsoft account — returning false with 200");
           return ctx.json(
             {
               hasAllScopes: false,
@@ -326,10 +349,13 @@ const app = new Hono()
         ];
 
         const grantedScopes = microsoftAccount.scopes || [];
+        console.log("[scopes] STEP: microsoft granted scopes:", grantedScopes);
         const missingScopes = requiredScopes.filter(
           (scope) => !grantedScopes.includes(scope),
         );
+        console.log("[scopes] CHECK: microsoft missingScopes:", missingScopes);
 
+        console.log("[scopes] RESULT: returning", missingScopes.length === 0 ? "true" : "false");
         return ctx.json(
           {
             hasAllScopes: missingScopes.length === 0,
@@ -340,7 +366,8 @@ const app = new Hono()
         );
       }
     } catch (error) {
-      console.error("Error fetching scopes:", error);
+      console.log("[scopes] CATCH:", (error as Error)?.message);
+      console.log("[scopes] CATCH full:", error);
       return ctx.json({ error: "Failed to fetch scopes" }, 500);
     }
   })
