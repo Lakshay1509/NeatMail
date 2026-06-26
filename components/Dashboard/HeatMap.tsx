@@ -97,11 +97,13 @@ const HeatMap = ({ from, to }: { from?: string; to?: string }) => {
 
   return (
     <div className="bg-card rounded-lg border p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-        <h2 className="text-xl font-semibold text-card-foreground">Inbox Traffic Heatmap</h2>
-        <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 px-4 py-2 rounded-lg text-sm font-medium">
-          <Lightbulb className="w-4 h-4" />
-          Best focus: {formatHour(bestStartTime)}-{formatHour(bestEndTime)}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
+        <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-widest">
+          Inbox Traffic
+        </p>
+        <div className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
+          <Lightbulb className="w-3.5 h-3.5" />
+          Best focus window: {formatHour(bestStartTime)}–{formatHour(bestEndTime)}
         </div>
       </div>
 

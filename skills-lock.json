@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "creating-dashboards": {
+      "source": "ancoleman/ai-design-components",
+      "sourceType": "github",
+      "skillPath": "skills/creating-dashboards/SKILL.md",
+      "computedHash": "862bd9352dc13200ad09210312c47105a575d4ec00203aea7c7a35ad6ab67f55"
+    },
     "frontend-design": {
       "source": "anthropics/skills",
       "sourceType": "github",
@@ -30,6 +36,12 @@
       "sourceType": "github",
       "skillPath": "skills/shadcn/SKILL.md",
       "computedHash": "80a6226e78f6d1fe464214ae0ef449d49d8ffaa3e7704f011e9b418c678ad4d1"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
+      "computedHash": "e90556287009f64f599d809028368ce1cf8ffd012e242eb568f0e84522ab4e76"
     }
   }
 }

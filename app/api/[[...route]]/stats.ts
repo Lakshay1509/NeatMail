@@ -381,6 +381,181 @@ const app = new Hono()
     }
 
     return ctx.json({ data: result }, 200);
+  })
+
+  // 6. Overview KPIs with period-over-period deltas
+  .get("/overview", async (ctx) => {
+    const { userId } = await auth();
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const fromStr = ctx.req.query("from");
+    const toStr = ctx.req.query("to");
+    const dateQuery = dateQuerySchema.safeParse({ from: fromStr, to: toStr });
+    if (!dateQuery.success) {
+      return ctx.json({ error: "Invalid date format. Use YYYY-MM-DD." }, 400);
+    }
+
+    const now = new Date();
+    let start = new Date(now);
+    start.setDate(start.getDate() - 7);
+    let end = new Date(now);
+    if (fromStr) start = new Date(fromStr);
+    if (toStr) end = new Date(toStr);
+
+    // Previous window of equal length, immediately preceding [start, end]
+    const windowMs = Math.max(end.getTime() - start.getTime(), 24 * 60 * 60 * 1000);
+    const prevEnd = new Date(start.getTime());
+    const prevStart = new Date(start.getTime() - windowMs);
+
+    const [current, currentUnread, previous, previousUnread] = await Promise.all([
+      db.email_tracked.count({
+        where: { user_id: userId, created_at: { gte: start, lte: end } },
+      }),
+      db.email_tracked.count({
+        where: { user_id: userId, is_read: false, created_at: { gte: start, lte: end } },
+      }),
+      db.email_tracked.count({
+        where: { user_id: userId, created_at: { gte: prevStart, lt: prevEnd } },
+      }),
+      db.email_tracked.count({
+        where: { user_id: userId, is_read: false, created_at: { gte: prevStart, lt: prevEnd } },
+      }),
+    ]);
+
+    const readRate =
+      current > 0
+        ? Number((((current - currentUnread) / current) * 100).toFixed(1))
+        : 0;
+    const previousReadRate =
+      previous > 0
+        ? Number((((previous - previousUnread) / previous) * 100).toFixed(1))
+        : 0;
+
+    return ctx.json(
+      {
+        current,
+        previous,
+        unread: currentUnread,
+        previousUnread,
+        readRate,
+        previousReadRate,
+      },
+      200
+    );
+  })
+
+  // 7. Unread breakdown by label — how unread emails are distributed across tags
+  .get("/unread-by-label", async (ctx) => {
+    const { userId } = await auth();
+    if (!userId) return ctx.json({ error: "Unauthorized" }, 401);
+
+    const fromStr = ctx.req.query("from");
+    const toStr = ctx.req.query("to");
+    const dateQuery = dateQuerySchema.safeParse({ from: fromStr, to: toStr });
+    if (!dateQuery.success) return ctx.json({ error: "Invalid date format." }, 400);
+
+    const dateFilter: any = {};
+    if (fromStr) dateFilter.gte = new Date(fromStr);
+    if (toStr) dateFilter.lte = new Date(toStr);
+    const createdAt = Object.keys(dateFilter).length > 0 ? { created_at: dateFilter } : {};
+
+    const base = { user_id: userId, is_read: false, ...createdAt };
+
+    const [total, grouped] = await Promise.all([
+      db.email_tracked.count({ where: base }),
+      db.email_tracked.groupBy({
+        by: ["tag_id"],
+        where: base,
+        _count: { message_id: true },
+        orderBy: { _count: { message_id: "desc" } },
+        take: 7,
+      }),
+    ]);
+
+    if (total === 0) return ctx.json({ total: 0, breakdown: [] }, 200);
+
+    const tagIds = grouped
+      .map((g) => g.tag_id)
+      .filter((id): id is string => id !== null);
+
+    const tags = await db.tag.findMany({
+      where: { id: { in: tagIds } },
+      select: { id: true, name: true, color: true },
+    });
+    const tagMap = new Map(tags.map((t) => [t.id, t]));
+
+    const breakdown = grouped.map((g) => {
+      const tag = g.tag_id ? tagMap.get(g.tag_id) : null;
+      return {
+        label: tag?.name ?? "Unlabeled",
+        count: g._count.message_id,
+        color: tag?.color ?? "#64748b",
+      };
+    });
+
+    return ctx.json({ total, breakdown }, 200);
+  })
+
+  // 8. Email status breakdown — where every email stands (mutually exclusive)
+  .get("/email-status", async (ctx) => {
+    const { userId } = await auth();
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const fromStr = ctx.req.query("from");
+    const toStr = ctx.req.query("to");
+    const dateQuery = dateQuerySchema.safeParse({ from: fromStr, to: toStr });
+    if (!dateQuery.success) {
+      return ctx.json({ error: "Invalid date format. Use YYYY-MM-DD." }, 400);
+    }
+
+    const dateFilter: any = {};
+    if (fromStr) dateFilter.gte = new Date(fromStr);
+    if (toStr) dateFilter.lte = new Date(toStr);
+    const createdAt =
+      Object.keys(dateFilter).length > 0 ? { created_at: dateFilter } : {};
+
+    const now = new Date();
+    const base = { user_id: userId, ...createdAt };
+    // Not actively snoozed: snooze unset or already elapsed
+    const notSnoozed = {
+      OR: [{ snoozed_until: null }, { snoozed_until: { lte: now } }],
+    };
+
+    // Buckets are mutually exclusive by priority: snoozed > done > archived > unread > read
+    const [total, snoozed, done, archived, unread] = await Promise.all([
+      db.email_tracked.count({ where: { ...base } }),
+      db.email_tracked.count({
+        where: { ...base, snoozed_until: { gt: now } },
+      }),
+      db.email_tracked.count({
+        where: { ...base, isDone: true, ...notSnoozed },
+      }),
+      db.email_tracked.count({
+        where: {
+          ...base,
+          isDone: false,
+          archive_at: { not: null },
+          ...notSnoozed,
+        },
+      }),
+      db.email_tracked.count({
+        where: {
+          ...base,
+          isDone: false,
+          archive_at: null,
+          is_read: false,
+          ...notSnoozed,
+        },
+      }),
+    ]);
+
+    const read = Math.max(total - snoozed - done - archived - unread, 0);
+
+    return ctx.json({ total, done, snoozed, archived, unread, read }, 200);
   });
 
 export default app;

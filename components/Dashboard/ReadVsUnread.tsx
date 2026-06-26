@@ -33,8 +33,8 @@ export default function ReadVsUnread({ from, to }: { from?: string; to?: string 
   if (isLoading) {
     return (
       <div className="bg-card rounded-lg border w-full h-[400px]">
-        <div className="p-6 pb-2 border-b flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-card-foreground">Read vs Unread</h3>
+        <div className="px-6 pt-5 pb-2 border-b flex items-center justify-between">
+          <Skeleton className="h-3 w-28" />
         </div>
         <div className="p-6 h-[320px]">
           <Skeleton className="w-full h-full" />
@@ -55,8 +55,10 @@ export default function ReadVsUnread({ from, to }: { from?: string; to?: string 
 
   return (
     <div className="bg-card rounded-lg border w-full h-[400px] flex flex-col">
-      <div className="p-6 pb-0 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-card-foreground">Read vs Unread</h3>
+      <div className="px-6 pt-5 pb-0 flex items-center justify-between">
+        <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-widest">
+          Read vs Unread
+        </p>
       </div>
 
       <div className="flex-1 p-6">

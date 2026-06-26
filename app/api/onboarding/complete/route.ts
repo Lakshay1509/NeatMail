@@ -18,7 +18,6 @@ export async function GET() {
 
   const email =
     user?.primaryEmailAddress?.emailAddress ??
-    user?.emailAddresses?.[0]?.emailAddress ??
     "";
 
   const provider = user?.externalAccounts?.[0]?.provider ?? "";

@@ -38,11 +38,11 @@ const MostEmails = ({ from, to }: { from?: string; to?: string }) => {
 
   return (
     <div className="bg-card rounded-lg border p-6 w-full h-full flex flex-col">
-      <h2 className="text-lg font-bold text-card-foreground mb-1">
-        Top Email Senders
-      </h2>
-      <p className="text-sm text-muted-foreground mb-8">
-        Your most active incoming email sources
+      <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-widest mb-0.5">
+        Top Senders
+      </p>
+      <p className="text-xs text-muted-foreground mb-6">
+        Most active incoming sources
       </p>
 
       <div className="flex justify-between items-center text-sm text-muted-foreground font-medium mb-4">

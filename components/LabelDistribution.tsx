@@ -27,9 +27,11 @@ export function LabelDistribution({ from, to }: { from?: string; to?: string }) 
 
   return (
     <div className="bg-card rounded-lg border p-6 h-full">
-      <h2 className="font-bold text-card-foreground text-lg mb-1">AI Label Distribution</h2>
-      <p className="text-sm text-muted-foreground mb-8">
-        Top category:{" "}
+      <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-widest mb-0.5">
+        Label Distribution
+      </p>
+      <p className="text-xs text-muted-foreground mb-6">
+        Top:{" "}
         <span className="font-medium text-card-foreground">
           {topCategory?.label || "None"}
         </span>
