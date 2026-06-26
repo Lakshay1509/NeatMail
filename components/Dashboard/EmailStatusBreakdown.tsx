@@ -15,7 +15,7 @@ const FALLBACK_COLORS = [
 ];
 
 const CardShell = ({ children }: { children: React.ReactNode }) => (
-  <div className="bg-card rounded-lg border w-full h-[400px] flex flex-col overflow-hidden">
+  <div className="bg-card rounded-lg border w-full flex flex-col overflow-hidden">
     {children}
   </div>
 );
@@ -136,7 +136,7 @@ export default function EmailStatusBreakdown({
             {breakdown.map((d) => {
               const pct = total > 0 ? Math.round((d.count / total) * 100) : 0;
               return (
-                <div key={d.label} className="py-1.5 border-b border-border/40 last:border-0">
+                <div key={d.label} className="py-1.5 ">
                   <div className="flex items-center justify-between text-xs mb-1">
                     <div className="flex items-center gap-2 min-w-0">
                       <span

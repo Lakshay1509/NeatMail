@@ -446,7 +446,40 @@ const app = new Hono()
     );
   })
 
-  // 7. Unread breakdown by label — how unread emails are distributed across tags
+  // 7. New senders — domains seen in the current window but never before it
+  .get("/new-senders", async (ctx) => {
+    const { userId } = await auth();
+    if (!userId) return ctx.json({ error: "Unauthorized" }, 401);
+
+    const fromStr = ctx.req.query("from");
+    const toStr = ctx.req.query("to");
+    const dateQuery = dateQuerySchema.safeParse({ from: fromStr, to: toStr });
+    if (!dateQuery.success) return ctx.json({ error: "Invalid date format." }, 400);
+
+    const now = new Date();
+    const start = fromStr ? new Date(fromStr) : new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const end = toStr ? new Date(toStr) : now;
+
+    const [currentDomains, priorDomains] = await Promise.all([
+      db.email_tracked.findMany({
+        where: { user_id: userId, domain: { not: null }, created_at: { gte: start, lte: end } },
+        select: { domain: true },
+        distinct: ["domain"],
+      }),
+      db.email_tracked.findMany({
+        where: { user_id: userId, domain: { not: null }, created_at: { lt: start } },
+        select: { domain: true },
+        distinct: ["domain"],
+      }),
+    ]);
+
+    const priorSet = new Set(priorDomains.map((d) => d.domain));
+    const newCount = currentDomains.filter((d) => !priorSet.has(d.domain)).length;
+
+    return ctx.json({ newSenders: newCount }, 200);
+  })
+
+  // 8. Unread breakdown by label — how unread emails are distributed across tags
   .get("/unread-by-label", async (ctx) => {
     const { userId } = await auth();
     if (!userId) return ctx.json({ error: "Unauthorized" }, 401);

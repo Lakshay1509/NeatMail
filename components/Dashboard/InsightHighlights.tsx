@@ -3,13 +3,13 @@
 import type { ReactNode } from "react";
 import { useGetTrafficHeatmap } from "@/features/stats/use-get-traffic-heatmap";
 import { useGetClutter } from "@/features/stats/use-get-clutter";
-import { useGetEmailStatus } from "@/features/stats/use-get-email-status";
+import { useGetNewSenders } from "@/features/stats/use-get-new-senders";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   CalendarDays,
   Clock,
   BellOff,
-  CheckCheck,
+  UserPlus,
   type LucideIcon,
 } from "lucide-react";
 
@@ -50,9 +50,9 @@ type Insight = {
 export function InsightHighlights({ from, to }: { from?: string; to?: string }) {
   const heat = useGetTrafficHeatmap(from, to);
   const clutter = useGetClutter(from, to);
-  const emailStatus = useGetEmailStatus(from, to);
+  const newSenders = useGetNewSenders(from, to);
 
-  const isLoading = heat.isLoading || clutter.isLoading || emailStatus.isLoading;
+  const isLoading = heat.isLoading || clutter.isLoading || newSenders.isLoading;
 
   if (isLoading) {
     return (
@@ -94,9 +94,7 @@ export function InsightHighlights({ from, to }: { from?: string; to?: string }) 
   });
 
   const topClutter = clutter.data?.clutterData?.[0];
-  const statusData = emailStatus.data;
-  const cleared = (statusData?.done ?? 0) + (statusData?.archived ?? 0);
-  const totalMail = statusData?.total ?? 0;
+  const newSenderCount = newSenders.data?.newSenders ?? 0;
 
   const insights: Insight[] = [];
 
@@ -130,16 +128,16 @@ export function InsightHighlights({ from, to }: { from?: string; to?: string }) 
     });
   }
 
-  if (cleared > 0) {
+  if (newSenderCount > 0) {
     insights.push({
-      tag: "Cleared",
-      icon: CheckCheck,
-      value: cleared,
-      caption: "emails marked done or archived",
+      tag: "New senders",
+      icon: UserPlus,
+      value: newSenderCount,
+      caption: "first time in your inbox this period",
     });
   }
 
-  if (insights.length === 0) {
+  if (!hasTraffic && insights.length === 0) {
     return (
       <div className="rounded-lg border bg-card px-6 py-4">
         <p className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-widest">
