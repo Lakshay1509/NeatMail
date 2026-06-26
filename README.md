@@ -5,14 +5,14 @@
   
   <p>
     <a href="https://www.neatmail.app">Website</a> •
-    <a href="#-features">Features</a> •
-    <a href="#-getting-started">Getting Started</a> •
-    <a href="#-deployment">Deployment</a> •
-    <a href="#-tech-stack">Tech Stack</a>
+    <a href="#features">Features</a> •
+    <a href="#getting-started">Getting Started</a> •
+    <a href="#deployment">Deployment</a> •
+    <a href="#tech-stack">Tech Stack</a>
   </p>
 
   <p>
-    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" />
+    <img src="https://img.shields.io/badge/license-ELv2-blue.svg" alt="License" />
     <img src="https://img.shields.io/badge/TypeScript-5.0-blue" alt="TypeScript" />
     <img src="https://img.shields.io/badge/Next.js-16.1-black" alt="Next.js" />
     <img src="https://img.shields.io/badge/React-19.2-blue" alt="React" />
@@ -23,28 +23,29 @@
 
 ---
 
-## 📖 Table of Contents
+## Table of Contents
 
-- [What is NeatMail?](#-what-is-neatmail)
-- [Features](#-features)
-- [Getting Started](#-getting-started)
+- [What is NeatMail?](#what-is-neatmail)
+- [Features](#features)
+- [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
-- [Architecture](#-architecture)
-- [Tech Stack](#-tech-stack)
-- [Configuration](#-configuration)
-- [Deployment](#-deployment)
-- [Contributing](#-contributing)
-- [License](#-license)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Configuration](#configuration)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## 🎯 What is NeatMail?
+## What is NeatMail?
 
-NeatMail is an intelligent email management platform that automatically organizes your Gmail and Outlook inboxes in real-time. No complicated setup, no manual sorting—just clean, organized emails labeled exactly where you need them.
+NeatMail is an email management platform that automatically organizes your Gmail and Outlook inboxes in real-time. No complicated setup, no manual sorting — just clean, organized emails labeled exactly where you need them.
 
+---
 
-## ✨ Features
+## Features
 
 - **Gmail & Outlook Integration:** Connect in minutes via OAuth. Labels sync directly in real time.
 - **Smart Email Labeling:** AI automatically categorizes incoming emails into labels like **Action Needed** or **Pending Response**.
@@ -54,9 +55,8 @@ NeatMail is an intelligent email management platform that automatically organize
 - **Auto-Archive Rules:** Set rules to automatically archive emails based on labels, senders, or categories.
 - **Telegram Integration:** Receive alerts, set routing rules, and approve AI drafts directly from Telegram.
 
-
-
 ---
+
 ## Product Screenshots
 
 <table align="center">
@@ -83,7 +83,6 @@ NeatMail is an intelligent email management platform that automatically organize
       <br />
       <b>One-Click Unsubscribe</b>
     </td>
-    
   </tr>
   <tr>
     <td align="center">
@@ -100,7 +99,8 @@ NeatMail is an intelligent email management platform that automatically organize
 </table>
 
 ---
-## 🎥 Product Video
+
+## Product Video
 
 <a href="https://www.youtube.com/watch?v=_as6DVg6wvY" target="_blank">
   <img src="https://img.youtube.com/vi/_as6DVg6wvY/maxresdefault.jpg" alt="NeatMail Product Video" width="100%" />
@@ -108,13 +108,13 @@ NeatMail is an intelligent email management platform that automatically organize
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Node.js 20+ and your preferred package manager (npm/yarn/pnpm/bun)
 - PostgreSQL database
 - Redis instance (e.g., Upstash)
-- Third-party Application Credentials:
+- Third-party credentials for:
   - **Clerk** (Authentication)
   - **OpenAI** or **Azure OpenAI** (AI classification & drafts)
   - **Google Cloud Console** (Gmail API & Pub/Sub Webhooks)
@@ -126,39 +126,37 @@ NeatMail is an intelligent email management platform that automatically organize
 
 ### Installation
 
-1. **Clone the repository**
+1. Clone the repository
    ```bash
    git clone https://github.com/Lakshay1509/NeatMail.git
    cd neatmail
    ```
 
-2. **Install dependencies**
+2. Install dependencies
    ```bash
    bun install
    ```
 
-3. **Set up environment variables**
-   Copy the example environment file and fill in your credentials:
+3. Set up environment variables
    ```bash
    cp .env.example .env.local
    ```
 
-4. **Set up the database**
+4. Set up the database
    ```bash
    bunx prisma db push
    bunx prisma generate
-   
    ```
 
-5. **Run the development server**
+5. Run the development server
    ```bash
    bun run dev
    ```
-   Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 graph TD
@@ -190,7 +188,7 @@ graph TD
 
 ---
 
-## 📦 Tech Stack
+## Tech Stack
 
 - **Frontend**: Next.js 16.1.1, React 19, Tailwind CSS 4, shadcn/ui, TanStack Query
 - **Backend**: Hono.js, Prisma, PostgreSQL, Redis (Upstash), Clerk, BullMQ
@@ -199,43 +197,40 @@ graph TD
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
-Please refer to the code comments and our documentation for detailed setup instructions regarding Gmail API, Outlook API, and Clerk. Webhooks play a central role, so ensure your Google Cloud Pub/Sub and Clerk webhook endpoints are correctly configured.
+Refer to the code comments and documentation for detailed setup instructions for the Gmail API, Outlook API, and Clerk. Webhooks are central to how NeatMail works — make sure your Google Cloud Pub/Sub and Clerk webhook endpoints are correctly configured before testing.
 
 ---
 
-## 🌐 Deployment
+## Deployment
 
-NeatMail is optimized for Vercel. 
+NeatMail is optimized for Vercel.
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Lakshay1509/NeatMail)
 
 1. Deploy to Vercel and configure environment variables.
 2. Run database migrations: `npx prisma migrate deploy`
-3. Configure your webhooks (Pub/Sub, Clerk, DodoPay) to point to your new domain.
+3. Point your webhooks (Pub/Sub, Clerk, DodoPay) to the new domain.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-We welcome contributions! 
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m 'Add your feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Open a pull request
 
 ---
 
-## 📝 License
+## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the Elastic License 2.0. See `LICENSE` for more information.
 
 ---
 
 <div align="center">
-  <p>Built with ❤️ by the NeatMail team</p>
-  <p><a href="https://www.neatmail.app">neatmail.app</a></p>
+  <p>Built by the NeatMail team — <a href="https://www.neatmail.app">neatmail.app</a></p>
 </div>
