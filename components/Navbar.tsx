@@ -33,13 +33,13 @@ const Navbar = () => {
 
   return (
     <>
-    <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-6 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
+    <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-5 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
         <div className="flex items-center">
          {isSignedIn && !authPage && <SidebarTrigger size='icon-lg'/>}
         </div>
 
-        <Image src='/logo.png' width={150} height={150} alt='logo' className={`mt-1.5 ${authPage ? "block" :"hidden md:block"}`}/>
-        {!authPage &&<Image src='/logo-short.png' width={40} height={40} alt='logo' className=' block md:hidden'/>}
+        <Image src='/logo.png' width={110} height={38} alt='logo' className={`mt-1 ${authPage ? "block" :"hidden md:block"}`}/>
+        {!authPage &&<Image src='/logo-short.png' width={32} height={32} alt='logo' className=' block md:hidden'/>}
         
         <div className="flex items-center gap-4">
           {isSignedIn ? (

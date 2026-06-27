@@ -133,7 +133,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarContent className="lg:mt-16 overflow-x-hidden">
+      <SidebarContent className="lg:mt-12 overflow-x-hidden">
         <SidebarGroup>
           <SidebarGroupLabel />
           <SidebarGroupContent>
