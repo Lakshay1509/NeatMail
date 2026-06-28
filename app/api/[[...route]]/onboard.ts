@@ -49,32 +49,43 @@ const app = new Hono().post(
     const body = ctx.req.valid("json");
 
     try {
-      // Step 1: External API calls (idempotent, can't be in DB transaction)
-      const [[existingTrial, existingSub, existingPayment], isGmailData] =
-        await Promise.all([
-          Promise.all([
-            db.free_trial.findUnique({ where: { user_id: userId } }),
-            db.subscription.findFirst({ where: { clerkUserId: userId } }),
-            db.paymentHistory.findFirst({
-              where: { clerkUserId: userId, amount: 0, status: "succeeded" },
-            }),
-          ]),
-          getUserIsGmail(userId),
-        ]);
+      // Gate: only complete onboarding once the card-required checkout has
+      // produced an active subscription (or an active free trial). The
+      // subscription webhook performs activation/tier assignment; this handles
+      // the brief window before it lands (the client retries on this code).
+      const [activeSubscription, activeTrial] = await Promise.all([
+        db.subscription.findFirst({
+          where: { clerkUserId: userId, status: "active" },
+        }),
+        db.free_trial.findFirst({
+          where: {
+            user_id: userId,
+            status: "ACTIVE",
+            expires_at: { gt: new Date() },
+          },
+        }),
+      ]);
 
-      const hasTrialOrPaid = existingTrial || existingSub || existingPayment;
+      if (!activeSubscription && !activeTrial) {
+        return ctx.json(
+          {
+            error: "We're finalizing your subscription. This will only take a moment.",
+            code: "SUBSCRIPTION_PENDING",
+          },
+          402,
+        );
+      }
 
-      if (!hasTrialOrPaid) {
+      const isGmailData = await getUserIsGmail(userId);
+
+      // Ensure the inbox watch is active. The webhook normally activates it on
+      // subscription activation; re-check here in case it hasn't run yet.
+      const watchToken = await db.user_tokens.findUnique({
+        where: { clerk_user_id: userId },
+        select: { watch_activated: true },
+      });
+      if (!watchToken?.watch_activated) {
         await handleWatchActivation(userId);
-      } else {
-        const { isGmail } = isGmailData;
-        const token = await db.user_tokens.findUnique({
-          where: { clerk_user_id: userId },
-          select: { watch_activated: true },
-        });
-        if (!token?.watch_activated) {
-          await handleWatchActivation(userId);
-        }
       }
 
       // Sync history (idempotent)
@@ -125,28 +136,10 @@ const app = new Hono().post(
         console.error("History sync error (non-fatal):", err);
       }
 
-      // Step 2: All DB writes in a single atomic transaction
+      // Step 2: All DB writes in a single atomic transaction.
+      // Note: trial activation and tier assignment are handled by the
+      // subscription webhook (card-required checkout), not here.
       await db.$transaction(async (tx) => {
-        // 2a. Free trial + tier (skip if already exists)
-        if (!existingTrial) {
-          await tx.free_trial.create({
-            data: {
-              user_id: userId,
-              email,
-              started_at: new Date(),
-              expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-              status: "ACTIVE",
-            },
-          });
-        }
-
-        if (!existingTrial && !existingSub && !existingPayment) {
-          await tx.user_tokens.update({
-            where: { clerk_user_id: userId },
-            data: { tier: "MAX" },
-          });
-        }
-
         // 2b. Draft preferences (upsert)
         await tx.draft_preference.upsert({
           where: { user_id: userId },

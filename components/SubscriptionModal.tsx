@@ -9,8 +9,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Loader2, Check } from "lucide-react";
-import { toast } from "sonner";
+import { Check } from "lucide-react";
 import { TIER_LIMITS, getTierPrices, type TierLimits, type BillingRegion } from "@/lib/tiers";
 import { useGeo } from "@/features/geo/use-geo";
 import posthog from "posthog-js";
@@ -110,33 +109,6 @@ export const SubscriptionModal = ({
     }
   }, [open]);
 
-  const handleTrial = async () => {
-    setIsLoading(true);
-    setError("");
-    posthog.capture("free_trial_started");
-
-    try {
-      const response = await fetch("/api/freeTrial/activate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success("Free trial activated successfully");
-        window.location.reload();
-      } else {
-        toast.error(data.error);
-        setError(data.error || "Something went wrong");
-      }
-    } catch (_err) {
-      setError("Network error. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleCheckout = async (tier: "PRO" | "MAX") => {
     setIsLoading(true);
     setError("");
@@ -173,7 +145,7 @@ export const SubscriptionModal = ({
             Choose your plan
           </DialogTitle>
           <DialogDescription className="text-balance">
-            Start with a 7-day free trial of Pro — no card required.
+            Upgrade to unlock unlimited AI drafts, follow-ups, and integrations.
           </DialogDescription>
         </DialogHeader>
 
@@ -216,27 +188,9 @@ export const SubscriptionModal = ({
 
           <div className="flex flex-col sm:flex-row gap-2">
             <Button
-              onClick={handleTrial}
-              disabled={isLoading}
-              className="flex-1"
-              variant="default"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Activating&hellip;
-                </>
-              ) : (
-                <>
-                  7-day free trial
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </Button>
-            <Button
               onClick={() => handleCheckout("PRO")}
               disabled={isLoading}
-              variant="outline"
+              className="flex-1"
             >
               Get Pro {formatPriceTotal("PRO", interval, region)}
             </Button>
@@ -244,6 +198,7 @@ export const SubscriptionModal = ({
               onClick={() => handleCheckout("MAX")}
               disabled={isLoading}
               variant="outline"
+              className="flex-1"
             >
               Get Max {formatPriceTotal("MAX", interval, region)}
             </Button>

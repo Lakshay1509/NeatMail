@@ -26,6 +26,10 @@ const app = new Hono()
       const body = await ctx.req.json().catch(() => ({}));
       const tier: Tier = body.tier === "PRO" || body.tier === "MAX" ? body.tier : "PRO";
       const interval: "monthly" | "annual" = body.interval === "annual" ? "annual" : "monthly";
+      // Card-required free trial: collect the card now via DodoPay, first charge after 7 days.
+      const trialPeriodDays = body.trial === true ? 7 : 0;
+      // When started from onboarding, return to /onboard-complete to finish setup.
+      const isOnboarding = body.onboard === true;
 
       const subscription = await db.subscription.findFirst({
         where: {
@@ -61,6 +65,20 @@ const app = new Hono()
           { error: "You have an active subscription or a payment in process" },
           409,
         );
+      }
+
+      // Trial eligibility: a $0 succeeded payment means a free trial was already
+      // taken, so don't grant another one (prevents repeated free trials).
+      if (trialPeriodDays > 0) {
+        const priorTrial = await db.paymentHistory.findFirst({
+          where: { clerkUserId: userId, amount: 0, status: "succeeded" },
+        });
+        if (priorTrial) {
+          return ctx.json(
+            { error: "You've already used your free trial." },
+            409,
+          );
+        }
       }
 
       const user = await currentUser();
@@ -101,7 +119,7 @@ const app = new Hono()
           },
         ],
         subscription_data: {
-          trial_period_days: 0,
+          trial_period_days: trialPeriodDays,
         },
         customer: {
           email: emailAddress,
@@ -112,7 +130,9 @@ const app = new Hono()
           tier,
           interval,
         },
-        return_url: `${process.env.NEXT_PUBLIC_API_URL!}`,
+        return_url: isOnboarding
+          ? `${process.env.NEXT_PUBLIC_API_URL!}/onboard-complete`
+          : `${process.env.NEXT_PUBLIC_API_URL!}`,
       });
 
       return ctx.json({ url: checkout.checkout_url }, 200);

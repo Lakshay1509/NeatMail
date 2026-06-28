@@ -17,7 +17,6 @@ import outlook from './outlook'
 import telegram from './telegram'
 import slack from './slack'
 import stats from './stats'
-import freeTrial from './freeTrial'
 import integrations from './integrations'
 import digest from './digest'
 import followUp from './follow-up'
@@ -92,7 +91,6 @@ const routes = app
     .route('/stats',stats)
     .route('/telegram',telegram)
     .route('/slack',slack)
-    .route('/freeTrial',freeTrial)
     .route('/integrations',integrations)
     .route('/digest',digest)
     .route('/follow-up',followUp)

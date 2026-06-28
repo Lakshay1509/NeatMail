@@ -84,12 +84,29 @@ const app = new Hono()
       }),
     ]);
 
+    const zero_payment = await db.paymentHistory.findFirst({
+      where:{clerkUserId:userId,amount:0,status:'succeeded'},
+      orderBy: { createdAt: "desc" },
+
+    })
+
+    // A real (post-trial) charge. Once this exists, the card trial has converted
+    // to a paid subscription and should no longer report as a free trial.
+    const paid_charge = await db.paymentHistory.findFirst({
+      where: { clerkUserId: userId, amount: { gt: 0 }, status: "succeeded" },
+    });
+
     const tier = user?.tier ?? "FREE";
 
     const hasActiveTrial =
       freeTrial &&
       freeTrial.status === "ACTIVE" &&
       freeTrial.expires_at > new Date();
+
+    // Card trial in progress: a $0 trial charge was recorded, the subscription is
+    // active, and no real charge has happened yet. Flips to false automatically
+    // after the first paid charge.
+    const paidFreeTrial = !!zero_payment && data?.status === "active" && !paid_charge;
 
     if (!data && !hasActiveTrial) {
       return ctx.json({ success: false, subscribed: false, tier }, 200);
@@ -141,7 +158,7 @@ const app = new Hono()
         interval: isAnnual ? "annual" : "monthly",
         next_billing_date: data!.nextBillingDate,
         cancel_at_next_billing_date: data!.cancelAtNextBillingDate,
-        freeTrial: false,
+        freeTrial: paidFreeTrial,
       },
       200,
     );

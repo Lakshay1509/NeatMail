@@ -6,11 +6,15 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, ShieldCheck } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Separator } from "@/components/ui/separator"
 import { useOnboarding } from "@/hooks/useOnboarding";
+import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
+import { cn } from "@/lib/utils";
+import { useGeo } from "@/features/geo/use-geo";
+import { getTierPrices } from "@/lib/tiers";
 import { toast } from "sonner";
 
 const CATEGORIES = [
@@ -90,19 +94,60 @@ const MASCOTS = [
   "/mascot/labels.svg",
   "/mascot/draft.svg",
   "/mascot/follow.svg",
+  "/premium.svg",
 ];
 
 const STEP_TITLES = [
   "Helps Ray understand your context",
   "Active labels",
   "Follow-up detection",
+  "Start your free trial",
 ];
 
 const STEP_SUBTITLES = [
   "Tell us about your role so Ray can tailor suggestions to your workflow.",
   "Choose labels to classify emails",
   "Ray labels emails as Follow-up due when a sent email gets no reply after your set window.",
+  "Pick a plan to unlock everything. 7 days free — your card won't be charged until the trial ends.",
 ];
+
+type TrialTier = "PRO" | "MAX";
+
+const TRIAL_PLANS: {
+  tier: TrialTier;
+  name: string;
+  tagline: string;
+  popular?: boolean;
+  features: string[];
+}[] = [
+  {
+    tier: "PRO",
+    name: "Pro",
+    tagline: "AI-powered inbox for busy professionals.",
+    features: [
+      "Unlimited tracked emails & labels",
+      "20 AI draft replies / month",
+      "5 archive rules",
+      "Daily digest & follow-up tracking",
+      "Telegram & Slack integrations",
+    ],
+  },
+  {
+    tier: "MAX",
+    name: "Max",
+    tagline: "Unlimited everything. For power users.",
+    popular: true,
+    features: [
+      "Everything in Pro",
+      "Unlimited AI draft replies",
+      "Unlimited archive rules",
+      "Advanced analytics",
+      "Priority support",
+    ],
+  },
+];
+
+type BillingInterval = "monthly" | "annual";
 
 interface OnboardingData {
   role: string | null;
@@ -120,8 +165,13 @@ const stepVariants = {
 export default function OnboardingPage() {
   const router = useRouter();
   const { saveStep } = useOnboarding();
+  const { region } = useGeo();
+  const { data: subData } = useGetUserSubscribed();
+  const alreadySubscribed = subData?.subscribed === true;
   const dirRef = useRef(1);
   const [step, setStep] = useState(0);
+  const [selectedTier, setSelectedTier] = useState<TrialTier>("MAX");
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
   const [data, setData] = useState<OnboardingData>({
     role: null,
     activeLabels: CATEGORIES.map((c) => c.name),
@@ -129,9 +179,24 @@ export default function OnboardingPage() {
     followUpDays: 3,
   });
 
+  const prices = getTierPrices(region);
+  const monthlyEquivalent = (tier: TrialTier) =>
+    billingInterval === "annual"
+      ? `${prices[tier].symbol}${(prices[tier].annual / 12).toFixed(2)}`
+      : `${prices[tier].symbol}${prices[tier].monthly}`;
+
   useEffect(() => {
     fetch("/api/onboarding/complete").catch(() => {});
   }, []);
+
+  // Skip the paywall for users who already have an active subscription/trial
+  // (e.g. they paid but got dropped before onboarding completed). Covers the
+  // case where subscription data resolves while the user is on the paywall.
+  useEffect(() => {
+    if (step === 3 && alreadySubscribed) {
+      router.push("/onboard-complete");
+    }
+  }, [step, alreadySubscribed, router]);
 
   const toggleLabel = (name: string) => {
     setData((prev) => ({
@@ -151,6 +216,41 @@ export default function OnboardingPage() {
   const [saving, setSaving] = useState(false);
 
   const goNext = async () => {
+    // Final step: start the card-required trial checkout for the selected plan.
+    // DodoPay collects the card and returns the user to /onboard-complete,
+    // where the usual onboarding setup runs.
+    if (step === 3) {
+      setSaving(true);
+      // Already subscribed (paid but onboarding never completed) — skip the
+      // paywall and finish setup instead of hitting checkout (which would 409).
+      if (alreadySubscribed) {
+        router.push("/onboard-complete");
+        return;
+      }
+      try {
+        const res = await fetch("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tier: selectedTier,
+            interval: billingInterval,
+            trial: true,
+            onboard: true,
+          }),
+        });
+        const resData = await res.json();
+        if (res.ok && resData.url) {
+          window.location.href = resData.url;
+          return;
+        }
+        toast.error(resData.error || "Couldn't start checkout. Please try again.");
+      } catch {
+        toast.error("Network error. Please try again.");
+      }
+      setSaving(false);
+      return;
+    }
+
     const payload: Record<string, unknown> = {};
     if (step === 0) payload.role = data.role;
     if (step === 1) payload.tags = data.activeLabels;
@@ -162,7 +262,8 @@ export default function OnboardingPage() {
     setSaving(true);
     try {
       await saveStep(payload);
-      if (step === 2) {
+      // After the last prefs step, skip the paywall for already-subscribed users.
+      if (step === 2 && alreadySubscribed) {
         router.push("/onboard-complete");
         return;
       }
@@ -214,7 +315,7 @@ export default function OnboardingPage() {
         <div className="px-12 pb-10">
           <div className="flex items-center justify-center">
             <div className="flex items-center gap-2">
-              {[0, 1, 2].map((i) => (
+              {[0, 1, 2, 3].map((i) => (
                 <div
                   key={i}
                   className={`h-1.5 rounded-full transition-all duration-500 ${
@@ -270,7 +371,7 @@ export default function OnboardingPage() {
           </AnimatePresence>
           <div className="flex items-center justify-center w-full max-w-xs pt-2">
             <div className="flex items-center gap-2">
-              {[0, 1, 2].map((i) => (
+              {[0, 1, 2, 3].map((i) => (
                 <div
                   key={i}
                   className={`h-1.5 rounded-full transition-all duration-500 ${
@@ -437,6 +538,134 @@ export default function OnboardingPage() {
                     </>
                   )}
 
+                  {/* ── Step 4: Choose a plan / start free trial ── */}
+                  {step === 3 && (
+                    <div className="space-y-5">
+                      {/* Billing interval toggle */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-neutral-700">
+                          Choose a plan
+                        </span>
+                        <div className="inline-flex rounded-full border border-neutral-200 p-0.5">
+                          {(["monthly", "annual"] as const).map((opt) => (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => setBillingInterval(opt)}
+                              className={cn(
+                                "px-3 py-1.5 text-xs font-medium rounded-full transition-colors flex items-center gap-1.5",
+                                billingInterval === opt
+                                  ? "bg-neutral-900 text-white"
+                                  : "text-neutral-500 hover:text-neutral-900",
+                              )}
+                            >
+                              {opt === "monthly" ? "Monthly" : "Annual"}
+                              {opt === "annual" && (
+                                <span
+                                  className={cn(
+                                    "text-[10px] font-semibold rounded px-1",
+                                    billingInterval === "annual"
+                                      ? "bg-white/20"
+                                      : "bg-emerald-100 text-emerald-700",
+                                  )}
+                                >
+                                  Save ~17%
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Plan cards */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {TRIAL_PLANS.map((plan) => {
+                          const isSelected = selectedTier === plan.tier;
+                          return (
+                            <button
+                              key={plan.tier}
+                              type="button"
+                              role="radio"
+                              aria-checked={isSelected}
+                              onClick={() => setSelectedTier(plan.tier)}
+                              className={cn(
+                                "relative flex flex-col text-left rounded-2xl border p-5 cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2",
+                                isSelected
+                                  ? "border-neutral-900 bg-neutral-50 ring-1 ring-neutral-900"
+                                  : "border-neutral-200 hover:border-neutral-300",
+                              )}
+                            >
+                              {plan.popular && (
+                                <span className="absolute -top-2.5 right-4 rounded-full bg-neutral-900 px-2.5 py-0.5 text-[10px] font-semibold text-white">
+                                  Most popular
+                                </span>
+                              )}
+
+                              <div className="flex items-start justify-between gap-2">
+                                <h3 className="text-base font-bold text-neutral-900">
+                                  {plan.name}
+                                </h3>
+                                <div
+                                  className={cn(
+                                    "w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center shrink-0",
+                                    isSelected
+                                      ? "border-neutral-900 bg-neutral-900"
+                                      : "border-neutral-300",
+                                  )}
+                                >
+                                  {isSelected && (
+                                    <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                                  )}
+                                </div>
+                              </div>
+
+                              <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
+                                {plan.tagline}
+                              </p>
+
+                              <div className="mt-4 flex items-baseline gap-1">
+                                <span className="text-3xl font-bold text-neutral-900 tabular-nums">
+                                  {monthlyEquivalent(plan.tier)}
+                                </span>
+                                <span className="text-sm text-neutral-500">/mo</span>
+                              </div>
+                              <p className="text-[11px] text-neutral-400 mt-0.5 h-4">
+                                {billingInterval === "annual"
+                                  ? `${prices[plan.tier].symbol}${prices[plan.tier].annual} billed yearly`
+                                  : "billed monthly"}
+                              </p>
+
+                              <ul className="mt-4 space-y-2">
+                                {plan.features.map((feature) => (
+                                  <li
+                                    key={feature}
+                                    className="flex items-start gap-2 text-[13px] text-neutral-700"
+                                  >
+                                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                                    <span>{feature}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Reassurance */}
+                      <div className="flex items-start gap-2.5 rounded-xl bg-neutral-50 border border-neutral-100 p-3.5">
+                        <ShieldCheck className="h-4 w-4 shrink-0 text-neutral-700 mt-0.5" />
+                        <p className="text-xs text-neutral-600 leading-relaxed">
+                          You won&apos;t be charged today. Your 7-day free trial unlocks{" "}
+                          <span className="font-medium text-neutral-900">
+                            {selectedTier === "MAX" ? "Max" : "Pro"}
+                          </span>{" "}
+                          in full. Cancel anytime before{" "}
+                          {monthlyEquivalent(selectedTier)}/mo billing begins.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
 
                 </div>
               </motion.div>
@@ -460,8 +689,17 @@ export default function OnboardingPage() {
             disabled={!canContinue() || saving}
             className="gap-1.5 bg-neutral-900 text-white hover:bg-neutral-800 rounded-full px-7 disabled:opacity-40"
           >
-            Continue
-            <ChevronRight className="w-4 h-4" />
+            {step === 3 ? (
+              <>
+                <ShieldCheck className="w-4 h-4" />
+                Start 7-day free trial
+              </>
+            ) : (
+              <>
+                Continue
+                <ChevronRight className="w-4 h-4" />
+              </>
+            )}
           </Button>
         </div>
       </div>

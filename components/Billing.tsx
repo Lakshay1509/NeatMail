@@ -6,7 +6,6 @@ import { useTierAccess } from "@/features/user/use-tier-access";
 import { AlertTriangle, Check, ArrowRight, ArrowLeftRight } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import CanTakeFreeTrial from "./CanTakeFreeTrial";
 import { PlanChangeDialog } from "./PlanChangeDialog";
 import { TIER_LIMITS, getTierPrices, type Tier, type BillingRegion } from "@/lib/tiers";
 import { useGeo } from "@/features/geo/use-geo";
@@ -388,12 +387,18 @@ const Billing = () => {
     );
 
   const currentInterval: BillingInterval = (data?.interval as BillingInterval) ?? "monthly";
-  const isFreeTrial = data?.subscribed === true && data?.freeTrial === true;
-  const activeTier = isFreeTrial ? "FREE" : tier;
+  // An active DodoPay subscription exists — covers both a card trial and a fully
+  // paid plan. Plan changes for these must go through changePlan, not checkout.
+  const hasActiveSubscription = data?.status === "active";
+  // Legacy no-card trial (free_trial table): subscribed but no DodoPay subscription.
+  const isLegacyTrial = data?.status === "trial";
+  // Currently inside a trial of either kind — display only (banner + messaging).
+  const isTrialing = data?.subscribed === true && data?.freeTrial === true;
+  const activeTier = hasActiveSubscription ? tier : "FREE";
 
   return (
     <div className="w-full space-y-8">
-      {data?.subscribed === true && data.freeTrial && data.next_billing_date && (() => {
+      {isTrialing && data.next_billing_date && (() => {
         const daysRemaining = Math.max(
           0,
           Math.ceil(
@@ -426,20 +431,20 @@ const Billing = () => {
                   month: "long",
                   day: "numeric",
                 })}
-                . Subscribe to maintain access.
+                {hasActiveSubscription
+                  ? ". Your card will be charged then unless you cancel."
+                  : ". Subscribe to maintain access."}
               </p>
             </div>
           </div>
         );
       })()}
 
-      <CanTakeFreeTrial />
-
       <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Choose your plan</h2>
           <p className="text-sm text-muted-foreground">
-            {data?.subscribed === true && data.freeTrial === false
+            {hasActiveSubscription
               ? "Change your plan or billing interval anytime."
               : "Select the plan that fits your workflow."}
           </p>
@@ -461,16 +466,16 @@ const Billing = () => {
             currentTier={activeTier as Tier}
             currentInterval={currentInterval}
             activeInterval={interval}
-            isFreeTrial={!!isFreeTrial}
+            isFreeTrial={isLegacyTrial}
             region={region}
-            onSelect={(data?.subscribed === false || isFreeTrial) ? handleCheckout : handleChangePlanClick}
+            onSelect={hasActiveSubscription ? handleChangePlanClick : handleCheckout}
             isLoading={isLoading}
             disabled={
               (activeTier === "MAX" && t === "PRO") ||
               (activeTier === "MAX" && currentInterval === "annual" && t === "MAX") ||
-              (!isFreeTrial && activeTier === "PRO" && t === "PRO" && currentInterval === "annual" && interval === "annual") ||
-              (!isFreeTrial && activeTier === "PRO" && t === "PRO" && currentInterval === "monthly" && interval === "monthly") ||
-              (!isFreeTrial && activeTier === "MAX" && t === "MAX" && currentInterval === "monthly" && interval === "monthly")
+              (!isLegacyTrial && activeTier === "PRO" && t === "PRO" && currentInterval === "annual" && interval === "annual") ||
+              (!isLegacyTrial && activeTier === "PRO" && t === "PRO" && currentInterval === "monthly" && interval === "monthly") ||
+              (!isLegacyTrial && activeTier === "MAX" && t === "MAX" && currentInterval === "monthly" && interval === "monthly")
             }
           />
         ))}
