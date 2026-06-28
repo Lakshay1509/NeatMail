@@ -35,7 +35,6 @@ export const useUnsubscribeDomain = () => {
    
     onError: (error) => {
       console.error(error);
-      toast.error(error ? String(error.message) : "Failed to unsubscribe from this domain");
     },
   });
 };
