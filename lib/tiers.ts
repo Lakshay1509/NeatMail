@@ -12,13 +12,13 @@ export interface TierPrices {
 }
 
 export const TIER_PRICES: Record<Exclude<Tier, "FREE">, TierPrices> = {
-  PRO:  { monthly: 9,   annual: 90,   currency: "USD", symbol: "$" },
-  MAX:  { monthly: 15,  annual: 150,  currency: "USD", symbol: "$" },
+  PRO:  { monthly: 19,   annual: 180,  currency: "USD", symbol: "$" },
+  MAX:  { monthly: 39,   annual: 372,  currency: "USD", symbol: "$" },
 };
 
 export const TIER_PRICES_INR: Record<Exclude<Tier, "FREE">, TierPrices> = {
-  PRO:  { monthly: 299, annual: 2499, currency: "INR", symbol: "₹" },
-  MAX:  { monthly: 499, annual: 4990, currency: "INR", symbol: "₹" },
+  PRO:  { monthly: 599,  annual: 5749, currency: "INR", symbol: "₹" },
+  MAX:  { monthly: 1299, annual: 12470, currency: "INR", symbol: "₹" },
 };
 
 export function getRegionFromCountry(country: string): BillingRegion {
@@ -58,14 +58,14 @@ export const TIER_LIMITS: Record<Tier, TierLimits> = {
   PRO: {
     maxTrackedEmails: Infinity,
     maxCustomLabels: Infinity,
-    maxAiDraftsPerMonth: 20,
-    maxArchiveRules: 5,
-    maxFollowUpsPerMonth: 10,
+    maxAiDraftsPerMonth: 100,
+    maxArchiveRules: 25,
+    maxFollowUpsPerMonth: 50,
     hasDigest: true,
     hasFollowUps: true,
     hasTelegramSlack: true,
     hasAdvancedAnalytics: false,
-    hasPrioritySupport: true,
+    hasPrioritySupport: false,
   },
   MAX: {
     maxTrackedEmails: Infinity,
