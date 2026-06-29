@@ -9,13 +9,21 @@ import WelcomeDialog from "./Welcome";
 
 const UserLabel = () => {
     const router = useRouter();
-    const {data,isLoading} = useGetUserTags();
+    const {data,isLoading,isFetching,isStale} = useGetUserTags();
     const {data:scopesData,isLoading:scopesLoading} = useGetScopes();
     const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
     const [showPermissions, setShowPermissions] = useState(false);
 
     useEffect(() => {
         if (isLoading || scopesLoading) return;
+        // After onboarding we arrive here via client-side nav while the tags
+        // query still holds the pre-onboarding empty list — it was invalidated
+        // on /onboard-complete but not refetched (no observer was mounted there).
+        // Acting on that stale cache bounces the user back to /onboarding. Wait
+        // for the background refetch to settle so the redirect decision runs
+        // against fresh tag data. (A manual refresh works today only because it
+        // wipes the cache and forces a cold load.)
+        if (isFetching || isStale) return;
 
         const hasSeenWelcome = typeof window !== "undefined" && localStorage.getItem("welcome_dialog_seen");
 
@@ -31,7 +39,7 @@ const UserLabel = () => {
             setShowWelcomeDialog(false);
             setShowPermissions(false);
         }
-    }, [isLoading, scopesLoading, data, scopesData, router]);
+    }, [isLoading, scopesLoading, isFetching, isStale, data, scopesData, router]);
 
   return (
     <div>
