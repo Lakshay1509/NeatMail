@@ -76,6 +76,18 @@ export const followUpQueue = new Queue("follow-up-draft", {
   },
 });
 
+// Delayed one-off jobs that fire ~24h before a card-required trial's first charge,
+// to send the "you'll be charged tomorrow" reminder with usage stats.
+export const trialReminderQueue = new Queue("trial-reminder", {
+  connection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 5000 },
+    removeOnComplete: true,
+    removeOnFail: 100,
+  },
+});
+
 export const queueAdapters = [
   new BullMQAdapter(outlookMailQueue),
   new BullMQAdapter(outlookMailUpdateQueue),
@@ -84,4 +96,5 @@ export const queueAdapters = [
   new BullMQAdapter(dbBatchQueue),
   new BullMQAdapter(classifyQueue),
   new BullMQAdapter(followUpQueue),
+  new BullMQAdapter(trialReminderQueue),
 ];

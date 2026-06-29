@@ -37,5 +37,80 @@ export async function sendSubExpiredEmail(userEmail:string, userName:string){
         console.error('Error sending reminder to user')    //Don't throw new Error to prevent webhook retry
 
     }
-} 
+}
+
+interface TrialReminderEmailParams {
+  to: string;
+  name: string;
+  labelled: number;
+  timeSavedLabel: string;
+  willCharge: boolean;
+  chargeAmountLabel: string | null;
+  chargeDateLabel: string;
+}
+
+// Plain-HTML reminder sent ~24h before a card-required trial converts. Two
+// variants: "you'll be charged tomorrow" (auto-renew on) vs a "trial ending"
+// recap (auto-renew off, no charge coming). Throws so the BullMQ worker retries.
+export async function sendTrialReminderEmail(params: TrialReminderEmailParams) {
+  const {
+    to,
+    name,
+    labelled,
+    timeSavedLabel,
+    willCharge,
+    chargeAmountLabel,
+    chargeDateLabel,
+  } = params;
+
+  const firstName = name?.trim().split(" ")[0] || "there";
+
+  const subject = willCharge
+    ? `Your NeatMail trial ends tomorrow${
+        chargeAmountLabel ? ` — ${chargeAmountLabel} on ${chargeDateLabel}` : ""
+      }`
+    : "Your NeatMail trial ends tomorrow";
+
+  const lead = willCharge
+    ? `Your 7-day NeatMail trial ends tomorrow${
+        chargeAmountLabel
+          ? `, and your card will be charged ${chargeAmountLabel} on ${chargeDateLabel}`
+          : `, and your subscription begins on ${chargeDateLabel}`
+      }. No action needed if you'd like to continue.`
+    : `Your 7-day NeatMail trial ends tomorrow. Auto-renew is off, so you won't be charged — your account will return to the Free plan on ${chargeDateLabel}.`;
+
+  const footerNote = willCharge
+    ? `<p>Changed your mind? You can cancel before ${chargeDateLabel} from your billing page.</p>`
+    : `<p>Want to keep your access? Turn auto-renew back on before ${chargeDateLabel} from your billing page.</p>`;
+
+  // Avoid an awkward "0 emails labelled" recap for users with no trial activity.
+  const statsBlock =
+    labelled > 0
+      ? `<p style="margin:24px 0 4px;"><strong>Here's what NeatMail did for you during your trial:</strong></p>
+  <ul>
+    <li><strong>${labelled.toLocaleString()}</strong> emails automatically labelled</li>
+    <li>About <strong>${timeSavedLabel}</strong> of inbox triage saved</li>
+  </ul>`
+      : `<p style="margin:24px 0;">NeatMail is set up and watching your inbox — new emails will be sorted and labelled automatically.</p>`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<body style="font-family:Arial,Helvetica,sans-serif;color:#111111;line-height:1.6;">
+  <p>Hi ${firstName},</p>
+  <h2 style="margin:0 0 8px;">Your free trial ends tomorrow</h2>
+  <p>${lead}</p>
+  ${statsBlock}
+  ${footerNote}
+  <p><a href="https://dashboard.neatmail.app/billing">Manage your subscription</a></p>
+  <p style="color:#888888;font-size:12px;margin-top:24px;">— The NeatMail team</p>
+</body>
+</html>`;
+
+  await resend.emails.send({
+    from: "NeatMail <trials@send.neatmail.app>",
+    to,
+    subject,
+    html,
+  });
+}
 

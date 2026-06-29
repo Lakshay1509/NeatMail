@@ -7,6 +7,7 @@ import { telegramAgent } from "./telegram-agent";
 import { processDbBatch } from "./process-db-batch";
 import { processClassify } from "./process-classify";
 import { processFollowUpDraft } from "./follow-up-draft";
+import { processTrialReminder } from "./trial-reminder";
 import { dbBatchQueue, classifyQueue } from "@/lib/queue";
 
 export const runtime = "nodejs";
@@ -60,6 +61,11 @@ export async function startWorkers() {
     lockDuration: 120_000,
   });
 
+  const trialReminderWorker = new Worker("trial-reminder", processTrialReminder, {
+    connection,
+    concurrency: 5,
+  });
+
   workers = [
     outlookMailWorker,
     outlookMailUpdateWorker,
@@ -68,6 +74,7 @@ export async function startWorkers() {
     dbBatchWorker,
     classifyWorker,
     followUpDraftWorker,
+    trialReminderWorker,
   ];
 
   await dbBatchQueue.add("flush-db-batch", {}, {

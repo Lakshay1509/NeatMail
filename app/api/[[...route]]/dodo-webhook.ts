@@ -3,6 +3,7 @@
 import { Hono } from "hono";
 import { Webhook } from "standardwebhooks";
 import { addPaymenttoDb, addRefundtoDb, addSubscriptiontoDb } from "@/lib/payement";
+import { maybeScheduleTrialReminder } from "@/lib/trial-reminder";
 import { isDodoWebhookProcessed, markDodoWebhookProcessed, unmarkDodoWebhookProcessed } from "@/lib/redis";
 import { getPostHogClient } from "@/lib/posthog-server";
 
@@ -133,6 +134,9 @@ const app = new Hono().post("/", async (ctx) => {
       
       case "payment.succeeded": {
         await addPaymenttoDb(payload);
+        // A $0 succeeded payment with no prior paid payment marks the start of a
+        // card-required free trial — schedule the "charged tomorrow" reminder.
+        await maybeScheduleTrialReminder(payload);
         posthog.capture({
           distinctId: clerkUserId || "system",
           event: "payment_succeeded",
