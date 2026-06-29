@@ -94,7 +94,7 @@ const MASCOTS = [
   "/mascot/labels.svg",
   "/mascot/draft.svg",
   "/mascot/follow.svg",
-  "/premium.svg",
+  "/mascot/premium.svg",
 ];
 
 const STEP_TITLES = [
@@ -126,8 +126,8 @@ const TRIAL_PLANS: {
     tagline: "AI-powered inbox for busy professionals.",
     features: [
       "Unlimited tracked emails & labels",
-      "20 AI draft replies / month",
-      "5 archive rules",
+      "100 AI draft replies / month",
+      "25 archive rules",
       "Daily digest & follow-up tracking",
       "Telegram & Slack integrations",
     ],
