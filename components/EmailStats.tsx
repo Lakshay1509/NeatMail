@@ -32,6 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useGetUserEmailStats } from "@/features/email/use-get-stats";
 import { useUnsubscribeDomain } from "@/features/email/use-post-unsubscribe";
 import { useArchiveMutation } from "@/features/email/use-post-archive";
+import { UnsubscribeFailedDialog } from "@/components/UnsubscribeFailedDialog";
 import { DateRange } from "react-day-picker";
 import { subDays } from "date-fns";
 import { DatePickerWithRange } from "./DatePickerWithRange";
@@ -123,59 +124,72 @@ const ProgressBar = ({
 // Outside EmailStats component
 const ActionsCell = ({
   domain,
+  displayDomain,
   isArchived,
   archiveAfterDays,
   globalDuration,
 }: {
   domain: string;
+  displayDomain: string;
   isArchived: boolean;
   archiveAfterDays: number | null;
   globalDuration: 30 | 60;
 }) => {
   const unsubscribeMutation = useUnsubscribeDomain();
   const archiveAfterMutation = useArchiveMutation();
+  const [failedDialogOpen, setFailedDialogOpen] = React.useState(false);
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={archiveAfterMutation.isPending}
-        className="w-32"
-        onClick={(e) => {
-          e.stopPropagation();
-          archiveAfterMutation.mutate({
-            domain,
-            enabled: !isArchived,
-            duration: !isArchived ? globalDuration : 30,
-          });
-        }}
-      >
-        {isArchived
-          ? `Un-archive (${archiveAfterDays || globalDuration}d)`
-          : "Archive"}
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={unsubscribeMutation.isPending}
-        onClick={(e) => {
-          e.stopPropagation();
-          unsubscribeMutation.mutate(
-            { domain },
-            {
-              onSuccess: (data: any) => {
-                if (data?.requiresRedirect && data?.redirectUrl) {
-                  window.open(data.redirectUrl, "_blank");
-                }
+    <>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={archiveAfterMutation.isPending}
+          className="w-32"
+          onClick={(e) => {
+            e.stopPropagation();
+            archiveAfterMutation.mutate({
+              domain,
+              enabled: !isArchived,
+              duration: !isArchived ? globalDuration : 30,
+            });
+          }}
+        >
+          {isArchived
+            ? `Un-archive (${archiveAfterDays || globalDuration}d)`
+            : "Archive"}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={unsubscribeMutation.isPending}
+          onClick={(e) => {
+            e.stopPropagation();
+            unsubscribeMutation.mutate(
+              { domain },
+              {
+                onSuccess: (data: any) => {
+                  if (data?.requiresRedirect && data?.redirectUrl) {
+                    window.open(data.redirectUrl, "_blank");
+                  }
+                },
+                onError: () => {
+                  setFailedDialogOpen(true);
+                },
               },
-            },
-          );
-        }}
-      >
-        Unsubscribe
-      </Button>
-    </div>
+            );
+          }}
+        >
+          Unsubscribe
+        </Button>
+      </div>
+      <UnsubscribeFailedDialog
+        open={failedDialogOpen}
+        onClose={() => setFailedDialogOpen(false)}
+        domain={displayDomain}
+      />
+    </>
   );
 };
 
@@ -307,6 +321,7 @@ const EmailStats = () => {
           return (
             <ActionsCell
               domain={domain}
+              displayDomain={getDomainLabel(row.original.domain)}
               isArchived={row.original.is_archived}
               archiveAfterDays={row.original.archive_after_days}
               globalDuration={archiveDuration}
