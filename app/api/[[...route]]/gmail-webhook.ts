@@ -7,7 +7,10 @@ import {
   // markThreadProcessed,
   unmarkMessageProcessed,
   // unmarkThreadProcessed,
+  claimReconnectReminder,
+  releaseReconnectReminder,
 } from "@/lib/redis";
+import { sendReconnectEmail } from "@/lib/resend";
 import {
   addMailtoDB,
   getLastHistoryId,
@@ -149,6 +152,21 @@ const app = new Hono().post("/", async (ctx) => {
 
     if (!tokenData) {
       console.log(`[webhook] No token for ${clerkUserId} — acking`);
+      // Token was revoked/removed — nudge the user to reconnect. Throttled to at
+      // most once every 3 days so the webhook flood doesn't spam them.
+      if (await claimReconnectReminder(clerkUserId)) {
+        try {
+          await sendReconnectEmail(emailAddress, fullName);
+          console.log(`[webhook] Sent reconnect reminder to ${emailAddress}`);
+        } catch (e) {
+          // Release the claim so a later webhook can retry the send.
+          await releaseReconnectReminder(clerkUserId);
+          console.error(
+            `[webhook] Failed to send reconnect reminder to ${emailAddress}`,
+            e,
+          );
+        }
+      }
       return ctx.json({ success: true }, 200);
     }
 

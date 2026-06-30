@@ -39,6 +39,38 @@ export async function sendSubExpiredEmail(userEmail:string, userName:string){
     }
 }
 
+// Sent when NeatMail can no longer retrieve the user's Google OAuth token
+// (they revoked access or removed the connection). Prompts them to sign in
+// again and re-grant all scopes so inbox automation can resume. Throttled by
+// the caller (Redis) so it goes out at most once every few days.
+export async function sendReconnectEmail(userEmail: string, userName: string) {
+  const firstName = userName?.trim().split(" ")[0] || "there";
+
+  const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:24px;max-width:480px;margin:0 auto;">
+    <h2 style="font-size:20px;color:#111;margin:0 0 16px;">Reconnect NeatMail to keep your inbox organized</h2>
+    <p style="font-size:15px;color:#444;line-height:1.6;margin:0 0 16px;">
+      Hi ${firstName},
+    </p>
+    <p style="font-size:15px;color:#444;line-height:1.6;margin:0 0 16px;">
+      NeatMail lost access to your Google account, so we've paused organizing your inbox.
+      This usually happens when the connection is removed or access is revoked.
+    </p>
+    <p style="font-size:15px;color:#444;line-height:1.6;margin:0 0 24px;">
+      To resume automatic labelling, drafts, and follow-ups, please sign in again and
+      grant <strong>all the requested permissions</strong>.
+    </p>
+    <a href="https://dashboard.neatmail.app" style="display:inline-block;padding:10px 20px;background:#111;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:500;">Reconnect NeatMail</a>
+    <p style="font-size:12px;color:#888;margin-top:24px;">If you didn't change anything, signing in again will restore everything. — The NeatMail team</p>
+  </div>`;
+
+  await resend.emails.send({
+    from: "NeatMail <notifications@send.neatmail.app>",
+    to: userEmail,
+    subject: "Action needed: reconnect NeatMail to keep your inbox organized",
+    html,
+  });
+}
+
 interface TrialReminderEmailParams {
   to: string;
   name: string;
