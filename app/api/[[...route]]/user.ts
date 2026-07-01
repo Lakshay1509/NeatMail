@@ -8,6 +8,7 @@ import z from "zod";
 import { getUserTier } from "@/lib/tier-guard";
 import { createOutlookSubscription, getFolderMap } from "@/lib/outlook";
 import { updateOutlookId } from "@/lib/supabase";
+import { handleWatchDeactivation } from "@/lib/payement";
 
 export type WatchedFolder = {
   id: string;
@@ -578,7 +579,13 @@ const app = new Hono()
         },
       });
 
-      // 2. Deactivate watch + cancel subscription (ONLY if subscription exists)
+      // 2. Deactivate watch (all users) + cancel subscription (if one exists).
+      // Watch deactivation is independent of subscription status: free and
+      // trial users also have an active watch that must be stopped so we stop
+      // ingesting a deleted user's mailbox. handleWatchDeactivation swallows
+      // its own errors, so it never blocks the deletion flow.
+      await handleWatchDeactivation(userId);
+
       if (subscription) {
         // Cancel Dodo subscription
         try {

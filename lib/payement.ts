@@ -4,7 +4,7 @@ import {
   SubscriptionPayload,
 } from "@/types/dodo";
 import { db } from "./prisma";
-import { activateWatch, deactivateWatch } from "./gmail";
+import { activateWatch, deactivateWatch, OAuthError } from "./gmail";
 import {
   createOutlookSubscription,
   deleteOutlookSubscription,
@@ -172,34 +172,74 @@ export async function handleWatchActivation(userId: string): Promise<void> {
   }
 }
 
+// A revoked / expired / missing OAuth token means we can never successfully
+// call the provider's stop/delete API for this user. Detected across the three
+// error shapes our stack produces: OAuthError, status-coded Google/Clerk/Graph
+// errors (401/403/400), the Clerk oauth error codes, and the plain "reconnect"
+// Errors that getGraphClient throws (which carry no status code at all).
+function isRevokedTokenError(error: any): boolean {
+  if (error instanceof OAuthError) return true;
+
+  const code = error?.status ?? error?.statusCode ?? error?.code;
+  if (code === 401 || code === 403 || code === 400) return true;
+
+  if (
+    error?.errors?.some?.(
+      (e: any) =>
+        e.code === "oauth_token_retrieval_error" ||
+        e.code === "oauth_missing_refresh_token",
+    )
+  ) {
+    return true;
+  }
+
+  const message = String(error?.message ?? "");
+  return /access token|reconnect|oauth|invalid_grant|token has expired|invalidauthenticationtoken/i.test(
+    message,
+  );
+}
+
 export async function handleWatchDeactivation(userId: string): Promise<void> {
+  // Outer guard: watch deactivation must never throw — callers (account
+  // deletion, trial/subscription crons) rely on it being non-blocking.
   try {
     const isGmail = (await getUserIsGmail(userId)).isGmail;
 
-    if (isGmail) {
-      const response = await deactivateWatch(userId);
-      if (response.success && response.userId) {
-        await db.user_tokens.update({
-          where: { clerk_user_id: response.userId },
-          data: {
-            watch_activated: false,
-            last_history_id: null,
-            updated_at: new Date(),
-          },
-        });
+    // Clears our own record so the row no longer claims an active watch.
+    const clearWatchState = () =>
+      db.user_tokens.update({
+        where: { clerk_user_id: userId },
+        data: isGmail
+          ? { watch_activated: false, last_history_id: null, updated_at: new Date() }
+          : { watch_activated: false, outlook_id: null, updated_at: new Date() },
+      });
+
+    try {
+      if (isGmail) {
+        await deactivateWatch(userId);
+      } else {
+        await deleteOutlookSubscription(userId);
       }
-    } else {
-      const response = await deleteOutlookSubscription(userId);
-      if (response.success) {
-        await db.user_tokens.update({
-          where: { clerk_user_id: userId },
-          data: {
-            watch_activated: false,
-            outlook_id: null,
-            updated_at: new Date(),
-          },
-        });
+
+      // Provider watch stopped successfully — sync our record.
+      await clearWatchState();
+    } catch (error) {
+      if (isRevokedTokenError(error)) {
+        // The user revoked OAuth access, so the provider stop/delete call can
+        // never succeed. The watch will lapse on its own (Gmail within ~7 days,
+        // Outlook at subscription expiry) and mail ingestion is already gated
+        // by tier/deleted_flag. Leaving watch_activated=true would strand this
+        // row forever, so clear our bookkeeping anyway.
+        console.warn(
+          `[watch] OAuth revoked for ${userId} — provider deactivation impossible; clearing local watch state`,
+        );
+        await clearWatchState();
+        return;
       }
+
+      // Transient/unexpected failure — leave watch_activated as-is so the watch
+      // can still be deactivated on a later attempt.
+      console.error("Failed to deactivate watch:", error);
     }
   } catch (error) {
     console.error("Failed to deactivate watch:", error);

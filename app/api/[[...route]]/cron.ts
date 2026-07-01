@@ -437,6 +437,7 @@ const app = new Hono()
     const results = {
       trialsExpired: 0,
       trialsDeactivated: 0,
+      tierDowngraded: 0,
       freeDeactivated: 0,
       errors: [] as string[],
     };
@@ -477,6 +478,18 @@ const app = new Hono()
           });
 
           if (!hasActiveSub) {
+            // Degrade tier back to FREE now that the trial has expired.
+            // An active trial keeps the user on "MAX" (see lib/payement.ts),
+            // so without this the user stays on a paid tier indefinitely.
+            // Done first (before the watch/email work below) because it is
+            // the most critical step and the trial is already marked EXPIRED,
+            // meaning this user will not be re-selected on the next run.
+            await db.user_tokens.update({
+              where: { clerk_user_id: trial.user_id },
+              data: { tier: "FREE" },
+            });
+            results.tierDowngraded++;
+
             await handleWatchDeactivation(trial.user_id);
             results.trialsDeactivated++;
 
