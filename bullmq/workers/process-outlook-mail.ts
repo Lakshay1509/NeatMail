@@ -42,6 +42,13 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
     return { skipped: true };
   }
 
+  // Stop processing mail for users scheduled for deletion. Defense-in-depth
+  // in case the Outlook subscription lingers before it expires — we must not
+  // keep ingesting a deleted user's mailbox.
+  if (subscription.deleted_flag) {
+    return { skipped: true, reason: "user scheduled for deletion" };
+  }
+
   // const activeSubcription = await getUserSubscribed(
   //   subscription.clerk_user_id,
   // );

@@ -121,6 +121,15 @@ const app = new Hono().post("/", async (ctx) => {
       return ctx.json({ success: true }, 200);
     }
 
+    // Stop processing mail for users scheduled for deletion. The watch is
+    // deactivated at delete-request time, but this is defense-in-depth in
+    // case a watch lingers (e.g. hasn't expired yet) — we must not keep
+    // ingesting a deleted user's mailbox. Ack so Gmail doesn't retry.
+    if (user.deleted_flag) {
+      console.log(`[webhook] ${emailAddress} scheduled for deletion — skipping`);
+      return ctx.json({ success: true }, 200);
+    }
+
     // const subscribed = await getUserSubscribed(user.clerk_user_id);
 
     // if (subscribed.subscribed === false) {
