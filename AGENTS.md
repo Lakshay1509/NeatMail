@@ -44,9 +44,10 @@
 
 | Tier | Monthly | Annual | Features |
 |---|---|---|---|
-| **Free** | — | — | 100 tracked emails, 3 custom labels, no AI drafts, no digest, no integrations |
-| **Pro** | $9 / ₹299 | $90 / ₹2,499 | Unlimited emails/labels, 20 AI drafts/mo, 5 archive rules, digest, follow-ups, Telegram & Slack |
-| **Max** | $15 / ₹499 | $150 / ₹4,990 | Unlimited everything, advanced analytics, priority support |
+| **Pro** | $19 / ₹599 | $180 / ₹5,749 | Unlimited emails/labels, 100 AI drafts/mo, 25 archive rules, digest, follow-ups, Telegram & Slack |
+| **Max** | $39 / ₹1,299 | $372 / ₹12,470 | Unlimited everything, advanced analytics, priority support |
+
+> **No free tier.** New users must start a trial (7 days of MAX-tier features) or subscribe. `FREE` still exists in code (`TIERS`, `TIER_LIMITS.FREE`) as the internal "no active subscription" state — every limit is `0`, so it grants no access and is never sold as a plan.
 
 ### Region-aware pricing
 
