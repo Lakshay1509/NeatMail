@@ -153,7 +153,12 @@ export async function buildContextAndDraft(
   keywords:       string[],
   mentionedDates: { raw: string; iso: string }[],
   language: string = "english",
-): Promise<{ draft: string; contextSummary: string }> {
+): Promise<{
+  draft: string;
+  contextSummary: string;
+  needsAttachment: boolean;
+  attachmentQuery: string;
+}> {
 
   const assembler = new ContextAssembler()
 
@@ -268,6 +273,12 @@ Do NOT set noReplyNeeded when the email:
 
 When ambiguous — default to noReplyNeeded=false (draft). The draft rules below handle keeping replies short when nothing is actually required.
 
+ATTACHMENT REQUEST DETECTION — Set needsAttachment=true ONLY when the sender is explicitly asking the user to send/share/resend a specific FILE or DOCUMENT that would already exist (e.g. "can you send me the pricing PDF?", "please resend the signed contract", "share the deck from last week", "attach the invoice again"). In that case, set attachmentQuery to a short natural-language descriptor of the requested file (e.g. "pricing PDF", "signed contract", "last week's deck", "invoice").
+- If the sender is NOT asking for an existing file, set needsAttachment=false and attachmentQuery="".
+- If noReplyNeeded is true, needsAttachment MUST be false and attachmentQuery="".
+- Do NOT set needsAttachment for requests to create something new, for links/URLs, or when the sender is the one sharing a file.
+- The file (if found) is attached automatically by the system — you may write the reply as if sharing it (e.g. "Sure, sending it over."), but never invent file names or contents.
+
 Reply generation rules (only when noReplyNeeded is false):
 1. Determine what the sender actually wants: a simple acknowledgment, an action, information, or a decision.
 2. SIMPLE ACKNOWLEDGMENTS: If the email just shares an attachment, update, or document for you to review — and does NOT ask for specific actions or a decision — reply with a brief 1-sentence acknowledgment (e.g., "Thanks, I'll take a look"). Do NOT invent review workflows, timelines, meeting proposals, approval notes, or next steps. Just acknowledge receipt. If you're unsure whether the sender wants more than an acknowledgment, default to a short 1-sentence reply.
@@ -343,7 +354,9 @@ OUTPUT FORMAT:
 Return ONLY a JSON object strictly matching this schema:
 {
   "noReplyNeeded": boolean,
-  "draft": string
+  "draft": string,
+  "needsAttachment": boolean,
+  "attachmentQuery": string
 }`;
 
   // 4. Generate draft
@@ -369,8 +382,18 @@ Return ONLY a JSON object strictly matching this schema:
               description:
                 "The reply draft text. If noReplyNeeded is true, this must be exactly 'NO_REPLY_NEEDED'.",
             },
+            needsAttachment: {
+              type: "boolean",
+              description:
+                "True ONLY when the sender explicitly asks the user to send/resend/share a specific existing file or document.",
+            },
+            attachmentQuery: {
+              type: "string",
+              description:
+                "Short descriptor of the requested file (e.g. 'pricing PDF'). Empty string when needsAttachment is false.",
+            },
           },
-          required: ["noReplyNeeded", "draft"],
+          required: ["noReplyNeeded", "draft", "needsAttachment", "attachmentQuery"],
           additionalProperties: false,
         },
       },
@@ -389,21 +412,39 @@ Return ONLY a JSON object strictly matching this schema:
       "[buildContextAndDraft] Empty model response",
       `finish_reason=${finishReason}`
     );
-    return { draft: "", contextSummary: contextBlock };
+    return {
+      draft: "",
+      contextSummary: contextBlock,
+      needsAttachment: false,
+      attachmentQuery: "",
+    };
   }
 
   // Parse response to extract draft
   let draft = "";
+  let needsAttachment = false;
+  let attachmentQuery = "";
   try {
     const parsed = JSON.parse(rawContent) as {
       noReplyNeeded?: boolean;
       draft?: string;
+      needsAttachment?: boolean;
+      attachmentQuery?: string;
     };
     if (
       typeof parsed.noReplyNeeded === "boolean" &&
       typeof parsed.draft === "string"
     ) {
       draft = parsed.draft.trim();
+      // Only honor an attachment request on an actual reply.
+      if (
+        parsed.needsAttachment === true &&
+        !parsed.noReplyNeeded &&
+        typeof parsed.attachmentQuery === "string"
+      ) {
+        needsAttachment = true;
+        attachmentQuery = parsed.attachmentQuery.trim();
+      }
     } else {
       console.error(
         "[buildContextAndDraft] Schema validation failed. Raw:",
@@ -423,5 +464,7 @@ Return ONLY a JSON object strictly matching this schema:
   return {
     draft,
     contextSummary: contextBlock,
+    needsAttachment,
+    attachmentQuery,
   }
 }

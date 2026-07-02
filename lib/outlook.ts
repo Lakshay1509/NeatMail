@@ -229,6 +229,78 @@ export async function deleteOutlookTag(userId: string, tagName: string) {
   }
 }
 
+export interface OutlookDraftAttachment {
+  filename: string;
+  mimeType: string;
+  /** Standard base64 — Graph `contentBytes`. */
+  base64: string;
+}
+
+// Graph attaches files <3 MB in a single POST; files 3 MB–150 MB must go through
+// a chunked upload session. Keep each PUT well under Graph's 4 MB guidance.
+const OUTLOOK_INLINE_ATTACHMENT_LIMIT = 3 * 1024 * 1024;
+const OUTLOOK_UPLOAD_CHUNK_SIZE = 3 * 1024 * 1024;
+
+/**
+ * Attach one file to an existing draft, choosing the inline POST or a chunked
+ * upload session based on size. Throws on failure (caller decides whether to
+ * swallow it). Chunks are PUT to the pre-authenticated uploadUrl WITHOUT an auth
+ * header, in order, each tagged with a Content-Range.
+ */
+async function attachToOutlookDraft(
+  client: Client,
+  draftId: string,
+  att: OutlookDraftAttachment,
+): Promise<void> {
+  const name = (att.filename || "attachment").slice(0, 200);
+  const contentType = att.mimeType || "application/octet-stream";
+  const buffer = Buffer.from(att.base64, "base64");
+  const size = buffer.length;
+  if (size === 0) return;
+
+  if (size < OUTLOOK_INLINE_ATTACHMENT_LIMIT) {
+    await client.api(`/me/messages/${draftId}/attachments`).post({
+      "@odata.type": "#microsoft.graph.fileAttachment",
+      name,
+      contentType,
+      contentBytes: att.base64,
+    });
+    return;
+  }
+
+  const session = (await client
+    .api(`/me/messages/${draftId}/attachments/createUploadSession`)
+    .post({
+      AttachmentItem: { attachmentType: "file", name, size, contentType },
+    })) as { uploadUrl?: string };
+
+  const uploadUrl = session?.uploadUrl;
+  if (!uploadUrl) {
+    throw new Error("createUploadSession returned no uploadUrl");
+  }
+
+  for (let start = 0; start < size; start += OUTLOOK_UPLOAD_CHUNK_SIZE) {
+    const end = Math.min(start + OUTLOOK_UPLOAD_CHUNK_SIZE, size) - 1;
+    const chunk = buffer.subarray(start, end + 1);
+    // Pre-authenticated URL — do NOT send Authorization. fetch derives
+    // Content-Length from the body automatically.
+    const res = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "Content-Range": `bytes ${start}-${end}/${size}`,
+      },
+      body: chunk,
+    });
+    // Intermediate chunks return 200; the final chunk returns 201 Created.
+    if (!res.ok) {
+      throw new Error(
+        `Attachment chunk upload failed (${res.status} ${res.statusText})`,
+      );
+    }
+  }
+}
+
 export async function createOutlookDraft(
   userId: string,
   messageId: string,
@@ -238,6 +310,7 @@ export async function createOutlookDraft(
   fontColor: string,
   fontSize: number,
   signature: string | null,
+  attachments: OutlookDraftAttachment[] = [],
 ) {
   const formattedBody = draftBody.replace(/\n/g, "<br>");
   const formattedSignature = signature ? signature.replace(/\n/g, "<br>") : "";
@@ -278,7 +351,129 @@ export async function createOutlookDraft(
     throw error;
   }
 
+  // Attach files to the freshly created draft. attachToOutlookDraft picks a
+  // single inline POST (<3 MB) or a chunked upload session (>=3 MB) per file.
+  const validAttachments = (attachments ?? []).filter(
+    (a) => a && typeof a.base64 === "string" && a.base64.length > 0,
+  );
+  if (draft?.id && validAttachments.length > 0) {
+    for (const att of validAttachments) {
+      try {
+        await attachToOutlookDraft(client, draft.id, att);
+      } catch (err) {
+        // Never fail the whole draft because one attachment couldn't be added.
+        console.error("Failed to attach file to Outlook draft:", att.filename, err);
+      }
+    }
+  }
+
   return draft;
+}
+
+export interface OutlookAttachmentMeta {
+  messageId: string;
+  attachmentId: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+}
+
+/** List downloadable file attachments (fileAttachment only) for a message. */
+export async function listOutlookAttachments(
+  userId: string,
+  messageId: string,
+): Promise<OutlookAttachmentMeta[]> {
+  const client = await getGraphClient(userId);
+  try {
+    const res = await client
+      .api(`/me/messages/${messageId}/attachments`)
+      .select("id,name,contentType,size")
+      .get();
+    const items = (res.value ?? []) as {
+      id: string;
+      name?: string;
+      contentType?: string;
+      size?: number;
+      "@odata.type"?: string;
+    }[];
+    return items
+      .filter(
+        (a) =>
+          // @odata.type is returned for each polymorphic item; keep only real files.
+          !a["@odata.type"] || a["@odata.type"] === "#microsoft.graph.fileAttachment",
+      )
+      .map((a) => ({
+        messageId,
+        attachmentId: a.id,
+        filename: a.name ?? "attachment",
+        mimeType: a.contentType ?? "application/octet-stream",
+        size: a.size ?? 0,
+      }));
+  } catch (err) {
+    console.error("Failed to list Outlook attachments:", messageId, err);
+    return [];
+  }
+}
+
+/** Download an attachment's bytes as base64 (Graph `contentBytes`). */
+export async function downloadOutlookAttachment(
+  userId: string,
+  messageId: string,
+  attachmentId: string,
+): Promise<string> {
+  const client = await getGraphClient(userId);
+  try {
+    const res = await client
+      .api(`/me/messages/${messageId}/attachments/${attachmentId}`)
+      .get();
+    return res?.contentBytes ?? "";
+  } catch (err) {
+    console.error("Failed to download Outlook attachment:", messageId, attachmentId, err);
+    return "";
+  }
+}
+
+/**
+ * Find messages that involve a given contact as sender or recipient (both
+ * directions of the conversation) and carry attachments. Uses the KQL
+ * `participants` property (covers from/to/cc/bcc — so "I sent it to them" is
+ * included), then filters on the `hasAttachments` boolean client-side. We do
+ * NOT put an attachment predicate in $search: Graph's docs are inconsistent
+ * between `hasAttachment` and `hasAttachments`, and an unrecognized KQL token is
+ * treated as free text (→ zero results). Filtering client-side is exact.
+ * Results come back sorted by sent date (most recent first).
+ */
+export async function searchOutlookAttachmentsByContact(
+  userId: string,
+  contactEmail: string,
+  maxResults = 40,
+): Promise<{ messageId: string; from: string; date: string }[]> {
+  const client = await getGraphClient(userId);
+  const escaped = contactEmail.replace(/["\\]/g, "");
+  try {
+    const res = await client
+      .api("/me/messages")
+      .search(`"participants:${escaped}"`)
+      .top(maxResults)
+      .select("id,from,receivedDateTime,hasAttachments")
+      .get();
+    const items = (res.value ?? []) as {
+      id: string;
+      from?: { emailAddress?: { address?: string } };
+      receivedDateTime?: string;
+      hasAttachments?: boolean;
+    }[];
+    return items
+      .filter((m) => m.hasAttachments === true)
+      .map((m) => ({
+        messageId: m.id,
+        from: m.from?.emailAddress?.address ?? "",
+        date: m.receivedDateTime ?? "",
+      }));
+  } catch (err) {
+    console.error("Outlook attachment search failed:", err);
+    return [];
+  }
 }
 
 export async function getOutlookMessageBody(userId: string, messageId: string) {

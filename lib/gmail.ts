@@ -203,6 +203,13 @@ export async function getGmailMessageBody(userId: string, messageId: string) {
   }
 }
 
+export interface DraftAttachment {
+  filename: string;
+  mimeType: string;
+  /** Standard base64 (NOT url-safe). `downloadAttachment` already returns this. */
+  base64: string;
+}
+
 export async function createGmailDraft(
   userId: string,
   threadId: string,
@@ -213,6 +220,7 @@ export async function createGmailDraft(
   fontColor: string,
   fontSize: number,
   signature: string | null,
+  attachments: DraftAttachment[] = [],
 ) {
   const gmail = await getGmailClient(userId);
 
@@ -266,7 +274,7 @@ export async function createGmailDraft(
   const encodedBody = Buffer.from(htmlContent).toString("base64");
 
   const CRLF = "\r\n";
-  const messageParts: string[] = [
+  const headerLines: string[] = [
     "MIME-Version: 1.0",
     `From: ${fromEmail}`,
     `To: ${to}`,
@@ -274,33 +282,81 @@ export async function createGmailDraft(
   ];
 
   if (rfcMessageId) {
-    messageParts.push(`In-Reply-To: ${rfcMessageId}`);
-    messageParts.push(`References: ${references ? references + " " : ""}${rfcMessageId}`);
+    headerLines.push(`In-Reply-To: ${rfcMessageId}`);
+    headerLines.push(`References: ${references ? references + " " : ""}${rfcMessageId}`);
   }
 
-  messageParts.push(
-    "Content-Type: text/html; charset=utf-8",
-    "Content-Transfer-Encoding: base64",
-    "",
-    encodedBody,
+  const validAttachments = (attachments ?? []).filter(
+    (a) => a && typeof a.base64 === "string" && a.base64.length > 0,
   );
 
-  const raw = messageParts.join(CRLF);
-  const encodedMessage = Buffer.from(raw)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  let raw: string;
+  if (validAttachments.length > 0) {
+    // multipart/mixed: HTML body part + one part per attachment
+    const boundary = `neatmail_boundary_${messageId}`;
+    const parts: string[] = [
+      ...headerLines,
+      `Content-Type: multipart/mixed; boundary="${boundary}"`,
+      "",
+      `--${boundary}`,
+      "Content-Type: text/html; charset=utf-8",
+      "Content-Transfer-Encoding: base64",
+      "",
+      encodedBody,
+    ];
+    for (const att of validAttachments) {
+      // Strip any whitespace from incoming base64, then wrap at 76 chars per RFC 2045
+      const wrapped = att.base64.replace(/[\r\n]/g, "").replace(/(.{76})/g, "$1\r\n");
+      const safeName =
+        (att.filename || "attachment").replace(/[\r\n"\\]/g, "_").slice(0, 200);
+      parts.push(
+        `--${boundary}`,
+        `Content-Type: ${att.mimeType || "application/octet-stream"}; name="${safeName}"`,
+        "Content-Transfer-Encoding: base64",
+        `Content-Disposition: attachment; filename="${safeName}"`,
+        "",
+        wrapped,
+      );
+    }
+    parts.push(`--${boundary}--`);
+    raw = parts.join(CRLF);
+  } else {
+    raw = [
+      ...headerLines,
+      "Content-Type: text/html; charset=utf-8",
+      "Content-Transfer-Encoding: base64",
+      "",
+      encodedBody,
+    ].join(CRLF);
+  }
+  let draft;
+  if (validAttachments.length > 0) {
+    // Attachments present → use media (multipart) upload. The inline `raw` JSON
+    // endpoint has a small request-payload ceiling (~5 MB, and errors above it),
+    // whereas media upload reliably handles messages up to 35 MB. The media body
+    // is the raw RFC 822 message itself (NOT base64url-encoded).
+    draft = await gmail.users.drafts.create({
+      userId: "me",
+      requestBody: { message: { threadId } },
+      media: { mimeType: "message/rfc822", body: raw },
+    });
+  } else {
+    const encodedMessage = Buffer.from(raw)
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
 
-  const draft = await gmail.users.drafts.create({
-    userId: "me",
-    requestBody: {
-      message: {
-        raw: encodedMessage,
-        threadId: threadId,
+    draft = await gmail.users.drafts.create({
+      userId: "me",
+      requestBody: {
+        message: {
+          raw: encodedMessage,
+          threadId: threadId,
+        },
       },
-    },
-  });
+    });
+  }
 
   return draft.data;
 }
