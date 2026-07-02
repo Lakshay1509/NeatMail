@@ -6,7 +6,15 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { ChevronLeft, ChevronRight, Check, ShieldCheck } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  ShieldCheck,
+  UserCheck,
+  CalendarClock,
+  Lock,
+} from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Separator } from "@/components/ui/separator"
@@ -108,7 +116,7 @@ const STEP_SUBTITLES = [
   "Tell us about your role so Ray can tailor suggestions to your workflow.",
   "Choose labels to classify emails",
   "Ray labels emails as Follow-up due when a sent email gets no reply after your set window.",
-  "Pick a plan to unlock everything. 7 days free — your card won't be charged until the trial ends.",
+  "Full access to every feature, free for 7 days. No charge today — cancel anytime.",
 ];
 
 type TrialTier = "PRO" | "MAX";
@@ -312,6 +320,22 @@ export default function OnboardingPage() {
             </AnimatePresence>
           </div>
         </div>
+        {step === 3 && (
+          <div className="px-12 pb-5">
+            <div className="mx-auto max-w-[320px] rounded-full border border-neutral-200/70 bg-white/60 px-4 py-2.5 text-center">
+              <p className="text-xs text-neutral-600 leading-relaxed">
+                Trusted by{" "}
+                <span className="font-semibold text-neutral-900">
+                  120+ professionals
+                </span>{" "}
+                across{" "}
+                <span className="font-semibold text-neutral-900">
+                  20+ industries
+                </span>
+              </p>
+            </div>
+          </div>
+        )}
         <div className="px-12 pb-10">
           <div className="flex items-center justify-center">
             <div className="flex items-center gap-2">
@@ -369,6 +393,17 @@ export default function OnboardingPage() {
               {STEP_SUBTITLES[step]}
             </motion.p>
           </AnimatePresence>
+          {step === 3 && (
+            <div className="rounded-full border border-neutral-200/70 bg-white/70 px-4 py-2 text-center">
+              <p className="text-xs text-neutral-600">
+                Trusted by{" "}
+                <span className="font-semibold text-neutral-900">
+                  120+ professionals
+                </span>{" "}
+                across 20+ industries
+              </p>
+            </div>
+          )}
           <div className="flex items-center justify-center w-full max-w-xs pt-2">
             <div className="flex items-center gap-2">
               {[0, 1, 2, 3].map((i) => (
@@ -651,17 +686,47 @@ export default function OnboardingPage() {
                         })}
                       </div>
 
-                      {/* Reassurance */}
-                      <div className="flex items-start gap-2.5 rounded-xl bg-neutral-50 border border-neutral-100 p-3.5">
-                        <ShieldCheck className="h-4 w-4 shrink-0 text-neutral-700 mt-0.5" />
-                        <p className="text-xs text-neutral-600 leading-relaxed">
-                          You won&apos;t be charged today. Your 7-day free trial unlocks{" "}
-                          <span className="font-medium text-neutral-900">
-                            {selectedTier === "MAX" ? "Max" : "Pro"}
-                          </span>{" "}
-                          in full. Cancel anytime before{" "}
-                          {monthlyEquivalent(selectedTier)}/mo billing begins.
-                        </p>
+                      {/* Why we ask for a card — trust + reassurance */}
+                      <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck className="h-4 w-4 shrink-0 text-neutral-900" />
+                          <p className="text-xs font-semibold text-neutral-900">
+                            Why we ask for a card
+                          </p>
+                        </div>
+                        <div className="mt-3 space-y-3">
+                          <div className="flex items-start gap-2.5">
+                            <UserCheck className="h-4 w-4 shrink-0 text-neutral-700 mt-0.5" />
+                            <p className="text-xs text-neutral-600 leading-relaxed">
+                              <span className="font-medium text-neutral-900">
+                                Confirms it&apos;s really you.
+                              </span>{" "}
+                              Ray works with sensitive email, so we verify every
+                              account belongs to a real person — protecting your data
+                              and everyone you correspond with.
+                            </p>
+                          </div>
+                          <div className="flex items-start gap-2.5">
+                            <CalendarClock className="h-4 w-4 shrink-0 text-neutral-700 mt-0.5" />
+                            <p className="text-xs text-neutral-600 leading-relaxed">
+                              <span className="font-medium text-neutral-900">
+                                $0 today.
+                              </span>{" "}
+                              Enjoy full access for 7 days. We&apos;ll email you 1 day
+                              before your first payment — cancel anytime in one click.
+                            </p>
+                          </div>
+                          <div className="flex items-start gap-2.5">
+                            <Lock className="h-4 w-4 shrink-0 text-neutral-700 mt-0.5" />
+                            <p className="text-xs text-neutral-600 leading-relaxed">
+                              <span className="font-medium text-neutral-900">
+                                Your card stays private.
+                              </span>{" "}
+                              Encrypted and processed by our PCI-compliant payment
+                              provider. NeatMail never stores your card details.
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
