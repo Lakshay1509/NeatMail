@@ -7,6 +7,7 @@ import {
   getDigestForUser,
   getDigestCount,
   getDigestCompleted,
+  getFollowUpsForUser,
   trimDigestForEmail,
   markEmailAsDone,
   snoozeEmail,
@@ -160,8 +161,9 @@ const app = new Hono()
       }
 
       const count = await getDigestCount(userId);
+      const followUps = await getFollowUpsForUser(userId, 5);
 
-      if (count === 0) {
+      if (count === 0 && followUps.total === 0) {
         await resend.emails.send({
           from: "NeatMail <digest@send.neatmail.app>",
           to: user.email,
@@ -176,9 +178,11 @@ const app = new Hono()
           </div>`,
         });
       } else {
-        const digest = await getDigestForUser(userId);
+        const digest = count > 0 ? await getDigestForUser(userId) : [];
         const trimmed = trimDigestForEmail(digest, 10);
         const shownCount = trimmed.groups.reduce((sum, g) => sum + g.emails.length, 0);
+        const shownFollowUps = followUps.items.length;
+        const followUpRemaining = followUps.total - shownFollowUps;
         const dateLabel = formatInTimeZone(new Date(), "UTC", "EEEE, MMMM d");
 
         const isGmail = user?.is_gmail ?? true;
@@ -200,13 +204,24 @@ const app = new Hono()
                 ageText: getAgeText(e.created_at),
               })),
             })),
+            followUps: followUps.items.map((f) => ({
+              message_id: f.message_id,
+              to: f.to,
+              ageText: getAgeText(f.created_at),
+            })),
+            followUpRemaining,
           })
         );
+
+        const subject =
+          shownCount > 0
+            ? `[TEST] NeatMail digest: ${shownCount} email${shownCount > 1 ? "s" : ""}`
+            : `[TEST] NeatMail digest: ${shownFollowUps} follow-up${shownFollowUps > 1 ? "s" : ""} ready`;
 
         await resend.emails.send({
           from: "NeatMail <digest@send.neatmail.app>",
           to: user.email,
-          subject: `[TEST] NeatMail digest: ${shownCount} email${shownCount > 1 ? "s" : ""}`,
+          subject,
           html: emailHtml,
         });
       }

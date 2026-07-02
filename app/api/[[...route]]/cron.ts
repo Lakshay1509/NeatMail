@@ -18,7 +18,12 @@ import { archiveMessagesOutlook } from "@/lib/outlook";
 import { Resend } from "resend";
 
 import DailyDigestEmail from "@/components/Email/DailyDigestEmail";
-import { getDigestForUser, getDigestCount, trimDigestForEmail } from "@/lib/digest";
+import {
+  getDigestForUser,
+  getDigestCount,
+  trimDigestForEmail,
+  getFollowUpsForUser,
+} from "@/lib/digest";
 import { formatInTimeZone } from "date-fns-tz";
 import { render } from "@react-email/render";
 import { zValidator } from "@hono/zod-validator";
@@ -963,8 +968,9 @@ Also — as an early user, I'm locking in your current plan at a rate I can't of
           }
 
           const count = await getDigestCount(userId);
+          const followUps = await getFollowUpsForUser(userId, 5);
 
-          if (count === 0) {
+          if (count === 0 && followUps.total === 0) {
             // Send "all caught up" email
             await resend.emails.send({
               from: "NeatMail <digest@send.neatmail.app>",
@@ -980,10 +986,11 @@ Also — as an early user, I'm locking in your current plan at a rate I can't of
               </div>`,
             });
           } else {
-            const digest = await getDigestForUser(userId);
-            const totalEmails = digest.reduce((sum, g) => sum + g.emails.length, 0);
+            const digest = count > 0 ? await getDigestForUser(userId) : [];
             const trimmed = trimDigestForEmail(digest, 10);
             const shownCount = trimmed.groups.reduce((sum, g) => sum + g.emails.length, 0);
+            const shownFollowUps = followUps.items.length;
+            const followUpRemaining = followUps.total - shownFollowUps;
             const dateLabel = formatInTimeZone(now, pref.timezone, "EEEE, MMMM d");
 
             const emailHtml = await render(
@@ -1003,13 +1010,24 @@ Also — as an early user, I'm locking in your current plan at a rate I can't of
                     ageText: getAgeText(e.created_at),
                   })),
                 })),
+                followUps: followUps.items.map((f) => ({
+                  message_id: f.message_id,
+                  to: f.to,
+                  ageText: getAgeText(f.created_at),
+                })),
+                followUpRemaining,
               })
             );
+
+            const subject =
+              shownCount > 0
+                ? `NeatMail digest: ${shownCount} email${shownCount > 1 ? "s" : ""}`
+                : `NeatMail digest: ${shownFollowUps} follow-up${shownFollowUps > 1 ? "s" : ""} ready`;
 
             await resend.emails.send({
               from: "NeatMail <digest@send.neatmail.app>",
               to: userEmail,
-              subject: `NeatMail digest: ${shownCount} email${shownCount > 1 ? "s" : ""}`,
+              subject,
               html: emailHtml,
             });
           }

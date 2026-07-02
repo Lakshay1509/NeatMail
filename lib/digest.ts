@@ -19,6 +19,13 @@ export interface DigestGroup {
   emails: DigestEmail[];
 }
 
+export interface FollowUpItem {
+  message_id: string;
+  to: string;
+  ai_summary: string | null;
+  created_at: Date;
+}
+
 const URGENT_ACTIONS = [
   "Escalate now",
   "Investigate now",
@@ -246,6 +253,50 @@ export async function getDigestCount(userId: string): Promise<number> {
       created_at: { gte: since },
     },
   });
+}
+
+// Follow-up drafts are stored in email_tracked by addMailtoDB with a null
+// tag_id and an ai_action of "follow up required" (see bullmq/workers/
+// follow-up-draft.ts). That pair uniquely identifies them: every other
+// null-tag row is inserted without an ai_action, and every row that carries
+// an ai_action also carries a tag_id. ai_action is encrypted with a random
+// nonce so it can't be matched directly, hence the tag_id + ai_action filter.
+export async function getFollowUpsForUser(
+  userId: string,
+  limit: number,
+): Promise<{ items: FollowUpItem[]; total: number }> {
+  const since = new Date();
+  since.setDate(since.getDate() - 1);
+
+  const where = {
+    user_id: userId,
+    tag_id: null,
+    ai_action: { not: null },
+    isDone: false,
+    archive_at: null,
+    OR: [{ snoozed_until: null }, { snoozed_until: { lt: new Date() } }],
+    created_at: { gte: since },
+  };
+
+  const [rows, total] = await Promise.all([
+    db.email_tracked.findMany({
+      where,
+      orderBy: { created_at: "desc" },
+      take: limit,
+    }),
+    db.email_tracked.count({ where }),
+  ]);
+
+  const items: FollowUpItem[] = await Promise.all(
+    rows.map(async (r): Promise<FollowUpItem> => ({
+      message_id: r.message_id,
+      to: r.domain ? await decryptDomain(r.domain) : "Unknown",
+      ai_summary: r.ai_summary ? await decrypt(r.ai_summary) : null,
+      created_at: r.created_at,
+    })),
+  );
+
+  return { items, total };
 }
 
 export async function markEmailAsDone(

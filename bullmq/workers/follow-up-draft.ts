@@ -79,7 +79,7 @@ export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
       },
     });
 
-    // await addMailtoDB(userId, null, messageId, to, `send follow up to ${to}`, "follow up required");
+    await addMailtoDB(userId, null, messageId, to, `send follow up to ${to}`, "follow up required");
 
     console.log(
       `[follow-up-draft] Applied "Follow up" label to ${messageId} (gmail)`,
@@ -160,7 +160,7 @@ export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
 
   await markUnread(targetMessageId);
 
-  // await addMailtoDB(userId, null, targetMessageId, to, `send follow up to ${to}`, "follow up required");
+  await addMailtoDB(userId, null, targetMessageId, to, `send follow up to ${to}`, "follow up required");
 
   console.log(
     `[follow-up-draft] Moved to "Follow up" folder (id=${targetMessageId}) and marked unread (outlook)`,

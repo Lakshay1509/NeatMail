@@ -24,18 +24,27 @@ interface DigestGroup {
   emails: DigestEmail[];
 }
 
+interface FollowUpEmail {
+  message_id: string;
+  to: string;
+  ageText: string;
+}
+
 interface DailyDigestEmailProps {
   totalEmails: number;
   dateLabel: string;
   isGmail: boolean;
   groups: DigestGroup[];
   remainingCount?: number;
+  followUps?: FollowUpEmail[];
+  followUpRemaining?: number;
 }
 
 const COLORS = {
   urgent: "#DC2626",
   needs_reply: "#D97706",
   new_today: "#059669",
+  follow_up: "#2563EB",
 };
 
 function emailUrl(messageId: string, isGmail: boolean): string {
@@ -50,6 +59,8 @@ export default function DailyDigestEmail({
   isGmail,
   groups,
   remainingCount,
+  followUps,
+  followUpRemaining,
 }: DailyDigestEmailProps) {
   return (
     <Html>
@@ -110,6 +121,49 @@ export default function DailyDigestEmail({
                   +{remainingCount} more item{remainingCount > 1 ? "s" : ""} not
                 shown
               </Text>
+            </Section>
+          )}
+
+          {followUps && followUps.length > 0 && (
+            <Section style={groupSection}>
+              <Section style={groupHeader}>
+                <Text
+                  style={{
+                    ...groupLabel,
+                    color: COLORS.follow_up,
+                  }}
+                >
+                  Follow-ups ready to send
+                </Text>
+                <Text style={groupCount}>{followUps.length}</Text>
+              </Section>
+
+              {followUps.map((followUp, i) => (
+                <Section key={i} style={item}>
+                  <a
+                    href={emailUrl(followUp.message_id, isGmail)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={itemLink}
+                  >
+                    <Text style={itemTitle}>Follow up to {followUp.to}</Text>
+                    <Text style={itemMeta}>
+                      Draft ready
+                      <span style={dot}> · </span>
+                      {followUp.ageText}
+                    </Text>
+                  </a>
+                </Section>
+              ))}
+
+              {followUpRemaining != null && followUpRemaining > 0 && (
+                <Section style={overflowSection}>
+                  <Text style={overflowText}>
+                    +{followUpRemaining} follow-up
+                    {followUpRemaining > 1 ? "s" : ""} ready to send
+                  </Text>
+                </Section>
+              )}
             </Section>
           )}
 
