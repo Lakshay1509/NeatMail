@@ -48,9 +48,15 @@ interface AttachmentCandidate {
   size: number;
   from: string;
   date: string;
+  /** Subject of the email that carried this file — often more descriptive than the filename. */
+  subject: string;
 }
 
-/** Ask a small model which candidate file best matches the request. Returns -1 for none. */
+/**
+ * Ask a small model which candidate file best matches the request. Returns -1
+ * when nothing matches OR the best match is only low-confidence — in both cases
+ * the caller attaches nothing and the draft goes out as plain text.
+ */
 async function pickBestAttachment(
   query: string,
   candidates: AttachmentCandidate[],
@@ -60,7 +66,7 @@ async function pickBestAttachment(
     const list = candidates
       .map(
         (c, i) =>
-          `${i}. ${c.filename} — from ${c.from || "unknown"} on ${c.date || "unknown"} (${Math.round(c.size / 1024)} KB)`,
+          `${i}. "${c.filename}" (email subject: ${c.subject ? `"${c.subject}"` : "none"}) — from ${c.from || "unknown"} on ${c.date || "unknown"}, ${Math.round(c.size / 1024)} KB`,
       )
       .join("\n");
 
@@ -81,8 +87,14 @@ async function pickBestAttachment(
                 description:
                   "0-based index of the single best-matching file, or -1 if none clearly match the request.",
               },
+              confidence: {
+                type: "string",
+                enum: ["high", "low"],
+                description:
+                  "'high' only when the chosen file clearly matches the request; 'low' when it is a guess or nothing really fits.",
+              },
             },
-            required: ["index"],
+            required: ["index", "confidence"],
             additionalProperties: false,
           },
         },
@@ -91,20 +103,30 @@ async function pickBestAttachment(
         {
           role: "system",
           content:
-            "You select which previously-shared file best matches what an email sender is asking to be sent. Return the 0-based index of the single best match. Return -1 if none clearly match. When several match, prefer the most recent.",
+            "You select which previously-shared file best matches what an email sender is asking to be sent. Judge relevance using BOTH the filename and the subject of the email that carried each file (the subject is often more descriptive than the filename). Return the 0-based index of the single best match, or -1 if none clearly match. Also return confidence: 'high' only when you are sure the file matches the request; otherwise 'low'. When several match, prefer the most recent.",
         },
         {
           role: "user",
-          content: `The sender is asking for: "${query}"\n\nAvailable files:\n${list}\n\nReturn JSON {"index": n}.`,
+          content: `The sender is asking for: "${query}"\n\nAvailable files:\n${list}\n\nReturn JSON {"index": n, "confidence": "high"|"low"}.`,
         },
       ],
     });
 
     const raw = completion.choices?.[0]?.message?.content ?? "";
     if (!raw) return -1;
-    const parsed = JSON.parse(raw) as { index?: number };
+    const parsed = JSON.parse(raw) as { index?: number; confidence?: string };
     const idx = typeof parsed.index === "number" ? parsed.index : -1;
-    return idx >= 0 && idx < candidates.length ? idx : -1;
+    if (idx < 0 || idx >= candidates.length) return -1;
+    // Only attach on a confident match. A low-confidence guess abstains so we
+    // never staple the wrong file — the draft still goes out as plain text.
+    if (parsed.confidence !== "high") {
+      console.log("[resolveAttachments] low-confidence match, not attaching", {
+        query,
+        filename: candidates[idx]?.filename,
+      });
+      return -1;
+    }
+    return idx;
   } catch (err) {
     console.error("[resolveAttachments] pick failed", err);
     return -1;
@@ -120,18 +142,28 @@ async function resolveAttachments(
   userId: string,
   senderEmail: string,
   attachmentQuery: string,
+  attachmentFromContact: string,
   isGmail: boolean,
   excludeMessageId: string,
 ): Promise<DraftAttachment[]> {
-  if (!senderEmail) return [];
+  // Search the named third party's thread when the request points to someone
+  // other than the sender ("the file Yash sent you"); otherwise the sender's.
+  const searchContact = (attachmentFromContact || senderEmail || "").trim();
+  if (!searchContact) return [];
   const maxBytes = isGmail ? GMAIL_MAX_ATTACH_BYTES : OUTLOOK_MAX_ATTACH_BYTES;
   const candidates: AttachmentCandidate[] = [];
 
   try {
     if (isGmail) {
+      // Quote the value so multi-word names ("Yash Kumar") and emails both work.
+      const gmailContact = searchContact
+        .replace(/["()\\]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!gmailContact) return [];
       const search = await searchGmail(
         userId,
-        `has:attachment (from:${senderEmail} OR to:${senderEmail})`,
+        `has:attachment (from:"${gmailContact}" OR to:"${gmailContact}")`,
         20,
       );
       for (const msg of search.data) {
@@ -149,12 +181,13 @@ async function resolveAttachments(
               size: f.size,
               from: msg.from,
               date: msg.date,
+              subject: msg.subject ?? "",
             });
           }
         }
       }
     } else {
-      const msgs = await searchOutlookAttachmentsByContact(userId, senderEmail, 40);
+      const msgs = await searchOutlookAttachmentsByContact(userId, searchContact, 40);
       for (const m of msgs) {
         if (m.messageId === excludeMessageId) continue;
         if (candidates.length >= MAX_ATTACHMENT_CANDIDATES) break;
@@ -170,6 +203,7 @@ async function resolveAttachments(
               size: f.size,
               from: m.from,
               date: m.date,
+              subject: m.subject ?? "",
             });
           }
         }
@@ -308,7 +342,7 @@ export async function processDraft(job: Job<ProcessDraftData>) {
     threadId: emailData.threadId,
   });
 
-  const { draft, needsAttachment, attachmentQuery } = await buildContextAndDraft(
+  const { draft, needsAttachment, attachmentQuery, attachmentFromContact } = await buildContextAndDraft(
     incomingEmail,
     is_gmail,
     draftPreference.timezone ?? "UTC",
@@ -336,6 +370,7 @@ export async function processDraft(job: Job<ProcessDraftData>) {
         userId,
         senderEmail,
         attachmentQuery,
+        attachmentFromContact,
         is_gmail,
         messageId,
       );

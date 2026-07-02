@@ -447,7 +447,7 @@ export async function searchOutlookAttachmentsByContact(
   userId: string,
   contactEmail: string,
   maxResults = 40,
-): Promise<{ messageId: string; from: string; date: string }[]> {
+): Promise<{ messageId: string; from: string; date: string; subject: string }[]> {
   const client = await getGraphClient(userId);
   const escaped = contactEmail.replace(/["\\]/g, "");
   try {
@@ -455,10 +455,11 @@ export async function searchOutlookAttachmentsByContact(
       .api("/me/messages")
       .search(`"participants:${escaped}"`)
       .top(maxResults)
-      .select("id,from,receivedDateTime,hasAttachments")
+      .select("id,subject,from,receivedDateTime,hasAttachments")
       .get();
     const items = (res.value ?? []) as {
       id: string;
+      subject?: string;
       from?: { emailAddress?: { address?: string } };
       receivedDateTime?: string;
       hasAttachments?: boolean;
@@ -469,6 +470,7 @@ export async function searchOutlookAttachmentsByContact(
         messageId: m.id,
         from: m.from?.emailAddress?.address ?? "",
         date: m.receivedDateTime ?? "",
+        subject: m.subject ?? "",
       }));
   } catch (err) {
     console.error("Outlook attachment search failed:", err);

@@ -158,6 +158,7 @@ export async function buildContextAndDraft(
   contextSummary: string;
   needsAttachment: boolean;
   attachmentQuery: string;
+  attachmentFromContact: string;
 }> {
 
   const assembler = new ContextAssembler()
@@ -274,9 +275,10 @@ Do NOT set noReplyNeeded when the email:
 When ambiguous — default to noReplyNeeded=false (draft). The draft rules below handle keeping replies short when nothing is actually required.
 
 ATTACHMENT REQUEST DETECTION — Set needsAttachment=true ONLY when the sender is explicitly asking the user to send/share/resend a specific FILE or DOCUMENT that would already exist (e.g. "can you send me the pricing PDF?", "please resend the signed contract", "share the deck from last week", "attach the invoice again"). In that case, set attachmentQuery to a short natural-language descriptor of the requested file (e.g. "pricing PDF", "signed contract", "last week's deck", "invoice").
-- If the sender is NOT asking for an existing file, set needsAttachment=false and attachmentQuery="".
-- If noReplyNeeded is true, needsAttachment MUST be false and attachmentQuery="".
+- If the sender is NOT asking for an existing file, set needsAttachment=false, attachmentQuery="", and attachmentFromContact="".
+- If noReplyNeeded is true, needsAttachment MUST be false, attachmentQuery="", and attachmentFromContact="".
 - Do NOT set needsAttachment for requests to create something new, for links/URLs, or when the sender is the one sharing a file.
+- attachmentFromContact: if the request says the file was sent by / came from a SPECIFIC OTHER PERSON, not the sender (e.g. "send me the file Yash sent you", "the deck from Priya", "the contract legal sent over"), set attachmentFromContact to that person's name or email exactly as written. Otherwise set attachmentFromContact="" — the file is then assumed to be in the conversation with the sender.
 - The file (if found) is attached automatically by the system — you may write the reply as if sharing it (e.g. "Sure, sending it over."), but never invent file names or contents.
 
 Reply generation rules (only when noReplyNeeded is false):
@@ -356,7 +358,8 @@ Return ONLY a JSON object strictly matching this schema:
   "noReplyNeeded": boolean,
   "draft": string,
   "needsAttachment": boolean,
-  "attachmentQuery": string
+  "attachmentQuery": string,
+  "attachmentFromContact": string
 }`;
 
   // 4. Generate draft
@@ -392,8 +395,19 @@ Return ONLY a JSON object strictly matching this schema:
               description:
                 "Short descriptor of the requested file (e.g. 'pricing PDF'). Empty string when needsAttachment is false.",
             },
+            attachmentFromContact: {
+              type: "string",
+              description:
+                "Name or email of the OTHER person who sent/holds the file, when the request names someone other than the sender (e.g. 'the file Yash sent you' -> 'Yash'). Empty string otherwise.",
+            },
           },
-          required: ["noReplyNeeded", "draft", "needsAttachment", "attachmentQuery"],
+          required: [
+            "noReplyNeeded",
+            "draft",
+            "needsAttachment",
+            "attachmentQuery",
+            "attachmentFromContact",
+          ],
           additionalProperties: false,
         },
       },
@@ -417,6 +431,7 @@ Return ONLY a JSON object strictly matching this schema:
       contextSummary: contextBlock,
       needsAttachment: false,
       attachmentQuery: "",
+      attachmentFromContact: "",
     };
   }
 
@@ -424,12 +439,14 @@ Return ONLY a JSON object strictly matching this schema:
   let draft = "";
   let needsAttachment = false;
   let attachmentQuery = "";
+  let attachmentFromContact = "";
   try {
     const parsed = JSON.parse(rawContent) as {
       noReplyNeeded?: boolean;
       draft?: string;
       needsAttachment?: boolean;
       attachmentQuery?: string;
+      attachmentFromContact?: string;
     };
     if (
       typeof parsed.noReplyNeeded === "boolean" &&
@@ -444,6 +461,10 @@ Return ONLY a JSON object strictly matching this schema:
       ) {
         needsAttachment = true;
         attachmentQuery = parsed.attachmentQuery.trim();
+        attachmentFromContact =
+          typeof parsed.attachmentFromContact === "string"
+            ? parsed.attachmentFromContact.trim()
+            : "";
       }
     } else {
       console.error(
@@ -466,5 +487,6 @@ Return ONLY a JSON object strictly matching this schema:
     contextSummary: contextBlock,
     needsAttachment,
     attachmentQuery,
+    attachmentFromContact,
   }
 }
