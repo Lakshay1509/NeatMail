@@ -30,10 +30,10 @@ export default function SignInPage() {
 
           <div className="space-y-2 mb-10 ">
             <h1 className="text-2xl  font-semibold tracking-tight text-foreground">
-              Your inbox,<br />finally under control
+              Your inbox,<br />organizes itself
             </h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Automatically organize newsletters, follow-ups, and client emails so your inbox stays clean without manual work.
+             Automatically organize newsletters, follow-ups, and client emails.
             </p>
           </div>
           
