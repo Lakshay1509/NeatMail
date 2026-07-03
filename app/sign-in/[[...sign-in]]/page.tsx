@@ -1,19 +1,38 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import { ShieldCheck, BadgeCheck, Sparkles } from 'lucide-react'
 import Image from 'next/image'
 import { SignInOrInvite } from '../SignInOrInvite'
 
+const carouselImages = [
+  { src: '/sign-in/dashboard.webp', label: 'Visualize your inbox at a glance' },
+  { src: '/sign-in/followUp.webp', label: 'Never miss a follow-up again' },
+  { src: '/sign-in/integration.webp', label: 'Seamless integration with your favourite tools' },
+  { src: '/sign-in/unsubscribe.webp', label: 'Unsubscribe with one click' },
+]
+
 export default function SignInPage() {
+  const [current, setCurrent] = useState(0)
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrent(prev => (prev + 1) % carouselImages.length)
+    }, 4000)
+    return () => clearInterval(timer)
+  }, [])
+
   return (
     <div className="flex overflow-hidden max-w-full h-[90vh]">
       {/* Left side - Sign in form */}
       <div className="flex-1 flex items-center justify-center mx-auto bg-background">
         <div className="w-full max-w-md space-y-12 px-6 md:px-0">
 
-          <div className="space-y-2 mb-10 md:mb-20">
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground">
+          <div className="space-y-2 mb-10 ">
+            <h1 className="text-2xl  font-semibold tracking-tight text-foreground">
               Your inbox,<br />finally under control
             </h1>
-            <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Automatically organize newsletters, follow-ups, and client emails so your inbox stays clean without manual work.
             </p>
           </div>
@@ -31,7 +50,7 @@ export default function SignInPage() {
               CASA Tier 2 verified
             </span>
            
-            
+           
           </div>
 
           <p className="text-xs text-center text-muted-foreground px-4">
@@ -48,11 +67,33 @@ export default function SignInPage() {
         </div>
       </div>
 
-      {/* Right side - Mascot */}
-      <div className="hidden md:flex flex-1 bg-muted/30 items-center justify-center p-8 md:rounded-l-xl">
-        <div className="text-center p-4 flex flex-col items-center gap-6">
-          <Image src='/sign-in-mascot.png' width={400} height={400} alt='mascot' className="object-contain" />
-          
+      {/* Right side - Carousel */}
+      <div className="hidden lg:flex flex-1 bg-muted/30 items-center justify-center p-8 md:rounded-l-xl">
+        <div className="w-full max-w-2xl flex flex-col items-center gap-4">
+          <div className="relative w-full aspect-[19/12]">
+            {carouselImages.map((item, i) => (
+              <Image
+                key={item.src}
+                src={item.src}
+                fill
+                alt={item.label}
+                className={`object-contain rounded-2xl transition-opacity duration-700 shadow-lg ${i === current ? 'opacity-100' : 'opacity-0'}`}
+                priority={i === 0}
+              />
+            ))}
+          </div>
+          <p className="text-sm text-muted-foreground text-center min-h-[1.25rem]">
+            {carouselImages[current].label}
+          </p>
+          <div className="flex gap-2">
+            {carouselImages.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setCurrent(i)}
+                className={`size-2 rounded-full transition-all ${i === current ? 'bg-primary w-5' : 'bg-muted-foreground/40'}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
