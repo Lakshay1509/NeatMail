@@ -478,6 +478,52 @@ export async function searchOutlookAttachmentsByContact(
   }
 }
 
+/**
+ * Free-text fallback for attachment discovery: search the mailbox for messages
+ * matching any of `keywords` (brand/topic/file-type words pulled from the
+ * request) and return the ones that carry attachments. Used when a
+ * contact-scoped search turns up nothing.
+ */
+export async function searchOutlookAttachmentsByKeyword(
+  userId: string,
+  keywords: string[],
+  maxResults = 40,
+): Promise<{ messageId: string; from: string; date: string; subject: string }[]> {
+  const terms = keywords
+    .map((k) => k.replace(/["\\]/g, "").trim())
+    .filter(Boolean);
+  if (terms.length === 0) return [];
+  const client = await getGraphClient(userId);
+  // KQL free-text: "term1 OR term2 OR ..." across searchable message properties.
+  const kql = `"${terms.join(" OR ")}"`;
+  try {
+    const res = await client
+      .api("/me/messages")
+      .search(kql)
+      .top(maxResults)
+      .select("id,subject,from,receivedDateTime,hasAttachments")
+      .get();
+    const items = (res.value ?? []) as {
+      id: string;
+      subject?: string;
+      from?: { emailAddress?: { address?: string } };
+      receivedDateTime?: string;
+      hasAttachments?: boolean;
+    }[];
+    return items
+      .filter((m) => m.hasAttachments === true)
+      .map((m) => ({
+        messageId: m.id,
+        from: m.from?.emailAddress?.address ?? "",
+        date: m.receivedDateTime ?? "",
+        subject: m.subject ?? "",
+      }));
+  } catch (err) {
+    console.error("Outlook keyword attachment search failed:", err);
+    return [];
+  }
+}
+
 export async function getOutlookMessageBody(userId: string, messageId: string) {
   const client = await getGraphClient(userId);
 

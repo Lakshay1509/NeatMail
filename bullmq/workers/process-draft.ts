@@ -17,6 +17,7 @@ import {
   createOutlookDraft,
   getOutlookMessageBody,
   searchOutlookAttachmentsByContact,
+  searchOutlookAttachmentsByKeyword,
   listOutlookAttachments,
   downloadOutlookAttachment,
 } from "@/lib/outlook";
@@ -103,7 +104,7 @@ async function pickBestAttachment(
         {
           role: "system",
           content:
-            "You select which previously-shared file best matches what an email sender is asking to be sent. Judge relevance using BOTH the filename and the subject of the email that carried each file (the subject is often more descriptive than the filename). Return the 0-based index of the single best match, or -1 if none clearly match. Also return confidence: 'high' only when you are sure the file matches the request; otherwise 'low'. When several match, prefer the most recent.",
+            "You select which previously-shared file best matches what an email sender is asking to be sent. The candidate files have already been narrowed to the specific contact or company the request refers to, so a generic or time-based request usually maps to one of them. Judge relevance using BOTH the filename and the subject of the email that carried each file (the subject is often more descriptive than the filename). Return the 0-based index of the single best match, or -1 if none genuinely fit. When several files fit, prefer the most recent. Set confidence: 'high' when the chosen file clearly satisfies the request — this INCLUDES generic or time-based requests such as 'the latest file', 'send me the file', or 'that document', where the most recent candidate is the intended one. Use 'low' only when none of the candidates genuinely fit the request, so the system abstains instead of attaching the wrong file.",
         },
         {
           role: "user",
@@ -133,10 +134,102 @@ async function pickBestAttachment(
   }
 }
 
+// Words that carry no signal for locating a file. Stripping them from the
+// request descriptor leaves the brand/topic/file-type keywords worth searching.
+const ATTACHMENT_QUERY_STOPWORDS = new Set([
+  "the", "a", "an", "latest", "recent", "last", "most", "file", "files",
+  "document", "documents", "doc", "docs", "attachment", "attachments",
+  "attached", "please", "send", "resend", "share", "forward", "again", "copy",
+  "me", "us", "from", "of", "that", "this", "it", "one", "week", "weeks",
+  "day", "days", "yesterday", "earlier", "over", "you", "your", "sent",
+  "kindly", "could", "can", "would", "pls", "and", "for", "with",
+]);
+
+/** Pull descriptive keywords (brand / topic / file-type) out of the request text. */
+function extractAttachmentKeywords(...texts: string[]): string[] {
+  return Array.from(
+    new Set(
+      texts
+        .join(" ")
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, " ")
+        .split(/\s+/)
+        .filter((w) => w.length >= 3 && !ATTACHMENT_QUERY_STOPWORDS.has(w)),
+    ),
+  ).slice(0, 6);
+}
+
+/** Run a Gmail search and collect the in-budget attachments from each hit. */
+async function gatherGmailCandidates(
+  userId: string,
+  query: string,
+  excludeMessageId: string,
+  maxBytes: number,
+): Promise<AttachmentCandidate[]> {
+  const candidates: AttachmentCandidate[] = [];
+  const search = await searchGmail(userId, query, 20);
+  for (const msg of search.data) {
+    if (msg.id === excludeMessageId) continue;
+    if (candidates.length >= MAX_ATTACHMENT_CANDIDATES) break;
+    const files = await getAttachment(userId, msg.id);
+    for (const f of files) {
+      if (candidates.length >= MAX_ATTACHMENT_CANDIDATES) break;
+      if (f.size > 0 && f.size <= maxBytes) {
+        candidates.push({
+          messageId: f.messageId,
+          attachmentId: f.attachmentId,
+          filename: f.filename,
+          mimeType: f.mimeType,
+          size: f.size,
+          from: msg.from,
+          date: msg.date,
+          subject: msg.subject ?? "",
+        });
+      }
+    }
+  }
+  return candidates;
+}
+
+/** Collect the in-budget attachments from a set of Outlook message headers. */
+async function gatherOutlookCandidates(
+  userId: string,
+  msgs: { messageId: string; from: string; date: string; subject: string }[],
+  excludeMessageId: string,
+  maxBytes: number,
+): Promise<AttachmentCandidate[]> {
+  const candidates: AttachmentCandidate[] = [];
+  for (const m of msgs) {
+    if (m.messageId === excludeMessageId) continue;
+    if (candidates.length >= MAX_ATTACHMENT_CANDIDATES) break;
+    const files = await listOutlookAttachments(userId, m.messageId);
+    for (const f of files) {
+      if (candidates.length >= MAX_ATTACHMENT_CANDIDATES) break;
+      if (f.size > 0 && f.size <= maxBytes) {
+        candidates.push({
+          messageId: f.messageId,
+          attachmentId: f.attachmentId,
+          filename: f.filename,
+          mimeType: f.mimeType,
+          size: f.size,
+          from: m.from,
+          date: m.date,
+          subject: m.subject ?? "",
+        });
+      }
+    }
+  }
+  return candidates;
+}
+
 /**
- * Gather attachment candidates from the conversation with `senderEmail` (both
- * directions), let the model pick the best match for `attachmentQuery`, download
- * it, and return it ready to attach. Returns [] when nothing suitable is found.
+ * Find the file the sender asked for and return it ready to attach; [] when
+ * nothing suitable is found. Two passes:
+ *   1. search the named contact/company (or, absent one, the sender) for
+ *      attachments and let the model pick the best match;
+ *   2. if that finds no usable match, fall back to a free-text search built
+ *      from the request keywords — this catches files whose sender name/address
+ *      doesn't literally contain the brand the request refers to.
  */
 async function resolveAttachments(
   userId: string,
@@ -150,9 +243,24 @@ async function resolveAttachments(
   // other than the sender ("the file Yash sent you"); otherwise the sender's.
   const searchContact = (attachmentFromContact || senderEmail || "").trim();
   if (!searchContact) return [];
+  // The descriptor handed to the picker. When the request was too generic for
+  // the model to name a file, fall back to a temporal default so the picker
+  // still resolves to the most recent file from the contact.
+  const effectiveQuery =
+    attachmentQuery.trim() || "the most recent file the sender is asking me to resend";
+  console.log("[resolveAttachments] start", {
+    attachmentQuery,
+    effectiveQuery,
+    attachmentFromContact,
+    senderEmail,
+    searchContact,
+    searchedSource: attachmentFromContact ? "named-contact" : "sender-fallback",
+    isGmail,
+  });
   const maxBytes = isGmail ? GMAIL_MAX_ATTACH_BYTES : OUTLOOK_MAX_ATTACH_BYTES;
-  const candidates: AttachmentCandidate[] = [];
 
+  // ── Pass 1: search the contact / company the request points at ────────────
+  let candidates: AttachmentCandidate[] = [];
   try {
     if (isGmail) {
       // Quote the value so multi-word names ("Yash Kumar") and emails both work.
@@ -160,65 +268,75 @@ async function resolveAttachments(
         .replace(/["()\\]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
-      if (!gmailContact) return [];
-      const search = await searchGmail(
-        userId,
-        `has:attachment (from:"${gmailContact}" OR to:"${gmailContact}")`,
-        20,
-      );
-      for (const msg of search.data) {
-        if (msg.id === excludeMessageId) continue;
-        if (candidates.length >= MAX_ATTACHMENT_CANDIDATES) break;
-        const files = await getAttachment(userId, msg.id);
-        for (const f of files) {
-          if (candidates.length >= MAX_ATTACHMENT_CANDIDATES) break;
-          if (f.size > 0 && f.size <= maxBytes) {
-            candidates.push({
-              messageId: f.messageId,
-              attachmentId: f.attachmentId,
-              filename: f.filename,
-              mimeType: f.mimeType,
-              size: f.size,
-              from: msg.from,
-              date: msg.date,
-              subject: msg.subject ?? "",
-            });
-          }
-        }
+      if (gmailContact) {
+        candidates = await gatherGmailCandidates(
+          userId,
+          `has:attachment (from:"${gmailContact}" OR to:"${gmailContact}")`,
+          excludeMessageId,
+          maxBytes,
+        );
       }
     } else {
       const msgs = await searchOutlookAttachmentsByContact(userId, searchContact, 40);
-      for (const m of msgs) {
-        if (m.messageId === excludeMessageId) continue;
-        if (candidates.length >= MAX_ATTACHMENT_CANDIDATES) break;
-        const files = await listOutlookAttachments(userId, m.messageId);
-        for (const f of files) {
-          if (candidates.length >= MAX_ATTACHMENT_CANDIDATES) break;
-          if (f.size > 0 && f.size <= maxBytes) {
-            candidates.push({
-              messageId: f.messageId,
-              attachmentId: f.attachmentId,
-              filename: f.filename,
-              mimeType: f.mimeType,
-              size: f.size,
-              from: m.from,
-              date: m.date,
-              subject: m.subject ?? "",
-            });
-          }
+      candidates = await gatherOutlookCandidates(userId, msgs, excludeMessageId, maxBytes);
+    }
+  } catch (err) {
+    console.error("[resolveAttachments] contact search failed", err);
+    candidates = [];
+  }
+  console.log("[resolveAttachments] contact candidates", {
+    searchContact,
+    count: candidates.length,
+    filenames: candidates.map((c) => c.filename),
+  });
+
+  let pool = candidates;
+  let idx = pool.length > 0 ? await pickBestAttachment(effectiveQuery, pool) : -1;
+
+  // ── Pass 2: keyword fallback when the contact search yielded no match ──────
+  if (idx < 0) {
+    const keywords = extractAttachmentKeywords(attachmentQuery, attachmentFromContact);
+    if (keywords.length > 0) {
+      console.log("[resolveAttachments] keyword fallback", { keywords });
+      let fallback: AttachmentCandidate[] = [];
+      try {
+        if (isGmail) {
+          const orExpr = keywords.map((k) => `"${k}"`).join(" OR ");
+          fallback = await gatherGmailCandidates(
+            userId,
+            `has:attachment (${orExpr})`,
+            excludeMessageId,
+            maxBytes,
+          );
+        } else {
+          const msgs = await searchOutlookAttachmentsByKeyword(userId, keywords, 40);
+          fallback = await gatherOutlookCandidates(userId, msgs, excludeMessageId, maxBytes);
+        }
+      } catch (err) {
+        console.error("[resolveAttachments] keyword fallback search failed", err);
+        fallback = [];
+      }
+      console.log("[resolveAttachments] fallback candidates", {
+        count: fallback.length,
+        filenames: fallback.map((c) => c.filename),
+      });
+      if (fallback.length > 0) {
+        const fbIdx = await pickBestAttachment(effectiveQuery, fallback);
+        if (fbIdx >= 0) {
+          pool = fallback;
+          idx = fbIdx;
         }
       }
     }
-  } catch (err) {
-    console.error("[resolveAttachments] candidate gathering failed", err);
-    return [];
   }
 
-  if (candidates.length === 0) return [];
-
-  const idx = await pickBestAttachment(attachmentQuery, candidates);
   if (idx < 0) return [];
-  const chosen = candidates[idx];
+  const chosen = pool[idx];
+  console.log("[resolveAttachments] attaching", {
+    filename: chosen.filename,
+    from: chosen.from,
+    subject: chosen.subject,
+  });
 
   try {
     const base64 = isGmail
@@ -363,8 +481,11 @@ export async function processDraft(job: Job<ProcessDraftData>) {
 
   // If the sender asked for an existing file, try to find and attach it.
   // Best-effort: on any failure the draft is still created without an attachment.
+  // Trigger on needsAttachment alone — a generic request ("send me the file I
+  // sent you earlier") may leave attachmentQuery thin, but resolveAttachments
+  // handles that with a default descriptor and prefers the most recent match.
   let attachments: DraftAttachment[] = [];
-  if (willDraft && needsAttachment && attachmentQuery) {
+  if (willDraft && needsAttachment) {
     try {
       attachments = await resolveAttachments(
         userId,

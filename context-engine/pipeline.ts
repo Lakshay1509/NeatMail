@@ -274,11 +274,12 @@ Do NOT set noReplyNeeded when the email:
 
 When ambiguous — default to noReplyNeeded=false (draft). The draft rules below handle keeping replies short when nothing is actually required.
 
-ATTACHMENT REQUEST DETECTION — Set needsAttachment=true ONLY when the sender is explicitly asking the user to send/share/resend a specific FILE or DOCUMENT that would already exist (e.g. "can you send me the pricing PDF?", "please resend the signed contract", "share the deck from last week", "attach the invoice again"). In that case, set attachmentQuery to a short natural-language descriptor of the requested file (e.g. "pricing PDF", "signed contract", "last week's deck", "invoice").
+ATTACHMENT REQUEST DETECTION — Set needsAttachment=true whenever the sender is asking the user to send / share / resend / send back a FILE or DOCUMENT that already exists (e.g. "can you send me the pricing PDF?", "please resend the signed contract", "share the deck from last week", "attach the invoice again", "send me the file I sent you earlier this week"). In that case, set attachmentQuery to a short natural-language descriptor of the requested file, KEEPING any time hint (e.g. "pricing PDF", "signed contract", "last week's deck", "invoice", "the file from earlier this week"). If the request does not name the file specifically ("the file I sent you", "that document"), still set needsAttachment=true and put the best short descriptor you can, preserving any time reference — never leave attachmentQuery empty when needsAttachment is true.
+- This INCLUDES the sender asking for a file THEY themselves previously sent to the user and now want back (e.g. "resend the file I sent you earlier this week", "can you send back the doc I shared last month"). A past "I sent you ... earlier" describes an existing file the sender is requesting NOW — treat it as needsAttachment=true with attachmentFromContact="" (the file is in the conversation with the sender).
 - If the sender is NOT asking for an existing file, set needsAttachment=false, attachmentQuery="", and attachmentFromContact="".
 - If noReplyNeeded is true, needsAttachment MUST be false, attachmentQuery="", and attachmentFromContact="".
-- Do NOT set needsAttachment for requests to create something new, for links/URLs, or when the sender is the one sharing a file.
-- attachmentFromContact: if the request says the file was sent by / came from a SPECIFIC OTHER PERSON, not the sender (e.g. "send me the file Yash sent you", "the deck from Priya", "the contract legal sent over"), set attachmentFromContact to that person's name or email exactly as written. Otherwise set attachmentFromContact="" — the file is then assumed to be in the conversation with the sender.
+- Do NOT set needsAttachment for requests to create something NEW, for links/URLs, or when the CURRENT email is itself attaching/sharing a file right now (there is nothing to resend). A past "I sent you" that the sender now wants back does NOT count as sharing-now.
+- attachmentFromContact: if the request says the file was sent by / came from a SPECIFIC OTHER PARTY, not the sender — this can be a person, company, brand, vendor, team, or organization (e.g. "send me the file Yash sent you", "the deck from Priya", "the contract legal sent over", "the latest file from Upscale", "the invoice from Acme Corp"), set attachmentFromContact to that name, brand, or email exactly as written ("Yash", "Priya", "legal", "Upscale", "Acme Corp"). The system searches that party's emails for the file, so whenever the file originates from anyone other than the sender you MUST capture the source here — a company or brand name counts just as much as a person's name. Otherwise set attachmentFromContact="" — the file is then assumed to be in the conversation with the sender.
 - The file (if found) is attached automatically by the system — you may write the reply as if sharing it (e.g. "Sure, sending it over."), but never invent file names or contents.
 
 Reply generation rules (only when noReplyNeeded is false):
@@ -398,7 +399,7 @@ Return ONLY a JSON object strictly matching this schema:
             attachmentFromContact: {
               type: "string",
               description:
-                "Name or email of the OTHER person who sent/holds the file, when the request names someone other than the sender (e.g. 'the file Yash sent you' -> 'Yash'). Empty string otherwise.",
+                "Name, brand, email, company, or organization of the OTHER party who sent/holds the file, when the request names a source other than the sender (e.g. 'the file Yash sent you' -> 'Yash', 'the latest file from Upscale' -> 'Upscale'). Empty string otherwise.",
             },
           },
           required: [
