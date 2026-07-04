@@ -159,6 +159,21 @@ function extractAttachmentKeywords(...texts: string[]): string[] {
   ).slice(0, 6);
 }
 
+/** Index of the most recently dated candidate; falls back to the first. */
+function mostRecentIndex(candidates: AttachmentCandidate[]): number {
+  let best = 0;
+  let bestTime = -Infinity;
+  candidates.forEach((c, i) => {
+    const t = Date.parse(c.date);
+    const time = Number.isNaN(t) ? -Infinity : t;
+    if (time > bestTime) {
+      bestTime = time;
+      best = i;
+    }
+  });
+  return best;
+}
+
 /** Run a Gmail search and collect the in-budget attachments from each hit. */
 async function gatherGmailCandidates(
   userId: string,
@@ -290,8 +305,42 @@ async function resolveAttachments(
     filenames: candidates.map((c) => c.filename),
   });
 
+  // How specific was the request? Strip the source/contact tokens; if nothing
+  // descriptive remains ("send me the file", "the file I sent you this week",
+  // "the latest file from Upscale"), it is a GENERIC ask — attach the most
+  // recent candidate deterministically rather than asking the picker, which
+  // abstains on vague requests. Drafts are reviewed before sending, so a
+  // best-effort attach beats an empty draft.
+  const sourceTokens = new Set(extractAttachmentKeywords(attachmentFromContact));
+  const descriptorKeywords = extractAttachmentKeywords(attachmentQuery).filter(
+    (k) => !sourceTokens.has(k),
+  );
+  const isGenericRequest = descriptorKeywords.length === 0;
+
+  const chooseFrom = async (cands: AttachmentCandidate[]): Promise<number> => {
+    if (cands.length === 0) return -1;
+    if (isGenericRequest) {
+      const i = mostRecentIndex(cands);
+      console.log("[resolveAttachments] generic request → most recent", {
+        filename: cands[i]?.filename,
+      });
+      return i;
+    }
+    const i = await pickBestAttachment(effectiveQuery, cands);
+    // Specific request the model couldn't confidently match, but only one
+    // distinct file exists — attach it; there is no other file it could mean.
+    if (i < 0 && new Set(cands.map((c) => c.filename.toLowerCase())).size === 1) {
+      const j = mostRecentIndex(cands);
+      console.log("[resolveAttachments] single distinct file → attaching", {
+        filename: cands[j]?.filename,
+      });
+      return j;
+    }
+    return i;
+  };
+
   let pool = candidates;
-  let idx = pool.length > 0 ? await pickBestAttachment(effectiveQuery, pool) : -1;
+  let idx = await chooseFrom(pool);
 
   // ── Pass 2: keyword fallback when the contact search yielded no match ──────
   if (idx < 0) {
@@ -321,7 +370,7 @@ async function resolveAttachments(
         filenames: fallback.map((c) => c.filename),
       });
       if (fallback.length > 0) {
-        const fbIdx = await pickBestAttachment(effectiveQuery, fallback);
+        const fbIdx = await chooseFrom(fallback);
         if (fbIdx >= 0) {
           pool = fallback;
           idx = fbIdx;
