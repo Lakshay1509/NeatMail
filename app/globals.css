@@ -398,30 +398,46 @@ body{
 
 .chat-markdown table {
   width: 100%;
-  margin: 0.6em 0;
-  border-collapse: collapse;
-  font-size: 0.87em;
+  margin: 0.75em 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.85em;
+  border: 1px solid #ececea;
+  border-radius: 10px;
+  overflow: hidden; /* clip cell backgrounds to the rounded frame */
 }
 
 .chat-markdown th,
 .chat-markdown td {
-  padding: 0.5em 0.75em;
-  border: 1px solid #e6e6e6;
-  text-align: left;
+  padding: 0.55em 0.8em;
+  /* Override any column alignment the model emits via markdown (e.g. a
+     `--:` separator) — email summaries read best fully left-aligned. */
+  text-align: left !important;
   vertical-align: top;
+  overflow-wrap: anywhere; /* long email addresses / links break instead of overflowing */
 }
 
 .chat-markdown th {
   font-weight: 600;
-  font-size: 0.82em;
+  font-size: 0.8em;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
-  background: #f6f5f4;
-  color: #615d59;
+  letter-spacing: 0.4px;
+  background: #f7f6f4;
+  color: #86807a;
+  border-bottom: 1px solid #ececea;
+}
+
+/* Horizontal row dividers only — no vertical gridlines, for a cleaner report look. */
+.chat-markdown td {
+  border-top: 1px solid #f2f1ef;
+}
+
+.chat-markdown tbody tr:first-child td {
+  border-top: none;
 }
 
 .chat-markdown tbody tr:nth-child(even) td {
-  background: #fbfaf9;
+  background: #fcfbfa;
 }
 
 .chat-markdown img {

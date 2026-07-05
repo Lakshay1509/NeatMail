@@ -29,6 +29,29 @@ const posInt = (v: unknown): number | undefined => {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : undefined;
 };
 
+/**
+ * Turn a raw mail Date header ("Sun, 05 Jul 2026 12:39:33 +0000") into a clean,
+ * timezone-normalized short date ("Jul 5, 2026") before it ever reaches the
+ * model — otherwise the model pastes the machine timestamp straight into its
+ * summary tables, which reads as a data dump. Falls back to the raw value if
+ * the date can't be parsed.
+ */
+function formatMailDate(raw: string, timeZone: string): string {
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return raw;
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(d);
+  } catch {
+    return raw;
+  }
+}
+
 function fn(
   name: string,
   description: string,
@@ -99,7 +122,7 @@ export function buildTools(kind: ProviderKind): AgentTool[] {
             id: i.id,
             subject: i.subject,
             from: i.from,
-            date: i.date,
+            date: formatMailDate(i.date, ctx.timezone),
             snippet: i.snippet,
           })),
         );
