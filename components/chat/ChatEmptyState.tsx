@@ -1,79 +1,126 @@
 "use client"
 
-import Avatar from "boring-avatars"
+import type { ReactNode } from "react"
 import { motion } from "framer-motion"
 
-const HAYES_COLORS = ["#a39e98", "#615d59", "#e6e6e6", "#f6f5f4", "#31302e"]
-
-const SUGGESTIONS = [
+const SUGGESTIONS_ROW_1 = [
   "Show my unread emails",
   "Find invoices from last month",
   "Any emails from Google?",
+  "Draft a reply to my last email",
+  "Who am I waiting on?",
+  "What's new in my inbox today?",
+]
+
+const SUGGESTIONS_ROW_2 = [
   "Summarize my latest emails",
   "Find emails with attachments",
   "Search for payment receipts",
+  "Unsubscribe me from newsletters",
+  "Clean up my promotions",
+  "Suggest times for a meeting",
 ]
 
 interface ChatEmptyStateProps {
   onSuggestionClick: (text: string) => void
+  children?: ReactNode
 }
 
-export function ChatEmptyState({ onSuggestionClick }: ChatEmptyStateProps) {
+function ChipRow({
+  items,
+  onSuggestionClick,
+  direction = "left",
+  duration = 28,
+}: {
+  items: string[]
+  onSuggestionClick: (text: string) => void
+  direction?: "left" | "right"
+  duration?: number
+}) {
+  // Rendered twice back-to-back so the marquee can loop seamlessly at 50% translation.
+  const looped = [...items, ...items]
+
   return (
-    <div className="flex flex-col items-center justify-center h-full px-4 select-none">
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-        className="mb-5"
+    <div
+      className="group relative overflow-hidden w-full py-1"
+      style={{
+        maskImage:
+          "linear-gradient(to right, transparent, black 28px, black calc(100% - 28px), transparent)",
+        WebkitMaskImage:
+          "linear-gradient(to right, transparent, black 28px, black calc(100% - 28px), transparent)",
+      }}
+    >
+      <div
+        className={`chip-marquee ${direction === "right" ? "chip-marquee--right" : ""} group-hover:[animation-play-state:paused]`}
+        style={{ "--marquee-duration": `${duration}s` } as React.CSSProperties}
       >
-        <div className="rounded-full p-1 ring-1 ring-[#e6e6e6] shadow-[0_0.175px_1.041px_rgba(0,0,0,0.01),0_0.8px_2.925px_rgba(0,0,0,0.02),0_2.025px_7.847px_rgba(0,0,0,0.027),0_4px_18px_rgba(0,0,0,0.04)]">
-          <Avatar
-            size={56}
-            name="Hayes"
-            variant="marble"
-            colors={HAYES_COLORS}
-          />
-        </div>
-      </motion.div>
-
-      <motion.h2
-        initial={{ y: 8, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.35, delay: 0.08, ease: [0.25, 0.1, 0.25, 1] }}
-        className="text-[22px] font-bold tracking-[-0.25px] text-[#1a1a1a] mb-1.5"
-      >
-        Hi, I&apos;m Hayes
-      </motion.h2>
-
-      <motion.p
-        initial={{ y: 8, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.35, delay: 0.14, ease: [0.25, 0.1, 0.25, 1] }}
-        className="text-[15px] leading-[1.33] text-[#615d59] text-center max-w-[340px] mb-8"
-      >
-        I can search your emails, read messages, and find attachments. Ask me anything about your inbox.
-      </motion.p>
-
-      <motion.div
-        initial={{ y: 10, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.35, delay: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
-        className="flex flex-wrap items-center justify-center gap-2 max-w-[480px]"
-      >
-        {SUGGESTIONS.map((text) => (
+        {looped.map((text, i) => (
           <button
-            key={text}
+            key={`${text}-${i}`}
             onClick={() => onSuggestionClick(text)}
-            className="px-3.5 py-1.5 text-[13px] font-medium text-[#31302e] bg-white border border-[#e6e6e6] rounded-full
-              shadow-[0_0.175px_1.041px_rgba(0,0,0,0.01),0_0.8px_2.925px_rgba(0,0,0,0.02)]
-              hover:border-[#c8c5c0] hover:shadow-[0_0.175px_1.041px_rgba(0,0,0,0.01),0_0.8px_2.925px_rgba(0,0,0,0.02),0_2.025px_7.847px_rgba(0,0,0,0.027)]
+            className="shrink-0 whitespace-nowrap px-4 py-2 text-[13px] font-medium text-[#31302e] bg-white border border-[#e6e6e6] rounded-full
+              hover:border-[#c8c5c0] hover:bg-[#fbfaf9]
               active:scale-[0.97]
               transition-all duration-150 cursor-pointer"
           >
             {text}
           </button>
         ))}
+      </div>
+    </div>
+  )
+}
+
+export function ChatEmptyState({ onSuggestionClick, children }: ChatEmptyStateProps) {
+  return (
+    <div className="relative flex flex-col items-center w-full max-w-[900px] md:px-4 select-none">
+      <motion.h2
+        initial={{ y: 10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+        className="font-display font-extrabold text-[46px] sm:text-[54px] leading-[1.02] tracking-[-0.5px] text-[#1a1a1a] mb-2 text-center"
+      >
+        Hi, I&apos;m Ray
+      </motion.h2>
+
+      <motion.p
+        initial={{ y: 8, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.35, delay: 0.06, ease: [0.25, 0.1, 0.25, 1] }}
+        className="text-[15px] leading-[1.5] text-[#615d59] text-center max-w-[380px] mb-7"
+      >
+        Search, summarize, and act on your inbox. Ask a question to get started.
+      </motion.p>
+
+      {children && (
+        <motion.div
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.35, delay: 0.12, ease: [0.25, 0.1, 0.25, 1] }}
+          className="w-full mb-7"
+        >
+          {children}
+        </motion.div>
+      )}
+
+      <motion.div
+        initial={{ y: 10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.35, delay: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
+        className="flex flex-col gap-2 w-full"
+      >
+        <ChipRow
+          items={SUGGESTIONS_ROW_1}
+          onSuggestionClick={onSuggestionClick}
+          direction="left"
+          duration={26}
+        />
+        <ChipRow
+          items={SUGGESTIONS_ROW_2}
+          onSuggestionClick={onSuggestionClick}
+          direction="right"
+          duration={32}
+        />
       </motion.div>
     </div>
   )

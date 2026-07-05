@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@200..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@500..900&display=swap');
 
 @import "tw-animate-css";
 @import "tailwindcss";
@@ -15,6 +16,8 @@ body{
 @theme inline {
 
     --font-logo: "Bricolage Grotesque", sans-serif;
+
+    --font-display: "Darker Grotesque", sans-serif;
 
     --radius-sm: calc(var(--radius) - 4px);
 
@@ -257,7 +260,36 @@ body{
   }
 }
 
-/* ── Hayes chat markdown ─────────────────────────────────────── */
+/* ── Ray chat suggestion marquee ───────────────────────────── */
+@keyframes marquee-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes marquee-right {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+
+.chip-marquee {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: max-content;
+  animation: marquee-left var(--marquee-duration, 28s) linear infinite;
+}
+
+.chip-marquee--right {
+  animation-name: marquee-right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip-marquee {
+    animation: none;
+  }
+}
+
+/* ── Ray chat markdown ─────────────────────────────────────── */
 .chat-markdown {
   font-size: 15px;
   line-height: 1.5;
@@ -366,29 +398,33 @@ body{
 
 .chat-markdown table {
   width: 100%;
-  margin: 0.5em 0;
+  margin: 0.6em 0;
   border-collapse: collapse;
-  font-size: 0.9em;
+  font-size: 0.87em;
 }
 
 .chat-markdown th,
 .chat-markdown td {
-  padding: 0.35em 0.6em;
+  padding: 0.5em 0.75em;
   border: 1px solid #e6e6e6;
   text-align: left;
+  vertical-align: top;
 }
 
 .chat-markdown th {
   font-weight: 600;
-  font-size: 0.85em;
+  font-size: 0.82em;
   text-transform: uppercase;
-  letter-spacing: 0.125px;
+  letter-spacing: 0.3px;
   background: #f6f5f4;
-  color: #31302e;
+  color: #615d59;
+}
+
+.chat-markdown tbody tr:nth-child(even) td {
+  background: #fbfaf9;
 }
 
 .chat-markdown img {
   max-width: 100%;
   border-radius: 8px;
 }
-

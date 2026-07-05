@@ -1170,6 +1170,75 @@ export async function trashMessages(userId: string, messageIds: string[]) {
   }
 }
 
+/**
+ * True archive (NOT trash): remove the INBOX label so the message leaves the
+ * inbox but stays in "All Mail". Mirrors `trashMessages`' batch-then-fallback
+ * shape so the agent's archive tool behaves consistently with trash.
+ */
+export async function archiveGmailMessages(userId: string, messageIds: string[]) {
+  if (!messageIds || messageIds.length === 0) {
+    return { success: true, archived: 0, archivedIds: [], message: "No messages to archive" };
+  }
+
+  const gmail = await getGmailClient(userId);
+
+  try {
+    await gmail.users.messages.batchModify({
+      userId: "me",
+      requestBody: {
+        ids: messageIds,
+        removeLabelIds: ["INBOX"],
+      },
+    });
+    return { success: true, archived: messageIds.length, archivedIds: [...messageIds] };
+  } catch (batchError: any) {
+    if (batchError?.code === 404 || batchError?.status === 404) {
+      const results = await Promise.allSettled(
+        messageIds.map(async (messageId) => {
+          try {
+            await gmail.users.messages.modify({
+              userId: "me",
+              id: messageId,
+              requestBody: { removeLabelIds: ["INBOX"] },
+            });
+            return { messageId, success: true };
+          } catch (err: any) {
+            if (err?.code === 404 || err?.status === 404) {
+              return { messageId, success: true, skipped: true };
+            }
+            return { messageId, success: false };
+          }
+        }),
+      );
+
+      const archivedIds: string[] = [];
+      let failed = 0;
+      results.forEach((result) => {
+        if (result.status === "fulfilled" && result.value.success) {
+          archivedIds.push(result.value.messageId);
+        } else {
+          failed++;
+        }
+      });
+
+      return {
+        success: failed === 0,
+        archived: archivedIds.length,
+        archivedIds,
+        message: `Archived ${archivedIds.length} message(s)` + (failed > 0 ? `, ${failed} failed` : ""),
+      };
+    }
+
+    console.error(`Gmail archive failed for user ${userId}:`, batchError);
+    return {
+      success: false,
+      archived: 0,
+      archivedIds: [],
+      message: batchError instanceof Error ? batchError.message : String(batchError),
+    };
+  }
+}
+
 export async function getPreviousMails(userId: string) {
   const gmail = await getGmailClient(userId);
 

@@ -1,7 +1,7 @@
 import { Job } from "bullmq";
-import { handleTelegramQueryGmail } from "@/lib/chat/gmail";
-import { handleTelegramQueryOutlook } from "@/lib/chat/outlook";
+import { runAgent, executeLatestPending } from "@/lib/agent/orchestrator";
 import { getUserIsGmail } from "@/lib/supabase";
+import { htmlToTelegramHtml } from "@/lib/telegramFormatter";
 import {
   deleteTelegramMessage,
   editTelegramMessage,
@@ -56,11 +56,18 @@ export async function telegramAgent(job: Job<TelegramQueryData>) {
     let answer: string;
     try {
       const { isGmail } = await getUserIsGmail(userId);
+      const trimmed = text.trim().toLowerCase();
 
-      if (isGmail) {
-        answer = await handleTelegramQueryGmail(text, userId, chatId);
+      if (trimmed === "confirm" || trimmed === "yes" || trimmed === "y") {
+        // Confirm a previously-staged destructive action (drafts/reads never stage one).
+        const result = await executeLatestPending(userId, isGmail);
+        answer = htmlToTelegramHtml(result.message);
       } else {
-        answer = await handleTelegramQueryOutlook(text, userId, chatId);
+        const result = await runAgent(text, userId, isGmail, chatId);
+        answer = htmlToTelegramHtml(result.response);
+        if (result.pendingConfirmation) {
+          answer += `\n\n⚠️ <b>${result.pendingConfirmation.summary}</b> — reply <b>confirm</b> to proceed.`;
+        }
       }
     } finally {
       if (interval) clearInterval(interval);

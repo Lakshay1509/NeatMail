@@ -1,9 +1,8 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect } from "react"
-import { useUser } from "@clerk/nextjs"
 import { AnimatePresence } from "framer-motion"
-import { useChat } from "@/features/chat/use-chat"
+import { useChatStream, useConfirmAction } from "@/features/chat/use-chat"
 import { ChatEmptyState } from "./ChatEmptyState"
 import { ChatMessage, type ChatMessageData } from "./ChatMessage"
 import { ChatThinking } from "./ChatThinking"
@@ -15,8 +14,8 @@ function nextId() {
 }
 
 export function ChatPage() {
-  const { user } = useUser()
-  const chat = useChat()
+  const chat = useChatStream()
+  const confirmAction = useConfirmAction()
   const [messages, setMessages] = useState<ChatMessageData[]>([])
   const [input, setInput] = useState("")
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -34,8 +33,6 @@ export function ChatPage() {
     }
   }, [])
 
-  const userName = user?.fullName || user?.firstName || "You"
-
   // Auto-scroll to bottom when messages change or thinking state changes
   useEffect(() => {
     const el = scrollRef.current
@@ -44,7 +41,7 @@ export function ChatPage() {
         el.scrollTo({ top: el.scrollHeight, behavior: "smooth" })
       })
     }
-  }, [messages, chat.isPending])
+  }, [messages, chat.isPending, chat.status])
 
   const handleSend = useCallback(async () => {
     const query = input.trim()
@@ -61,13 +58,15 @@ export function ChatPage() {
     setInput("")
 
     try {
-      const data = await chat.mutateAsync({ query })
+      const data = await chat.send(query)
       const assistantMsg: ChatMessageData = {
         id: nextId(),
         role: "assistant",
         content: data.response,
         timestamp: new Date(),
         attachments: data.attachments?.length ? data.attachments : undefined,
+        pendingConfirmation: data.pendingConfirmation,
+        confirmationStatus: data.pendingConfirmation ? "pending" : undefined,
       }
       setMessages((prev) => [...prev, assistantMsg])
     } catch {
@@ -81,6 +80,39 @@ export function ChatPage() {
     }
   }, [input, chat])
 
+  const setMessageFields = useCallback(
+    (messageId: string, fields: Partial<ChatMessageData>) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, ...fields } : m)),
+      )
+    },
+    [],
+  )
+
+  const handleConfirm = useCallback(
+    async (messageId: string, actionId: string) => {
+      setMessageFields(messageId, { confirmationStatus: "running" })
+      try {
+        const result = await confirmAction.mutateAsync({ actionId })
+        setMessageFields(messageId, {
+          confirmationStatus: result.ok ? "done" : "pending",
+          confirmationResult: result.message,
+        })
+      } catch {
+        // toast handled in the hook; revert so the user can retry
+        setMessageFields(messageId, { confirmationStatus: "pending" })
+      }
+    },
+    [confirmAction, setMessageFields],
+  )
+
+  const handleCancel = useCallback(
+    (messageId: string) => {
+      setMessageFields(messageId, { confirmationStatus: "cancelled" })
+    },
+    [setMessageFields],
+  )
+
   const handleSuggestionClick = useCallback((text: string) => {
     setInput(text)
     // Focus the textarea
@@ -90,6 +122,33 @@ export function ChatPage() {
 
   const isEmpty = messages.length === 0
 
+  if (isEmpty) {
+    return (
+      <div className="relative flex flex-col h-full overflow-hidden bg-[#f6f5f4]">
+        {/* Ambient wash — decorative only, scoped to the greeting state */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute left-[38%] top-[6%] -translate-x-1/2 w-[440px] h-[440px] rounded-full bg-[#cfe0ff] opacity-50 blur-[110px]" />
+          <div className="absolute left-[60%] top-[18%] -translate-x-1/2 w-[400px] h-[400px] rounded-full bg-[#f3ddf7] opacity-50 blur-[110px]" />
+        </div>
+
+        <div className="relative flex-1 overflow-y-auto overscroll-contain">
+          <div className="min-h-full flex items-center justify-center px-4 py-10">
+            <ChatEmptyState onSuggestionClick={handleSuggestionClick}>
+              <ChatInput
+                value={input}
+                onChange={setInput}
+                onSend={handleSend}
+                onNewChat={() => setMessages([])}
+                disabled={chat.isPending}
+                showNewChat={false}
+              />
+            </ChatEmptyState>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="relative flex flex-col h-full overflow-hidden bg-[#f6f5f4]">
       {/* Messages area */}
@@ -97,24 +156,19 @@ export function ChatPage() {
         ref={scrollRef}
         className="flex-1 overflow-y-auto overscroll-contain bg-[#f6f5f4]"
       >
-        {isEmpty ? (
-          <div className="h-full flex items-center justify-center">
-            <ChatEmptyState onSuggestionClick={handleSuggestionClick} />
-          </div>
-        ) : (
-          <div className="max-w-4xl mx-auto px-0 sm:px-4 py-3 sm:py-6 space-y-1">
-            {messages.map((msg) => (
-              <ChatMessage
-                key={msg.id}
-                message={msg}
-                userName={userName}
-              />
-            ))}
-            <AnimatePresence>
-              {chat.isPending && <ChatThinking />}
-            </AnimatePresence>
-          </div>
-        )}
+        <div className="max-w-4xl mx-auto px-2 sm:px-4 py-3 sm:py-6 space-y-1">
+          {messages.map((msg) => (
+            <ChatMessage
+              key={msg.id}
+              message={msg}
+              onConfirm={handleConfirm}
+              onCancel={handleCancel}
+            />
+          ))}
+          <AnimatePresence>
+            {chat.isPending && <ChatThinking status={chat.status ?? undefined} />}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Input bar */}
