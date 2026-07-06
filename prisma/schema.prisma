@@ -46,6 +46,7 @@ model user_tokens {
   slack_integration          slack_integration?
   digest_preference          digest_preference?
   follow_up_preference       follow_up_preference?
+  chat_sessions              ChatSession[]
 
   @@schema("public")
 }
@@ -336,5 +337,34 @@ model ArchiveRule {
   @@index([isActive, user_id])
   @@unique([user_id, domain])
 
+  @@schema("public")
+}
+
+model ChatSession {
+  id          String        @id @default(uuid())
+  user_id     String
+  title       String?
+  created_at  DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user_tokens user_tokens   @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+  messages    ChatMessage[]
+
+  // covers the sidebar query (user_id + order by updated_at desc)
+  @@index([user_id, updated_at(sort: Desc)])
+  @@map("chat_sessions")
+  @@schema("public")
+}
+
+model ChatMessage {
+  id         String      @id @default(uuid())
+  session_id String
+  is_user    Boolean
+  content    String
+  created_at DateTime    @default(now()) @db.Timestamptz(6)
+  session    ChatSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+
+  // covers loading a thread in order + keyset pagination
+  @@index([session_id, created_at])
+  @@map("chat_messages")
   @@schema("public")
 }

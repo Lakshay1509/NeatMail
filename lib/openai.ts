@@ -71,3 +71,33 @@ Apply the corrections and return the updated email draft as a JSON object.`,
   }
 }
 
+// falls back to a truncated slice of the message if the model call fails
+export async function generateChatTitle(firstMessage: string): Promise<string> {
+  const cleaned = firstMessage.replace(/\s+/g, " ").trim();
+  const fallback = (cleaned.slice(0, 60) || "New chat").trim();
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-5-mini",
+      messages: [
+        {
+          role: "system" as const,
+          content:
+            "You name chat conversations. Given the user's first message, reply with a concise title of 3-6 words (max 60 characters) that captures its topic. Return ONLY the title text: no surrounding quotes, no trailing punctuation, no explanation.",
+        },
+        { role: "user" as const, content: cleaned.slice(0, 1000) },
+      ],
+    });
+
+    const raw = completion.choices[0]?.message?.content?.trim();
+    if (!raw) return fallback;
+
+    // model sometimes wraps the title in quotes anyway despite the instruction
+    const title = raw.replace(/^["'`]+|["'`]+$/g, "").trim().slice(0, 80);
+    return title || fallback;
+  } catch (error) {
+    console.error("[generateChatTitle] error:", error);
+    return fallback;
+  }
+}
+

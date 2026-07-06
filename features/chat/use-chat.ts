@@ -23,10 +23,18 @@ export interface PendingConfirmation {
   targets: PendingTarget[]
 }
 
+export interface SessionInfo {
+  sessionId: string
+  createdSession: boolean
+}
+
 export interface ChatResponse {
   response: string
   attachments: ChatAttachment[]
   pendingConfirmation?: PendingConfirmation
+  // server assigns/creates the session, not the client
+  sessionId?: string
+  createdSession?: boolean
 }
 
 export interface ConfirmResponse {
@@ -60,7 +68,7 @@ export const useChat = () => {
   });
 };
 
-// ── Streaming chat (live progress over SSE) ──────────────────────────────────
+// streaming variant, gives live progress over SSE instead of one big response
 
 interface AgentStatusEvent {
   type: "status";
@@ -68,23 +76,21 @@ interface AgentStatusEvent {
   tool?: string;
 }
 
-/**
- * POST the query to /api/chat/stream and consume the SSE frames.
- * `onStatus` fires for every live step; the promise resolves with the final
- * ChatResponse carried by the `done` event.
- */
+// posts to /api/chat/stream and parses the SSE frames by hand (no EventSource,
+// we need POST with a body). resolves once the `done` frame comes through.
 async function streamChat(
   query: string,
   onStatus: (label: string) => void,
+  sessionId?: string,
+  onSession?: (info: SessionInfo) => void,
 ): Promise<ChatResponse> {
   const res = await fetch("/api/chat/stream", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify(sessionId ? { query, sessionId } : { query }),
   });
 
-  // Non-stream failure (unauthorized / upgrade required / rate limited): the
-  // server answered with plain JSON, not an event stream.
+  // auth/tier/rate-limit failures come back as plain JSON, not SSE
   if (!res.ok || !res.body) {
     let message = "Failed to process chat query";
     try {
@@ -119,6 +125,9 @@ async function streamChat(
     if (event === "status") {
       const label = (payload as AgentStatusEvent).label;
       if (label) onStatus(label);
+    } else if (event === "session") {
+      const info = payload as SessionInfo;
+      if (info.sessionId) onSession?.(info);
     } else if (event === "done") {
       result = payload as ChatResponse;
     } else if (event === "error") {
@@ -144,30 +153,33 @@ async function streamChat(
   return result;
 }
 
-/**
- * Streaming variant of useChat. `send` resolves with the final ChatResponse;
- * `status` holds the current live step ("Searching your inbox…") while pending.
- */
 export const useChatStream = () => {
   const [isPending, setIsPending] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
-  const send = useCallback(async (query: string): Promise<ChatResponse> => {
-    setIsPending(true);
-    setStatus(null);
-    try {
-      return await streamChat(query, setStatus);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to process chat query";
-      console.error("[useChatStream]", err);
-      toast.error(message);
-      throw err instanceof Error ? err : new Error(message);
-    } finally {
-      setIsPending(false);
+  const send = useCallback(
+    async (
+      query: string,
+      sessionId?: string,
+      onSession?: (info: SessionInfo) => void,
+    ): Promise<ChatResponse> => {
+      setIsPending(true);
       setStatus(null);
-    }
-  }, []);
+      try {
+        return await streamChat(query, setStatus, sessionId, onSession);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to process chat query";
+        console.error("[useChatStream]", err);
+        toast.error(message);
+        throw err instanceof Error ? err : new Error(message);
+      } finally {
+        setIsPending(false);
+        setStatus(null);
+      }
+    },
+    [],
+  );
 
   return { send, isPending, status };
 };

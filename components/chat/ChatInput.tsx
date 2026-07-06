@@ -111,7 +111,7 @@ export function ChatInput({ value, onChange, onSend, onNewChat, disabled, showNe
           </div>
         </div>
         <p className="w-full text-[11px] text-[#a39e98] mt-1.5 text-center leading-[1.4]">
-          Your chats are private — nothing is stored.
+          Chats are encrypted.
           {showNewChat && (
             <>
               {" "}

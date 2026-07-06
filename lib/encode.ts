@@ -9,7 +9,7 @@ async function init() {
   }
 }
 
-// Helper to get key (must be 32 bytes for AES-256-SIV)
+// crypto_secretbox needs a 32-byte key
 function getKey(): Uint8Array {
   const key = process.env.ENCRYPTION_KEY;
   if (!key) {

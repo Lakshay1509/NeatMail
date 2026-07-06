@@ -9,6 +9,7 @@ import type { AgentEvent } from "./progress";
 import { GmailProvider } from "./providers/gmail";
 import { OutlookProvider } from "./providers/outlook";
 import { getAttachment as getStoredAttachment } from "../chat/attachment-store";
+import { decrypt } from "@/lib/encode";
 import {
   loadPendingAction,
   loadAnyPendingAction,
@@ -32,17 +33,46 @@ const MODEL = "gpt-5-mini";
 const MAX_ITERATIONS = 8;
 const HISTORY_LIMIT = 8;
 
-/**
- * The NeatMail chat agent. A capable model (gpt-5-mini, medium reasoning) drives
- * a provider-agnostic tool loop with hard grounding + confirm-before-destroy.
- * Returns structured data; the HTTP layer / Telegram worker format it.
- */
+// bold/heading/list/table/code — if none of these show up the reply is plain prose
+const MARKDOWN_MARKER =
+  /(\*\*[^*]+\*\*|__[^_]+__|^#{1,6}\s|^[-*+]\s|^\d+\.\s|`[^`]+`|\|.*\|)/m;
+
+// prompt already asks for markdown but every so often the model just ignores
+// it, so patch up long unformatted replies with a cheap second pass. skip
+// short stuff like "Done." — nothing there needs bolding anyway.
+async function ensureMarkdown(text: string): Promise<string> {
+  if (text.length < 120 || MARKDOWN_MARKER.test(text)) return text;
+  try {
+    const repair = await openai.chat.completions.create({
+      model: MODEL,
+      reasoning_effort: "low",
+      max_completion_tokens: 2000,
+      messages: [
+        {
+          role: "system",
+          content:
+            "Reformat the user's message using markdown: bold key facts and numbers, bullet or numbered lists for multiple points, and a table (Sender | Subject | Date) if it lists emails. Do not change the meaning, or add or remove any information. Return only the reformatted text.",
+        },
+        { role: "user", content: text },
+      ],
+    });
+    return repair.choices[0].message.content?.trim() || text;
+  } catch (err) {
+    console.error("[agent] markdown repair failed", err);
+    return text;
+  }
+}
+
+// the chat agent: tool-calling loop over gpt-5-mini, provider-agnostic
+// (gmail/outlook), confirm-before-destroy for anything irreversible.
+// caller (HTTP route / telegram worker) formats the returned AgentResult.
 export async function runAgent(
   userQuery: string,
   userId: string,
   isGmail: boolean,
   channel = "api",
   onEvent?: (e: AgentEvent) => void,
+  sessionId?: string,
 ): Promise<AgentResult> {
   const emit = (label: string, tool?: string) =>
     onEvent?.({ type: "status", label, tool });
@@ -97,16 +127,57 @@ export async function runAgent(
   const toolMap = new Map(tools.map((t) => [t.schema.function.name, t]));
   const toolSchemas = tools.map((t) => t.schema);
 
-  // ── History (last HISTORY_LIMIT user/assistant turns) ──
-  const historyKey = `agent:history:${userId}`;
+  // web chats get their own history per session; telegram has no concept of
+  // sessions so it just keeps one rolling buffer per user. a new web chat's
+  // first message has no sessionId yet, so there's nothing to key on.
+  const historyKey = sessionId
+    ? `agent:history:${userId}:${sessionId}`
+    : channel !== "api"
+      ? `agent:history:${userId}`
+      : null;
+
   let history: OpenAI.Chat.ChatCompletionMessageParam[] = [];
-  try {
-    const raw = await redis.get(historyKey);
-    if (typeof raw === "string") history = JSON.parse(raw);
-  } catch (err) {
-    console.error("[agent] history load failed", err);
+  if (historyKey) {
+    try {
+      const raw = await redis.get(historyKey);
+      if (typeof raw === "string") history = JSON.parse(raw);
+    } catch (err) {
+      console.error("[agent] history load failed", err);
+    }
   }
-  history.push({ role: "user", content: userQuery });
+
+  // redis cache is empty but we have a sessionId — either it's an old chat
+  // being reopened or the 1h TTL just lapsed. pull the history back from
+  // postgres instead of losing context.
+  if (history.length === 0 && sessionId) {
+    try {
+      const rows = await db.chatMessage.findMany({
+        where: { session_id: sessionId, session: { user_id: userId } },
+        orderBy: { created_at: "desc" },
+        take: HISTORY_LIMIT,
+        select: { is_user: true, content: true },
+      });
+      history = await Promise.all(
+        rows.reverse().map(async (r) => ({
+          role: r.is_user ? ("user" as const) : ("assistant" as const),
+          content: await decrypt(r.content),
+        })),
+      );
+    } catch (err) {
+      console.error("[agent] history hydrate failed", err);
+    }
+  }
+
+  // avoid double-adding: if we just hydrated from postgres, the row for this
+  // exact query may already be in there (saved by the route handler in parallel)
+  const lastTurn = history[history.length - 1];
+  if (
+    !lastTurn ||
+    lastTurn.role !== "user" ||
+    lastTurn.content !== userQuery
+  ) {
+    history.push({ role: "user", content: userQuery });
+  }
   if (history.length > HISTORY_LIMIT)
     history = history.slice(history.length - HISTORY_LIMIT);
 
@@ -182,13 +253,19 @@ export async function runAgent(
     }
   }
 
-  // Persist only the user turn + final answer (not tool traffic).
+  finalAnswer = await ensureMarkdown(finalAnswer);
+
+  // only cache the user query + final answer, not the tool call traffic in
+  // between. (first turn of a new chat has no historyKey yet — fine, next
+  // turn rebuilds from postgres anyway)
   history.push({ role: "assistant", content: finalAnswer });
   if (history.length > HISTORY_LIMIT)
     history = history.slice(history.length - HISTORY_LIMIT);
-  redis
-    .setex(historyKey, 3600, JSON.stringify(history))
-    .catch((err) => console.error("[agent] history save failed", err));
+  if (historyKey) {
+    redis
+      .setex(historyKey, 3600, JSON.stringify(history))
+      .catch((err) => console.error("[agent] history save failed", err));
+  }
 
   const attachments = attachmentKeys
     .map((key) => {
