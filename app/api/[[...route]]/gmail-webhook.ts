@@ -391,14 +391,9 @@ const app = new Hono().post("/", async (ctx) => {
           const hasReadOnlyTag = tagsOfUser.some(
             (tag) => tag.tag.name === "Read only",
           );
-          const hasDiscussionTag = tagsOfUser.some(
-            (tag) => tag.tag.name === "Discussion",
-          );
 
           if (hasReadOnlyTag) {
             labelName = "Read only";
-          } else if (hasDiscussionTag) {
-            labelName = "Discussion";
           }
           responseRequired = false;
         }

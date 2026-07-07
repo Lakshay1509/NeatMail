@@ -39,7 +39,6 @@ const RESERVED_KEYWORDS = new Set([
     "pending response",
     "automated alerts",
     "event update",
-    "discussion",
     "read only",
     "resolved",
     "marketing",

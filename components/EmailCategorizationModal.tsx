@@ -26,7 +26,6 @@ export const CATEGORIES = [
 	{ name: 'Automated alerts', color: '#653e9b', outlookColor: 'preset8', description: 'System-generated notifications from tools/services (build, incident, status, reminder), not human conversation.' },
 	{ name: 'Finance', color: '#3c78d8', outlookColor: 'preset7', description: 'Money-related communication: invoices, receipts, billing, payments, expenses, payroll, taxes, statements.' },
 	{ name: 'Event update', color: '#285bac', outlookColor: 'preset22', description: 'Calendar and meeting lifecycle updates: invite, reschedule, cancellation, RSVP, join details.' },
-	{ name: 'Discussion', color: '#0b804b', outlookColor: 'preset4', description: 'Human collaboration thread for context-sharing or brainstorming without a clear owner action.' },
 	{ name: 'Read only', color: '#666666', outlookColor: 'preset12', description: 'FYI or announcement content to read for awareness only; no reply or action expected.' },
 	{ name: 'Resolved', color: '#076239', outlookColor: 'preset19', description: 'Thread is closed: issue completed, question answered, or final confirmation already provided.' },
 	{ name: 'Marketing', color: '#994a64', outlookColor: 'preset9', description: 'Promotional or sales outreach: newsletters, campaigns, offers, product updates, cold pitches.' },

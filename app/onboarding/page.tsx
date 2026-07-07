@@ -57,12 +57,6 @@ const CATEGORIES = [
       "Calendar and meeting lifecycle updates: invite, reschedule, cancellation, RSVP, join details.",
   },
   {
-    name: "Discussion",
-    color: "#0b804b",
-    description:
-      "Human collaboration thread for context-sharing or brainstorming without a clear owner action.",
-  },
-  {
     name: "Read only",
     color: "#666666",
     description:
