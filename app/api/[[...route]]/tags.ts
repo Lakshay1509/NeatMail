@@ -5,6 +5,7 @@ import { zValidator } from "@hono/zod-validator";
 import { colors, outlook_colors } from "@/lib/colors";
 import { getGmailClient } from "@/lib/gmail";
 import { getUserTier, checkFeatureLimit } from "@/lib/tier-guard";
+import { followUpBlocksResolvedRemoval } from "@/lib/tags";
 import z from "zod";
 
 
@@ -125,6 +126,18 @@ const app = new Hono()
       }
 
       const values = ctx.req.valid("json");
+
+      // "Resolved" cannot be removed while follow-ups are enabled — the
+      // follow-up feature depends on it to close out tracked threads.
+      if (await followUpBlocksResolvedRemoval(db, userId, values.tags)) {
+        return ctx.json(
+          {
+            error:
+              'The "Resolved" category is required while follow-ups are enabled. Turn off follow-ups before removing it.',
+          },
+          400,
+        );
+      }
 
       const tagRecords = await db.tag.findMany({
         where: {

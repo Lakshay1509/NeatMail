@@ -66,6 +66,7 @@ const FollowUpPreference = () => {
             Automatically detect sent emails that need a reply and create
             friendly follow-up drafts after a few days.
           </p>
+          
         </div>
         <div className="flex items-center gap-2 pt-1">
           <span className="text-sm font-medium text-gray-700">

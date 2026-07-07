@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useGetUserTags } from "@/features/tags/use-get-user-tags"
+import { useGetFollowUpPreferences } from "@/features/follow-up/use-get-follow-up-preferences";
 import { CATEGORIES } from "./EmailCategorizationModal";
 import { useEffect, useState } from "react";
 import { addTagstoUser } from "@/features/tags/use-add-tag-user";
@@ -32,7 +33,12 @@ import WatchedFolderSelect from "./WatchedFolderSelect";
 const UserLabelSettings = () => {
 
 	const { data, isLoading, isError } = useGetUserTags();
+	const { data: followUpData } = useGetFollowUpPreferences();
 	const { data: customData, isLoading: customLoading, isError: customError } = useGetCustomTags();
+
+	// While follow-ups are on, "Resolved" is mandatory (the server rejects saves
+	// that drop it), so its checkbox is locked here.
+	const followUpsEnabled = followUpData?.preference?.enabled === true;
 	const { data: watchData, isLoading: watchLoading } = useGetUserWatch();
 	const { isFree, limits } = useTierAccess();
 	const {data:isGmailData}= useGetUserIsGmail();
@@ -53,7 +59,15 @@ const UserLabelSettings = () => {
 		if (data) {
 
 			const existingTags = data.data.map((tag) => tag.tag.name);
-			setSelectedCategories(existingTags);
+			// Follow-ups make "Resolved" mandatory; keep it selected to match the
+			// locked checkbox — even for legacy users whose set predates this rule.
+			// Computed here (not a separate effect) so it can't be raced away when
+			// the tags query resolves after the follow-up query.
+			setSelectedCategories(
+				followUpsEnabled && !existingTags.includes("Resolved")
+					? [...existingTags, "Resolved"]
+					: existingTags
+			);
 		}
 
 		if (watchData) {
@@ -61,9 +75,10 @@ const UserLabelSettings = () => {
 		}
 
 
-	}, [data, watchData]);
+	}, [data, watchData, followUpsEnabled]);
 
 	const toggleCategory = (categoryName: string) => {
+		if (followUpsEnabled && categoryName === "Resolved") return;
 		setSelectedCategories(prev =>
 			prev.includes(categoryName)
 				? prev.filter(c => c !== categoryName)
@@ -163,12 +178,15 @@ const UserLabelSettings = () => {
 					</div>
 
 					<div className="space-y-3">
-						{CATEGORIES.map((category) => (
+						{CATEGORIES.map((category) => {
+							const isResolvedLocked = followUpsEnabled && category.name === "Resolved";
+							return (
 							<div key={category.name} className="grid grid-cols-[auto_1fr] gap-x-6 items-center group hover:bg-gray-50 p-3 rounded-lg transition-colors -mx-3">
 								<div className="flex justify-center w-24">
 									<Checkbox
-										checked={selectedCategories.includes(category.name)}
+										checked={isResolvedLocked ? true : selectedCategories.includes(category.name)}
 										onCheckedChange={() => toggleCategory(category.name)}
+										disabled={isResolvedLocked}
 										className="w-5 h-5 border-gray-300"
 									/>
 								</div>
@@ -179,10 +197,16 @@ const UserLabelSettings = () => {
 									>
 										{category.name}
 									</span>
-									<span className="text-sm text-gray-600 leading-tight">{category.description}</span>
+									<span className="text-sm text-gray-600 leading-tight">
+										{category.description}
+										{isResolvedLocked && (
+											<span className="text-gray-400"> · Required while follow-ups are on</span>
+										)}
+									</span>
 								</div>
 							</div>
-						))}
+							);
+						})}
 					</div>
 
 

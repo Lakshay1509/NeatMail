@@ -38,8 +38,10 @@ interface EmailCategorizationModalProps {
 
 export function EmailCategorizationModal({ open, onOpenChange }: EmailCategorizationModalProps) {
 	
-	const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-	
+	// Onboarding always enables follow-ups, which require the "Resolved"
+	// category — so it starts selected and can't be unchecked.
+	const [selectedCategories, setSelectedCategories] = useState<string[]>(["Resolved"])
+
 	const [showSuccessDialog, setShowSuccessDialog] = useState<boolean>(false);
 	const [stepIndex, setStepIndex] = useState(0);
 	const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -63,6 +65,8 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 	}, [isPending]);
 	
 	const toggleCategory = (categoryName: string) => {
+		// "Resolved" is mandatory while follow-ups are on (always, at onboarding).
+		if (categoryName === "Resolved") return;
 		setSelectedCategories(prev =>
 			prev.includes(categoryName)
 				? prev.filter(c => c !== categoryName)
@@ -132,12 +136,15 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 						<div className="pb-0.5">Categories</div>
 					</div>
 
-					{CATEGORIES.map((category) => (
+					{CATEGORIES.map((category) => {
+						const isResolvedLocked = category.name === "Resolved";
+						return (
 						<div key={category.name} className="grid grid-cols-[auto_1fr] gap-x-4 sm:gap-x-6 items-center">
 							<div className="flex justify-center w-16 sm:w-24">
 								<Checkbox
-									checked={selectedCategories.includes(category.name)}
+									checked={isResolvedLocked ? true : selectedCategories.includes(category.name)}
 									onCheckedChange={() => toggleCategory(category.name)}
+									disabled={isResolvedLocked}
 									className="w-5 h-5 border-gray-300"
 								/>
 							</div>
@@ -148,10 +155,16 @@ export function EmailCategorizationModal({ open, onOpenChange }: EmailCategoriza
 								>
 									{category.name}
 								</span>
-								<span className="text-sm text-gray-600 leading-tight">{category.description}</span>
+								<span className="text-sm text-gray-600 leading-tight">
+									{category.description}
+									{isResolvedLocked && (
+										<span className="text-gray-400"> · Required for follow-ups</span>
+									)}
+								</span>
 							</div>
 						</div>
-					))}
+						);
+					})}
 				</div>
 
 				<UpdateFolderPrefernce/>

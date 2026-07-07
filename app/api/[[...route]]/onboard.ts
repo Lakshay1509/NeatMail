@@ -9,6 +9,7 @@ import { getPreviousOutlookMails } from "@/lib/outlook";
 import { encryptDomain } from "@/lib/encode";
 import { getUserIsGmail } from "@/lib/supabase";
 import { getPostHogClient } from "@/lib/posthog-server";
+import { ensureResolvedTag } from "@/lib/tags";
 
 const app = new Hono().post(
   "/",
@@ -220,6 +221,12 @@ const app = new Hono().post(
               ai_drafts:body.followUpPrefs.ai_drafts
             },
           });
+
+          // Follow-ups depend on "Resolved" to close out tracked threads, so
+          // guarantee the tag is present even if the user didn't pick it.
+          if (body.followUpPrefs.enabled) {
+            await ensureResolvedTag(tx, userId);
+          }
         }
       });
 
