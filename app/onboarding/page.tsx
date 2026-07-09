@@ -14,12 +14,14 @@ import {
   UserCheck,
   CalendarClock,
   Lock,
+  PartyPopper,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Separator } from "@/components/ui/separator"
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
+import { useIncomingReferral } from "@/features/referral/use-referral";
 import { cn } from "@/lib/utils";
 import { useGeo } from "@/features/geo/use-geo";
 import { getTierPrices } from "@/lib/tiers";
@@ -106,11 +108,11 @@ const STEP_TITLES = [
   "Start your free trial",
 ];
 
-const STEP_SUBTITLES = [
+const stepSubtitles = (trialDays: number) => [
   "Tell us about your role so Ray can tailor suggestions to your workflow.",
   "Choose labels to classify emails",
   "Ray labels emails as Follow-up due when a sent email gets no reply after your set window.",
-  "Full access to every feature, free for 7 days. No charge today — cancel anytime.",
+  `Full access to every feature, free for ${trialDays} days. No charge today — cancel anytime.`,
 ];
 
 type TrialTier = "PRO" | "MAX";
@@ -170,6 +172,9 @@ export default function OnboardingPage() {
   const { region } = useGeo();
   const { data: subData } = useGetUserSubscribed();
   const alreadySubscribed = subData?.subscribed === true;
+  const { data: incomingReferral } = useIncomingReferral();
+  const referred = incomingReferral?.referred === true;
+  const trialDays = referred ? 14 : 7;
   const dirRef = useRef(1);
   const [step, setStep] = useState(0);
   const [selectedTier, setSelectedTier] = useState<TrialTier>("MAX");
@@ -186,6 +191,7 @@ export default function OnboardingPage() {
     billingInterval === "annual"
       ? `${prices[tier].symbol}${(prices[tier].annual / 12).toFixed(2)}`
       : `${prices[tier].symbol}${prices[tier].monthly}`;
+  const currentSubtitles = stepSubtitles(trialDays);
 
   useEffect(() => {
     fetch("/api/onboarding/complete").catch(() => {});
@@ -384,9 +390,17 @@ export default function OnboardingPage() {
               transition={{ duration: 0.25, ease: "easeInOut" }}
               className="text-sm text-neutral-600 text-center leading-relaxed max-w-sm"
             >
-              {STEP_SUBTITLES[step]}
+              {currentSubtitles[step]}
             </motion.p>
           </AnimatePresence>
+          {step === 3 && referred && (
+            <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-center">
+              <PartyPopper className="h-3.5 w-3.5 shrink-0 text-emerald-700" />
+              <p className="text-xs font-medium text-emerald-800">
+                You&apos;ve been referred — enjoy 14 days free!
+              </p>
+            </div>
+          )}
           {step === 3 && (
             <div className="rounded-full border border-neutral-200/70 bg-white/70 px-4 py-2 text-center">
               <p className="text-xs text-neutral-600">
@@ -429,7 +443,7 @@ export default function OnboardingPage() {
                   {STEP_TITLES[step]}
                 </h1>
                 <p className="hidden md:block text-[14px] text-neutral-500 mt-1.5 leading-relaxed">
-                  {STEP_SUBTITLES[step]}
+                  {currentSubtitles[step]}
                 </p>
                 <Separator className="mt-4 hidden md:block" />
 
@@ -706,7 +720,7 @@ export default function OnboardingPage() {
                               <span className="font-medium text-neutral-900">
                                 $0 today.
                               </span>{" "}
-                              Enjoy full access for 7 days. We&apos;ll email you 1 day
+                              Enjoy full access for {trialDays} days. We&apos;ll email you 1 day
                               before your first payment — cancel anytime in one click.
                             </p>
                           </div>
@@ -751,7 +765,7 @@ export default function OnboardingPage() {
             {step === 3 ? (
               <>
                 <ShieldCheck className="w-4 h-4" />
-                Start 7-day free trial
+                Start {trialDays}-day free trial
               </>
             ) : (
               <>

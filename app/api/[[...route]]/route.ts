@@ -25,6 +25,7 @@ import geo from './geo'
 import health from './health'
 import chat from './chat'
 import onboard from './onboard'
+import referral from './referral'
 
 export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
@@ -99,6 +100,7 @@ const routes = app
     .route('/geo',geo)
     .route('/chat',chat)
     .route('/onboard',onboard)
+    .route('/referral',referral)
 
 
 

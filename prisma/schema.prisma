@@ -18,59 +18,63 @@ enum Tier {
 }
 
 model user_tokens {
-  clerk_user_id              String                 @id @unique
-  email                      String                 @unique
-  tier                       Tier                   @default(FREE)
-  created_at                 DateTime               @default(now()) @db.Timestamp(6)
-  updated_at                 DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
-  last_history_id            String?
-  watch_activated            Boolean                @default(false)
-  delete_at                  DateTime?
-  deleted_flag               Boolean                @default(false)
-  is_gmail                   Boolean                @default(true)
-  outlook_id                 String?
-  is_folder                  Boolean                @default(false)
-  watched_folders            Json                   @default("[]")
-  draft_preference           draft_preference?
-  email_tracked              email_tracked[]
-  payment_history            PaymentHistory[]
-  refunds                    Refund[]
-  subscriptions              Subscription[]
-  tag                        tag[]
-  user_tags                  user_tags[]
-  telegram_integration       TelegramIntegration?
-  pending_drafts             telegramPendingDraft[]
-  integration_rules          integrationRules[]
-  free_trial                 free_trial?
-  archive_rules              ArchiveRule[]
-  slack_integration          slack_integration?
-  digest_preference          digest_preference?
-  follow_up_preference       follow_up_preference?
-  chat_sessions              ChatSession[]
+  clerk_user_id           String                 @id @unique
+  email                   String                 @unique
+  tier                    Tier                   @default(FREE)
+  created_at              DateTime               @default(now()) @db.Timestamp(6)
+  updated_at              DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  last_history_id         String?
+  watch_activated         Boolean                @default(false)
+  delete_at               DateTime?
+  deleted_flag            Boolean                @default(false)
+  is_gmail                Boolean                @default(true)
+  outlook_id              String?
+  is_folder               Boolean                @default(false)
+  watched_folders         Json                   @default("[]")
+  draft_preference        draft_preference?
+  email_tracked           email_tracked[]
+  payment_history         PaymentHistory[]
+  refunds                 Refund[]
+  subscriptions           Subscription[]
+  tag                     tag[]
+  user_tags               user_tags[]
+  telegram_integration    TelegramIntegration?
+  pending_drafts          telegramPendingDraft[]
+  integration_rules       integrationRules[]
+  free_trial              free_trial?
+  archive_rules           ArchiveRule[]
+  slack_integration       slack_integration?
+  digest_preference       digest_preference?
+  follow_up_preference    follow_up_preference?
+  chat_sessions           ChatSession[]
+  referral_code           String?                @unique
+  referral_months_granted Int                    @default(0)
+  referrals_sent          Referral[]             @relation("ReferralsSent")
+  referral_received       Referral?              @relation("ReferralReceived")
 
   @@schema("public")
 }
 
 model follow_up_preference {
-  id                    String     @id @default(cuid())
-  user_id               String     @unique
-  enabled               Boolean    @default(false)
-  ai_drafts             Boolean    @default(true)
-  days                  Int        @default(3)
-  skip_emails           String     @default("")
-  follow_up_count       Int        @default(0)
+  id                       String      @id @default(cuid())
+  user_id                  String      @unique
+  enabled                  Boolean     @default(false)
+  ai_drafts                Boolean     @default(true)
+  days                     Int         @default(3)
+  skip_emails              String      @default("")
+  follow_up_count          Int         @default(0)
   follow_up_count_reset_at DateTime?
-  user_tokens           user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+  user_tokens              user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
   @@schema("public")
 }
 
 model digest_preference {
-  id            String     @id @default(cuid())
-  user_id       String     @unique
-  enabled       Boolean    @default(true)
-  delivery_time String     @default("09:00")
-  timezone      String     @default("UTC")
+  id            String      @id @default(cuid())
+  user_id       String      @unique
+  enabled       Boolean     @default(true)
+  delivery_time String      @default("09:00")
+  timezone      String      @default("UTC")
   last_sent_at  DateTime?
   user_tokens   user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
@@ -115,7 +119,7 @@ model email_tracked {
   domain        String?
   is_read       Boolean     @default(false) @map("isRead")
   created_at    DateTime    @default(now()) @db.Timestamptz(6)
-  archive_at    DateTime?    @db.Timestamptz(6)
+  archive_at    DateTime?   @db.Timestamptz(6)
   ai_summary    String?
   ai_action     String?
   isDone        Boolean     @default(false)
@@ -320,23 +324,20 @@ model free_trial {
   @@schema("public")
 }
 
-
-
 model ArchiveRule {
-  id               String      @id @default(uuid())
+  id               String  @id @default(uuid())
   user_id          String
   domain           String
   archiveAfterDays Int
-  isActive         Boolean     @default(true)  // add this
+  isActive         Boolean @default(true) // add this
 
-  createdAt        DateTime    @default(now()) @db.Timestamptz(6)
-  updatedAt        DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user_tokens      user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+  user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
-  @@index([isActive, user_id])
   @@unique([user_id, domain])
-
+  @@index([isActive, user_id])
   @@schema("public")
 }
 
@@ -366,5 +367,33 @@ model ChatMessage {
   // covers loading a thread in order + keyset pagination
   @@index([session_id, created_at])
   @@map("chat_messages")
+  @@schema("public")
+}
+
+enum ReferralStatus {
+  PENDING
+  REWARDED
+  CAPPED
+  REVOKED
+
+  @@schema("public")
+}
+
+model Referral {
+  id                String         @id @default(uuid())
+  referrer_user_id  String
+  referee_user_id   String         @unique
+  referral_code     String
+  status            ReferralStatus @default(PENDING)
+  reward_applied_at DateTime?
+  created_at        DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime       @updatedAt @db.Timestamptz(6)
+
+  referrer user_tokens @relation("ReferralsSent", fields: [referrer_user_id], references: [clerk_user_id], onDelete: Cascade)
+  referee  user_tokens @relation("ReferralReceived", fields: [referee_user_id], references: [clerk_user_id], onDelete: Cascade)
+
+  @@index([referrer_user_id])
+  @@index([referral_code])
+  @@map("referrals")
   @@schema("public")
 }

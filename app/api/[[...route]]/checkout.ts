@@ -3,8 +3,10 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import DodoPayments from "dodopayments";
 import { getProductId, type Tier } from "@/lib/tiers";
 import { getUserTier } from "@/lib/tier-guard";
+import { redeemReferralCookie } from "@/lib/referral";
 
 import { Hono } from "hono";
+import { getCookie } from "hono/cookie";
 
 export const getDodoPayments = () => {
   return new DodoPayments({
@@ -27,7 +29,8 @@ const app = new Hono()
       const tier: Tier = body.tier === "PRO" || body.tier === "MAX" ? body.tier : "PRO";
       const interval: "monthly" | "annual" = body.interval === "annual" ? "annual" : "monthly";
       // Card-required free trial: collect the card now via DodoPay, first charge after 7 days.
-      const trialPeriodDays = body.trial === true ? 7 : 0;
+      // Bumped to 14 below on a valid referral redemption.
+      let trialPeriodDays = body.trial === true ? 7 : 0;
       // When started from onboarding, return to /onboard-complete to finish setup.
       const isOnboarding = body.onboard === true;
 
@@ -78,6 +81,23 @@ const app = new Hono()
             { error: "You've already used your free trial." },
             409,
           );
+        }
+      }
+
+      // Referral redemption gates on "first checkout ever" (any prior payment
+      // of any amount), independent of whether a trial was requested. A user
+      // who skips the trial and pays immediately still counts as a valid
+      // conversion.
+      const priorPayment = await db.paymentHistory.findFirst({
+        where: { clerkUserId: userId },
+        select: { id: true },
+      });
+
+      if (!priorPayment) {
+        const refCode = getCookie(ctx, "nm_ref");
+        const referralRedeemed = await redeemReferralCookie(userId, refCode);
+        if (referralRedeemed && trialPeriodDays > 0) {
+          trialPeriodDays = 14;
         }
       }
 

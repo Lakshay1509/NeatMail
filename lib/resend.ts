@@ -146,3 +146,39 @@ export async function sendTrialReminderEmail(params: TrialReminderEmailParams) {
   });
 }
 
+interface ReferralRewardEmailParams {
+  to: string;
+  monthsGranted: number;
+  monthsCap: number;
+}
+
+// Sent when a referrer earns a free month from a referred friend's first
+// real payment. Throws so the caller's best-effort wrapper can log without
+// failing the webhook that triggered it.
+export async function sendReferralRewardEmail(params: ReferralRewardEmailParams) {
+  const { to, monthsGranted, monthsCap } = params;
+
+  const subject = `You've earned a free month of NeatMail (${monthsGranted} of ${monthsCap})`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<body style="font-family:Arial,Helvetica,sans-serif;color:#111111;line-height:1.6;">
+  <p>Hi there,</p>
+  <h2 style="margin:0 0 8px;">A friend you referred just subscribed 🎉</h2>
+  <p>As a thank you, we've pushed your next billing date back by one month — you now have
+  <strong>${monthsGranted} of ${monthsCap}</strong> free months banked from referrals.</p>
+  <p>Keep sharing your referral link — you can refer as many friends as you like, though
+  rewards cap out at ${monthsCap} free months total.</p>
+  <p><a href="https://dashboard.neatmail.app/billing">View your billing details</a></p>
+  <p style="color:#888888;font-size:12px;margin-top:24px;">— The NeatMail team</p>
+</body>
+</html>`;
+
+  await resend.emails.send({
+    from: "NeatMail <trials@send.neatmail.app>",
+    to,
+    subject,
+    html,
+  });
+}
+

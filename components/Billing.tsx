@@ -481,8 +481,6 @@ const Billing = () => {
         ))}
       </div>
 
-  
-
       {/* <div className="rounded-lg border bg-card p-5">
         <h3 className="text-sm font-semibold text-foreground">Subscription details</h3>
         <div className="mt-3 space-y-2 text-sm">

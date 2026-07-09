@@ -1,5 +1,6 @@
 "use client"
-import { Home, Receipt, Tag, PenLine, Plug, MailX, Inbox, MessageSquareDashed, AlertCircle, Send, Bell, CheckSquare, ChevronDown, MessageSquareDashedIcon } from "lucide-react"
+import { useState } from "react"
+import { Home, Receipt, Tag, PenLine, Plug, MailX, Inbox, MessageSquareDashed, AlertCircle, Send, Bell, CheckSquare, ChevronDown, MessageSquareDashedIcon, Gift } from "lucide-react"
 import { motion, LayoutGroup } from "framer-motion"
 
 import {
@@ -24,6 +25,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import ReferralCard from "@/components/ReferralCard"
 import { useTierAccess } from "@/features/user/use-tier-access"
 import type { Tier } from "@/lib/tiers"
 
@@ -89,6 +92,7 @@ export function AppSidebar() {
   const { isMobile, setOpenMobile } = useSidebar()
   const pathname = usePathname()
   const { tier, isFree } = useTierAccess()
+  const [referralOpen, setReferralOpen] = useState(false)
 
   const handleLinkClick = () => {
     if (isMobile) setOpenMobile(false)
@@ -187,6 +191,15 @@ export function AppSidebar() {
               </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={() => setReferralOpen(true)}
+              className="text-xs font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground"
+            >
+              <Gift size={14} className="shrink-0" aria-hidden="true" />
+              <span>Refer and Earn</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <Collapsible className="group/collapsible w-full">
             <SidebarMenuItem>
               <CollapsibleTrigger asChild>
@@ -206,6 +219,20 @@ export function AppSidebar() {
           </Collapsible>
         </SidebarMenu>
       </SidebarFooter>
+      <Dialog open={referralOpen} onOpenChange={setReferralOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <Gift className="h-5 w-5 text-primary" />
+              Refer and Earn
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Share your referral link and earn free months when friends subscribe.
+            </DialogDescription>
+          </DialogHeader>
+          <ReferralCard bare />
+        </DialogContent>
+      </Dialog>
     </Sidebar>
   )
 }

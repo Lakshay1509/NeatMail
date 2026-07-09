@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { Webhook } from "standardwebhooks";
 import { addPaymenttoDb, addRefundtoDb, addSubscriptiontoDb } from "@/lib/payement";
 import { maybeScheduleTrialReminder } from "@/lib/trial-reminder";
+import { maybeRewardReferral } from "@/lib/referral";
 import { isDodoWebhookProcessed, markDodoWebhookProcessed, unmarkDodoWebhookProcessed } from "@/lib/redis";
 import { getPostHogClient } from "@/lib/posthog-server";
 
@@ -137,6 +138,9 @@ const app = new Hono().post("/", async (ctx) => {
         // A $0 succeeded payment with no prior paid payment marks the start of a
         // card-required free trial — schedule the "charged tomorrow" reminder.
         await maybeScheduleTrialReminder(payload);
+        // A non-zero succeeded payment on a referred account's first conversion
+        // rewards the referrer; everyone else is a no-op. Best-effort, never throws.
+        await maybeRewardReferral(payload);
         posthog.capture({
           distinctId: clerkUserId || "system",
           event: "payment_succeeded",
