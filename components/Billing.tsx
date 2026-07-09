@@ -339,6 +339,30 @@ const Billing = () => {
     }
   };
 
+  const handleOpenPortal = async () => {
+    setIsLoading(true);
+    setError("");
+
+    posthog.capture("billing_portal_opened", { reason: "on_hold" });
+
+    try {
+      const response = await fetch("/api/checkout/portal", { method: "GET" });
+      const resData = await response.json();
+
+      if (response.ok && resData.data) {
+        window.location.href = resData.data;
+      } else {
+        setError(
+          resData.error || "Couldn't open the billing portal. Please try again."
+        );
+      }
+    } catch (_err) {
+      setError("Network error. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleCancel = async (renew: string) => {
     setIsLoading(true);
     setError("");
@@ -395,6 +419,49 @@ const Billing = () => {
   // Currently inside a trial of either kind — display only (banner + messaging).
   const isTrialing = data?.subscribed === true && data?.freeTrial === true;
   const activeTier = hasActiveSubscription ? tier : "FREE";
+  // Payment failed → subscription paused by DodoPay. Hide the plans entirely and
+  // route the user to the DodoPay customer portal to update their payment method
+  // and renew, rather than starting a fresh checkout.
+  const isOnHold = data?.status === "on_hold";
+
+  if (isOnHold) {
+    return (
+      <div className="w-full">
+        <div className="rounded-lg border border-amber-500/40 bg-amber-50 p-5 dark:bg-amber-950/20">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-500/15">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+            </div>
+            <div className="flex-1 space-y-3">
+              <div className="space-y-1">
+                <h2 className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                  Your subscription is on hold
+                </h2>
+                <p className="text-sm text-amber-800/80 dark:text-amber-200/70">
+                  We couldn&apos;t process your latest payment, so your
+                  subscription is paused. Renew through the billing portal to
+                  update your payment method and restore access.
+                </p>
+              </div>
+
+              {error && (
+                <p className="text-sm font-medium text-destructive">{error}</p>
+              )}
+
+              <Button
+                onClick={handleOpenPortal}
+                disabled={isLoading}
+                className="bg-amber-700 text-white hover:bg-amber-800 focus-visible:ring-amber-600"
+              >
+                {isLoading ? "Opening portal…" : "Renew subscription"}
+                {!isLoading && <ArrowRight className="ml-1.5 h-3.5 w-3.5" />}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full space-y-8">
