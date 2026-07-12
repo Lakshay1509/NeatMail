@@ -27,7 +27,7 @@ export const useAddUserDraftPrefernce = () => {
     },
     onSuccess: async () => {
       query.invalidateQueries({ queryKey: ["user-draft-preference"] });
-      toast.success("Draft Preferencs created successfully");
+      toast.success("Draft preferences saved");
     },
     onError: (error) => {
       console.log(error);

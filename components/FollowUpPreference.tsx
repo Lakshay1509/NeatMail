@@ -7,7 +7,7 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
-import { Checkbox } from "./ui/checkbox";
+import { Switch } from "./ui/switch";
 
 const FollowUpPreference = () => {
   const { data, isLoading, isError } = useGetFollowUpPreferences();
@@ -32,7 +32,7 @@ const FollowUpPreference = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-foreground" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-foreground motion-reduce:animate-none" />
       </div>
     );
   }
@@ -57,48 +57,48 @@ const FollowUpPreference = () => {
   return (
     <div className="space-y-6 w-full max-w-full">
       {/* Enable Follow-ups */}
-      <div className="flex items-start justify-between space-x-2">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-1">
+          <h2 className="text-lg font-semibold text-foreground mb-1">
             Enable Follow-ups
           </h2>
-          <p className="text-gray-600 text-sm max-w-2xl">
+          <p className="text-muted-foreground text-sm max-w-2xl">
             Automatically detect sent emails that need a reply and create
             friendly follow-up drafts after a few days.
           </p>
-          
         </div>
-        <div className="flex items-center gap-2 pt-1">
-          <span className="text-sm font-medium text-gray-700">
+        <div className="flex items-center gap-2.5 pt-1 shrink-0">
+          {enabled && <span className="h-1.5 w-1.5 rounded-full bg-foreground animate-in zoom-in-50 fade-in duration-200 motion-reduce:animate-none" aria-hidden="true" />}
+          <span className="text-sm font-medium text-foreground">
             {enabled ? "Active" : "Inactive"}
           </span>
-          <Checkbox
+          <Switch
             checked={enabled}
-            onCheckedChange={(checked) => setEnabled(!!checked)}
-            className="w-5 h-5 border-gray-300"
+            onCheckedChange={(checked) => setEnabled(checked)}
+            aria-label="Enable follow-ups"
           />
         </div>
       </div>
 
       {/* AI Drafts */}
-      <div className="flex items-start justify-between space-x-2">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-1">
+          <h2 className="text-lg font-semibold text-foreground mb-1">
             Create AI Drafts
           </h2>
-          <p className="text-gray-600 text-sm  max-w-2xl">
+          <p className="text-muted-foreground text-sm max-w-2xl">
             When a follow-up is needed, automatically create a draft reply in
             the same thread using AI.
           </p>
         </div>
-        <div className="flex items-center gap-2 pt-1">
-          <span className="text-sm font-medium text-gray-700">
+        <div className="flex items-center gap-2.5 pt-1 shrink-0">
+          <span className="text-sm font-medium text-foreground">
             {aiDrafts ? "On" : "Off"}
           </span>
-          <Checkbox
+          <Switch
             checked={aiDrafts}
-            onCheckedChange={(checked) => setAiDrafts(!!checked)}
-            className="w-5 h-5 border-gray-300"
+            onCheckedChange={(checked) => setAiDrafts(checked)}
+            aria-label="Create AI drafts for follow-ups"
           />
         </div>
       </div>
@@ -141,13 +141,16 @@ const FollowUpPreference = () => {
       </div>
 
       {/* Update Button */}
-      <Button
-        size="sm"
-        onClick={handleSubmit}
-        disabled={mutation.isPending || isLoading}
-      >
-        Update preferences
-      </Button>
+      <div className="border-t border-border pt-4 flex justify-end">
+        <Button
+          size="sm"
+          className="min-w-[150px]"
+          onClick={handleSubmit}
+          disabled={mutation.isPending}
+        >
+          {mutation.isPending ? "Saving…" : "Update preferences"}
+        </Button>
+      </div>
     </div>
   );
 };

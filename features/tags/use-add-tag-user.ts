@@ -29,7 +29,8 @@ export const addTagstoUser = () => {
       query.invalidateQueries({ queryKey: ["user-custom-tags"] });
       query.invalidateQueries({ queryKey: ["user-tags"] });
 
-      toast.success("Preferencs created successfully");
+      // Preferences now auto-save on each toggle; the settings UI shows an
+      // inline "Saved" indicator, so a success toast per save would be noise.
     },
     onError: (error) => {
       console.log(error);

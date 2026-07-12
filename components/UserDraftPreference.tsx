@@ -12,10 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select"
+import { Switch } from "./ui/switch"
 import { Button } from "./ui/button"
 import { HelpCircle } from "lucide-react"
 import { useAddUserDraftPrefernce } from "@/features/draftPreference/use-add-user-draftPreference"
-import { Checkbox } from "./ui/checkbox"
 import { useTierAccess } from "@/features/user/use-tier-access"
 
 
@@ -74,7 +74,7 @@ const UserDraftPreference = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-foreground" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-foreground motion-reduce:animate-none" />
       </div>
     )
   }
@@ -87,58 +87,56 @@ const UserDraftPreference = () => {
     )
   }
 
-  const handleSubmit = async()=>{
-
+  const handleSubmit = async () => {
     const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
     await muation.mutateAsync({
-      fontColor:fontColor,
-      fontSize:fontSize,
-      draftPrompt:draftPrompt,
-      signature:signature,
-      enabled:enabled,
-      timezone:userTimezone,
-      senstivity:senstivity,
-      language:language
+      fontColor,
+      fontSize,
+      draftPrompt,
+      signature,
+      enabled,
+      timezone: userTimezone,
+      senstivity,
+      language,
     })
-
-
-    
   }
 
   return (
     <div className="space-y-6 w-full max-w-full">
-      
-      <div className="flex items-start justify-between">
-				<div>
-					<h2 className="text-lg font-semibold text-gray-900 mb-1">Enable Drafts</h2>
-					<p className="text-gray-600 text-sm  max-w-2xl">
-						Automatically watch incoming emails and draft suitable response for them if needed.
-					</p>
-				</div>
-				<div className="flex flex-col items-end gap-3">
-					<div className="flex items-center gap-2 pt-1">
-						<span className="text-sm font-medium text-gray-700">
-							{enabled ? 'Active' : 'Inactive'}
-						</span>
-						<Checkbox
-							checked={enabled}
-							onCheckedChange={(checked) => setEnabled(!!checked)}
-							className="w-5 h-5 border-gray-300"
-						/>
-					</div>
-					{isFree && (
-						<p className="text-xs text-muted-foreground">
-							{limits.maxAiDraftsPerMonth} drafts/mo · Upgrade to Pro for more
-						</p>
-					)}
-					{isPro && (
-						<p className="text-xs text-muted-foreground">
-							{limits.maxAiDraftsPerMonth} drafts/mo · Upgrade to Max for unlimited
-						</p>
-					)}
-				</div>
-			</div>
+
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground mb-1">Enable Drafts</h2>
+          <p className="text-muted-foreground text-sm max-w-2xl">
+            Automatically watch incoming emails and draft a suitable response for them when needed.
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-3">
+          <div className="flex items-center gap-2.5 pt-1">
+            {enabled && <span className="h-1.5 w-1.5 rounded-full bg-foreground animate-in zoom-in-50 fade-in duration-200 motion-reduce:animate-none" aria-hidden="true" />}
+            <span className="text-sm font-medium text-foreground">
+              {enabled ? 'Active' : 'Inactive'}
+            </span>
+            <Switch
+              checked={enabled}
+              onCheckedChange={(checked) => setEnabled(checked)}
+              aria-label="Enable drafts"
+            />
+          </div>
+          {isFree && (
+            <p className="text-xs text-muted-foreground">
+              {limits.maxAiDraftsPerMonth} drafts/mo · Upgrade to Pro for more
+            </p>
+          )}
+          {isPro && (
+            <p className="text-xs text-muted-foreground">
+              {limits.maxAiDraftsPerMonth} drafts/mo · Upgrade to Max for unlimited
+            </p>
+          )}
+        </div>
+      </div>
+
       {/* Draft Prompt */}
       <div className="space-y-1.5">
         <Label htmlFor="draft-prompt" className="text-lg font-semibold">
@@ -197,6 +195,7 @@ const UserDraftPreference = () => {
           </SelectContent>
         </Select>
       </div>
+
       {/* Draft Language */}
       <div className="space-y-1.5">
         <Label htmlFor="language-select" className="text-lg font-semibold">
@@ -271,9 +270,16 @@ const UserDraftPreference = () => {
       </div>
 
       {/* Update Button */}
-      <Button className="" size="sm" onClick={handleSubmit} disabled={muation.isPending || isLoading}>
-        Update preferences
-      </Button>
+      <div className="border-t border-border pt-4 flex justify-end">
+        <Button
+          size="sm"
+          className="min-w-[150px]"
+          onClick={handleSubmit}
+          disabled={muation.isPending}
+        >
+          {muation.isPending ? 'Saving…' : 'Update preferences'}
+        </Button>
+      </div>
     </div>
   )
 }
