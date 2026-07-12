@@ -1,11 +1,7 @@
 import OpenAI from "openai";
 
-const endpoint = process.env.AZURE_ENDPOINT!;
-const apiKey = process.env.AZURE_API_KEY!;
-
 const openai = new OpenAI({
-  baseURL: endpoint,
-  apiKey,
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
 export interface SentFollowUpRequest {

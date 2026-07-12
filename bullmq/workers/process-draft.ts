@@ -30,8 +30,7 @@ import { getUserTier, getTierLimits } from "@/lib/tier-guard";
 // any failure returns [] and the draft goes out as plain text.
 
 const attachmentPickerAI = new OpenAI({
-  baseURL: process.env.AZURE_ENDPOINT!,
-  apiKey: process.env.AZURE_API_KEY!,
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
 // Attachment size ceilings, kept modest to respect the worker's memory budget

@@ -14,7 +14,7 @@
 - **Database:** PostgreSQL via Prisma. Client is generated to a **custom output path**: `prisma/generated/prisma` and imported as `@/prisma/generated/prisma/client`.
 - **Background jobs:** BullMQ. Queue definitions in `lib/queue.ts`, workers in `bullmq/workers/`. Dashboard at `/api/bullboard` (Bull Board).
 - **Rate limiting:** Custom Redis-based sliding-window limiter in `lib/rate-limit.ts`.
-- **AI drafts:** `context-engine/pipeline.ts` assembles context cards (calendar providers) and calls Azure OpenAI (`gpt-5-mini`).
+- **AI drafts:** `context-engine/pipeline.ts` assembles context cards (calendar providers) and calls OpenAI (`gpt-5-mini`).
 - **External APIs:**
   - Classification API (`lib/model.ts`) — `CLASSIFICATION_API_URL`
   - Draft context API (`lib/draft.ts`) — `DRAFT_API_URL`
@@ -74,7 +74,7 @@
 
 ## Env Setup
 - Copy `.env.example` to `.env.local` and fill all values.
-- Required infra: PostgreSQL, Redis, Clerk, BullMQ (Redis-backed), OpenAI/Azure, Google Cloud (Gmail/PubSub), Microsoft Entra (Outlook), DodoPay, Resend, Telegram Bot.
+- Required infra: PostgreSQL, Redis, Clerk, BullMQ (Redis-backed), OpenAI, Google Cloud (Gmail/PubSub), Microsoft Entra (Outlook), DodoPay, Resend, Telegram Bot.
 
 ## Code Conventions
 - Path alias `@/*` maps to root (`"./*"`).

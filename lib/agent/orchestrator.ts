@@ -25,8 +25,7 @@ import type {
 } from "./types";
 
 const openai = new OpenAI({
-  baseURL: process.env.AZURE_ENDPOINT!,
-  apiKey: process.env.AZURE_API_KEY!,
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
 const MODEL = "gpt-5-mini";

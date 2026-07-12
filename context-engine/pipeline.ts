@@ -19,13 +19,10 @@ import { decrypt } from "@/lib/encode"
 import OpenAI from "openai";
 import { getUserConnectedProviders } from "@/lib/clerk"
 
-const endpoint = process.env.AZURE_ENDPOINT!;
 const deploymentName = "gpt-5-mini";
-const apiKey = process.env.AZURE_API_KEY!;
 
 const openai = new OpenAI({
-  baseURL: endpoint,
-  apiKey,
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
 // ── Prompt hygiene & token budget constants ──────────────

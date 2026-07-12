@@ -9,8 +9,7 @@ import OpenAI from "openai";
 import type { AttachmentCandidate, MailProvider } from "./types";
 
 const picker = new OpenAI({
-  baseURL: process.env.AZURE_ENDPOINT!,
-  apiKey: process.env.AZURE_API_KEY!,
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
 // Keep in-memory attachment blobs modest for the 768 MB runtime.
