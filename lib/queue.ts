@@ -24,6 +24,26 @@ export const outlookMailUpdateQueue = new Queue("outlook-mail-update", {
   },
 });
 
+export const gmailMailQueue = new Queue("gmail-mail", {
+  connection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 1000 },
+    removeOnComplete: true,
+    removeOnFail: 100,
+  },
+});
+
+export const gmailSentQueue = new Queue("gmail-sent-mail", {
+  connection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 1000 },
+    removeOnComplete: true,
+    removeOnFail: 100,
+  },
+});
+
 export const draftQueue = new Queue("draft", {
   connection,
   defaultJobOptions: {
@@ -91,6 +111,8 @@ export const trialReminderQueue = new Queue("trial-reminder", {
 export const queueAdapters = [
   new BullMQAdapter(outlookMailQueue),
   new BullMQAdapter(outlookMailUpdateQueue),
+  new BullMQAdapter(gmailMailQueue),
+  new BullMQAdapter(gmailSentQueue),
   new BullMQAdapter(draftQueue),
   new BullMQAdapter(telegramQueue),
   new BullMQAdapter(dbBatchQueue),

@@ -4,6 +4,8 @@ import { redis } from "@/lib/redis";
 import {
   outlookMailQueue,
   outlookMailUpdateQueue,
+  gmailMailQueue,
+  gmailSentQueue,
   draftQueue,
   telegramQueue,
   dbBatchQueue,
@@ -48,6 +50,8 @@ interface HealthResponse {
 const QUEUES = {
   "outlook-mail": outlookMailQueue,
   "outlook-mail-update": outlookMailUpdateQueue,
+  "gmail-mail": gmailMailQueue,
+  "gmail-sent-mail": gmailSentQueue,
   draft: draftQueue,
   telegram: telegramQueue,
   "db-batch": dbBatchQueue,

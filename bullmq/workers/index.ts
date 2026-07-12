@@ -2,6 +2,8 @@ import { Worker } from "bullmq";
 import { redis } from "@/lib/redis";
 import { processOutlookMail } from "./process-outlook-mail";
 import { updateOutlookMail } from "./update-outlook-mail";
+import { processGmailMail } from "./process-gmail-mail";
+import { processGmailSent } from "./process-gmail-sent";
 import { processDraft } from "./process-draft";
 import { telegramAgent } from "./telegram-agent";
 import { processDbBatch } from "./process-db-batch";
@@ -9,6 +11,11 @@ import { processClassify } from "./process-classify";
 import { processFollowUpDraft } from "./follow-up-draft";
 import { processTrialReminder } from "./trial-reminder";
 import { dbBatchQueue, classifyQueue } from "@/lib/queue";
+
+// Shared cap protecting Gmail/Outlook API quota: at most 10 jobs run at once,
+// and no more than 10 new jobs start per rolling second — so a burst of 100
+// queued messages drains in ~10 batches of 10 rather than all at once.
+const MAIL_API_LIMITER = { max: 10, duration: 1000 };
 
 export const runtime = "nodejs";
 
@@ -20,6 +27,7 @@ export async function startWorkers() {
   const outlookMailWorker = new Worker("outlook-mail", processOutlookMail, {
     connection,
     concurrency: 10,
+    limiter: MAIL_API_LIMITER,
     lockDuration: 120_000,
   });
 
@@ -29,8 +37,23 @@ export async function startWorkers() {
     {
       connection,
       concurrency: 10,
+      limiter: MAIL_API_LIMITER,
     },
   );
+
+  const gmailMailWorker = new Worker("gmail-mail", processGmailMail, {
+    connection,
+    concurrency: 10,
+    limiter: MAIL_API_LIMITER,
+    lockDuration: 120_000,
+  });
+
+  const gmailSentWorker = new Worker("gmail-sent-mail", processGmailSent, {
+    connection,
+    concurrency: 10,
+    limiter: MAIL_API_LIMITER,
+    lockDuration: 120_000,
+  });
 
   const draftWorker = new Worker("draft", processDraft, {
     connection,
@@ -69,6 +92,8 @@ export async function startWorkers() {
   workers = [
     outlookMailWorker,
     outlookMailUpdateWorker,
+    gmailMailWorker,
+    gmailSentWorker,
     draftWorker,
     telegramWorker,
     dbBatchWorker,

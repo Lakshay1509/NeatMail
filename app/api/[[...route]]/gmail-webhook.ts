@@ -1,80 +1,27 @@
-import { draftQueue, followUpQueue } from "@/lib/queue";
-import { getGmailClient, getGmailMessageBody, OAuthError } from "@/lib/gmail";
+import { gmailMailQueue, gmailSentQueue } from "@/lib/queue";
+import { getGmailClient, OAuthError } from "@/lib/gmail";
 import {
-  isMessageProcessed,
-  // isThreadProcessed,
-  markMessageProcessed,
-  // markThreadProcessed,
-  unmarkMessageProcessed,
-  // unmarkThreadProcessed,
   claimReconnectReminder,
   releaseReconnectReminder,
 } from "@/lib/redis";
 import { sendReconnectEmail } from "@/lib/resend";
 import {
-  addMailtoDB,
   getLastHistoryId,
-  getTagsUser,
   getUserByEmail,
-  getUserSubscribed,
-  labelColor,
   updateHistoryId,
   updateMessageStatus,
-  useGetUserDraftPreference,
-  checkFollowUpLimit,
-  incrementFollowUpCount,
 } from "@/lib/supabase";
 import { getUserTier } from "@/lib/tier-guard";
 import { clerkClient } from "@clerk/nextjs/server";
 import { Hono } from "hono";
 import { OAuth2Client } from "google-auth-library";
-import { getModelResponse, ModelResponse } from "@/lib/model";
 import { handleLabelCorrections } from "@/lib/gmail-correction";
-import { checkAndForwardToTelegram } from "@/lib/telegram";
-import { checkSentRequiresFollowUp } from "@/lib/sent-followup";
-import { db } from "@/lib/prisma";
-
-export function parseFromHeader(fromHeader: string): {
-  senderName: string;
-  senderEmail: string;
-} {
-  const emailMatch = fromHeader.match(/<([^>]+)>/);
-  const senderEmail = (emailMatch?.[1] || fromHeader).trim();
-  const senderName = fromHeader
-    .replace(/<[^>]+>/, "")
-    .replace(/"/g, "")
-    .trim();
-
-  return {
-    senderName: senderName || senderEmail,
-    senderEmail,
-  };
-}
-
-function extractEmailsFromHeader(header: string): string[] {
-  const emails: string[] = [];
-  const angleMatches = header.matchAll(/<([^>]+)>/g);
-  for (const match of angleMatches) {
-    emails.push(match[1].toLowerCase().trim());
-  }
-  if (emails.length === 0) {
-    for (const part of header.split(",")) {
-      const trimmed = part.trim().toLowerCase();
-      if (trimmed.includes("@")) {
-        emails.push(trimmed);
-      }
-    }
-  }
-  return emails;
-}
 
 const authClient = new OAuth2Client();
 
 const app = new Hono().post("/", async (ctx) => {
-  let currentMessageId: string | null = null;
   let errorUserId: string | null = null;
   let errorEmail: string | null = null;
-  // let currentThreadId: string | null = null;
 
   try {
     const authHeader = ctx.req.header("Authorization");
@@ -129,12 +76,6 @@ const app = new Hono().post("/", async (ctx) => {
       console.log(`[webhook] ${emailAddress} scheduled for deletion — skipping`);
       return ctx.json({ success: true }, 200);
     }
-
-    // const subscribed = await getUserSubscribed(user.clerk_user_id);
-
-    // if (subscribed.subscribed === false) {
-    //   return ctx.json({ error: "user not subscribed" }, 200);
-    // }
 
     const tier = await getUserTier(user.clerk_user_id);
     if (tier === "FREE") {
@@ -259,370 +200,31 @@ const app = new Hono().post("/", async (ctx) => {
           ) || [],
       ) || [];
 
+    // Hand each message off to a queue instead of processing it inline here —
+    // a burst of history (e.g. catch-up after downtime) would otherwise block
+    // this single webhook request behind dozens of sequential Gmail API calls.
+    // Workers apply a concurrency cap + rate limiter to stay well under Gmail's
+    // per-user quota (see bullmq/workers/index.ts).
     for (const msg of messages) {
       const messageId = msg.message?.id;
       if (!messageId) continue;
 
-      if (await isMessageProcessed(messageId)) {
-        continue;
-      }
-
-      // Mark as processed immediately to prevent race conditions
-      await markMessageProcessed(messageId);
-      currentMessageId = messageId;
-
-      let email;
-      try {
-        email = await gmail.users.messages.get({
-          userId: "me",
-          id: messageId,
-        });
-      } catch (err: any) {
-        if (err.code === 404 || err.status === 404) {
-          console.log(
-            `Message ${messageId} not found (likely deleted), skipping.`,
-          );
-          currentMessageId = null;
-          continue;
-        }
-        throw err;
-      }
-
-      const fullBody = await getGmailMessageBody(clerkUserId, messageId);
-      const truncatedBody = fullBody?.slice(0, 300);
-
-      const emailData = {
-        userId: user.clerk_user_id,
-        subject:
-          email.data.payload?.headers?.find((h) => h.name === "Subject")
-            ?.value || "",
-        from:
-          email.data.payload?.headers?.find((h) => h.name === "From")?.value ||
-          "",
-        bodySnippet: truncatedBody,
-        threadId: email.data.threadId || "",
-      };
-
-      const toHeader = email.data.payload?.headers?.find((h) => h.name === "To")?.value || "";
-
-      const toEmails = extractEmailsFromHeader(toHeader);
-      const userEmailLower = emailAddress.toLowerCase();
-      const isDirectTo = toEmails.includes(userEmailLower);
-
-      if (emailData.threadId) {
-        await followUpQueue.remove(`follow-up:gmail:${emailData.threadId}`);
-      }
-
-      // currentThreadId = String(emailData.threadId);
-
-      // if thread as processed for 24 hours to prevent duplication tags
-      // if (await isThreadProcessed(String(emailData.threadId))) {
-      //   currentMessageId = null;
-      //   currentThreadId = null;
-      //   continue;
-      // }
-
-      const tagsOfUser = await getTagsUser(clerkUserId);
-      const draftsenstivity = (await useGetUserDraftPreference(clerkUserId))
-        .senstivity;
-
-      // Check if Gmail already classified this as Promotions
-      let labelName = "";
-      let responseRequired = false;
-      let classificationResult: ModelResponse | null = null;
-
-      const { senderEmail: fromEmail } = parseFromHeader(emailData.from);
-      if (fromEmail === "digest@send.neatmail.app") {
-        const hasAumNeededTag = tagsOfUser.some(
-          (tag) => tag.tag.name === "Automated alerts",
-        );
-        if (!hasAumNeededTag) {
-          currentMessageId = null;
-          continue;
-        }
-        labelName = "Automated alerts";
-      }
-      if (!labelName) {
-        const hasMarketingTag = tagsOfUser.some(
-          (tag) => tag.tag.name === "Marketing",
-        );
-        const hasReadonlyTag = tagsOfUser.some(
-          (tag) => tag.tag.name === "Read only",
-        );
-
-        const hasAutomatedAlertTag = tagsOfUser.some(
-          (tag) => tag.tag.name === "Automated alerts",
-        );
-
-        if (
-          email.data.labelIds?.includes("CATEGORY_PROMOTIONS") &&
-          hasMarketingTag
-        ) {
-          labelName = "Marketing";
-        } else if (
-          hasReadonlyTag &&
-          email.data.labelIds?.includes("CATEGORY_SOCIAL")
-        ) {
-          labelName = "Read only";
-        } else if (
-          (email.data.labelIds?.includes("CATEGORY_PROMOTIONS") ||
-            email.data.labelIds?.includes("CATEGORY_SOCIAL")) &&
-          hasAutomatedAlertTag
-        ) {
-          labelName = "Automated alerts";
-        } else if (isDirectTo) {
-          const classification = await getModelResponse({
-            bodySnippet: emailData.bodySnippet,
-            from: emailData.from,
-            subject: emailData.subject,
-            user_id: emailData.userId,
-            tags: tagsOfUser.map((t) => ({
-              name: t.tag.name,
-              description: t.tag.description ?? "",
-              user_defined: t.tag.user_id !== null,
-            })),
-            sensitivity: draftsenstivity || "if actionable",
-          });
-          classificationResult = classification;
-          labelName = classification.category;
-
-          responseRequired = classification.response_required === true;
-        } else {
-          const hasReadOnlyTag = tagsOfUser.some(
-            (tag) => tag.tag.name === "Read only",
-          );
-
-          if (hasReadOnlyTag) {
-            labelName = "Read only";
-          }
-          responseRequired = false;
-        }
-      }
-
-      if (emailData.threadId) {
-        try {
-          const threadData = await gmail.users.threads.get({
-            userId: "me",
-            id: emailData.threadId,
-          });
-
-          const labelsResponse = await gmail.users.labels.list({ userId: "me" });
-          const followUpLabelId = labelsResponse.data.labels?.find(
-            (l) => l.name === "Follow up",
-          )?.id;
-
-          if (followUpLabelId) {
-            const messagesWithFollowUp = threadData.data.messages?.filter(
-              (m) => m.labelIds?.includes(followUpLabelId),
-            );
-
-            if (messagesWithFollowUp?.length) {
-              for (const msg of messagesWithFollowUp) {
-                await gmail.users.messages.modify({
-                  userId: "me",
-                  id: msg.id!,
-                  requestBody: {
-                    removeLabelIds: [followUpLabelId],
-                  },
-                });
-                console.log(
-                  `[gmail-followup] Removed "Follow up" from ${msg.id}`,
-                );
-              }
-            }
-          }
-        } catch (err: any) {
-          console.error(
-            `[gmail-followup] Error removing "Follow up" for thread ${emailData.threadId}: ${err.message}`,
-          );
-        }
-      }
-
-      const shouldDraft =
-        (labelName === "Pending Response" || labelName === "Action Needed") &&
-        responseRequired;
-
-      if (labelName === "" && !shouldDraft) {
-        await addMailtoDB(clerkUserId, null, String(messageId), emailData.from);
-        console.log(`No label assigned for message: ${messageId}`);
-        continue;
-      }
-
-      if (labelName.trim().length > 0) {
-        const colourofLabel = await labelColor(labelName, clerkUserId);
-
-        const labelsResponse = await gmail.users.labels.list({ userId: "me" });
-        let labelId = labelsResponse.data.labels?.find(
-          (l) => l.name === labelName,
-        )?.id;
-
-        if (!labelId) {
-          console.log(`Creating new label: ${labelName}`);
-          const newLabel = await gmail.users.labels.create({
-            userId: "me",
-            requestBody: {
-              name: labelName,
-              labelListVisibility: "labelShow",
-              messageListVisibility: "show",
-              color: {
-                textColor: "#ffffff",
-                backgroundColor: colourofLabel.color,
-              },
-            },
-          });
-          labelId = newLabel.data.id!;
-        }
-
-        // Apply label
-        try {
-          await gmail.users.messages.modify({
-            userId: "me",
-            id: messageId,
-            requestBody: {
-              addLabelIds: [labelId],
-            },
-          });
-        } catch (err: any) {
-          if (err.code === 404 || err.status === 404) {
-            console.log(
-              `Message ${messageId} deleted before label could be applied, skipping.`,
-            );
-            currentMessageId = null;
-            // currentThreadId = null;
-            continue;
-          }
-          throw err;
-        }
-
-        const { senderEmail } = parseFromHeader(emailData.from);
-        await checkAndForwardToTelegram(
-          clerkUserId,
-          senderEmail,
-          emailData.subject,
-          fullBody,
-          colourofLabel.id,
-          colourofLabel.name,
-        );
-
-        await addMailtoDB(
-          clerkUserId,
-          colourofLabel.id,
-          String(messageId),
-          emailData.from,
-          classificationResult?.ai_summary,
-          classificationResult?.ai_action,
-        );
-      }
-
-      if (shouldDraft && isDirectTo) {
-        const { senderName, senderEmail } = parseFromHeader(emailData.from);
-        await draftQueue.add("process-draft", {
-          userName: fullName,
-          userId: clerkUserId,
-          emailData: {
-            ...emailData,
-            receivedAt: new Date().toISOString(),
-          },
-          senderName: senderName,
-          senderEmail: senderEmail,
-          messageId: messageId,
-          tokenData: tokenData,
-          is_gmail: true,
-        });
-      }
-
-      // await markThreadProcessed(String(emailData.threadId));
-
-      currentMessageId = null;
-      // currentThreadId = null;
+      await gmailMailQueue.add(
+        "process-mail",
+        { clerkUserId, emailAddress, messageId },
+        { jobId: `gmail/msg/${messageId}` },
+      );
     }
 
     for (const msg of sentMessages) {
       const messageId = msg.message?.id;
       if (!messageId) continue;
 
-      if (await isMessageProcessed(messageId)) {
-        continue;
-      }
-
-      await markMessageProcessed(messageId);
-
-      let email;
-      try {
-        email = await gmail.users.messages.get({
-          userId: "me",
-          id: messageId,
-        });
-      } catch {
-        continue;
-      }
-
-      const subject =
-        email.data.payload?.headers?.find((h) => h.name === "Subject")?.value ||
-        "";
-      const body = await getGmailMessageBody(clerkUserId, messageId);
-      const to =
-        email.data.payload?.headers?.find((h) => h.name === "To")?.value || "";
-      const threadId = email.data.threadId ?? "";
-
-      const needsFollowUp = await checkSentRequiresFollowUp({
-        subject,
-        body: body,
-        to,
-      });
-
-      console.log(
-        `[sent-followup] ${messageId} → ${needsFollowUp ? "follow-up needed" : "no follow-up needed"}`,
+      await gmailSentQueue.add(
+        "process-sent",
+        { clerkUserId, emailAddress, messageId },
+        { jobId: `gmail/sent/${messageId}` },
       );
-
-      if (needsFollowUp) {
-        const pref = await db.follow_up_preference.findUnique({
-          where: { user_id: clerkUserId },
-        });
-
-        if (pref?.enabled) {
-          const toEmail = to.includes("<")
-            ? (to.match(/<([^>]+)>/)?.[1] ?? to)
-            : to;
-          const skipList = (pref.skip_emails ?? "")
-            .split(",")
-            .map((s) => s.trim().toLowerCase())
-            .filter(Boolean);
-
-          const shouldSkip = skipList.some((skip) =>
-            toEmail.toLowerCase().includes(skip),
-          );
-
-          if (!shouldSkip) {
-            const withinLimit = await checkFollowUpLimit(clerkUserId);
-            if (!withinLimit) {
-              console.log(
-                `[sent-followup] ${messageId} → skipped (monthly limit reached)`,
-              );
-              continue;
-            }
-            await incrementFollowUpCount(clerkUserId);
-            await followUpQueue.remove(`follow-up:gmail:${threadId}`);
-            await followUpQueue.add(
-              "follow-up",
-              {
-                userId: clerkUserId,
-                messageId,
-                threadId,
-                subject,
-                to,
-                body: body ?? "",
-                isGmail: true,
-                aiDrafts: pref.ai_drafts,
-              },
-              {
-                delay: pref.days * 24 * 60 * 60 * 1000,
-                jobId: `follow-up:gmail:${threadId}`,
-              },
-            );
-          }
-        }
-      }
     }
 
     await updateHistoryId(emailAddress, String(newHistoryId), true);
@@ -665,10 +267,6 @@ const app = new Hono().post("/", async (ctx) => {
       } else {
         console.error("❌ Error Object:", error);
       }
-    }
-
-    if (currentMessageId) {
-      await unmarkMessageProcessed(currentMessageId);
     }
 
     return ctx.json(
