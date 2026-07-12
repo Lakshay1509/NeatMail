@@ -109,7 +109,7 @@ function sleep(ms: number): Promise<void> {
 
 export async function pollForResult(
   requestId: string,
-  timeoutMs: number = 60_000,
+  timeoutMs: number = 600_000,
 ): Promise<ModelResponse> {
   const startedAt = Date.now();
   const key = `${RESULT_PREFIX}${requestId}`;
@@ -126,7 +126,7 @@ export async function pollForResult(
     }
 
     if (Date.now() - startedAt > timeoutMs) {
-      throw new Error("Classification timed out after 60 seconds");
+      throw new Error(`Classification timed out after ${Math.round(timeoutMs / 1000)} seconds`);
     }
 
     await sleep(100);

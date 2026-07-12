@@ -80,7 +80,7 @@ export async function getModelResponse(
 
     await bufferClassifyJob(requestId, request);
 
-    return await pollForResult(requestId, 60_000);
+    return await pollForResult(requestId, 600_000);
   } catch (error) {
     throw error instanceof Error
       ? error
