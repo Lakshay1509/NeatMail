@@ -343,6 +343,65 @@ const app = new Hono()
         return ctx.json({ error }, 500);
       }
     },
+  )
+
+  .put(
+    "/custom",
+    zValidator(
+      "json",
+      z.object({
+        id: z.string().min(1),
+        // Only the description is editable. Name and color are immutable: the
+        // name is the key we use to find/create the Gmail label and drive
+        // classification, and the color is tied to the existing Gmail label —
+        // changing either here would silently desync from Gmail.
+        description: z.string().trim().min(10).max(200),
+      }),
+    ),
+    async (ctx) => {
+      const { userId } = await auth();
+      if (!userId) {
+        return ctx.json({ error: "Please sign in to edit this label." }, 401);
+      }
+
+      const values = ctx.req.valid("json");
+
+      // Only the owner's own custom tags are editable. System tags (user_id
+      // null) and other users' tags must never be reachable here.
+      const existing = await db.tag.findFirst({
+        where: { id: values.id, user_id: userId },
+      });
+
+      if (!existing) {
+        return ctx.json(
+          {
+            error:
+              "We couldn't find that label, or you don't have permission to edit it.",
+          },
+          404,
+        );
+      }
+
+      try {
+        const data = await db.tag.update({
+          where: { id: existing.id },
+          data: {
+            description: values.description,
+          },
+        });
+
+        return ctx.json({ data }, 200);
+      } catch (error) {
+        console.error("Error updating custom tag", error);
+        return ctx.json(
+          {
+            error:
+              "Something went wrong while updating your label. Please try again.",
+          },
+          500,
+        );
+      }
+    },
   );
 
 export default app;

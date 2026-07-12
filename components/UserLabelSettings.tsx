@@ -18,10 +18,11 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { MoreVertical, Trash } from "lucide-react";
+import { MoreVertical, Pencil, Trash } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
 import { useTierAccess } from "@/features/user/use-tier-access";
 import CreateLabel from "./CreateLabel";
+import EditLabel from "./EditLabel";
 import UpdateFolderPrefernce from "./UpdateFolderPrefernce";
 import LabelsNotInGmail from "./LabelsNotInGmail";
 import { useGetUserIsGmail } from "@/features/user/use-get-user-isGmail";
@@ -52,6 +53,13 @@ const UserLabelSettings = () => {
 	const [watch, setWatch] = useState<boolean>();
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 	const [id, setId] = useState<string>("");
+	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+	const [editTarget, setEditTarget] = useState<{
+		id: string;
+		name: string;
+		color: string;
+		description: string | null;
+	} | null>(null);
 
 
 
@@ -115,6 +123,19 @@ const UserLabelSettings = () => {
 
 	}
 
+	const handleEditClick = (category: {
+		id: string;
+		name: string;
+		color: string;
+		description: string | null;
+	}) => {
+		setEditTarget(category);
+		setIsEditDialogOpen(true);
+	}
+
+	const customLabels = customData?.data ?? [];
+	const hasCustomLabels = customLabels.length > 0;
+
 
 
 	return (
@@ -123,20 +144,20 @@ const UserLabelSettings = () => {
 
 			<div className="flex flex-row items-start justify-between gap-4">
 				<div>
-					<h2 className="text-lg font-semibold text-gray-900 mb-2">Monitor Inbox</h2>
-					<p className="text-gray-600 text-sm md:text-base max-w-2xl">
+					<h2 className="text-lg font-semibold text-foreground mb-2">Monitor Inbox</h2>
+					<p className="text-muted-foreground text-sm md:text-base max-w-2xl">
 						Automatically watch incoming emails and categorize them based on your selected preferences below. When enabled, new emails will be processed in real-time.
 					</p>
 				</div>
 					<div className="flex flex-col items-end gap-3">
 					<div className="flex items-center gap-2 pt-1">
-						<span className="text-sm font-medium text-gray-700">
+						<span className="text-sm font-medium text-foreground">
 							{watch ? 'Active' : 'Inactive'}
 						</span>
 						<Checkbox
 							checked={watch}
 							onCheckedChange={(checked) => setWatch(!!checked)}
-							className="w-5 h-5 border-gray-300"
+							className="w-5 h-5"
 						/>
 					</div>
 
@@ -146,31 +167,31 @@ const UserLabelSettings = () => {
 
 			{/* {isGmailData?.is_gmail===false && <WatchedFolderSelect disabled={false} />} */}
 
-			
+
 
 			<UpdateFolderPrefernce/>
 
-			
+
 
 			<div className="relative py-6">
 				<div className="absolute inset-0 flex items-center" aria-hidden="true">
-					<div className="w-full border-t border-gray-200" />
+					<div className="w-full border-t border-border" />
 				</div>
 			</div>
 
-			<div className="bg-white ">
+			<div className="bg-background">
 				<div className="mb-8 flex flex-row items-center justify-between space-x-2">
 					<div>
-						<h2 className="text-lg font-semibold text-gray-900 mb-2">Category Preferences</h2>
-						<p className="text-gray-600 text-sm md:text-base">
-							We will organize your emails using the categories below to keep you focused on what's important.
+						<h2 className="text-lg font-semibold text-foreground mb-2">Category Preferences</h2>
+						<p className="text-muted-foreground text-sm md:text-base">
+							We will organize your emails using the categories below to keep you focused on what&apos;s important.
 						</p>
 					</div>
 
 				</div>
 
 				<div className="space-y-6 ">
-					<div className="grid grid-cols-[auto_1fr] gap-x-6 items-end pb-2 border-b border-gray-100 text-sm text-gray-500 font-medium">
+					<div className="grid grid-cols-[auto_1fr] gap-x-6 items-end pb-2 border-b border-border text-sm text-muted-foreground font-medium">
 						<div className="w-24 text-center leading-tight">
 							Enable
 						</div>
@@ -181,26 +202,26 @@ const UserLabelSettings = () => {
 						{CATEGORIES.map((category) => {
 							const isResolvedLocked = followUpsEnabled && category.name === "Resolved";
 							return (
-							<div key={category.name} className="grid grid-cols-[auto_1fr] gap-x-6 items-center group hover:bg-gray-50 p-3 rounded-lg transition-colors -mx-3">
+							<div key={category.name} className="grid grid-cols-[auto_1fr] gap-x-6 items-center group hover:bg-muted p-3 rounded-lg transition-colors -mx-3">
 								<div className="flex justify-center w-24">
 									<Checkbox
 										checked={isResolvedLocked ? true : selectedCategories.includes(category.name)}
 										onCheckedChange={() => toggleCategory(category.name)}
 										disabled={isResolvedLocked}
-										className="w-5 h-5 border-gray-300"
+										className="w-5 h-5"
 									/>
 								</div>
 								<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
 									<span
-										className="px-3 py-1 rounded-full text-white text-xs font-semibold tracking-wide whitespace-nowrap w-fit shadow-sm"
+										className="px-3 py-1 rounded-full text-white text-xs font-semibold tracking-wide whitespace-nowrap w-fit"
 										style={{ backgroundColor: category.color }}
 									>
 										{category.name}
 									</span>
-									<span className="text-sm text-gray-600 leading-tight">
+									<span className="text-sm text-muted-foreground leading-tight">
 										{category.description}
 										{isResolvedLocked && (
-											<span className="text-gray-400"> · Required while follow-ups are on</span>
+											<span className="text-muted-foreground"> · Required while follow-ups are on</span>
 										)}
 									</span>
 								</div>
@@ -214,15 +235,15 @@ const UserLabelSettings = () => {
 
 				<div className="relative py-6">
 					<div className="absolute inset-0 flex items-center" aria-hidden="true">
-						<div className="w-full border-t border-gray-200" />
+						<div className="w-full border-t border-border" />
 					</div>
 				</div>
 
 				<div className="mb-8 flex flex-col md:flex-row md:items-center items-start justify-between gap-4 md:space-x-2">
 					<div>
-						<h2 className="text-lg font-semibold text-gray-900 mb-2">Custom Labels</h2>
-						<p className="text-gray-600 text-sm md:text-base">
-							Labels made by you for your personlized workflow!
+						<h2 className="text-lg font-semibold text-foreground mb-2">Custom Labels</h2>
+						<p className="text-muted-foreground text-sm md:text-base">
+							Labels made by you for your personalized workflow!
 						</p>
 					</div>
 					<div className="flex flex-row space-x-2">
@@ -233,74 +254,118 @@ const UserLabelSettings = () => {
 				</div>
 
 				<div className="space-y-6">
-					<div className="grid grid-cols-[auto_1fr] gap-x-6 items-end pb-2 border-b border-gray-100 text-sm text-gray-500 font-medium">
-						<div className="w-24 text-center leading-tight">
-							Enable
-						</div>
-						<div className="pb-0.5">Category Details</div>
-					</div>
-
-
-					<div>
-						{customData?.data.map((category) => (
-							<div key={category.id} className="grid grid-cols-[auto_1fr_auto] gap-x-6 items-center group hover:bg-gray-50 p-3 rounded-lg transition-colors -mx-3">
-								<div className="flex justify-center w-24">
-									<Checkbox
-										checked={selectedCategories.includes(category.name)}
-										onCheckedChange={() => toggleCategory(category.name)}
-										className="w-5 h-5 border-gray-300"
-									/>
+					{customLoading ? (
+						<>
+							<div className="grid grid-cols-[auto_1fr] gap-x-6 items-end pb-2 border-b border-border text-sm text-muted-foreground font-medium">
+								<div className="w-24 text-center leading-tight">
+									Enable
 								</div>
-								<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 min-w-0">
-									<span
-										className="px-3 py-1 rounded-full text-white text-xs font-semibold tracking-wide w-fit shadow-sm max-w-full overflow-hidden text-ellipsis whitespace-nowrap"
-										style={{ backgroundColor: category.color }}
-									>
-										{category.name}
-									</span>
-									<span className="text-sm text-gray-600 leading-tight">{category.description}</span>
-								</div>
-								<div>
-									<DropdownMenu >
-										<DropdownMenuTrigger asChild className="">
-											<Button
-												variant="ghost"
-												size="sm"
-												className="h-8 w-8 p-0"
-											>
-												<MoreVertical className="h-4 w-4" />
-												<span className="sr-only">Open menu</span>
-											</Button>
-										</DropdownMenuTrigger>
-
-										<DropdownMenuContent align="end">
-
-											<DropdownMenuItem
-												onClick={() => { handleDialogClick(category.id) }}
-												className="text-destructive"
-											>
-												<Trash className="mr-2 h-4 w-4" />
-												Delete
-											</DropdownMenuItem>
-										</DropdownMenuContent>
-									</DropdownMenu>
-								</div>
+								<div className="pb-0.5">Category Details</div>
 							</div>
-						))}
-					</div>
+							<div className="space-y-3" aria-hidden="true">
+								{[0, 1, 2].map((i) => (
+									<div key={i} className="grid grid-cols-[auto_1fr_auto] gap-x-6 items-center p-3 -mx-3">
+										<div className="flex justify-center w-24">
+											<div className="h-5 w-5 rounded bg-muted animate-pulse" />
+										</div>
+										<div className="flex items-center gap-4">
+											<div className="h-6 w-24 rounded-full bg-muted animate-pulse" />
+											<div className="h-4 w-48 max-w-full rounded bg-muted animate-pulse" />
+										</div>
+										<div className="h-8 w-8 rounded bg-muted animate-pulse" />
+									</div>
+								))}
+							</div>
+						</>
+					) : customError ? (
+						<p className="text-sm text-destructive">
+							Couldn&apos;t load your custom labels. Refresh the page to try again.
+						</p>
+					) : !hasCustomLabels ? (
+						<div className="rounded-lg border border-dashed border-border px-6 py-10 text-center">
+							<p className="text-sm font-medium text-foreground">No custom labels yet</p>
+							<p className="mt-1 text-sm text-muted-foreground">
+								Create a label to tailor how NeatMail organizes your inbox.
+							</p>
+						</div>
+					) : (
+						<>
+							<div className="grid grid-cols-[auto_1fr] gap-x-6 items-end pb-2 border-b border-border text-sm text-muted-foreground font-medium">
+								<div className="w-24 text-center leading-tight">
+									Enable
+								</div>
+								<div className="pb-0.5">Category Details</div>
+							</div>
+
+							<div>
+								{customLabels.map((category) => (
+									<div key={category.id} className="grid grid-cols-[auto_1fr_auto] gap-x-6 items-center group hover:bg-muted p-3 rounded-lg transition-colors -mx-3">
+										<div className="flex justify-center w-24">
+											<Checkbox
+												checked={selectedCategories.includes(category.name)}
+												onCheckedChange={() => toggleCategory(category.name)}
+												className="w-5 h-5"
+											/>
+										</div>
+										<div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 min-w-0">
+											<span
+												className="px-3 py-1 rounded-full text-white text-xs font-semibold tracking-wide w-fit max-w-full overflow-hidden text-ellipsis whitespace-nowrap"
+												style={{ backgroundColor: category.color }}
+											>
+												{category.name}
+											</span>
+											<span className="text-sm text-muted-foreground leading-tight">{category.description}</span>
+										</div>
+										<div>
+											<DropdownMenu >
+												<DropdownMenuTrigger asChild className="">
+													<Button
+														variant="ghost"
+														size="sm"
+														className="h-8 w-8 p-0"
+													>
+														<MoreVertical className="h-4 w-4" />
+														<span className="sr-only">Open menu</span>
+													</Button>
+												</DropdownMenuTrigger>
+
+												<DropdownMenuContent align="end">
+
+													<DropdownMenuItem
+														onClick={() => { handleEditClick(category) }}
+													>
+														<Pencil className="mr-2 h-4 w-4" />
+														Edit
+													</DropdownMenuItem>
+
+													<DropdownMenuItem
+														onClick={() => { handleDialogClick(category.id) }}
+														className="text-destructive"
+													>
+														<Trash className="mr-2 h-4 w-4" />
+														Delete
+													</DropdownMenuItem>
+												</DropdownMenuContent>
+											</DropdownMenu>
+										</div>
+									</div>
+								))}
+							</div>
+						</>
+					)}
 				</div>
 			</div>
 
 			<div className="relative py-6">
 				<div className="absolute inset-0 flex items-center" aria-hidden="true">
-					<div className="w-full border-t border-gray-200" />
+					<div className="w-full border-t border-border" />
 				</div>
 			</div>
 
 
 			<div className=" flex justify-end">
 				<Button
-					className=" text-white min-w-[150px] shadow-sm"
+					className="min-w-[150px]"
 					onClick={handleSubmit}
 					disabled={mutation.isPending || !isValid}
 				>
@@ -309,19 +374,28 @@ const UserLabelSettings = () => {
 			</div>
 
 
+			{editTarget && (
+				<EditLabel
+					key={editTarget.id}
+					open={isEditDialogOpen}
+					onOpenChange={setIsEditDialogOpen}
+					tag={editTarget}
+				/>
+			)}
+
 			<AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-				<AlertDialogContent className="bg-white border border-gray-200 text-gray-900">
+				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle className="text-gray-900 font-semibold">Are you sure?</AlertDialogTitle>
-						<AlertDialogDescription className="text-gray-600">
+						<AlertDialogTitle className="font-semibold">Are you sure?</AlertDialogTitle>
+						<AlertDialogDescription>
 							This will permanently delete your tag!
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel className="bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200">Cancel</AlertDialogCancel>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={handleDeleteClick}
-							className="bg-red-500 hover:bg-red-600 text-white"
+							className="bg-destructive text-white hover:bg-destructive/90"
 						>
 							{deleteTagMutation.isPending ? "Deleting..." : "Delete"}
 						</AlertDialogAction>

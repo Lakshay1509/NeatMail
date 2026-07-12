@@ -17,6 +17,21 @@ import { useState } from "react"
 import { addCustomTags } from "@/features/tags/use-add-custom-tag"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { colors } from "@/lib/colors"
+
+// Gmail's stored label color must round-trip back to Gmail on sync, so it has
+// to be one of Gmail's palette values. Labels can carry colors outside that
+// palette (e.g. set via the API), which the backend rejects with "No color
+// exists". Keep the Gmail color when it's supported; otherwise fall back to a
+// valid default so the sync always succeeds.
+const DEFAULT_LABEL_COLOR = "#000000";
+const toSupportedColor = (gmailColor?: string | null): string => {
+  const normalized = gmailColor?.toLowerCase();
+  if (normalized && colors.some((c) => c.value.toLowerCase() === normalized)) {
+    return normalized;
+  }
+  return DEFAULT_LABEL_COLOR;
+};
 
 const LabelsNotInGmail = () => {
 
@@ -28,7 +43,7 @@ const LabelsNotInGmail = () => {
 
     const isDescriptionValid = (value: string) => {
       const trimmedValue = value.trim();
-      return trimmedValue.length >= 10 && trimmedValue.length <= 100;
+      return trimmedValue.length >= 10 && trimmedValue.length <= 200;
     }
 
     const areSelectedDescriptionsValid =
@@ -66,16 +81,13 @@ const LabelsNotInGmail = () => {
       }))
     }
 
-    if (isLoading) return <div>Loading...</div>
-    if (isError) return <div>Error loading labels</div>
-
     const onsubmit = async () => {
         if (!areSelectedDescriptionsValid) return;
 
         try {
           for (const name of selectedNames) {
             const label = data?.labelsNotInDb.find((l) => l.name === name);
-            const color = label?.color?.backgroundColor || '#000000';
+            const color = toSupportedColor(label?.color?.backgroundColor);
             const description = (descriptions[name] ?? "").trim();
 
             await mutation.mutateAsync({
@@ -109,18 +121,36 @@ const LabelsNotInGmail = () => {
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          {data?.labelsNotInDb?.length === 0 ? (
+          {isLoading ? (
+            <ul className="space-y-2" aria-hidden="true">
+              {[0, 1, 2].map((i) => (
+                <li key={i} className="flex items-center space-x-2 p-2">
+                  <div className="h-4 w-4 rounded bg-muted animate-pulse" />
+                  <div className="h-3.5 w-3.5 rounded-full bg-muted animate-pulse" />
+                  <div className="h-4 w-40 max-w-full rounded bg-muted animate-pulse" />
+                </li>
+              ))}
+            </ul>
+          ) : isError ? (
+            <p className="text-sm text-destructive">Couldn&apos;t load labels from Gmail. Try again.</p>
+          ) : data?.labelsNotInDb?.length === 0 ? (
             <p className="text-sm text-muted-foreground">No new labels found.</p>
           ) : (
             <ul className="space-y-2">
               {data?.labelsNotInDb.map((label) => (
                 <li key={label.id} className="p-2 bg-secondary rounded-md text-sm flex items-center space-x-2">
-                  <Checkbox 
-                    id={label.id || label.name || ''} 
+                  <Checkbox
+                    id={label.id || label.name || ''}
                     checked={!!label.name && selectedNames.includes(label.name)}
                     onCheckedChange={() => label.name && toggleSelection(label.name)}
                   />
-                  <label 
+                  <span
+                    className="inline-block h-3.5 w-3.5 shrink-0 rounded-full border border-border"
+                    style={{ backgroundColor: label.color?.backgroundColor ?? 'transparent' }}
+                    title={label.color?.backgroundColor ?? 'No color set in Gmail'}
+                    aria-hidden="true"
+                  />
+                  <label
                     htmlFor={label.id || label.name || ''}
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                   >
@@ -144,14 +174,14 @@ const LabelsNotInGmail = () => {
                     <Label htmlFor={inputId}>{name}</Label>
                     <Textarea
                       id={inputId}
-                      placeholder="Enter a description between 10 and 100 characters"
+                      placeholder="Enter a description between 10 and 200 characters"
                       minLength={10}
-                      maxLength={100}
+                      maxLength={200}
                       value={value}
                       onChange={(e) => updateDescription(name, e.target.value)}
                     />
                     <div className="flex flex-row justify-between">
-                    <p className="text-xs text-muted-foreground">{trimmedLength}/100 characters</p>
+                    <p className="text-xs text-muted-foreground">{trimmedLength}/200 characters</p>
                     <p className="text-xs text-muted-foreground">Min 10 characters</p>
                     </div>
                     
