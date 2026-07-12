@@ -24,14 +24,14 @@ const geistMono = Geist_Mono({
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "NeatMail - Your Inbox Deserves Better | Mail Automation Platform",
-  description: "Label your emails directly into Gmail with AI-powered assistance. Stay organized with personalized labels and automated responses.",
+  title: "NeatMail — AI Email Assistant for Inbox Zero",
+  description: "NeatMail is an AI-powered email assistant that triages, drafts, and clears your inbox so you reach zero — fast.",
   keywords: ["mail automation", "SaaS"],
   authors: [{ name: "NeatMail" }],
   openGraph: {
     type: "website",
-    title: "NeatMail - Your Inbox Deserves Better",
-    description: "Label your emails directly into Gmail with AI-powered assistance. Stay organized with personalized labels and automated responses.",
+    title: "NeatMail — AI Email Assistant for Inbox Zero",
+    description: "NeatMail is an AI-powered email assistant that triages, drafts, and clears your inbox so you reach zero — fast.",
     url: "https://neatmail.app",
     images: [
       {
@@ -43,14 +43,19 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "NeatMail - Your Inbox Deserves Better",
-    description: "Label your emails directly into Gmail with AI-powered assistance. Stay organized with personalized labels and automated responses.",
+    title: "NeatMail — AI Email Assistant for Inbox Zero",
+    description: "NeatMail is an AI-powered email assistant that triages, drafts, and clears your inbox so you reach zero — fast.",
   },
   alternates: {
     canonical: "https://neatmail.app",
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
   },
 };
 
