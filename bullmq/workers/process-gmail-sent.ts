@@ -1,4 +1,4 @@
-import { Job } from "bullmq";
+import { DelayedError, Job } from "bullmq";
 import { db } from "@/lib/prisma";
 import { getGmailClient, getGmailMessageBody } from "@/lib/gmail";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/lib/supabase";
 import { checkSentRequiresFollowUp } from "@/lib/sent-followup";
 import { followUpQueue } from "@/lib/queue";
+import { gmailUserBurstLimiter } from "@/lib/rate-limit";
 
 interface ProcessGmailSentData {
   clerkUserId: string;
@@ -19,11 +20,22 @@ interface ProcessGmailSentData {
   messageId: string;
 }
 
-export async function processGmailSent(job: Job<ProcessGmailSentData>) {
+export async function processGmailSent(
+  job: Job<ProcessGmailSentData>,
+  token?: string,
+) {
   const { clerkUserId, messageId } = job.data;
 
   if (await isMessageProcessed(messageId)) {
     return { skipped: true, reason: "duplicate" };
+  }
+
+  // Shares a budget with process-gmail-mail so one user's total load (inbox +
+  // sent) can't monopolize the worker capacity every other user relies on.
+  const burst = await gmailUserBurstLimiter.limit(clerkUserId);
+  if (!burst.success && token) {
+    await job.moveToDelayed(Date.now() + 5000, token);
+    throw new DelayedError();
   }
 
   await markMessageProcessed(messageId);

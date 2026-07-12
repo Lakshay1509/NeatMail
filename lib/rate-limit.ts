@@ -55,6 +55,17 @@ export const gmailWebhookLimiter = new CustomRateLimit({
   prefix: 'ratelimit:gmail-webhook',
 });
 
+// Per-user budget for the gmail-mail/gmail-sent-mail workers, separate from the
+// queue-wide MAIL_API_LIMITER. Without this, one flooded mailbox (mail-bombing,
+// a runaway script, etc.) can occupy the shared worker concurrency/limiter and
+// starve processing for every other user.
+export const gmailUserBurstLimiter = new CustomRateLimit({
+  redis,
+  limit: 30,
+  window: '1 m',
+  prefix: 'ratelimit:gmail-user-burst',
+});
+
 export const apiLimiter = new CustomRateLimit({
   redis,
   limit: 300,

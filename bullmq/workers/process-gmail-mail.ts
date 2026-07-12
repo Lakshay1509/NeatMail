@@ -1,4 +1,4 @@
-import { Job } from "bullmq";
+import { DelayedError, Job } from "bullmq";
 import { clerkClient } from "@clerk/nextjs/server";
 import { getGmailClient, getGmailMessageBody } from "@/lib/gmail";
 import {
@@ -17,6 +17,7 @@ import { getUserTier } from "@/lib/tier-guard";
 import { getModelResponse, ModelResponse } from "@/lib/model";
 import { checkAndForwardToTelegram } from "@/lib/telegram";
 import { draftQueue, followUpQueue } from "@/lib/queue";
+import { gmailUserBurstLimiter } from "@/lib/rate-limit";
 
 interface ProcessGmailMailData {
   clerkUserId: string;
@@ -58,11 +59,25 @@ function extractEmailsFromHeader(header: string): string[] {
   return emails;
 }
 
-export async function processGmailMail(job: Job<ProcessGmailMailData>) {
+export async function processGmailMail(
+  job: Job<ProcessGmailMailData>,
+  token?: string,
+) {
   const { clerkUserId, emailAddress, messageId } = job.data;
 
   if (await isMessageProcessed(messageId)) {
     return { skipped: true, reason: "duplicate" };
+  }
+
+  // Per-user cap, separate from the queue-wide limiter: a flooded mailbox
+  // (mail-bombing, a runaway script) shouldn't be able to occupy the shared
+  // worker capacity that every other user's mail also drains through. Delay
+  // rather than fail so it just drips through once the window clears, without
+  // burning one of the job's retry attempts.
+  const burst = await gmailUserBurstLimiter.limit(clerkUserId);
+  if (!burst.success && token) {
+    await job.moveToDelayed(Date.now() + 5000, token);
+    throw new DelayedError();
   }
 
   // Mark as processed immediately to prevent race conditions; cleared on
