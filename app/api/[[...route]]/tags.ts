@@ -178,9 +178,11 @@ const app = new Hono()
     zValidator(
       "json",
       z.object({
-        tag: z.string(),
+        // Kept short — name + description are injected into the classification
+        // LLM prompt, so unbounded input would bloat/poison the context.
+        tag: z.string().trim().min(1).max(50),
         color: z.string(),
-        description: z.string().min(10).max(100),
+        description: z.string().trim().min(10).max(200),
         outlookColor: z.string().optional(),
       }),
     ),

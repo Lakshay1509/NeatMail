@@ -96,7 +96,7 @@ const LabelsNotInGmail = () => {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant='outline' >
+        <Button variant='outline' size='sm'>
             <RefreshCw size={16} />
             Sync from Gmail
             </Button>

@@ -3,7 +3,7 @@
 import { useGetOverview } from "@/features/stats/use-get-overview";
 import { useGetReadVsUnread } from "@/features/stats/use-get-read-vs-unread";
 import { useUser } from "@clerk/nextjs";
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { DateRange } from "react-day-picker";
 import { differenceInDays, subDays } from "date-fns";
 import { Mail, MailOpen, MailWarning, CalendarClock } from "lucide-react";
@@ -121,17 +121,28 @@ const Dashboard = () => {
   const avgPerDay = Math.ceil(current / totalDays);
   const prevAvgPerDay = Math.ceil((overview?.previous ?? 0) / totalDays);
 
-  const getGreeting = () => {
+  // Time- and random-based, so it must be computed on the client only.
+  // Running it during SSR would produce a different value than the client's
+  // first render (random subtitle + server-UTC vs client-local hour) and
+  // trigger a hydration mismatch.
+  const [greeting, setGreeting] = useState<{
+    text: string;
+    subtitle: string;
+  } | null>(null);
+
+  useEffect(() => {
     const hour = new Date().getHours();
     const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
     if (hour < 12)
-      return { text: "Good Morning", subtitle: pick(subtitles.morning) };
-    if (hour < 18)
-      return { text: "Good Afternoon", subtitle: pick(subtitles.afternoon) };
-    return { text: "Good Evening", subtitle: pick(subtitles.evening) };
-  };
-
-  const greeting = useMemo(() => getGreeting(), []);
+      setGreeting({ text: "Good Morning", subtitle: pick(subtitles.morning) });
+    else if (hour < 18)
+      setGreeting({
+        text: "Good Afternoon",
+        subtitle: pick(subtitles.afternoon),
+      });
+    else
+      setGreeting({ text: "Good Evening", subtitle: pick(subtitles.evening) });
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto space-y-5 md:space-y-6">
@@ -139,9 +150,12 @@ const Dashboard = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-3">
         <div className="flex-1">
           <h1 className="text-xl font-semibold text-foreground tracking-tight">
-            {greeting.text}, {user?.firstName || "User"}
+            {greeting ? `${greeting.text}, ` : ""}
+            {user?.firstName || "User"}
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{greeting.subtitle}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {greeting?.subtitle ?? " "}
+          </p>
         </div>
         <div className="flex items-center gap-4">
           <DatePickerWithRange date={date} setDate={setDate} />

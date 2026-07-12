@@ -45,11 +45,17 @@ const RESERVED_KEYWORDS = new Set([
     "finance"
 ]);
 
+// Kept tight — name + description are fed into the classification LLM prompt,
+// so these must stay in sync with the backend limits in tags.ts (create-custom).
+const NAME_MAX = 50;
+const DESCRIPTION_MIN = 10;
+const DESCRIPTION_MAX = 200;
+
 const formSchema = z.object({
     name: z
         .string()
         .min(1, "Name is required")
-        .max(50, "Less than 50 words")
+        .max(NAME_MAX, `Name must be ${NAME_MAX} characters or less`)
         .transform((val) => val.trim())
         .refine(
             (val) => {
@@ -61,7 +67,11 @@ const formSchema = z.object({
             }
         ),
     color: z.string().min(1, "Color is required"),
-    description: z.string().min(10, "More than 10 words required").max(100, "Less than 100 words required"),
+    description: z
+        .string()
+        .trim()
+        .min(DESCRIPTION_MIN, `Description must be at least ${DESCRIPTION_MIN} characters`)
+        .max(DESCRIPTION_MAX, `Description must be ${DESCRIPTION_MAX} characters or less`),
     outlookPreset:z.string().optional()
 })
 
@@ -80,6 +90,9 @@ const CreateLabel = ({ enabled }: CreateLabelInterface) => {
     })
 
     const mutation = addCustomTags();
+
+    const nameLength = (form.watch("name") ?? "").length;
+    const descriptionLength = (form.watch("description") ?? "").length;
 
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         await mutation.mutateAsync({ tag: values.name, color: values.color, description: values.description,outlookColor:outlookPreset });
@@ -106,7 +119,7 @@ const CreateLabel = ({ enabled }: CreateLabelInterface) => {
 
                 <form onSubmit={form.handleSubmit(onSubmit)}>
                     <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
+                        <div className="grid gap-1.5">
                             <Label htmlFor="name">Name</Label>
                             <Controller
                                 control={form.control}
@@ -115,14 +128,22 @@ const CreateLabel = ({ enabled }: CreateLabelInterface) => {
                                     <Input
                                         id="name"
                                         placeholder="e.g. Invoices"
+                                        maxLength={NAME_MAX}
                                         {...field}
                                     />
                                 )}
                             />
-                            {form.formState.errors.name && <span className="text-xs text-red-500">{form.formState.errors.name.message}</span>}
+                            <div className="flex items-start justify-between gap-3">
+                                <span className="text-xs text-red-500">
+                                    {form.formState.errors.name?.message}
+                                </span>
+                                <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
+                                    {nameLength}/{NAME_MAX}
+                                </span>
+                            </div>
                         </div>
 
-                        <div className="grid gap-2">
+                        <div className="grid gap-1.5">
                             <Label htmlFor="description">Description</Label>
                             <Controller
                                 control={form.control}
@@ -131,11 +152,25 @@ const CreateLabel = ({ enabled }: CreateLabelInterface) => {
                                     <Textarea
                                         id="description"
                                         placeholder="What is this for ?"
+                                        maxLength={DESCRIPTION_MAX}
+                                        rows={3}
+                                        className="resize-none break-words"
                                         {...field}
                                     />
                                 )}
                             />
-                            {form.formState.errors.description && <span className="text-xs text-red-500">{form.formState.errors.description.message}</span>}
+                            <div className="flex items-start justify-between gap-3">
+                                <span className="text-xs text-red-500">
+                                    {form.formState.errors.description?.message ??
+                                        (descriptionLength > 0 &&
+                                        descriptionLength < DESCRIPTION_MIN
+                                            ? `At least ${DESCRIPTION_MIN} characters`
+                                            : "")}
+                                </span>
+                                <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
+                                    {descriptionLength}/{DESCRIPTION_MAX}
+                                </span>
+                            </div>
                         </div>
 
                         <div className="grid gap-2">
