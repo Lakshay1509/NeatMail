@@ -51,6 +51,8 @@ model user_tokens {
   referral_months_granted Int                    @default(0)
   referrals_sent          Referral[]             @relation("ReferralsSent")
   referral_received       Referral?              @relation("ReferralReceived")
+  organization_membership OrganizationMember?
+  organization_created    Organization?
 
   @@schema("public")
 }
@@ -395,5 +397,42 @@ model Referral {
   @@index([referrer_user_id])
   @@index([referral_code])
   @@map("referrals")
+  @@schema("public")
+}
+
+enum OrganizationRole {
+  MEMBER
+  ADMIN
+
+  @@schema("public")
+}
+
+model Organization {
+  id         String   @id @default(uuid())
+  name       String
+  created_by String   @unique @map("created_by")
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)  
+  creator user_tokens          @relation(fields: [created_by], references: [clerk_user_id], onDelete: Cascade)
+  members OrganizationMember[]
+
+  @@map("organization")
+  @@schema("public")
+}
+
+model OrganizationMember {
+  id              String           @id @default(uuid())
+  user_id         String           @unique
+  organization_id String           @map("organization_id")
+  role            OrganizationRole @default(MEMBER)
+  created_at      DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  user_tokens  user_tokens  @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+
+  
+  @@index([organization_id])
+  @@index([organization_id, role])
+  @@map("organization_members")
   @@schema("public")
 }
