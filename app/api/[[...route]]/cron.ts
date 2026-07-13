@@ -13,6 +13,7 @@ import {
   activeFolder,
 } from "@/lib/supabase";
 import { createOutlookSubscription } from "@/lib/outlook";
+import { getUserTier } from "@/lib/tier-guard";
 import { trashMessages as archiveGmailMessages } from "@/lib/gmail";
 import { archiveMessagesOutlook } from "@/lib/outlook";
 import { Resend } from "resend";
@@ -625,9 +626,6 @@ const app = new Hono()
           user_id: true,
           domain: true,
           archiveAfterDays: true,
-          user_tokens: {
-            select: { tier: true },
-          },
         },
       });
 
@@ -636,8 +634,10 @@ const app = new Hono()
       // Process each rule
       for (const rule of activeRules) {
         try {
-          // Skip users on FREE tier
-          if (rule.user_tokens.tier === "FREE") {
+          // Skip users on FREE tier. Org-aware: a member inherits their admin's
+          // tier, so resolve it rather than reading the member's own row.
+          const tier = await getUserTier(rule.user_id);
+          if (tier === "FREE") {
             continue;
           }
 

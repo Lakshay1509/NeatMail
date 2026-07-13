@@ -2,6 +2,7 @@ import { WatchedFolder } from "@/app/api/[[...route]]/user";
 import { getFolderMap } from "./outlook";
 import { db } from "./prisma";
 import { bufferEmail, markBufferedEmailRead } from "@/lib/batch-insert";
+import { getBillingOwnerId } from "./organization";
 import { TIER_LIMITS } from "./tiers";
 
 export async function getUserByEmail(email: string) {
@@ -164,12 +165,12 @@ export async function addMailtoDB(
   ai_action?: string,
 ) {
   try {
-    const user = await db.user_tokens.findUnique({
-      where: { clerk_user_id: user_id },
-      select: { tier: true },
-    });
+    // Org-aware: members inherit their admin's tier, so gate on the resolved
+    // tier rather than reading this user's own row directly.
+    const { getUserTier } = await import("./tier-guard");
+    const tier = await getUserTier(user_id);
 
-    if (user?.tier === "FREE") {
+    if (tier === "FREE") {
       const count = await getTaggedEmailCount(user_id);
 
       if (count >= TIER_LIMITS.FREE.maxTrackedEmails) {
@@ -186,9 +187,14 @@ export async function addMailtoDB(
 
 export async function getUserSubscribed(userId: string) {
   try {
+    // Billing lives on the org admin. Resolve to the billing owner so a member
+    // inherits the admin's subscription/trial. Self-billed users resolve to
+    // themselves, leaving existing behaviour unchanged.
+    const ownerId = await getBillingOwnerId(userId);
+
     const [data, freeTrial] = await Promise.all([
       db.subscription.findFirst({
-        where: { clerkUserId: userId },
+        where: { clerkUserId: ownerId },
         select: {
           cancelAtNextBillingDate: true,
           nextBillingDate: true,
@@ -197,11 +203,11 @@ export async function getUserSubscribed(userId: string) {
         orderBy: { updatedAt: "desc" },
       }),
       db.free_trial.findUnique({
-        where: { user_id: userId },
+        where: { user_id: ownerId },
       }),
     ]);
      const zero_payment = await db.paymentHistory.findFirst({
-      where:{clerkUserId:userId,amount:0,status:'succeeded'},
+      where:{clerkUserId:ownerId,amount:0,status:'succeeded'},
       orderBy: { createdAt: "desc" },
 
     })
@@ -209,7 +215,7 @@ export async function getUserSubscribed(userId: string) {
     // A real (post-trial) charge. Once this exists, the card trial has converted
     // to a paid subscription and should no longer report as a free trial.
     const paid_charge = await db.paymentHistory.findFirst({
-      where: { clerkUserId: userId, amount: { gt: 0 }, status: "succeeded" },
+      where: { clerkUserId: ownerId, amount: { gt: 0 }, status: "succeeded" },
     });
 
     const hasActiveTrial =

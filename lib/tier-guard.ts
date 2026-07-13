@@ -1,12 +1,20 @@
 import { db } from "./prisma";
+import { getBillingOwnerId } from "./organization";
 import { type Tier, TIER_LIMITS, type TierLimits } from "./tiers";
 
+/**
+ * Tier follows billing: an org member inherits the tier of their org admin, who
+ * actually holds the subscription. We resolve the billing owner first and read
+ * the tier off *that* user. For self-billed users the owner is themselves, so
+ * this behaves exactly as before.
+ */
 export async function getUserTier(userId: string): Promise<Tier> {
-  const user = await db.user_tokens.findUnique({
-    where: { clerk_user_id: userId },
+  const ownerId = await getBillingOwnerId(userId);
+  const owner = await db.user_tokens.findUnique({
+    where: { clerk_user_id: ownerId },
     select: { tier: true },
   });
-  return (user?.tier as Tier) ?? "FREE";
+  return (owner?.tier as Tier) ?? "FREE";
 }
 
 export async function getTierLimits(userId: string): Promise<TierLimits> {

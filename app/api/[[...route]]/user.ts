@@ -6,6 +6,7 @@ import { getDodoPayments } from "./checkout";
 import { zValidator } from "@hono/zod-validator";
 import z from "zod";
 import { getUserTier } from "@/lib/tier-guard";
+import { getBillingOwnerId } from "@/lib/organization";
 import { createOutlookSubscription, getFolderMap } from "@/lib/outlook";
 import { updateOutlookId } from "@/lib/supabase";
 import { handleWatchDeactivation } from "@/lib/payement";
@@ -63,9 +64,14 @@ const app = new Hono()
       return ctx.json({ error: "Unauthorized" }, 401);
     }
 
+    // Billing (subscription, trial, tier) belongs to the org admin. Resolve to
+    // the billing owner so a member sees the admin's plan. Self-billed users
+    // resolve to themselves, so behaviour is unchanged for them.
+    const billingOwnerId = await getBillingOwnerId(userId);
+
     const [data, freeTrial, user] = await Promise.all([
       db.subscription.findFirst({
-        where: { clerkUserId: userId },
+        where: { clerkUserId: billingOwnerId },
         select: {
           cancelAtNextBillingDate: true,
           nextBillingDate: true,
@@ -77,16 +83,16 @@ const app = new Hono()
         orderBy: { updatedAt: "desc" },
       }),
       db.free_trial.findUnique({
-        where: { user_id: userId },
+        where: { user_id: billingOwnerId },
       }),
       db.user_tokens.findUnique({
-        where: { clerk_user_id: userId },
+        where: { clerk_user_id: billingOwnerId },
         select: { tier: true },
       }),
     ]);
 
     const zero_payment = await db.paymentHistory.findFirst({
-      where:{clerkUserId:userId,amount:0,status:'succeeded'},
+      where:{clerkUserId:billingOwnerId,amount:0,status:'succeeded'},
       orderBy: { createdAt: "desc" },
 
     })
@@ -94,7 +100,7 @@ const app = new Hono()
     // A real (post-trial) charge. Once this exists, the card trial has converted
     // to a paid subscription and should no longer report as a free trial.
     const paid_charge = await db.paymentHistory.findFirst({
-      where: { clerkUserId: userId, amount: { gt: 0 }, status: "succeeded" },
+      where: { clerkUserId: billingOwnerId, amount: { gt: 0 }, status: "succeeded" },
     });
 
     const tier = user?.tier ?? "FREE";
