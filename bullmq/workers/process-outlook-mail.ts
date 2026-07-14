@@ -14,6 +14,7 @@ import { getModelResponse, ModelResponse } from "@/lib/model";
 import { checkAndForwardToTelegram } from "@/lib/telegram";
 import { flow, followUpQueue } from "@/lib/queue";
 import { getUserTier } from "@/lib/tier-guard";
+import { isMemberAccessPaused } from "@/lib/organization";
 import { checkSentRequiresFollowUp } from "@/lib/sent-followup";
 
 interface ProcessOutlookMailData {
@@ -42,9 +43,7 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
     return { skipped: true };
   }
 
-  // Stop processing mail for users scheduled for deletion. Defense-in-depth
-  // in case the Outlook subscription lingers before it expires — we must not
-  // keep ingesting a deleted user's mailbox.
+  // Skip users scheduled for deletion; defense-in-depth in case the Outlook subscription lingers before expiry.
   if (subscription.deleted_flag) {
     return { skipped: true, reason: "user scheduled for deletion" };
   }
@@ -62,7 +61,11 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
     return { skipped: true, reason: "not subscribed" };
   }
 
-
+  // Paused members keep their inherited tier, so the tier check above passes.
+  // Subscription is deleted when paused, but skip here too in case a notification is in-flight.
+  if (await isMemberAccessPaused(subscription.clerk_user_id)) {
+    return { skipped: true, reason: "member access paused" };
+  }
 
   const client = await getGraphClient(subscription.clerk_user_id);
   const mail = await client

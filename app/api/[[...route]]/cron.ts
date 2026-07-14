@@ -6,6 +6,7 @@ import { deleteUser as deleteModelUser } from "@/lib/model";
 import { clerkClient } from "@clerk/nextjs/server";
 import { activateWatch } from "@/lib/gmail";
 import { handleWatchDeactivation } from "@/lib/payement";
+import { getOrganizationMemberIds } from "@/lib/organization";
 import {
   updateHistoryId,
   updateOutlookId,
@@ -60,6 +61,21 @@ const app = new Hono()
 
       for (const user of usersToDelete) {
         try {
+          // Downgrade + stop watching org members before the cascade delete wipes the org,
+          // or they're left as stale ghosts (MAX tier, watched, unpaid). They get a fresh solo org on next onboarding.
+          const memberIds = await getOrganizationMemberIds(user.clerk_user_id);
+          if (memberIds.length > 0) {
+            for (const memberId of memberIds) {
+              await handleWatchDeactivation(memberId); // self-isolating, never throws
+            }
+            await db.user_tokens.updateMany({
+              where: { clerk_user_id: { in: memberIds } },
+              // Latch trial_used, same as other detach paths (leave, member removal).
+              // These members already had MAX access as teammates, so don't let them start a second trial.
+              data: { tier: "FREE", trial_used: true },
+            });
+          }
+
           await (await clerk).users.deleteUser(user.clerk_user_id);
 
           await db.user_tokens.delete({
@@ -168,10 +184,36 @@ const app = new Hono()
         }),
       ]);
 
+      // Members have no subscription/free_trial row of their own, so the loops below skip them
+      // and their watch would lapse. Renew active (non-paused) members of covered owners too.
+      const coveredOwnerIds = Array.from(
+        new Set([
+          ...activeSubscriptions.map((s) => s.user_tokens.clerk_user_id),
+          ...activeTrials.map((t) => t.user_tokens.clerk_user_id),
+        ]),
+      );
+      const teamMembers = coveredOwnerIds.length
+        ? await db.organizationMember.findMany({
+            where: {
+              active: true,
+              role: "MEMBER",
+              organization: { created_by: { in: coveredOwnerIds } },
+              user_tokens: { deleted_flag: false },
+            },
+            select: {
+              user_tokens: {
+                select: { clerk_user_id: true, is_gmail: true, email: true },
+              },
+            },
+          })
+        : [];
+
       const results = {
-        total: activeSubscriptions.length + activeTrials.length,
+        total:
+          activeSubscriptions.length + activeTrials.length + teamMembers.length,
         subscribed: 0,
         trials: 0,
+        members: 0,
         free: 0,
         failed: 0,
         errors: [] as string[],
@@ -257,7 +299,46 @@ const app = new Hono()
         }
       }
 
-      // Free tier users no longer get watch renewed — they are deactivated
+      // Inherited team members (owners are handled by the two loops above).
+      for (const member of teamMembers) {
+        const uid = member.user_tokens.clerk_user_id;
+        const memberEmail = member.user_tokens.email ?? undefined;
+        try {
+          if (member.user_tokens.is_gmail === true) {
+            const response = await activateWatch(uid);
+            await updateHistoryId(memberEmail, response.history_id, true);
+            results.members++;
+            console.log(`✅ Watch renewed for member: ${memberEmail}`);
+          } else {
+            const activeFolderData = await activeFolder(uid);
+            const foldersData = activeFolderData
+              .filter((folder) => folder.isActive === true)
+              .map((folder) => ({ id: folder.id, name: folder.name }));
+
+            const response = await createOutlookSubscription(uid, foldersData);
+            await updateOutlookId(
+              memberEmail,
+              response?.map((r) => r.id).join(",") || null,
+              true,
+            );
+            results.members++;
+            console.log(`✅ Watch renewed outlook for member: ${memberEmail}`);
+          }
+        } catch (error) {
+          results.failed++;
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          results.errors.push(
+            `Failed to renew watch for member ${memberEmail}: ${errorMessage}`,
+          );
+          console.error(
+            `❌ Watch renewal failed for member ${memberEmail}:`,
+            error,
+          );
+        }
+      }
+
+      // Free tier users don't get watch renewed, they're deactivated instead.
 
       return ctx.json({
         message: "Watch renewal completed",
@@ -449,7 +530,6 @@ const app = new Hono()
     };
 
     try {
-      // Step 1: Deactivate expired trials
       const [expiredTrials] = await db.$transaction(async (tx) => {
         const trials = await tx.free_trial.findMany({
           where: {
@@ -484,12 +564,8 @@ const app = new Hono()
           });
 
           if (!hasActiveSub) {
-            // Degrade tier back to FREE now that the trial has expired.
-            // An active trial keeps the user on "MAX" (see lib/payement.ts),
-            // so without this the user stays on a paid tier indefinitely.
-            // Done first (before the watch/email work below) because it is
-            // the most critical step and the trial is already marked EXPIRED,
-            // meaning this user will not be re-selected on the next run.
+            // Downgrade to FREE: an active trial keeps tier at MAX (lib/payement.ts), so this must run.
+            // Runs first since the trial is already marked EXPIRED and won't be re-selected next run.
             await db.user_tokens.update({
               where: { clerk_user_id: trial.user_id },
               data: { tier: "FREE" },
@@ -542,7 +618,6 @@ const app = new Hono()
         }
       }
 
-      // Step 2: Deactivate free tier users with watch activated
       const freeUsers = await db.user_tokens.findMany({
         where: {
           tier: "FREE",
@@ -616,7 +691,6 @@ const app = new Hono()
     };
 
     try {
-      // Get all active archive rules
       const activeRules = await db.archiveRule.findMany({
         where: {
           isActive: true,
@@ -631,7 +705,6 @@ const app = new Hono()
 
       results.totalRules = activeRules.length;
 
-      // Process each rule
       for (const rule of activeRules) {
         try {
           // Skip users on FREE tier. Org-aware: a member inherits their admin's
@@ -641,20 +714,16 @@ const app = new Hono()
             continue;
           }
 
-          // Skip users who are not subscribed
           const subStatus = await getUserSubscribed(rule.user_id);
           if (!subStatus.subscribed) {
             continue;
           }
 
-          // Calculate the threshold date
           const thresholdDate = new Date(now);
           thresholdDate.setDate(
             thresholdDate.getDate() - rule.archiveAfterDays,
           );
 
-          // Find messages that match this rule's domain and are older than the threshold
-          // Also ensure they haven't been archived yet (archive_at is null)
           const messagesToArchive = await db.email_tracked.findMany({
             where: {
               user_id: rule.user_id,
@@ -681,7 +750,6 @@ const app = new Hono()
 
           results.totalMessages += messagesToArchive.length;
 
-          // Group messages by user and email type (Gmail vs Outlook)
           const gmailMessagesByUser = new Map<string, string[]>();
           const outlookMessagesByUser = new Map<string, string[]>();
 
@@ -700,7 +768,6 @@ const app = new Hono()
             }
           }
 
-          // Process Gmail messages
           for (const [userId, messageIds] of gmailMessagesByUser) {
             try {
               const archiveResult = await archiveGmailMessages(
@@ -741,7 +808,6 @@ const app = new Hono()
             }
           }
 
-          // Process Outlook messages
           for (const [userId, messageIds] of outlookMessagesByUser) {
             try {
               const archiveResult = await archiveMessagesOutlook(
@@ -871,7 +937,7 @@ Also — as an early user, I'm locking in your current plan at a rate I can't of
               successCount++;
             }
 
-            // Sleep for 500ms to avoid hitting Resend rate limits
+            // Throttle to stay under Resend rate limits.
             await new Promise((resolve) => setTimeout(resolve, 600));
           } catch (error) {
             console.error("Error sending new mail to", mail, error);
@@ -932,7 +998,6 @@ Also — as an early user, I'm locking in your current plan at a rate I can't of
 
       for (const pref of preferences) {
         try {
-          // Check if already sent today
           const lastSent = pref.last_sent_at;
           if (lastSent) {
             const lastSentDate = new Date(lastSent);
@@ -971,7 +1036,6 @@ Also — as an early user, I'm locking in your current plan at a rate I can't of
           const followUps = await getFollowUpsForUser(userId, 5);
 
           if (count === 0 && followUps.total === 0) {
-            // Send "all caught up" email
             await resend.emails.send({
               from: "NeatMail <digest@send.neatmail.app>",
               to: userEmail,

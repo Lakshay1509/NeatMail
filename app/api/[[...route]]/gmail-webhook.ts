@@ -12,6 +12,7 @@ import {
   updateMessageStatus,
 } from "@/lib/supabase";
 import { getUserTier } from "@/lib/tier-guard";
+import { isMemberAccessPaused } from "@/lib/organization";
 import { clerkClient } from "@clerk/nextjs/server";
 import { Hono } from "hono";
 import { OAuth2Client } from "google-auth-library";
@@ -68,10 +69,8 @@ const app = new Hono().post("/", async (ctx) => {
       return ctx.json({ success: true }, 200);
     }
 
-    // Stop processing mail for users scheduled for deletion. The watch is
-    // deactivated at delete-request time, but this is defense-in-depth in
-    // case a watch lingers (e.g. hasn't expired yet) — we must not keep
-    // ingesting a deleted user's mailbox. Ack so Gmail doesn't retry.
+    // Skip users scheduled for deletion. Watch is deactivated at delete-request time,
+    // but this catches a lingering watch that hasn't expired yet. Ack so Gmail doesn't retry.
     if (user.deleted_flag) {
       console.log(`[webhook] ${emailAddress} scheduled for deletion — skipping`);
       return ctx.json({ success: true }, 200);
@@ -80,6 +79,13 @@ const app = new Hono().post("/", async (ctx) => {
     const tier = await getUserTier(user.clerk_user_id);
     if (tier === "FREE") {
       return ctx.json({ error: "user not subscribed" }, 200);
+    }
+
+    // A paused member keeps their inherited MAX tier, so the tier gate above passes.
+    // Watch is stopped when paused, but skip here too in case a push is in-flight or re-armed.
+    if (await isMemberAccessPaused(user.clerk_user_id)) {
+      console.log(`[webhook] ${emailAddress} is a paused team member — skipping`);
+      return ctx.json({ success: true }, 200);
     }
 
     const clerkUserId = user.clerk_user_id;
@@ -102,8 +108,7 @@ const app = new Hono().post("/", async (ctx) => {
 
     if (!tokenData) {
       console.log(`[webhook] No token for ${clerkUserId} — acking`);
-      // Token was revoked/removed — nudge the user to reconnect. Throttled to at
-      // most once every 3 days so the webhook flood doesn't spam them.
+      // Token revoked: nudge to reconnect, throttled to once per 3 days so the webhook flood doesn't spam.
       if (await claimReconnectReminder(clerkUserId)) {
         try {
           await sendReconnectEmail(emailAddress, fullName);
@@ -148,7 +153,7 @@ const app = new Hono().post("/", async (ctx) => {
       });
     } catch (err: any) {
       if (err.code === 410 || err.status === 410) {
-        // historyId is too old/expired — reset it and ack the webhook
+        // historyId is too old/expired, reset it and ack the webhook
         console.log(
           `historyId ${lastHistoryId.last_history_id} expired for ${emailAddress}, resetting.`,
         );
@@ -200,11 +205,8 @@ const app = new Hono().post("/", async (ctx) => {
           ) || [],
       ) || [];
 
-    // Hand each message off to a queue instead of processing it inline here —
-    // a burst of history (e.g. catch-up after downtime) would otherwise block
-    // this single webhook request behind dozens of sequential Gmail API calls.
-    // Workers apply a concurrency cap + rate limiter to stay well under Gmail's
-    // per-user quota (see bullmq/workers/index.ts).
+    // Queued instead of processed inline: a downtime catch-up burst would block this webhook
+    // behind dozens of sequential Gmail calls. Workers rate-limit to stay under Gmail's per-user quota.
     for (const msg of messages) {
       const messageId = msg.message?.id;
       if (!messageId) continue;

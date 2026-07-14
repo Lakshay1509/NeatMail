@@ -10,6 +10,7 @@ import {
   updateOutlookId,
 } from "@/lib/supabase";
 import { getUserTier } from "@/lib/tier-guard";
+import { isMemberAccessPaused } from "@/lib/organization";
 import { auth } from "@clerk/nextjs/server";
 import { Hono } from "hono";
 
@@ -25,6 +26,19 @@ const app = new Hono()
       const userTier = await getUserTier(userId);
       if (userTier === "FREE") {
         return ctx.json({ error: "Upgrade to Pro to activate watch" }, 403);
+      }
+
+      // A paused member still inherits the admin's non-FREE tier, so the tier gate above
+      // lets them through; this blocks them from re-arming their own watch, since the pause is admin-controlled only.
+      if (await isMemberAccessPaused(userId)) {
+        return ctx.json(
+          {
+            error:
+              "Your mailbox processing has been paused by your team admin. Ask them to resume it.",
+            code: "ACCESS_PAUSED",
+          },
+          403,
+        );
       }
 
       const userData = await db.user_tokens.findUnique({

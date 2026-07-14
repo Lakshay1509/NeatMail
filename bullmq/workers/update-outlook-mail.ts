@@ -4,6 +4,7 @@ import { db } from "@/lib/prisma";
 import { updateMessageStatus } from "@/lib/supabase";
 import { handleOutlookLabelCorrection } from "@/lib/outlook-correction";
 import { getUserTier } from "@/lib/tier-guard";
+import { isMemberAccessPaused } from "@/lib/organization";
 
 interface UpdateOutlookMailData {
   messageId: string;
@@ -25,6 +26,11 @@ export async function updateOutlookMail(job: Job<UpdateOutlookMailData>) {
   const tier = await getUserTier(subscription.clerk_user_id);
   if (tier === "FREE") {
     return { skipped: true, reason: "not subscribed" };
+  }
+
+  // Skip paused team members (see process-outlook-mail for rationale).
+  if (await isMemberAccessPaused(subscription.clerk_user_id)) {
+    return { skipped: true, reason: "member access paused" };
   }
 
   let messageData;
