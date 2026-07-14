@@ -701,9 +701,12 @@ const app = new Hono()
       }
 
       const { inviteId } = ctx.req.valid("json");
-      // Scoped to the caller's org, so an admin can only revoke their own invites.
+      // Scoped to the caller's org, so an admin can only revoke their own
+      // invites. Only PENDING (unused) invites: a claimed invite is the durable
+      // record that a member was ever on this team (used by the referral
+      // teammate guard), so it must not be revocable. Remove the member instead.
       const result = await db.organizationInvite.deleteMany({
-        where: { id: inviteId, organization_id: org.id },
+        where: { id: inviteId, organization_id: org.id, used_at: null },
       });
       if (result.count === 0) {
         return ctx.json({ error: "Invite not found" }, 404);

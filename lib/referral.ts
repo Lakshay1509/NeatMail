@@ -2,6 +2,7 @@ import { customAlphabet } from "nanoid";
 import { addMonths } from "date-fns";
 import { db } from "./prisma";
 import { claimReferralReward, releaseReferralReward, withReferrerLock } from "./redis";
+import { haveEverSharedTeam } from "./organization";
 import { sendReferralRewardEmail } from "./resend";
 import { getPostHogClient } from "./posthog-server";
 import { getDodoPayments } from "@/app/api/[[...route]]/checkout";
@@ -95,6 +96,17 @@ async function resolveReferrer(
     return null;
   }
 
+  // A teammate can't refer a teammate: a member gets premium for free via the
+  // admin's plan, so rewarding either of them for the other is circular. Blocks
+  // pairs who were EVER on the same team, so a member who leaves and later
+  // subscribes still can't retroactively convert their ex-admin's referral.
+  if (await haveEverSharedTeam(referrer.clerk_user_id, refereeUserId)) {
+    console.log(
+      `[referral] rejected teammate referral: ${referrer.clerk_user_id} and ${refereeUserId} were on the same team`,
+    );
+    return null;
+  }
+
   return { referrerId: referrer.clerk_user_id, normalizedCode };
 }
 
@@ -181,6 +193,20 @@ export async function maybeRewardReferral(payload: PaymentPayload): Promise<void
       where: { referee_user_id: refereeUserId, status: "PENDING" },
     });
     if (!referral) return;
+
+    // Defense-in-depth for rows created before resolveReferrer's teammate guard
+    // existed: never reward a referral between two users who were ever on the
+    // same team. Revoke it so later payment.succeeded events skip it too.
+    if (await haveEverSharedTeam(referral.referrer_user_id, refereeUserId)) {
+      await db.referral.update({
+        where: { id: referral.id },
+        data: { status: "REVOKED" },
+      });
+      console.log(
+        `[referral] revoked teammate referral ${referral.id}: referrer ${referral.referrer_user_id} and referee ${refereeUserId} were on the same team`,
+      );
+      return;
+    }
 
     // Guards the (short) window where two deliveries of the same event could
     // both pass the PENDING check above concurrently.
