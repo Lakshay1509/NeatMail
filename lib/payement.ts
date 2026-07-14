@@ -11,7 +11,12 @@ import {
 } from "./outlook";
 import { activeFolder, getUserIsGmail } from "./supabase";
 import { sendSubExpiredEmail } from "./resend";
-import { getTierFromProductId } from "./tiers";
+import { getTierFromProductId, TIER_LIMITS, type Tier } from "./tiers";
+import {
+  getBillingTeamIds,
+  detachMembersFromOrg,
+  isBillingOwner,
+} from "./organization";
 
 export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
   try {
@@ -73,14 +78,50 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
     const metadata = data.metadata as { clerk_user_id?: string; tier?: string } | undefined;
 
     if (data.status === "active") {
-      await handleWatchActivation(clerkUserId);
-
       const tier = getTierFromProductId(data.product_id)
         ?? (metadata?.tier as "PRO" | "MAX" | undefined)
         ?? "MAX";
 
-      await db.user_tokens.update({
-        where: { clerk_user_id: clerkUserId },
+      // Enforce seat cap before activating: an out-of-band downgrade (DodoPay
+      // portal) or cancel/re-subscribe can leave more members than the tier allows.
+      // checkout.ts blocks this in-app; this is the safety net for already-charged
+      // webhooks, and must run before the fan-out below.
+      await enforceSeatCap(clerkUserId, tier);
+
+      // Admin's payment covers the whole team: activate watch and set tier for
+      // owner + every member. handleWatchActivation swallows its own errors, so
+      // one broken mailbox can't block the rest.
+      const targets = await getBillingTeamIds(clerkUserId);
+
+      // Skip re-arming watch for paused members (seat + tier stay, watch stays
+      // stopped) and users flagged for deletion (ingest already skips them;
+      // re-arming would just burn watch quota on a doomed mailbox). Owners have
+      // no member row so the paused query excludes them; the deletion query covers them.
+      const [pausedMembers, deletingUsers] = await Promise.all([
+        db.organizationMember.findMany({
+          where: { user_id: { in: targets }, active: false },
+          select: { user_id: true },
+        }),
+        db.user_tokens.findMany({
+          where: { clerk_user_id: { in: targets }, deleted_flag: true },
+          select: { clerk_user_id: true },
+        }),
+      ]);
+      const skipIds = new Set<string>([
+        ...pausedMembers.map((m) => m.user_id),
+        ...deletingUsers.map((u) => u.clerk_user_id),
+      ]);
+
+      for (const memberId of targets) {
+        if (skipIds.has(memberId)) continue;
+        await handleWatchActivation(memberId);
+      }
+
+      // Materialize tier onto every member, including paused ones (pause stops
+      // the watch, not the plan), so tier-column readers like the free-tier
+      // reaper cron stay correct without resolving the admin.
+      await db.user_tokens.updateMany({
+        where: { clerk_user_id: { in: targets } },
         data: { tier },
       });
     }
@@ -93,6 +134,12 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
         data.status === "on_hold" ||
         data.status === "pending")
     ) {
+      // A member's own cancelled subscription can still emit a late webhook after
+      // they've joined an org. They no longer own billing (coverage is inherited
+      // from the admin), so tearing down here would wrongly strip a covered
+      // member. Only tear down when the subject actually owns billing.
+      const isOwner = await isBillingOwner(clerkUserId);
+
       const otherActive = await db.subscription.findFirst({
         where: {
           clerkUserId,
@@ -101,16 +148,24 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
         },
       });
 
-      if (!otherActive) {
-        await handleWatchDeactivation(clerkUserId);
+      if (isOwner && !otherActive) {
+        // Org no longer paid: deactivate watch and downgrade tier for owner and
+        // every member. handleWatchDeactivation never throws, so one member's
+        // failure won't block the rest.
+        const targets = await getBillingTeamIds(clerkUserId);
+
+        for (const memberId of targets) {
+          await handleWatchDeactivation(memberId);
+        }
         await sendSubExpiredEmail(data.customer.email, data.customer.name);
 
+        // The trial (if any) is the admin's and covers the whole team.
         const hasActiveTrial = await db.free_trial.findFirst({
           where: { user_id: clerkUserId, status: "ACTIVE", expires_at: { gt: new Date() } },
         });
 
-        await db.user_tokens.update({
-          where: { clerk_user_id: clerkUserId },
+        await db.user_tokens.updateMany({
+          where: { clerk_user_id: { in: targets } },
           data: { tier: hasActiveTrial ? "MAX" : "FREE" },
         });
       }
@@ -123,10 +178,51 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
   }
 }
 
-export async function handleWatchActivation(userId: string): Promise<void> {
-  const getUserIsGmailData = await getUserIsGmail(userId);
+/**
+ * Evicts members over the tier's seat cap (keeping earliest-joined) so downgrades
+ * that arrive out-of-band (DodoPay portal, cancel/re-subscribe) can't leave more
+ * members than TIER_LIMITS allows. Evicted members get their own free account,
+ * watch stopped.
+ */
+async function enforceSeatCap(
+  ownerId: string | undefined,
+  tier: Tier,
+): Promise<void> {
+  if (!ownerId) return;
+  const seatCap = TIER_LIMITS[tier].maxTeamMembers;
+
+  const org = await db.organization.findFirst({
+    where: { created_by: ownerId },
+    select: {
+      members: {
+        where: { role: "MEMBER" },
+        orderBy: { created_at: "asc" },
+        select: { user_id: true },
+      },
+    },
+  });
+  if (!org) return;
+
+  // Keep the earliest-joined members up to the cap; evict the remainder.
+  const excess = org.members.slice(seatCap).map((m) => m.user_id);
+  if (excess.length === 0) return;
+
+  await detachMembersFromOrg(excess);
+  for (const userId of excess) {
+    await handleWatchDeactivation(userId); // self-isolating, never throws
+  }
+}
+
+// Returns true if the watch was armed, false otherwise. Self-isolating: never
+// throws, and callers (webhook fan-out, join flow, member resume) rely on that.
+// getUserIsGmail must stay inside the try since it throws when the user_tokens
+// row is missing.
+export async function handleWatchActivation(userId: string): Promise<boolean> {
+  let isGmail = true;
   try {
-    if (getUserIsGmailData.isGmail) {
+    const getUserIsGmailData = await getUserIsGmail(userId);
+    isGmail = getUserIsGmailData.isGmail;
+    if (isGmail) {
       const response = await activateWatch(userId);
 
       if (response.success && response.userId) {
@@ -138,7 +234,9 @@ export async function handleWatchActivation(userId: string): Promise<void> {
             updated_at: new Date(),
           },
         });
+        return true;
       }
+      return false;
     } else {
       const activeFolderData = await activeFolder(userId);
 
@@ -161,22 +259,23 @@ export async function handleWatchActivation(userId: string): Promise<void> {
             updated_at: new Date(),
           },
         });
+        return true;
       }
+      return false;
     }
   } catch (error) {
-    if (getUserIsGmailData.isGmail) {
+    if (isGmail) {
       console.error("Failed to activate Gmail watch:", error);
     } else {
       console.error("Failed to activate outlook watch", error);
     }
+    return false;
   }
 }
 
-// A revoked / expired / missing OAuth token means we can never successfully
-// call the provider's stop/delete API for this user. Detected across the three
-// error shapes our stack produces: OAuthError, status-coded Google/Clerk/Graph
-// errors (401/403/400), the Clerk oauth error codes, and the plain "reconnect"
-// Errors that getGraphClient throws (which carry no status code at all).
+// A revoked/expired/missing OAuth token means the provider stop/delete call can
+// never succeed. Checks all three error shapes: OAuthError, status-coded errors
+// (401/403/400), and plain "reconnect" errors with no status code.
 function isRevokedTokenError(error: any): boolean {
   if (error instanceof OAuthError) return true;
 
@@ -200,12 +299,11 @@ function isRevokedTokenError(error: any): boolean {
 }
 
 export async function handleWatchDeactivation(userId: string): Promise<void> {
-  // Outer guard: watch deactivation must never throw — callers (account
-  // deletion, trial/subscription crons) rely on it being non-blocking.
+  // Must never throw: account deletion and trial/subscription crons rely on
+  // this being non-blocking.
   try {
     const isGmail = (await getUserIsGmail(userId)).isGmail;
 
-    // Clears our own record so the row no longer claims an active watch.
     const clearWatchState = () =>
       db.user_tokens.update({
         where: { clerk_user_id: userId },
@@ -221,15 +319,13 @@ export async function handleWatchDeactivation(userId: string): Promise<void> {
         await deleteOutlookSubscription(userId);
       }
 
-      // Provider watch stopped successfully — sync our record.
       await clearWatchState();
     } catch (error) {
       if (isRevokedTokenError(error)) {
-        // The user revoked OAuth access, so the provider stop/delete call can
-        // never succeed. The watch will lapse on its own (Gmail within ~7 days,
-        // Outlook at subscription expiry) and mail ingestion is already gated
-        // by tier/deleted_flag. Leaving watch_activated=true would strand this
-        // row forever, so clear our bookkeeping anyway.
+        // OAuth revoked: provider stop/delete can never succeed. Watch lapses on
+        // its own (Gmail ~7 days, Outlook at subscription expiry) and ingestion is
+        // already gated by tier/deleted_flag, so clear our bookkeeping now instead
+        // of stranding this row.
         console.warn(
           `[watch] OAuth revoked for ${userId} — provider deactivation impossible; clearing local watch state`,
         );
@@ -237,8 +333,8 @@ export async function handleWatchDeactivation(userId: string): Promise<void> {
         return;
       }
 
-      // Transient/unexpected failure — leave watch_activated as-is so the watch
-      // can still be deactivated on a later attempt.
+      // Transient failure: leave watch_activated as-is so a later attempt can
+      // retry deactivation.
       console.error("Failed to deactivate watch:", error);
     }
   } catch (error) {

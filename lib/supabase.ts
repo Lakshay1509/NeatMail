@@ -2,7 +2,7 @@ import { WatchedFolder } from "@/app/api/[[...route]]/user";
 import { getFolderMap } from "./outlook";
 import { db } from "./prisma";
 import { bufferEmail, markBufferedEmailRead } from "@/lib/batch-insert";
-import { getBillingOwnerId } from "./organization";
+import { resolveSubscriptionStatus } from "./subscription";
 import { TIER_LIMITS } from "./tiers";
 
 export async function getUserByEmail(email: string) {
@@ -185,89 +185,13 @@ export async function addMailtoDB(
   }
 }
 
+/**
+ * Server-side subscription check (cron, telegram, workers). Thin wrapper over
+ * the shared {@link resolveSubscriptionStatus} so the server helper and the API
+ * endpoint can never disagree. Org-aware: resolves to the billing owner inside.
+ */
 export async function getUserSubscribed(userId: string) {
-  try {
-    // Billing lives on the org admin. Resolve to the billing owner so a member
-    // inherits the admin's subscription/trial. Self-billed users resolve to
-    // themselves, leaving existing behaviour unchanged.
-    const ownerId = await getBillingOwnerId(userId);
-
-    const [data, freeTrial] = await Promise.all([
-      db.subscription.findFirst({
-        where: { clerkUserId: ownerId },
-        select: {
-          cancelAtNextBillingDate: true,
-          nextBillingDate: true,
-          status: true,
-        },
-        orderBy: { updatedAt: "desc" },
-      }),
-      db.free_trial.findUnique({
-        where: { user_id: ownerId },
-      }),
-    ]);
-     const zero_payment = await db.paymentHistory.findFirst({
-      where:{clerkUserId:ownerId,amount:0,status:'succeeded'},
-      orderBy: { createdAt: "desc" },
-
-    })
-
-    // A real (post-trial) charge. Once this exists, the card trial has converted
-    // to a paid subscription and should no longer report as a free trial.
-    const paid_charge = await db.paymentHistory.findFirst({
-      where: { clerkUserId: ownerId, amount: { gt: 0 }, status: "succeeded" },
-    });
-
-    const hasActiveTrial =
-      freeTrial &&
-      freeTrial.status === "ACTIVE" &&
-      freeTrial.expires_at > new Date();
-
-    // Card trial in progress: a $0 trial charge was recorded, the subscription is
-    // active, and no real charge has happened yet. Flips to false automatically
-    // after the first paid charge.
-    const paidFreeTrial = !!zero_payment && data?.status === "active" && !paid_charge;
-
-    if (!data && !hasActiveTrial) {
-      return { success: false, subscribed: false };
-    }
-
-    // on trial but no paid subscription
-    if (!data && hasActiveTrial) {
-      return {
-        success: true,
-        subscribed: true,
-        status: "trial",
-        next_billing_date: freeTrial.expires_at,
-        cancel_at_next_billing_date: null,
-        freeTrial: true,
-      };
-    }
-
-    if (data?.status !== "active" && hasActiveTrial) {
-      return {
-        success: true,
-        subscribed: true,
-        status: "trial",
-        next_billing_date: freeTrial.expires_at,
-        cancel_at_next_billing_date: null,
-        freeTrial: true,
-      };
-    }
-
-    // paid subscription
-    return {
-      success: true,
-      subscribed: data?.status === "active",
-      status: data?.status,
-      next_billing_date: data?.nextBillingDate,
-      cancel_at_next_billing_date: data?.cancelAtNextBillingDate,
-      freeTrial: paidFreeTrial,
-    };
-  } catch (error) {
-    console.error("Error getting subscribed data");
-    throw error;
-  }
+  return resolveSubscriptionStatus(userId);
 }
 
 export async function useGetUserDraftPreference(userId: string) {

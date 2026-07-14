@@ -7,7 +7,7 @@ import { handleWatchActivation } from "@/lib/payement";
 import { getPreviousMails } from "@/lib/gmail";
 import { getPreviousOutlookMails } from "@/lib/outlook";
 import { encryptDomain } from "@/lib/encode";
-import { getUserIsGmail } from "@/lib/supabase";
+import { getUserIsGmail, getUserSubscribed } from "@/lib/supabase";
 import { getPostHogClient } from "@/lib/posthog-server";
 import { ensureResolvedTag } from "@/lib/tags";
 
@@ -50,24 +50,11 @@ const app = new Hono().post(
     const body = ctx.req.valid("json");
 
     try {
-      // Gate: only complete onboarding once the card-required checkout has
-      // produced an active subscription (or an active free trial). The
-      // subscription webhook performs activation/tier assignment; this handles
-      // the brief window before it lands (the client retries on this code).
-      const [activeSubscription, activeTrial] = await Promise.all([
-        db.subscription.findFirst({
-          where: { clerkUserId: userId, status: "active" },
-        }),
-        db.free_trial.findFirst({
-          where: {
-            user_id: userId,
-            status: "ACTIVE",
-            expires_at: { gt: new Date() },
-          },
-        }),
-      ]);
+      // Only complete once billing is live. getUserSubscribed resolves an
+      // invited member to their org admin's coverage; client retries until the webhook lands.
+      const coverage = await getUserSubscribed(userId);
 
-      if (!activeSubscription && !activeTrial) {
+      if (!coverage.subscribed) {
         return ctx.json(
           {
             error: "We're finalizing your subscription. This will only take a moment.",
@@ -79,8 +66,7 @@ const app = new Hono().post(
 
       const isGmailData = await getUserIsGmail(userId);
 
-      // Ensure the inbox watch is active. The webhook normally activates it on
-      // subscription activation; re-check here in case it hasn't run yet.
+      // Re-check watch activation in case the subscription webhook hasn't run yet.
       const watchToken = await db.user_tokens.findUnique({
         where: { clerk_user_id: userId },
         select: { watch_activated: true },
@@ -137,11 +123,9 @@ const app = new Hono().post(
         console.error("History sync error (non-fatal):", err);
       }
 
-      // Step 2: All DB writes in a single atomic transaction.
-      // Note: trial activation and tier assignment are handled by the
-      // subscription webhook (card-required checkout), not here.
+      // Trial activation and tier assignment happen in the subscription
+      // webhook (card-required checkout), not here.
       await db.$transaction(async (tx) => {
-        // 2b. Draft preferences (upsert)
         await tx.draft_preference.upsert({
           where: { user_id: userId },
           update: {
@@ -165,7 +149,6 @@ const app = new Hono().post(
           },
         });
 
-        // 2c. Digest preferences (upsert)
         await tx.digest_preference.upsert({
           where: { user_id: userId },
           update: {
@@ -181,7 +164,6 @@ const app = new Hono().post(
           },
         });
 
-        // 2d. Look up system + user tags
         const tagRecords = await tx.tag.findMany({
           where: {
             name: { in: body.tags },
@@ -195,7 +177,6 @@ const app = new Hono().post(
           );
         }
 
-        // 2e. Replace user tags
         await tx.user_tags.deleteMany({ where: { user_id: userId } });
         await tx.user_tags.createMany({
           data: tagRecords.map((tag) => ({
@@ -205,7 +186,6 @@ const app = new Hono().post(
           skipDuplicates: true,
         });
 
-        // 2f. Follow-up preferences (upsert)
         if (body.followUpPrefs) {
           await tx.follow_up_preference.upsert({
             where: { user_id: userId },
@@ -222,8 +202,7 @@ const app = new Hono().post(
             },
           });
 
-          // Follow-ups depend on "Resolved" to close out tracked threads, so
-          // guarantee the tag is present even if the user didn't pick it.
+          // Follow-ups need the "Resolved" tag to close threads; ensure it exists even if unpicked.
           if (body.followUpPrefs.enabled) {
             await ensureResolvedTag(tx, userId);
           }

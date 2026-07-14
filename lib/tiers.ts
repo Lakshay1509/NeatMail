@@ -35,6 +35,8 @@ export interface TierLimits {
   maxAiDraftsPerMonth: number;
   maxArchiveRules: number;
   maxFollowUpsPerMonth: number;
+  /** Extra members beyond the admin (always seat 0). 0 = solo plan, no team. */
+  maxTeamMembers: number;
   hasDigest: boolean;
   hasFollowUps: boolean;
   hasTelegramSlack: boolean;
@@ -49,6 +51,7 @@ export const TIER_LIMITS: Record<Tier, TierLimits> = {
     maxAiDraftsPerMonth: 0,
     maxArchiveRules: 0,
     maxFollowUpsPerMonth: 0,
+    maxTeamMembers: 0,
     hasDigest: false,
     hasFollowUps: false,
     hasTelegramSlack: false,
@@ -61,6 +64,7 @@ export const TIER_LIMITS: Record<Tier, TierLimits> = {
     maxAiDraftsPerMonth: 100,
     maxArchiveRules: 25,
     maxFollowUpsPerMonth: 50,
+    maxTeamMembers: 0,
     hasDigest: true,
     hasFollowUps: true,
     hasTelegramSlack: true,
@@ -73,6 +77,7 @@ export const TIER_LIMITS: Record<Tier, TierLimits> = {
     maxAiDraftsPerMonth: Infinity,
     maxArchiveRules: Infinity,
     maxFollowUpsPerMonth: Infinity,
+    maxTeamMembers: 1,
     hasDigest: true,
     hasFollowUps: true,
     hasTelegramSlack: true,

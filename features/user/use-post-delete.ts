@@ -16,7 +16,12 @@ export const useDeleteUser = (status: string) => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete user");
+        // Surface the server's friendly message (e.g. "you still have N team
+        // members") instead of a generic failure.
+        const body = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(body?.error ?? "Failed to delete user");
       }
 
       return response.json();
@@ -33,8 +38,8 @@ export const useDeleteUser = (status: string) => {
       }
       
     },
-    onError: () => {
-      toast.error("Failed to delete user");
+    onError: (error) => {
+      toast.error(error.message || "Failed to delete user");
     },
   });
 };

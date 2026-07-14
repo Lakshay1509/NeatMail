@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useGetUserDeleteStatus } from "@/features/user/use-get-user-deleteStatus";
 import { useDeleteUser } from "@/features/user/use-post-delete";
 import { Button } from "./ui/button";
@@ -14,6 +16,10 @@ const DeleteUser = () => {
   const [confirmText, setConfirmText] = useState("");
 
   const isDeleted = data?.data.deleted_flag ?? false;
+  // Team owners with members can't delete, they're the billing anchor.
+  // Surfaced upfront instead of failing after the confirm step.
+  const teamMemberCount = data?.teamMemberCount ?? 0;
+  const blockedByTeam = teamMemberCount > 0 && !isDeleted;
   const status = isDeleted ? 'cancel' : 'request';
   const mutation = useDeleteUser(status);
   const deleteWatchmutation = deleteWatch();
@@ -61,11 +67,19 @@ const DeleteUser = () => {
             ? `Your account is scheduled for deletion on ${new Date(
                 data?.data.delete_at!
               ).toLocaleDateString()}.`
+            : blockedByTeam
+            ? `You own a team with ${teamMemberCount} member${
+                teamMemberCount === 1 ? "" : "s"
+              }. Remove everyone from your team before you can delete your account.`
             : "Once you delete your account, you can recover it within 30 days."}
         </p>
       </div>
       <div>
-        {showConfirm && !isDeleted ? (
+        {blockedByTeam ? (
+          <Button asChild variant="outline" size="sm">
+            <Link href="/organization">Manage team</Link>
+          </Button>
+        ) : showConfirm && !isDeleted ? (
           <div className="flex flex-col gap-2">
             <p className="text-xs text-red-600 mb-1">Type "Delete Account" to confirm</p>
             <Input
@@ -92,6 +106,11 @@ const DeleteUser = () => {
                 Cancel
               </Button>
             </div>
+            {mutation.isError && (
+              <p className="text-xs text-red-700 mt-1">
+                {mutation.error.message}
+              </p>
+            )}
           </div>
         ) : (
           <Button

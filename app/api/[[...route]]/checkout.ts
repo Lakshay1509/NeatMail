@@ -1,8 +1,9 @@
 import { db } from "@/lib/prisma";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import DodoPayments from "dodopayments";
-import { getProductId, type Tier } from "@/lib/tiers";
+import { getProductId, TIER_LIMITS, type Tier } from "@/lib/tiers";
 import { getUserTier } from "@/lib/tier-guard";
+import { isBillingOwner, getBillingTeamIds } from "@/lib/organization";
 import { redeemReferralCookie } from "@/lib/referral";
 
 import { Hono } from "hono";
@@ -25,13 +26,19 @@ const app = new Hono()
         return ctx.json({ error: "Unauthorized" }, 401);
       }
 
+      // Only the billing owner may checkout; a member must never mint a second subscription under the org.
+      if (!(await isBillingOwner(userId))) {
+        return ctx.json(
+          { error: "Billing is managed by your organization admin" },
+          403,
+        );
+      }
+
       const body = await ctx.req.json().catch(() => ({}));
       const tier: Tier = body.tier === "PRO" || body.tier === "MAX" ? body.tier : "PRO";
       const interval: "monthly" | "annual" = body.interval === "annual" ? "annual" : "monthly";
-      // Card-required free trial: collect the card now via DodoPay, first charge after 7 days.
-      // Bumped to 14 below on a valid referral redemption.
+      // Card required now via DodoPay; first charge after 7 days (bumped to 14 on valid referral redemption).
       let trialPeriodDays = body.trial === true ? 7 : 0;
-      // When started from onboarding, return to /onboard-complete to finish setup.
       const isOnboarding = body.onboard === true;
 
       const subscription = await db.subscription.findFirst({
@@ -70,13 +77,21 @@ const app = new Hono()
         );
       }
 
-      // Trial eligibility: a $0 succeeded payment means a free trial was already
-      // taken, so don't grant another one (prevents repeated free trials).
+      // Trial eligibility: block on a prior $0 succeeded payment (own past trial), or
+      // trial_used (latched flag for MAX access inherited as a since-removed org member,
+      // since the OrganizationMember row is gone after detach).
       if (trialPeriodDays > 0) {
-        const priorTrial = await db.paymentHistory.findFirst({
-          where: { clerkUserId: userId, amount: 0, status: "succeeded" },
-        });
-        if (priorTrial) {
+        const [priorTrial, tokenRow] = await Promise.all([
+          db.paymentHistory.findFirst({
+            where: { clerkUserId: userId, amount: 0, status: "succeeded" },
+            select: { id: true },
+          }),
+          db.user_tokens.findUnique({
+            where: { clerk_user_id: userId },
+            select: { trial_used: true },
+          }),
+        ]);
+        if (priorTrial || tokenRow?.trial_used) {
           return ctx.json(
             { error: "You've already used your free trial." },
             409,
@@ -84,10 +99,7 @@ const app = new Hono()
         }
       }
 
-      // Referral redemption gates on "first checkout ever" (any prior payment
-      // of any amount), independent of whether a trial was requested. A user
-      // who skips the trial and pays immediately still counts as a valid
-      // conversion.
+      // Referral redemption requires no prior payment ever, regardless of whether a trial was requested.
       const priorPayment = await db.paymentHistory.findFirst({
         where: { clerkUserId: userId },
         select: { id: true },
@@ -119,6 +131,25 @@ const app = new Hono()
           console.log("Charge created:", response.payment_id);
           return ctx.json({ url: response.payment_link }, 200);
         }
+      }
+
+      // Seat cap: block subscribing to a plan that can't cover existing team members
+      // (e.g. re-subscribing to PRO while a MAX teammate's row survives cancellation).
+      // Webhook re-enforces this for out-of-band/portal changes.
+      const ownedOrg = await db.organization.findUnique({
+        where: { created_by: userId },
+        select: { _count: { select: { members: true } } },
+      });
+      const memberCount = ownedOrg?._count.members ?? 0;
+      if (memberCount > TIER_LIMITS[tier].maxTeamMembers) {
+        return ctx.json(
+          {
+            error: `Your team has ${memberCount} member${memberCount === 1 ? "" : "s"}, which the ${tier} plan doesn't include. Remove ${memberCount === 1 ? "them" : "your members"} before switching to ${tier}.`,
+            code: "TEAM_OVER_SEAT_CAP",
+            memberCount,
+          },
+          409,
+        );
       }
 
       const country = ctx.req.header("cf-ipcountry") ?? "";
@@ -168,6 +199,14 @@ const app = new Hono()
 
       if (!userId) {
         return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      // Members can't cancel/renew org billing; the renew branch below would otherwise open a checkout for them.
+      if (!(await isBillingOwner(userId))) {
+        return ctx.json(
+          { error: "Billing is managed by your organization admin" },
+          403,
+        );
       }
 
       const renewQuery = ctx.req.query("renew");
@@ -258,6 +297,14 @@ const app = new Hono()
         return ctx.json({ error: "Unauthorized" }, 401);
       }
 
+      // Plan changes write user_tokens.tier, only the billing owner may do so.
+      if (!(await isBillingOwner(userId))) {
+        return ctx.json(
+          { error: "Billing is managed by your organization admin" },
+          403,
+        );
+      }
+
       const body = await ctx.req.json().catch(() => ({}));
       const targetTier: Tier = body.tier === "PRO" || body.tier === "MAX" ? body.tier : "PRO";
       const interval: "monthly" | "annual" = body.interval === "annual" ? "annual" : "monthly";
@@ -293,6 +340,24 @@ const app = new Hono()
         );
       }
 
+      // Seat cap: block a downgrade that can't cover the current team, owner must remove
+      // members first. Webhook re-enforces this for out-of-band downgrades (evicts excess).
+      const ownedOrg = await db.organization.findUnique({
+        where: { created_by: userId },
+        select: { _count: { select: { members: true } } },
+      });
+      const memberCount = ownedOrg?._count.members ?? 0;
+      if (memberCount > TIER_LIMITS[targetTier].maxTeamMembers) {
+        return ctx.json(
+          {
+            error: `Your team has ${memberCount} member${memberCount === 1 ? "" : "s"}. Remove ${memberCount === 1 ? "them" : "enough members"} before switching to ${targetTier}.`,
+            code: "TEAM_OVER_SEAT_CAP",
+            memberCount,
+          },
+          409,
+        );
+      }
+
       const country = ctx.req.header("cf-ipcountry") ?? "";
       const productId = getProductId(targetTier, country, interval);
 
@@ -310,8 +375,11 @@ const app = new Hono()
         quantity: 1,
       });
 
-      await db.user_tokens.update({
-        where: { clerk_user_id: userId },
+      // Propagate the new tier to the whole billing team so members' materialised tier
+      // doesn't go stale; userId is guaranteed to be the billing owner by the guard above.
+      const teamIds = await getBillingTeamIds(userId);
+      await db.user_tokens.updateMany({
+        where: { clerk_user_id: { in: teamIds } },
         data: { tier: targetTier },
       });
 
