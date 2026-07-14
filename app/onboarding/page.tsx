@@ -15,6 +15,7 @@ import {
   CalendarClock,
   Lock,
   PartyPopper,
+  Loader2,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -26,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { useGeo } from "@/features/geo/use-geo";
 import { getTierPrices } from "@/lib/tiers";
 import { toast } from "sonner";
+import { InviteConfirm } from "@/components/InviteConfirm";
 
 const CATEGORIES = [
   {
@@ -170,7 +172,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const { saveStep } = useOnboarding();
   const { region } = useGeo();
-  const { data: subData } = useGetUserSubscribed();
+  const { data: subData, refetch: refetchSub } = useGetUserSubscribed();
   const alreadySubscribed = subData?.subscribed === true;
   const { data: incomingReferral } = useIncomingReferral();
   const referred = incomingReferral?.referred === true;
@@ -186,6 +188,9 @@ export default function OnboardingPage() {
     followUpDays: 3,
   });
 
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [mode, setMode] = useState<"loading" | "invite" | "wizard">("loading");
+
   const prices = getTierPrices(region);
   const monthlyEquivalent = (tier: TrialTier) =>
     billingInterval === "annual"
@@ -193,13 +198,40 @@ export default function OnboardingPage() {
       : `${prices[tier].symbol}${prices[tier].monthly}`;
   const currentSubtitles = stepSubtitles(trialDays);
 
+  // Idempotent. Called for non-invited users and invite decliners so no one lands in the wizard org-less.
+  const ensureSoloOrg = () => {
+    fetch("/api/organization/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    }).catch(() => {});
+  };
+
+  // A token shows the confirmation gate instead of silently joining the org.
   useEffect(() => {
-    fetch("/api/onboarding/complete").catch(() => {});
+    const token = new URLSearchParams(window.location.search).get("invite");
+    if (token) {
+      setInviteToken(token);
+      setMode("invite");
+    } else {
+      setMode("wizard");
+      ensureSoloOrg();
+    }
   }, []);
 
-  // Skip the paywall for users who already have an active subscription/trial
-  // (e.g. they paid but got dropped before onboarding completed). Covers the
-  // case where subscription data resolves while the user is on the paywall.
+  // Refetch subscription before the wizard so a just-joined member's paywall
+  // skip isn't stale, and ensure decliners still get their own solo org.
+  const handleInviteResolve = (next: "dashboard" | "wizard") => {
+    if (next === "dashboard") {
+      router.push("/");
+      return;
+    }
+    refetchSub();
+    ensureSoloOrg();
+    setMode("wizard");
+  };
+
+  // Handles subscription data resolving late, after the user already landed on the paywall step.
   useEffect(() => {
     if (step === 3 && alreadySubscribed) {
       router.push("/onboard-complete");
@@ -224,13 +256,10 @@ export default function OnboardingPage() {
   const [saving, setSaving] = useState(false);
 
   const goNext = async () => {
-    // Final step: start the card-required trial checkout for the selected plan.
-    // DodoPay collects the card and returns the user to /onboard-complete,
-    // where the usual onboarding setup runs.
+    // DodoPay collects the card and redirects to /onboard-complete on success.
     if (step === 3) {
       setSaving(true);
-      // Already subscribed (paid but onboarding never completed) — skip the
-      // paywall and finish setup instead of hitting checkout (which would 409).
+      // Skip checkout for already-subscribed users, it would 409.
       if (alreadySubscribed) {
         router.push("/onboard-complete");
         return;
@@ -291,9 +320,27 @@ export default function OnboardingPage() {
 
 
 
+  // Hold render until flow is decided, otherwise the wizard flashes before the invite gate mounts.
+  if (mode === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Invite present → confirmation gate instead of the wizard. On resolve it
+  // routes the user (dashboard for returning members, wizard for new users).
+  if (mode === "invite" && inviteToken) {
+    return (
+      <div className="min-h-screen bg-white">
+        <InviteConfirm token={inviteToken} onResolve={handleInviteResolve} />
+      </div>
+    );
+  }
+
   return (
     <div className="-mt-[100px] min-h-screen flex flex-col md:flex-row bg-white">
-      {/* ── Desktop left panel — 38% ── */}
       <div className="hidden md:flex w-[38%] bg-[#f6f5f4] flex-col relative overflow-hidden">
         <div className="flex-1 flex items-center justify-center p-12">
           <div className="relative w-full max-w-[420px] aspect-square">
@@ -352,9 +399,7 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      {/* Right panel — 62% on desktop, full on mobile */}
       <div className="flex-1 flex flex-col pt-[100px]">
-        {/* ── Mobile hero banner ── */}
         <div className="md:hidden bg-[#f6f5f4] px-6 py-8 flex flex-col items-center gap-4">
           <div className="relative w-50 h-50">
             <AnimatePresence mode="wait" custom={dirRef.current}>
@@ -426,7 +471,6 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        {/* Step body */}
         <div className="flex-1 overflow-y-auto px-5 md:p-10">
           <div className="max-w-4xl mx-auto pt-4 md:pt-6 pb-8">
             <AnimatePresence mode="wait" custom={dirRef.current}>
@@ -448,7 +492,6 @@ export default function OnboardingPage() {
                 <Separator className="mt-4 hidden md:block" />
 
                 <div className="mt-6 md:mt-8 space-y-8">
-                  {/* ── Step 1: Role ── */}
                   {step === 0 && (
                     <div className="space-y-3">
                       <label className="text-sm font-semibold text-neutral-700 block">
@@ -488,7 +531,6 @@ export default function OnboardingPage() {
                     </div>
                   )}
 
-                  {/* ── Step 2: Active labels ── */}
                   {step === 1 && (
                     <div className="space-y-0.5">
                       <div className="flex items-center justify-between pb-2">
@@ -529,7 +571,6 @@ export default function OnboardingPage() {
                     </div>
                   )}
 
-                  {/* ── Step 3: Follow-up detection ── */}
                   {step === 2 && (
                     <>
                       <div className="flex items-center justify-between py-4">
@@ -581,10 +622,8 @@ export default function OnboardingPage() {
                     </>
                   )}
 
-                  {/* ── Step 4: Choose a plan / start free trial ── */}
                   {step === 3 && (
                     <div className="space-y-5">
-                      {/* Billing interval toggle */}
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-semibold text-neutral-700">
                           Choose a plan
@@ -620,7 +659,6 @@ export default function OnboardingPage() {
                         </div>
                       </div>
 
-                      {/* Plan cards */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {TRIAL_PLANS.map((plan) => {
                           const isSelected = selectedTier === plan.tier;
@@ -694,7 +732,6 @@ export default function OnboardingPage() {
                         })}
                       </div>
 
-                      {/* Why we ask for a card — trust + reassurance */}
                       <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
                         <div className="flex items-center gap-2">
                           <ShieldCheck className="h-4 w-4 shrink-0 text-neutral-900" />
@@ -746,7 +783,6 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        {/* Footer navigation */}
         <div className="flex items-center justify-between px-5 md:px-10 py-5 border-t border-neutral-100 shrink-0">
           <Button
             variant="ghost"

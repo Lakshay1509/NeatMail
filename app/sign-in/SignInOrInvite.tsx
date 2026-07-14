@@ -4,36 +4,43 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { SignIn } from "@clerk/nextjs";
 
-// `signUpForceRedirectUrl` always wins over `redirect_url`/search params per
-// Clerk's docs, so a referral code would otherwise get silently dropped on a
-// brand-new signup. Pull it from a direct `?ref=CODE` here, or from inside
-// `redirect_url` (the shape produced when an unauthenticated hit on a
-// protected route like `/?ref=CODE` gets bounced here by auth.protect()),
-// then re-attach it to the forced destination so proxy.ts gets another
-// chance to set the nm_ref cookie after signup.
-function useReferralCodeFromUrl(): string | null {
+// Clerk's signUpForceRedirectUrl overrides redirect_url/search params, dropping
+// ref/invite on signup. Read from `?key=VALUE` or the nested redirect_url and
+// re-attach them so proxy.ts can set the cookie after auth.
+function useParamFromUrl(key: string): string | null {
   const searchParams = useSearchParams();
 
-  const direct = searchParams.get("ref");
+  const direct = searchParams.get(key);
   if (direct) return direct;
 
   const redirectUrl = searchParams.get("redirect_url");
   if (!redirectUrl) return null;
 
   try {
-    return new URL(redirectUrl, window.location.origin).searchParams.get("ref");
+    return new URL(redirectUrl, window.location.origin).searchParams.get(key);
   } catch {
     return null;
   }
 }
 
 function SignInForm() {
-  const ref = useReferralCodeFromUrl();
+  const ref = useParamFromUrl("ref");
+  const invite = useParamFromUrl("invite");
+
+  const params = new URLSearchParams();
+  if (ref) params.set("ref", ref);
+  if (invite) params.set("invite", invite);
+  const qs = params.toString();
+
+  const onboardingUrl = qs ? `/onboarding?${qs}` : "/onboarding";
+  // An invite must route existing users (sign-in) to onboarding too, so the
+  // join step runs; without an invite, returning users go straight to the app.
+  const fallbackUrl = invite ? onboardingUrl : "/dashboard";
 
   return (
     <SignIn
-      fallbackRedirectUrl="/dashboard"
-      signUpForceRedirectUrl={ref ? `/onboarding?ref=${encodeURIComponent(ref)}` : "/onboarding"}
+      fallbackRedirectUrl={fallbackUrl}
+      signUpForceRedirectUrl={onboardingUrl}
       withSignUp={true}
     />
   );

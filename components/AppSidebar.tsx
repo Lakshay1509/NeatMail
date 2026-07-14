@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import { Home, Receipt, Tag, PenLine, Plug, MailX, Inbox, MessageSquareDashed, AlertCircle, Send, Bell, CheckSquare, ChevronDown, MessageSquareDashedIcon, Gift } from "lucide-react"
+import { Home, Receipt, Tag, PenLine, Plug, MailX, Inbox, MessageSquareDashed, AlertCircle, Send, Bell, CheckSquare, ChevronDown, MessageSquareDashedIcon, Gift, Users } from "lucide-react"
 import { motion, LayoutGroup } from "framer-motion"
 
 import {
@@ -62,6 +62,7 @@ const items: SidebarItem[] = [
 
 const userSettingsItems: SidebarItem[] = [
   { title: "Billing", url: "/billing", icon: Receipt },
+  { title: "Team", url: "/organization", icon: Users },
   { title: "Daily Digest", url: "/settings/digest", icon: Bell },
   { title: "Feedback", url: "https://forms.baytix.net/forms/neatmail-feedback-form-8fc4565d", icon: MessageSquareDashed, external: true },
   { title: "Danger Zone", url: "/danger", icon: AlertCircle, danger: true },

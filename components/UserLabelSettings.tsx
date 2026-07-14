@@ -73,10 +73,8 @@ const UserLabelSettings = () => {
 		if (data) {
 
 			const existingTags = data.data.map((tag) => tag.tag.name);
-			// Follow-ups make "Resolved" mandatory; keep it selected to match the
-			// locked switch — even for legacy users whose set predates this rule.
-			// Computed here (not a separate effect) so it can't be raced away when
-			// the tags query resolves after the follow-up query.
+			// "Resolved" is force-included when follow-ups are on, even for legacy users predating this rule.
+			// Computed inline, not a separate effect, so it can't race the tags query resolving after the follow-up query.
 			setSelectedCategories(
 				followUpsEnabled && !existingTags.includes("Resolved")
 					? [...existingTags, "Resolved"]
@@ -145,6 +143,9 @@ const UserLabelSettings = () => {
 	}
 
 	const handleWatchToggle = async (nextWatch: boolean) => {
+		// Paused members can't re-arm their own watch. Switch is disabled below; guarded here too.
+		// activate-watch rejects it server-side regardless.
+		if (watchData?.paused) return;
 		setWatch(nextWatch);
 		if (savedTimer.current) clearTimeout(savedTimer.current);
 		setSaveState('saving');
@@ -203,14 +204,14 @@ const UserLabelSettings = () => {
 					</p>
 				</div>
 				<div className="flex items-center gap-2.5 shrink-0 pt-1">
-					{watch && <span className="h-1.5 w-1.5 rounded-full bg-foreground animate-in zoom-in-50 fade-in duration-200 motion-reduce:animate-none" aria-hidden="true" />}
+					{watch && !watchData?.paused && <span className="h-1.5 w-1.5 rounded-full bg-foreground animate-in zoom-in-50 fade-in duration-200 motion-reduce:animate-none" aria-hidden="true" />}
 					<span className="text-sm font-medium text-foreground tabular-nums">
-						{watch ? 'Active' : 'Inactive'}
+						{watchData?.paused ? 'Paused by admin' : watch ? 'Active' : 'Inactive'}
 					</span>
 					<Switch
-						checked={!!watch}
+						checked={!!watch && !watchData?.paused}
 						onCheckedChange={handleWatchToggle}
-						disabled={watchLoading}
+						disabled={watchLoading || !!watchData?.paused}
 						aria-label="Monitor inbox"
 					/>
 				</div>

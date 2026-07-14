@@ -3,6 +3,108 @@ import { db } from "./prisma";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Escape user-controlled values (team name, inviter name) before HTML interpolation.
+function escapeHtml(value: string): string {
+  return value.replace(
+    /[&<>"']/g,
+    (c) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[c] as string,
+  );
+}
+
+interface TeamInviteEmailParams {
+  to: string;
+  inviterName: string | null;
+  inviterEmail: string | null;
+  teamName: string;
+  link: string;
+}
+
+// Sent when an invite is locked to an email; the link is also shown to the
+// owner as a manual-share fallback. Caller swallows errors so a bad send doesn't fail the invite.
+export async function sendTeamInviteEmail(params: TeamInviteEmailParams) {
+  const { to, inviterName, inviterEmail, teamName, link } = params;
+  const inviter = escapeHtml(
+    inviterName?.trim() || inviterEmail || "A NeatMail user",
+  );
+  const team = escapeHtml(teamName);
+
+  const subject = `${inviter} invited you to join ${team} on NeatMail`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111111;line-height:1.6;padding:24px;max-width:480px;margin:0 auto;">
+  <h2 style="font-size:20px;margin:0 0 16px;">You've been invited to join a team on NeatMail</h2>
+  <p style="font-size:15px;color:#444;margin:0 0 16px;">
+    <strong>${inviter}</strong> invited you to join <strong>${team}</strong> on NeatMail — an AI assistant that organizes your inbox, drafts replies, and clears the noise.
+  </p>
+  <p style="font-size:15px;color:#444;margin:0 0 24px;">
+    You'll share their plan while you're on the team. Accept the invite to get started:
+  </p>
+  <a href="${link}" style="display:inline-block;padding:11px 22px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">Accept invite</a>
+  <p style="font-size:13px;color:#888;margin:24px 0 0;">
+    This invite is single-use and expires in 7 days. If the button doesn't work, paste this link into your browser:<br/>
+    <a href="${link}" style="color:#555555;word-break:break-all;">${link}</a>
+  </p>
+  <p style="font-size:12px;color:#888;margin-top:24px;">If you weren't expecting this, you can safely ignore this email. — The NeatMail team</p>
+</body>
+</html>`;
+
+  await resend.emails.send({
+    from: "NeatMail <notifications@send.neatmail.app>",
+    to,
+    subject,
+    html,
+  });
+}
+
+interface MemberLeftEmailParams {
+  to: string; // team owner (admin) email
+  memberEmail: string; // the teammate who left
+  teamName: string;
+}
+
+// Sent when a member leaves voluntarily (POST /organization/leave), not on
+// admin-initiated removal. Caller swallows errors so a bad send doesn't block the leave.
+export async function sendMemberLeftEmail(params: MemberLeftEmailParams) {
+  const { to, memberEmail, teamName } = params;
+  const member = escapeHtml(memberEmail);
+  const team = escapeHtml(teamName);
+
+  // Subject is plain text, use raw values, not HTML-escaped ones.
+  const subject = `${memberEmail} left ${teamName} on NeatMail`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111111;line-height:1.6;padding:24px;max-width:480px;margin:0 auto;">
+  <h2 style="font-size:20px;margin:0 0 16px;">A member left your team</h2>
+  <p style="font-size:15px;color:#444;margin:0 0 16px;">Hi there,</p>
+  <p style="font-size:15px;color:#444;margin:0 0 16px;">
+    <strong>${member}</strong> has left <strong>${team}</strong> on NeatMail. Their
+    plan coverage has ended and their seat is now free.
+  </p>
+  <p style="font-size:15px;color:#444;margin:0 0 24px;">
+    You can invite someone else in their place from your team settings:
+  </p>
+  <a href="https://dashboard.neatmail.app/organization" style="display:inline-block;padding:11px 22px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">Manage your team</a>
+  <p style="font-size:12px;color:#888;margin-top:24px;">You're receiving this because you own this team on NeatMail. — The NeatMail team</p>
+</body>
+</html>`;
+
+  await resend.emails.send({
+    from: "NeatMail <notifications@send.neatmail.app>",
+    to,
+    subject,
+    html,
+  });
+}
+
 export async function sendSubExpiredEmail(userEmail:string, userName:string){
 
     try{
@@ -39,10 +141,8 @@ export async function sendSubExpiredEmail(userEmail:string, userName:string){
     }
 }
 
-// Sent when NeatMail can no longer retrieve the user's Google OAuth token
-// (they revoked access or removed the connection). Prompts them to sign in
-// again and re-grant all scopes so inbox automation can resume. Throttled by
-// the caller (Redis) so it goes out at most once every few days.
+// Sent when the Google OAuth token is unreachable (revoked/removed). Caller
+// throttles via Redis to at most once every few days.
 export async function sendReconnectEmail(userEmail: string, userName: string) {
   const firstName = userName?.trim().split(" ")[0] || "there";
 
@@ -81,9 +181,8 @@ interface TrialReminderEmailParams {
   chargeDateLabel: string;
 }
 
-// Plain-HTML reminder sent ~24h before a card-required trial converts. Two
-// variants: "you'll be charged tomorrow" (auto-renew on) vs a "trial ending"
-// recap (auto-renew off, no charge coming). Throws so the BullMQ worker retries.
+// Sent ~24h before a card-required trial converts; copy varies by auto-renew
+// state. Throws (unlike other senders here) so the BullMQ worker retries.
 export async function sendTrialReminderEmail(params: TrialReminderEmailParams) {
   const {
     to,
@@ -152,9 +251,8 @@ interface ReferralRewardEmailParams {
   monthsCap: number;
 }
 
-// Sent when a referrer earns a free month from a referred friend's first
-// real payment. Throws so the caller's best-effort wrapper can log without
-// failing the webhook that triggered it.
+// Sent when a referrer earns a free month. Throws so the caller's wrapper can
+// log without failing the triggering webhook.
 export async function sendReferralRewardEmail(params: ReferralRewardEmailParams) {
   const { to, monthsGranted, monthsCap } = params;
 
