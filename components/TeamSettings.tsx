@@ -36,17 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,7 +65,15 @@ const AVATAR_COLORS = ["#4f46e5", "#7c3aed", "#2563eb", "#0ea5e9", "#a5b4fc"];
 
 type AdminTeam = Extract<TeamResponse, { role: "admin" }>;
 type Member = AdminTeam["members"][number];
+type Invite = AdminTeam["invites"][number];
 type StatusFilter = "all" | "active" | "paused" | "pending";
+
+// Every destructive admin action funnels through one ConfirmDialog; the union
+// carries the target so the dialog can render the right copy and mutation.
+type PendingAction =
+  | { type: "remove"; member: Member }
+  | { type: "revoke"; invite: Invite }
+  | { type: "pause"; member: Member };
 
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "All statuses" },
@@ -397,7 +395,8 @@ export default function TeamSettings() {
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [pendingRemove, setPendingRemove] = useState<Member | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [leaveOpen, setLeaveOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
@@ -449,6 +448,71 @@ export default function TeamSettings() {
     exit: reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 },
     transition: { duration: 0.18, ease: [0.22, 1, 0.36, 1] as const },
   };
+
+  // Maps the pending destructive action to the ConfirmDialog's copy, button,
+  // loading flag, and mutation. Each onConfirm closes the dialog on success so
+  // it stays open with a spinner while in flight and remains open on error
+  // (the hook surfaces the failure via toast). Null-safe so the single dialog
+  // can render (closed) even when nothing is pending.
+  function buildConfirm(action: PendingAction | null) {
+    switch (action?.type) {
+      case "remove": {
+        const email = action.member.email ?? "this teammate";
+        return {
+          title: `Remove ${email}?`,
+          description:
+            "They lose access to your shared plan and NeatMail stops organizing their inbox. You can re-invite them later.",
+          confirmLabel: "Remove",
+          isLoading: removeMember.isPending,
+          onConfirm: () =>
+            removeMember.mutate(
+              { userId: action.member.userId },
+              { onSuccess: () => setPendingAction(null) },
+            ),
+        };
+      }
+      case "revoke": {
+        const who = action.invite.email
+          ? `for ${action.invite.email}`
+          : "link";
+        return {
+          title: "Revoke this invite?",
+          description: `The invite ${who} will stop working immediately and can't be used to join. You can always generate a new one.`,
+          confirmLabel: "Revoke invite",
+          isLoading: revokeInvite.isPending,
+          onConfirm: () =>
+            revokeInvite.mutate(
+              { inviteId: action.invite.id },
+              { onSuccess: () => setPendingAction(null) },
+            ),
+        };
+      }
+      case "pause": {
+        const email = action.member.email ?? "this teammate";
+        return {
+          title: `Pause access for ${email}?`,
+          description:
+            "NeatMail stops watching and organizing their inbox until you resume. Their seat stays reserved and their plan is unaffected.",
+          confirmLabel: "Pause access",
+          isLoading: toggleAccess.isPending,
+          onConfirm: () =>
+            toggleAccess.mutate(
+              { userId: action.member.userId, active: false },
+              { onSuccess: () => setPendingAction(null) },
+            ),
+        };
+      }
+      default:
+        return {
+          title: "",
+          description: "",
+          confirmLabel: "Confirm",
+          isLoading: false,
+          onConfirm: () => {},
+        };
+    }
+  }
+  const confirm = buildConfirm(pendingAction);
 
   if (data?.role === "member") {
     const orgName = data.organization.name;
@@ -503,42 +567,30 @@ export default function TeamSettings() {
               inbox until you subscribe again.
             </p>
           </div>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={leaveOrg.isPending}
-                className="shrink-0 text-destructive hover:text-destructive"
-              >
-                {leaveOrg.isPending ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <LogOut />
-                )}
-                Leave team
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Leave {orgName}?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Your plan reverts to no subscription and NeatMail stops
-                  organizing your inbox. You can rejoin later with a new invite.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-destructive text-white hover:bg-destructive/90"
-                  onClick={() => leaveOrg.mutate()}
-                >
-                  Leave team
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={leaveOrg.isPending}
+            onClick={() => setLeaveOpen(true)}
+            className="shrink-0 text-destructive hover:text-destructive"
+          >
+            <LogOut />
+            Leave team
+          </Button>
         </div>
+
+        <ConfirmDialog
+          open={leaveOpen}
+          onOpenChange={setLeaveOpen}
+          isLoading={leaveOrg.isPending}
+          icon={<LogOut className="size-5 text-destructive" />}
+          title={`Leave ${orgName}?`}
+          description="Your plan reverts to no subscription and NeatMail stops organizing your inbox. You can rejoin later with a new invite."
+          confirmLabel="Leave team"
+          onConfirm={() =>
+            leaveOrg.mutate(undefined, { onSuccess: () => setLeaveOpen(false) })
+          }
+        />
       </div>
     );
   }
@@ -732,9 +784,15 @@ export default function TeamSettings() {
                     <Switch
                       checked={m.active}
                       disabled={toggleAccess.isPending}
-                      onCheckedChange={(checked) =>
-                        toggleAccess.mutate({ userId: m.userId, active: checked })
-                      }
+                      onCheckedChange={(checked) => {
+                        // Pausing stops their inbox processing — confirm it.
+                        // Resuming is safe, so apply it immediately.
+                        if (checked) {
+                          toggleAccess.mutate({ userId: m.userId, active: true });
+                        } else {
+                          setPendingAction({ type: "pause", member: m });
+                        }
+                      }}
                       aria-label={
                         m.active
                           ? `Pause access for ${m.email ?? "teammate"}`
@@ -746,7 +804,7 @@ export default function TeamSettings() {
                     <RowMenu>
                       <DropdownMenuItem
                         className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                        onSelect={() => setPendingRemove(m)}
+                        onSelect={() => setPendingAction({ type: "remove", member: m })}
                       >
                         <UserMinus /> Remove from team
                       </DropdownMenuItem>
@@ -780,8 +838,7 @@ export default function TeamSettings() {
                     <RowMenu>
                       <DropdownMenuItem
                         className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                        disabled={revokeInvite.isPending}
-                        onSelect={() => revokeInvite.mutate({ inviteId: inv.id })}
+                        onSelect={() => setPendingAction({ type: "revoke", invite: inv })}
                       >
                         <MailX /> Revoke invite
                       </DropdownMenuItem>
@@ -944,35 +1001,17 @@ export default function TeamSettings() {
           )}
         </AnimatePresence>
 
-        <AlertDialog
-          open={!!pendingRemove}
-          onOpenChange={(open) => !open && setPendingRemove(null)}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Remove {pendingRemove?.email ?? "this teammate"}?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                They will lose access to your shared plan and NeatMail will stop
-                organizing their inbox. You can re-invite them later.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-destructive text-white hover:bg-destructive/90"
-                onClick={() => {
-                  if (pendingRemove)
-                    removeMember.mutate({ userId: pendingRemove.userId });
-                  setPendingRemove(null);
-                }}
-              >
-                Remove
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {/* One dialog for every destructive admin action (remove / revoke /
+            pause), driven by `pendingAction`. */}
+        <ConfirmDialog
+          open={!!pendingAction}
+          onOpenChange={(open) => !open && setPendingAction(null)}
+          isLoading={confirm.isLoading}
+          title={confirm.title}
+          description={confirm.description}
+          confirmLabel={confirm.confirmLabel}
+          onConfirm={confirm.onConfirm}
+        />
       </div>
     );
   }
