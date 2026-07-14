@@ -21,6 +21,9 @@ model user_tokens {
   clerk_user_id           String                 @id @unique
   email                   String                 @unique
   tier                    Tier                   @default(FREE)
+  // True once the user has had a free premium trial, own or inherited via team.
+  // Stays true after leaving/removal so they can't claim a new one. See checkout.ts.
+  trial_used              Boolean                @default(false)
   created_at              DateTime               @default(now()) @db.Timestamp(6)
   updated_at              DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
   last_history_id         String?
@@ -331,7 +334,7 @@ model ArchiveRule {
   user_id          String
   domain           String
   archiveAfterDays Int
-  isActive         Boolean @default(true) // add this
+  isActive         Boolean @default(true)
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -408,15 +411,35 @@ enum OrganizationRole {
 }
 
 model Organization {
-  id         String   @id @default(uuid())
+  id         String               @id @default(uuid())
   name       String
-  created_by String   @unique @map("created_by")
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)  
-  creator user_tokens          @relation(fields: [created_by], references: [clerk_user_id], onDelete: Cascade)
-  members OrganizationMember[]
+  created_by String               @unique @map("created_by")
+  created_at DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  creator    user_tokens          @relation(fields: [created_by], references: [clerk_user_id], onDelete: Cascade)
+  members    OrganizationMember[]
+  invites    OrganizationInvite[]
 
   @@map("organization")
+  @@schema("public")
+}
+
+model OrganizationInvite {
+  id              String           @id @default(uuid())
+  token           String           @unique
+  organization_id String           @map("organization_id")
+  email           String?
+  role            OrganizationRole @default(MEMBER)
+  invited_by      String           @map("invited_by")
+  expires_at      DateTime         @db.Timestamptz(6)
+  used_at         DateTime?        @db.Timestamptz(6)
+  used_by         String?          @map("used_by")
+  created_at      DateTime         @default(now()) @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_id])
+  @@map("organization_invites")
   @@schema("public")
 }
 
@@ -425,12 +448,14 @@ model OrganizationMember {
   user_id         String           @unique
   organization_id String           @map("organization_id")
   role            OrganizationRole @default(MEMBER)
+  // Owner can pause a teammate's mailbox processing without removing them; a
+  // paused member keeps their seat but their Gmail watch is stopped.
+  active          Boolean          @default(true)
   created_at      DateTime         @default(now()) @db.Timestamptz(6)
   updated_at      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
-  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  user_tokens  user_tokens  @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+  organization    Organization     @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  user_tokens     user_tokens      @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
 
-  
   @@index([organization_id])
   @@index([organization_id, role])
   @@map("organization_members")
