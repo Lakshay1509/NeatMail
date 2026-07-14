@@ -6,7 +6,8 @@ import { getDodoPayments } from "./checkout";
 import { zValidator } from "@hono/zod-validator";
 import z from "zod";
 import { getUserTier } from "@/lib/tier-guard";
-import { getBillingOwnerId } from "@/lib/organization";
+import { resolveSubscriptionStatus } from "@/lib/subscription";
+import { isMemberAccessPaused } from "@/lib/organization";
 import { createOutlookSubscription, getFolderMap } from "@/lib/outlook";
 import { updateOutlookId } from "@/lib/supabase";
 import { handleWatchDeactivation } from "@/lib/payement";
@@ -43,18 +44,23 @@ const app = new Hono()
       return ctx.json({ error: "Unauthorized" }, 401);
     }
 
-    const data = await db.user_tokens.findUnique({
-      where: { clerk_user_id: userId },
-      select: {
-        watch_activated: true,
-      },
-    });
+    const [data, paused] = await Promise.all([
+      db.user_tokens.findUnique({
+        where: { clerk_user_id: userId },
+        select: {
+          watch_activated: true,
+        },
+      }),
+      // Reflects the admin's pause instead of a misleading "off, click to enable" state,
+      // and blocks a reactivation activate-watch would reject anyway.
+      isMemberAccessPaused(userId),
+    ]);
 
     if (!data) {
       return ctx.json({ error: "Error getting watch data" }, 500);
     }
 
-    return ctx.json({ data }, 200);
+    return ctx.json({ data, paused }, 200);
   })
 
   .get("/subscription", async (ctx) => {
@@ -64,111 +70,10 @@ const app = new Hono()
       return ctx.json({ error: "Unauthorized" }, 401);
     }
 
-    // Billing (subscription, trial, tier) belongs to the org admin. Resolve to
-    // the billing owner so a member sees the admin's plan. Self-billed users
-    // resolve to themselves, so behaviour is unchanged for them.
-    const billingOwnerId = await getBillingOwnerId(userId);
+    // Resolves through the org admin (billing owner), so a member sees the admin's plan.
+    const status = await resolveSubscriptionStatus(userId);
 
-    const [data, freeTrial, user] = await Promise.all([
-      db.subscription.findFirst({
-        where: { clerkUserId: billingOwnerId },
-        select: {
-          cancelAtNextBillingDate: true,
-          nextBillingDate: true,
-          status: true,
-          recurringAmount: true,
-          paymentFrequencyInterval: true,
-          paymentFrequencyCount: true,
-        },
-        orderBy: { updatedAt: "desc" },
-      }),
-      db.free_trial.findUnique({
-        where: { user_id: billingOwnerId },
-      }),
-      db.user_tokens.findUnique({
-        where: { clerk_user_id: billingOwnerId },
-        select: { tier: true },
-      }),
-    ]);
-
-    const zero_payment = await db.paymentHistory.findFirst({
-      where:{clerkUserId:billingOwnerId,amount:0,status:'succeeded'},
-      orderBy: { createdAt: "desc" },
-
-    })
-
-    // A real (post-trial) charge. Once this exists, the card trial has converted
-    // to a paid subscription and should no longer report as a free trial.
-    const paid_charge = await db.paymentHistory.findFirst({
-      where: { clerkUserId: billingOwnerId, amount: { gt: 0 }, status: "succeeded" },
-    });
-
-    const tier = user?.tier ?? "FREE";
-
-    const hasActiveTrial =
-      freeTrial &&
-      freeTrial.status === "ACTIVE" &&
-      freeTrial.expires_at > new Date();
-
-    // Card trial in progress: a $0 trial charge was recorded, the subscription is
-    // active, and no real charge has happened yet. Flips to false automatically
-    // after the first paid charge.
-    const paidFreeTrial = !!zero_payment && data?.status === "active" && !paid_charge;
-
-    if (!data && !hasActiveTrial) {
-      return ctx.json({ success: false, subscribed: false, tier }, 200);
-    }
-
-    if (!data && hasActiveTrial) {
-      return ctx.json(
-        {
-          success: true,
-          subscribed: true,
-          tier,
-          status: "trial",
-          next_billing_date: freeTrial.expires_at,
-          cancel_at_next_billing_date: null,
-          freeTrial: true,
-        },
-        200,
-      );
-    }
-
-    if (data?.status !== "active" && hasActiveTrial) {
-      return ctx.json(
-        {
-          success: true,
-          subscribed: true,
-          tier,
-          status: "trial",
-          next_billing_date: freeTrial.expires_at,
-          cancel_at_next_billing_date: null,
-          freeTrial: true,
-        },
-        200,
-      );
-    }
-
-    const isAnnual =
-      data!.paymentFrequencyInterval === "Year" ||
-      data!.paymentFrequencyCount >= 12;
-
-    const periodPrice = data!.recurringAmount / 100;
-
-    return ctx.json(
-      {
-        success: true,
-        subscribed: data!.status === "active",
-        tier,
-        status: data!.status,
-        price: periodPrice,
-        interval: isAnnual ? "annual" : "monthly",
-        next_billing_date: data!.nextBillingDate,
-        cancel_at_next_billing_date: data!.cancelAtNextBillingDate,
-        freeTrial: paidFreeTrial,
-      },
-      200,
-    );
+    return ctx.json(status, 200);
   })
 
   .get("/payments", async (ctx) => {
@@ -202,19 +107,30 @@ const app = new Hono()
       return ctx.json({ error: "Unauthorized" }, 401);
     }
 
-    const data = await db.user_tokens.findUnique({
-      where: { clerk_user_id: userId },
-      select: {
-        delete_at: true,
-        deleted_flag: true,
-      },
-    });
+    const [data, ownedOrg] = await Promise.all([
+      db.user_tokens.findUnique({
+        where: { clerk_user_id: userId },
+        select: {
+          delete_at: true,
+          deleted_flag: true,
+        },
+      }),
+      // Owning a team with members blocks deletion (billing anchor). Surfaced here
+      // so the UI can explain before the user confirms, not after rejecting.
+      db.organization.findUnique({
+        where: { created_by: userId },
+        select: { _count: { select: { members: true } } },
+      }),
+    ]);
 
     if (!data) {
       return ctx.json({ error: "Error getting data" }, 500);
     }
 
-    return ctx.json({ data }, 200);
+    return ctx.json(
+      { data, teamMemberCount: ownedOrg?._count.members ?? 0 },
+      200,
+    );
   })
   .get("/scopes", async (ctx) => {
     const { userId } = await auth();
@@ -578,6 +494,24 @@ const app = new Hono()
     const isDeleteRequested = status === "request";
 
     if (isDeleteRequested) {
+      // Owning a team with members makes you their billing anchor; deleting would orphan them.
+      // Every user has a solo org by default, so gate on member count, not org existence.
+      const ownedOrg = await db.organization.findUnique({
+        where: { created_by: userId },
+        select: { _count: { select: { members: true } } },
+      });
+      const memberCount = ownedOrg?._count.members ?? 0;
+      if (memberCount > 0) {
+        return ctx.json(
+          {
+            error: `You still have ${memberCount} team member${memberCount === 1 ? "" : "s"}. Remove everyone from your team before you can delete or schedule your account for deletion.`,
+            code: "ORG_HAS_MEMBERS",
+            memberCount,
+          },
+          409,
+        );
+      }
+
       const subscription = await db.subscription.findFirst({
         where: {
           clerkUserId: userId,
@@ -585,11 +519,8 @@ const app = new Hono()
         },
       });
 
-      // 2. Deactivate watch (all users) + cancel subscription (if one exists).
-      // Watch deactivation is independent of subscription status: free and
-      // trial users also have an active watch that must be stopped so we stop
-      // ingesting a deleted user's mailbox. handleWatchDeactivation swallows
-      // its own errors, so it never blocks the deletion flow.
+      // Deactivate watch regardless of subscription status; trial/free users have one too.
+      // handleWatchDeactivation swallows its own errors so it never blocks deletion.
       await handleWatchDeactivation(userId);
 
       if (subscription) {

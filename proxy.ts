@@ -44,6 +44,28 @@ function withReferralCookie(req: NextRequest, res: NextResponse): NextResponse {
   return res;
 }
 
+// Captures `?invite=<token>` here (edge, no DB) so it survives the sign-in/sign-up
+// redirect. Consumed server-side by POST /api/organization/join.
+const INVITE_COOKIE_NAME = 'nm_invite';
+const INVITE_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // matches the 7-day invite TTL
+const INVITE_TOKEN_PATTERN = /^[A-Za-z0-9_-]{20,64}$/;
+
+// Last-touch: the most recent invite link a user clicks is the one they mean to
+// accept, so overwrite any earlier value.
+function withInviteCookie(req: NextRequest, res: NextResponse): NextResponse {
+  const inviteParam = req.nextUrl.searchParams.get('invite');
+  if (!inviteParam || !INVITE_TOKEN_PATTERN.test(inviteParam)) return res;
+
+  res.cookies.set(INVITE_COOKIE_NAME, inviteParam, {
+    httpOnly: true,
+    maxAge: INVITE_COOKIE_MAX_AGE_SECONDS,
+    path: '/',
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  });
+  return res;
+}
+
 export default clerkMiddleware(async (auth, req) => {
   logger.info({
     method: req.method,
@@ -57,7 +79,7 @@ export default clerkMiddleware(async (auth, req) => {
     await auth.protect();
   }
 
-  return withReferralCookie(req, NextResponse.next());
+  return withInviteCookie(req, withReferralCookie(req, NextResponse.next()));
 });
 
 export const config = {

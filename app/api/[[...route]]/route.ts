@@ -26,6 +26,7 @@ import health from './health'
 import chat from './chat'
 import onboard from './onboard'
 import referral from './referral'
+import organization from './organization'
 
 export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
@@ -33,7 +34,6 @@ export const dynamicParams = true;
 
 const app = new Hono().basePath("/api");
 
-// Global API rate limiting
 app.use('*', async (c, next) => {
   const clerkAuth = await auth();
   const userId = clerkAuth?.userId;
@@ -101,6 +101,7 @@ const routes = app
     .route('/chat',chat)
     .route('/onboard',onboard)
     .route('/referral',referral)
+    .route('/organization',organization)
 
 
 
