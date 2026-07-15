@@ -68,66 +68,62 @@ const MAILBOX_PRORATION_MODE = "prorated_immediately" as ProrationBillingMode;
 const MAILBOX_ON_PAYMENT_FAILURE = "prevent_change" as OnPaymentFailure;
 
 /**
- * The add-on that matches a subscription's base plan. Both its currency and its billing
- * cycle must match the plan's, so BOTH are read off the plan's own product id. That is
- * the exact record of what the customer is actually on — and on this path the base plan
- * is NOT changing (both callers re-send subscription.productId), so the add-on must
- * match the product they already hold, not wherever they happen to be browsing from.
- * Cadence must come from the product too: annual can arrive as Year/1 or Month/12.
+ * The new plan's recurring charge (pre-tax, minor units) together with the currency it
+ * is denominated in. Always taken as a PAIR off `new_plan`, because both live on the
+ * same object and therefore cannot disagree.
  *
- * Falls back to the caller's cf-ipcountry ONLY for a product id we don't recognise
- * (grandfathered, or created straight in the DodoPay dashboard). It must never fall back
- * to `currency`: DodoPay stores "USD" for every subscription, so that silently resolved
- * every customer — Indian ones included — to GLOBAL.
+ * Verified against the live API on 2026-07-15 (preview of a $15 plan + 1 × $10 seat):
+ *
+ *   new_plan:   { recurring_pre_tax_amount: 2500, currency: "USD" }
+ *   summary:    { total_amount: 0, currency: "USD", customer_credits: -1710 }
+ *   line_items: [ {subscription, unit_price 1500, proration_factor -0.70},
+ *                 {subscription, unit_price 1500, proration_factor  1.00},
+ *                 {addon,        unit_price 1000, proration_factor  1.00} ]
+ *
+ * Two things that response settles, both of which have already caused bugs:
+ *
+ *  - recurring_pre_tax_amount is the FULL recurring total and ALREADY INCLUDES add-ons
+ *    (2500 = 1500 + 1000). Never add seats on top of it.
+ *  - Do NOT derive it by summing line_items. Those describe the one-off proration, not
+ *    the recurring total: the old term comes back as a NEGATIVE proration_factor credit
+ *    line and the new term as a second full-price line, so summing unit_price × quantity
+ *    double-counts the plan (1500 + 1500 + 1000 = 4000, not 2500).
+ *
+ * The currency matters because `new_plan.currency` can differ from
+ * `immediate_charge.summary.currency`: with Adaptive Currency enabled DodoPay presents
+ * the immediate charge in the customer's local currency (₹) while the plan itself stays
+ * USD-denominated. Labelling this amount with the summary's currency is exactly what
+ * rendered $6.74 as "₹6.74" on an Indian customer's dialog.
  */
-/**
- * The new plan's full recurring charge (pre-tax, minor units) in the currency the
- * customer actually sees, plus that currency.
- *
- * DodoPay reports a preview in TWO currencies and they are not interchangeable:
- *  - `immediate_charge.summary` and every `line_item` are in the PRESENTMENT currency —
- *    what the customer is billed in (INR for an Indian plan).
- *  - `new_plan` is a Subscription, so `new_plan.recurring_pre_tax_amount` is in
- *    `new_plan.currency` — the SETTLEMENT currency, which DodoPay reports as "USD" for
- *    every subscription, Indian ones included.
- *
- * Rendering the second under the first's label is what made a ₹550/mo plan display as
- * "₹6.74/mo" (it was $6.74). So prefer the line items: their `unit_price` is the full
- * per-unit price and `proration_factor` is applied separately, so summing
- * unit_price × quantity across the subscription and add-on lines is the untouched
- * recurring total — already in presentment currency, directly comparable to the summary.
- *
- * Falls back to new_plan's own amount AND its own currency when there are no usable line
- * items. The pair is returned together precisely so the two can never drift apart again.
- */
-function presentmentRecurring(preview: {
-  immediate_charge?: {
-    summary?: { currency?: string | null } | null;
-    line_items?: Array<{ type: string; unit_price?: number; quantity?: number }> | null;
-  } | null;
+function planRecurring(preview: {
+  immediate_charge?: { summary?: { currency?: string | null } | null } | null;
   new_plan?: { recurring_pre_tax_amount?: number; currency?: string | null } | null;
 }): { amount: number; currency: string } {
-  const lines = (preview.immediate_charge?.line_items ?? []).filter(
-    (i) => i.type === "subscription" || i.type === "addon",
-  );
-  const presentmentCurrency = preview.immediate_charge?.summary?.currency;
-
-  if (lines.length > 0 && presentmentCurrency) {
-    return {
-      amount: lines.reduce(
-        (sum, i) => sum + (i.unit_price ?? 0) * (i.quantity ?? 0),
-        0,
-      ),
-      currency: presentmentCurrency,
-    };
-  }
-
   return {
     amount: preview.new_plan?.recurring_pre_tax_amount ?? 0,
-    currency: preview.new_plan?.currency ?? presentmentCurrency ?? "USD",
+    currency:
+      preview.new_plan?.currency ??
+      preview.immediate_charge?.summary?.currency ??
+      "USD",
   };
 }
 
+/**
+ * The add-on that matches a subscription's base plan. Its billing cycle must match the
+ * plan's ("Billing cycle: Must match your subscription's billing cycle" —
+ * docs.dodopayments.com/features/addons), so both region and cadence are read off the
+ * plan's own product id. That is the exact record of what the customer is actually on —
+ * and on this path the base plan is NOT changing (both callers re-send
+ * subscription.productId), so the add-on must match the product they already hold, not
+ * wherever they happen to be browsing from. Cadence must come from the product too:
+ * annual can arrive as Year/1 or Month/12.
+ *
+ * Falls back to the caller's cf-ipcountry ONLY for a product id we don't recognise
+ * (grandfathered, or created straight in the DodoPay dashboard). It must never fall back
+ * to `currency`: that is the subscription's presentment currency, which is "USD" for
+ * effectively every row, so it silently resolved every customer — Indian included — to
+ * GLOBAL.
+ */
 function resolveMailboxAddon(
   sub: {
     productId: string;
@@ -689,7 +685,7 @@ const app = new Hono()
 
       const s = preview.immediate_charge.summary;
       const p = preview.new_plan;
-      const recurring = presentmentRecurring(preview);
+      const recurring = planRecurring(preview);
 
       return ctx.json(
         {
@@ -1064,7 +1060,7 @@ const app = new Hono()
       );
 
       const summary = preview.immediate_charge?.summary;
-      const recurring = presentmentRecurring(preview);
+      const recurring = planRecurring(preview);
 
       // summary.total_amount is DodoPay's own answer to "what would you charge for this
       // change", already net of customer_credits — which matter here, because
@@ -1086,8 +1082,8 @@ const app = new Hono()
           newRecurring: recurring.amount,
           /**
            * Currency of newRecurring ONLY. Separate from `currency` above because the
-           * two can genuinely differ — see presentmentRecurring. Never format the
-           * recurring with `currency`, or an Indian customer's $6.74 renders as ₹6.74.
+           * two genuinely differ under Adaptive Currency — see planRecurring. Never
+           * format the recurring with `currency`, or a $6.74 plan renders as "₹6.74".
            */
           recurringCurrency: recurring.currency,
           annual: interval === "annual",
