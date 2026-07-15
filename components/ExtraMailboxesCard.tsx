@@ -140,14 +140,14 @@ export function ExtraMailboxesCard({
   const isIncrease = preview ? preview.count > preview.currentCount : false;
 
   return (
-    <div className="rounded-lg border bg-card p-5">
+    <div className="rounded-xl border border-border bg-card p-5">
       <div className="flex items-start gap-3">
         <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary">
           <Mailbox className="h-4 w-4 text-foreground" />
         </div>
         <div className="flex-1">
           <h3 className="text-sm font-semibold text-foreground">Extra mailboxes</h3>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 max-w-prose text-xs leading-relaxed text-foreground/70">
             Add a teammate seat for {unit.symbol}
             {unit.price}
             {per} each, charged today for the time left in your billing period. Invite
@@ -209,7 +209,7 @@ export function ExtraMailboxesCard({
         </div>
       </div>
 
-      <p className="mt-3 text-[11px] text-muted-foreground">
+      <p className="mt-3 text-xs text-foreground/70">
         {currentCount === 0
           ? "You have no extra mailboxes yet."
           : `You currently have ${currentCount} extra mailbox${
@@ -274,7 +274,7 @@ export function ExtraMailboxesCard({
                   </span>
                 </div>
               )}
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs leading-relaxed text-foreground/70">
                 {isIncrease
                   ? "You're charged only for the time left in your current billing period, and your renewal date moves to today."
                   : "You're credited for the seat time you haven't used, and your renewal date moves to today."}
