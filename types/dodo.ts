@@ -112,13 +112,14 @@ export interface DisputePayload {
 }
 
 /**
- * Mirrors the SDK's GetDispute but omits metadata/subscription_id. Resolve the
- * subscription via PaymentHistory using payment_id.
+ * No subscription_id on a dispute. Resolve the subscription via PaymentHistory
+ * using payment_id.
  */
 export interface DodoDisputeData {
   dispute_id: string;
   payment_id: string;
-  amount: number;
+  /** String, not number: DodoPay represents dispute amounts as strings for precision. */
+  amount: string;
   currency: string;
 }
 
