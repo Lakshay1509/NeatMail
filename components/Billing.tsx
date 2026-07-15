@@ -575,13 +575,14 @@ const Billing = () => {
           Still shown to a non-MAX owner who somehow holds seats (an out-of-band
           downgrade), because that's the only place they can drop them.
 
-          Region comes from the subscription's CURRENCY, not useGeo — an INR customer
-          viewing from abroad must not be quoted USD while being charged INR. */}
+          Region comes from useGeo (cf-ipcountry), same as the tier cards above. Not from
+          the subscription's currency — DodoPay stores USD for everyone, so that would
+          pin every customer to GLOBAL. */}
       {hasActiveSubscription &&
         (activeTier === "MAX" || (data?.extraMailboxes ?? 0) > 0) && (
           <ExtraMailboxesCard
             currentCount={data?.extraMailboxes ?? 0}
-            region={data?.currency === "INR" ? "IN" : "GLOBAL"}
+            region={region}
             interval={currentInterval === "annual" ? "annual" : "monthly"}
           />
         )}
