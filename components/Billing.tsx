@@ -25,6 +25,7 @@ const TIER_DESCRIPTIONS: Record<Tier, string> = {
 };
 
 const FEATURE_LABELS: { key: keyof ReturnType<typeof formatFeatures>; label: string }[] = [
+  { key: "mailboxes", label: "Mailboxes" },
   { key: "trackedEmails", label: "Tracked emails" },
   { key: "customLabels", label: "Custom labels" },
   { key: "aiDrafts", label: "AI drafts per month" },
@@ -38,6 +39,7 @@ const FEATURE_LABELS: { key: keyof ReturnType<typeof formatFeatures>; label: str
 function formatFeatures(tier: Tier) {
   const limits = TIER_LIMITS[tier];
   return {
+    mailboxes: tier === "FREE" ? "0" : String(limits.maxTeamMembers + 1),
     trackedEmails: limits.maxTrackedEmails === Infinity ? "Unlimited" : String(limits.maxTrackedEmails),
     customLabels: limits.maxCustomLabels === Infinity ? "Unlimited" : String(limits.maxCustomLabels),
     aiDrafts: limits.maxAiDraftsPerMonth === Infinity ? "Unlimited" : String(limits.maxAiDraftsPerMonth),
@@ -186,7 +188,7 @@ function TierCard({
               )}
               <span className={included ? "text-foreground" : "text-muted-foreground"}>
                 {label}{" "}
-                <span className="tabular-nums text-muted-foreground/60">
+                <span className="tabular-nums text-muted-foreground">
                   {formatFeatureValue(val)}
                 </span>
               </span>
