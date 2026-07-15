@@ -20,7 +20,6 @@ import {
 import { getDodoPayments } from "@/app/api/[[...route]]/checkout";
 import {
   getTierFromProductId,
-  intervalFromFrequency,
   sumMailboxAddons,
   effectiveSeatCap,
   type Tier,
@@ -35,19 +34,12 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
     // of truth, so the count self-heals after dashboard/portal edits too. null means
     // the cart is uninterpretable (add-on id unconfigured/rotated, or addons absent)
     // — we then leave the stored count untouched rather than write a destructive 0.
-    const extraMailboxes = sumMailboxAddons(
-      data.addons,
-      data.currency,
-      intervalFromFrequency(
-        data.payment_frequency_interval,
-        data.payment_frequency_count,
-      ),
-    );
+    const extraMailboxes = sumMailboxAddons(data.addons);
     if (extraMailboxes === null) {
       console.error(
-        "Mailbox add-on cart uninterpretable for subscription %s (currency %s, %d add-on(s)) — preserving stored extraMailboxes and skipping seat-cap enforcement. Check DODO_ADDON_MAILBOX_{MONTHLY,ANNUAL}_{INDIA,GLOBAL} on this deploy; if an add-on id was rotated, the retired id must stay in the comma-separated list.",
+        "Mailbox add-on cart uninterpretable for subscription %s (product %s, %d add-on(s)) — preserving stored extraMailboxes and skipping seat-cap enforcement. Check DODO_ADDON_MAILBOX_{MONTHLY,ANNUAL}_{INDIA,GLOBAL} on this deploy; if an add-on id was rotated, the retired id must stay in the comma-separated list.",
         data.subscription_id,
-        data.currency,
+        data.product_id,
         data.addons?.length ?? 0,
       );
     }

@@ -5,7 +5,7 @@ import {
   getProductId,
   getMailboxAddonId,
   getPlanFromProductId,
-  getRegionFromCurrency,
+  getRegionFromCountry,
   intervalFromFrequency,
   effectiveSeatCap,
   tierAllowsExtraMailboxes,
@@ -69,25 +69,27 @@ const MAILBOX_ON_PAYMENT_FAILURE = "prevent_change" as OnPaymentFailure;
 
 /**
  * The add-on that matches a subscription's base plan. Both its currency and its billing
- * cycle must match the plan's, so BOTH are read off the plan's own product id rather
- * than inferred — inference disagrees in real cases:
- *  - Region from `currency` vs the plan's actual region: the base product is picked from
- *    cf-ipcountry at checkout, so a geo miss (VPN, Cloudflare) can leave an INR-billed
- *    customer on the GLOBAL product. Inferring IN from the currency would then bolt an
- *    INR add-on onto a USD plan.
- *  - Cadence from payment_frequency_*: annual can arrive as Year/1 or Month/12.
+ * cycle must match the plan's, so BOTH are read off the plan's own product id. That is
+ * the exact record of what the customer is actually on — and on this path the base plan
+ * is NOT changing (both callers re-send subscription.productId), so the add-on must
+ * match the product they already hold, not wherever they happen to be browsing from.
+ * Cadence must come from the product too: annual can arrive as Year/1 or Month/12.
  *
- * Falls back to inference only for a product id we don't recognise (grandfathered, or
- * created straight in the DodoPay dashboard).
+ * Falls back to the caller's cf-ipcountry ONLY for a product id we don't recognise
+ * (grandfathered, or created straight in the DodoPay dashboard). It must never fall back
+ * to `currency`: DodoPay stores "USD" for every subscription, so that silently resolved
+ * every customer — Indian ones included — to GLOBAL.
  */
-function resolveMailboxAddon(sub: {
-  productId: string;
-  currency: string;
-  paymentFrequencyInterval: string;
-  paymentFrequencyCount: number;
-}): { addonId: string | null; interval: BillingIntervalName } {
+function resolveMailboxAddon(
+  sub: {
+    productId: string;
+    paymentFrequencyInterval: string;
+    paymentFrequencyCount: number;
+  },
+  fallbackCountry: string,
+): { addonId: string | null; interval: BillingIntervalName } {
   const plan = getPlanFromProductId(sub.productId);
-  const region = plan?.region ?? getRegionFromCurrency(sub.currency);
+  const region = plan?.region ?? getRegionFromCountry(fallbackCountry);
   const interval =
     plan?.interval ??
     intervalFromFrequency(sub.paymentFrequencyInterval, sub.paymentFrequencyCount);
@@ -510,12 +512,14 @@ const app = new Hono()
       // cycle must match its subscription's, so a monthly→annual switch has to swap the
       // monthly add-on for the annual one. Re-sending the old id would attach a
       // cycle-mismatched add-on.
+      //
+      // Region comes from the same cf-ipcountry as productId above — the add-on must
+      // match the product this very call is attaching. (It used to come from
+      // subscription.currency, which is always "USD", so an Indian customer got the
+      // INDIA product with a GLOBAL add-on bolted on.)
       let preservedAddons: { addon_id: string; quantity: number }[] = [];
       if (subscription.extraMailboxes > 0) {
-        const addonId = getMailboxAddonId(
-          getRegionFromCurrency(subscription.currency),
-          interval,
-        );
+        const addonId = getMailboxAddonId(getRegionFromCountry(country), interval);
         if (!addonId) {
           return ctx.json(
             { error: "Payment configuration error (mailbox add-on)" },
@@ -607,14 +611,12 @@ const app = new Hono()
         return ctx.json({ error: "Product not configured" }, 500);
       }
 
-      // Mirror the changePlan call exactly — same target interval for the add-on — so
-      // the previewed charge matches what the real plan change will bill.
+      // Mirror the changePlan call exactly — same target interval AND same cf-ipcountry
+      // region for the add-on — so the previewed charge matches what the real plan
+      // change will bill.
       let preservedAddons: { addon_id: string; quantity: number }[] = [];
       if (subscription.extraMailboxes > 0) {
-        const addonId = getMailboxAddonId(
-          getRegionFromCurrency(subscription.currency),
-          interval,
-        );
+        const addonId = getMailboxAddonId(getRegionFromCountry(country), interval);
         if (!addonId) {
           return ctx.json(
             { error: "Payment configuration error (mailbox add-on)" },
@@ -901,7 +903,10 @@ const app = new Hono()
         }
       }
 
-      const { addonId } = resolveMailboxAddon(subscription);
+      const { addonId } = resolveMailboxAddon(
+        subscription,
+        ctx.req.header("cf-ipcountry") ?? "",
+      );
       if (!addonId) {
         return ctx.json(
           { error: "Payment configuration error (mailbox add-on)" },
@@ -980,7 +985,10 @@ const app = new Hono()
         );
       }
 
-      const { addonId, interval } = resolveMailboxAddon(subscription);
+      const { addonId, interval } = resolveMailboxAddon(
+        subscription,
+        ctx.req.header("cf-ipcountry") ?? "",
+      );
       if (!addonId) {
         return ctx.json(
           { error: "Payment configuration error (mailbox add-on)" },

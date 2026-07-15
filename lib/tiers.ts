@@ -285,18 +285,22 @@ export function getMailboxAddonId(
   return mailboxAddonIds(region, interval)[0] ?? null;
 }
 
-/** Region whose add-on currency matches a subscription's currency. */
-export function getRegionFromCurrency(currency: string): BillingRegion {
-  return currency === "INR" ? "IN" : "GLOBAL";
+// There is deliberately NO getRegionFromCurrency here. DodoPay stores the SETTLEMENT
+// currency on a subscription, which is "USD" for every customer including Indian ones,
+// so `currency === "INR"` is never true and deriving region from it silently pins
+// everyone to GLOBAL. Resolve region from cf-ipcountry (request paths) or from the
+// plan's product id via getPlanFromProductId (webhooks/workers, which have no request).
+
+/** Every configured mailbox add-on id, across both regions and both intervals. */
+function allMailboxAddonIds(): string[] {
+  const regions: Region[] = ["IN", "GLOBAL"];
+  const intervals: Interval[] = ["monthly", "annual"];
+  return intervals.flatMap((i) => regions.flatMap((r) => mailboxAddonIds(r, i)));
 }
 
-/** True if the add-on id is a recognised mailbox add-on for this interval × region. */
-export function isMailboxAddon(
-  addonId: string,
-  region: BillingRegion,
-  interval: Interval,
-): boolean {
-  return mailboxAddonIds(region, interval).includes(addonId);
+/** True if the add-on id is a recognised mailbox add-on in ANY region × interval. */
+export function isMailboxAddon(addonId: string): boolean {
+  return allMailboxAddonIds().includes(addonId);
 }
 
 /**
@@ -308,9 +312,8 @@ export function isMailboxAddon(
  * latches trial_used) while DodoPay keeps billing the cart. It means "we don't know" —
  * leave the stored count alone and skip enforcement. Three cases produce it:
  *
- *  - **This** interval × region's add-on id is unconfigured. Checked specifically, not
- *    globally: a global "is anything configured?" check passes when only some OTHER
- *    slot is set, and then reads this subscription's real cart as a genuine 0.
+ *  - NO mailbox add-on id is configured at all. Nothing could be recognised, so any
+ *    count would be meaningless.
  *  - `addons` is absent entirely. The SDK types it required and non-nullable
  *    (AddonCartResponseItem[]), so absence means a malformed or partial payload. An
  *    empty ARRAY is different — that is a genuine, trustworthy zero.
@@ -318,17 +321,21 @@ export function isMailboxAddon(
  *    rotated without keeping the old one in the env list. An unreadable cart is
  *    unknown, not empty. (A cart mixing a known mailbox add-on with some other
  *    add-on is fine — that sums normally.)
+ *
+ * Deliberately region- and interval-AGNOSTIC: a seat is a seat, and the count doesn't
+ * depend on which product sold it. Scoping the match to one region × interval is how
+ * this used to break — region was inferred from `currency` (always "USD"), so an Indian
+ * customer's INR add-on matched nothing, the cart read as uninterpretable, and their
+ * paid seats never registered. Matching every configured id removes that whole class of
+ * failure: a misresolved region can no longer make a real cart unreadable.
  */
 export function sumMailboxAddons(
   addons: { addon_id: string; quantity: number }[] | null | undefined,
-  currency: string,
-  interval: Interval,
 ): number | null {
-  const region = getRegionFromCurrency(currency);
-  if (mailboxAddonIds(region, interval).length === 0) return null;
+  if (allMailboxAddonIds().length === 0) return null;
   if (!addons) return null;
 
-  const mine = addons.filter((a) => isMailboxAddon(a.addon_id, region, interval));
+  const mine = addons.filter((a) => isMailboxAddon(a.addon_id));
   if (mine.length === 0 && addons.length > 0) return null;
 
   return mine.reduce((sum, a) => sum + (a.quantity ?? 0), 0);

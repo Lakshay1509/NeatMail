@@ -1,7 +1,7 @@
 import { Job } from "bullmq";
 import { db } from "@/lib/prisma";
 import { redis } from "@/lib/redis";
-import { getTierFromProductId, getTierPrices, type BillingRegion } from "@/lib/tiers";
+import { getPlanFromProductId, getTierPrices, type BillingRegion } from "@/lib/tiers";
 import { sendTrialReminderEmail } from "@/lib/resend";
 
 // Each labelled email is treated as ~30s of manual triage saved.
@@ -97,15 +97,18 @@ export async function processTrialReminder(job: Job<TrialReminderJob>) {
 // Resolve the post-trial charge using our own pricing source of truth (the same
 // numbers shown at checkout), avoiding any unit ambiguity in Dodo's raw amount.
 function resolveCharge(sub: {
-  currency: string;
   productId: string;
   metadata: unknown;
   paymentFrequencyInterval: string;
   paymentFrequencyCount: number;
 }): { amount: number; symbol: string } | null {
   const meta = (sub.metadata ?? {}) as { tier?: string; interval?: string };
-  const region: BillingRegion = sub.currency === "INR" ? "IN" : "GLOBAL";
-  const tier = getTierFromProductId(sub.productId) ?? meta.tier;
+  // Region from the product the customer actually bought. This worker has no request,
+  // so there's no cf-ipcountry to read — and it must NOT come from sub.currency, which
+  // DodoPay stores as "USD" for everyone, quoting Indian trials in dollars.
+  const plan = getPlanFromProductId(sub.productId);
+  const region: BillingRegion = plan?.region ?? "GLOBAL";
+  const tier = plan?.tier ?? meta.tier;
   if (tier !== "PRO" && tier !== "MAX") return null;
   // Prefer the subscription's own cadence; fall back to checkout metadata.
   const isAnnual =
