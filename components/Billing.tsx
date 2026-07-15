@@ -3,10 +3,11 @@
 import { Button } from "@/components/ui/button";
 import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
 import { useTierAccess } from "@/features/user/use-tier-access";
-import { AlertTriangle, Check, ArrowRight, ArrowLeftRight } from "lucide-react";
+import { AlertTriangle, Check, ArrowRight, ArrowLeftRight, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PlanChangeDialog } from "./PlanChangeDialog";
+import { ExtraMailboxesCard } from "./ExtraMailboxesCard";
 import { TIER_LIMITS, getTierPrices, type Tier, type BillingRegion } from "@/lib/tiers";
 import { useGeo } from "@/features/geo/use-geo";
 import posthog from "posthog-js";
@@ -465,6 +466,26 @@ const Billing = () => {
 
   return (
     <div className="w-full space-y-8">
+      {data?.paymentProcessing && (
+        <div className="rounded-lg border border-sky-500/40 bg-sky-50 p-4 dark:bg-sky-950/20">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-100 dark:bg-sky-500/15">
+              <Loader2 className="h-5 w-5 animate-spin text-sky-600 dark:text-sky-400" />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-sm font-semibold text-sky-900 dark:text-sky-200">
+                Payment processing
+              </h2>
+              <p className="text-sm text-sky-800/80 dark:text-sky-200/70">
+                We&apos;re confirming your recent payment. This usually takes a
+                moment — your plan updates automatically once it completes, so
+                there&apos;s no need to pay again.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isTrialing && data.next_billing_date && (() => {
         const daysRemaining = Math.max(
           0,
@@ -547,6 +568,21 @@ const Billing = () => {
           />
         ))}
       </div>
+
+      {/* MAX-only: PRO is a solo plan and doesn't sell seats, so it never sees the card.
+          Still shown to a non-MAX owner who somehow holds seats (an out-of-band
+          downgrade), because that's the only place they can drop them.
+
+          Region comes from the subscription's CURRENCY, not useGeo — an INR customer
+          viewing from abroad must not be quoted USD while being charged INR. */}
+      {hasActiveSubscription &&
+        (activeTier === "MAX" || (data?.extraMailboxes ?? 0) > 0) && (
+          <ExtraMailboxesCard
+            currentCount={data?.extraMailboxes ?? 0}
+            region={data?.currency === "INR" ? "IN" : "GLOBAL"}
+            interval={currentInterval === "annual" ? "annual" : "monthly"}
+          />
+        )}
 
       {/* <div className="rounded-lg border bg-card p-5">
         <h3 className="text-sm font-semibold text-foreground">Subscription details</h3>

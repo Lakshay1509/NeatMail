@@ -4,7 +4,7 @@ export interface SubscriptionPayload {
 }
 
 export interface SubscriptionData {
-  addons: unknown[]; // update if addon structure is known
+  addons: { addon_id: string; quantity: number }[];
   billing: BillingAddress;
   cancel_at_next_billing_date: boolean;
   cancelled_at: string | null;
@@ -58,7 +58,11 @@ export interface PaymentPayload {
 
 export interface DodoPaymentData {
   payment_id: string;
-  subscription_id: string;
+  /**
+   * Null/undefined on one-time payments. SDK types it `string | null` and optional.
+   * Guard with `== null` to catch both.
+   */
+  subscription_id?: string | null;
   invoice_id: string;
   checkout_session_id: string;
   total_amount: number;
@@ -100,6 +104,22 @@ export interface DodoRefundData{
     clerk_user_id : string
   };
 
+}
+
+export interface DisputePayload {
+  business_id: string;
+  data: DodoDisputeData;
+}
+
+/**
+ * Mirrors the SDK's GetDispute but omits metadata/subscription_id. Resolve the
+ * subscription via PaymentHistory using payment_id.
+ */
+export interface DodoDisputeData {
+  dispute_id: string;
+  payment_id: string;
+  amount: number;
+  currency: string;
 }
 
 

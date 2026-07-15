@@ -1,4 +1,5 @@
 import {
+  DisputePayload,
   PaymentPayload,
   RefundPayload,
   SubscriptionPayload,
@@ -10,17 +11,46 @@ import {
   deleteOutlookSubscription,
 } from "./outlook";
 import { activeFolder, getUserIsGmail } from "./supabase";
-import { sendSubExpiredEmail } from "./resend";
-import { getTierFromProductId, TIER_LIMITS, type Tier } from "./tiers";
 import {
-  getBillingTeamIds,
-  detachMembersFromOrg,
-  isBillingOwner,
-} from "./organization";
+  sendSubExpiredEmail,
+  sendSeatCapAlertEmail,
+  sendMailboxRevokedEmail,
+  sendRefundWithSeatsEmail,
+} from "./resend";
+import { getDodoPayments } from "@/app/api/[[...route]]/checkout";
+import {
+  getTierFromProductId,
+  intervalFromFrequency,
+  sumMailboxAddons,
+  effectiveSeatCap,
+  type Tier,
+} from "./tiers";
+import { getBillingTeamIds, isBillingOwner } from "./organization";
 
 export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
   try {
     const data = payload.data;
+
+    // Paid extra-mailbox seats live in the add-on cart; the webhook is the source
+    // of truth, so the count self-heals after dashboard/portal edits too. null means
+    // the cart is uninterpretable (add-on id unconfigured/rotated, or addons absent)
+    // — we then leave the stored count untouched rather than write a destructive 0.
+    const extraMailboxes = sumMailboxAddons(
+      data.addons,
+      data.currency,
+      intervalFromFrequency(
+        data.payment_frequency_interval,
+        data.payment_frequency_count,
+      ),
+    );
+    if (extraMailboxes === null) {
+      console.error(
+        "Mailbox add-on cart uninterpretable for subscription %s (currency %s, %d add-on(s)) — preserving stored extraMailboxes and skipping seat-cap enforcement. Check DODO_ADDON_MAILBOX_{MONTHLY,ANNUAL}_{INDIA,GLOBAL} on this deploy; if an add-on id was rotated, the retired id must stay in the comma-separated list.",
+        data.subscription_id,
+        data.currency,
+        data.addons?.length ?? 0,
+      );
+    }
 
     // Step 1: Handle database operations in transaction
     const subscription = await db.$transaction(async (tx) => {
@@ -29,9 +59,16 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
         update: {
           status: data.status,
           customerEmail: data.customer.email,
+          // Keep the product current: a tier change (or portal switch) keeps the
+          // same subscription_id, so without this the stored product goes stale and
+          // an add-on-only changePlan would revert the plan. data.product_id is
+          // authoritative and preserves the customer's actual (grandfathered) product.
+          productId: data.product_id,
           currency: data.currency,
           recurringAmount: data.recurring_pre_tax_amount,
           quantity: data.quantity,
+          // Omitted when null so the stored count survives an uninterpretable cart.
+          ...(extraMailboxes !== null && { extraMailboxes }),
           paymentFrequencyInterval: data.payment_frequency_interval,
           paymentFrequencyCount: data.payment_frequency_count,
           nextBillingDate: new Date(data.next_billing_date),
@@ -51,6 +88,10 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
           currency: data.currency,
           recurringAmount: data.recurring_pre_tax_amount,
           quantity: data.quantity,
+          // Null falls through to the column default (0). Safe on create: a brand-new
+          // subscription has no members to evict, and the next interpretable webhook
+          // corrects the count.
+          ...(extraMailboxes !== null && { extraMailboxes }),
           paymentFrequencyInterval: data.payment_frequency_interval,
           paymentFrequencyCount: data.payment_frequency_count,
           nextBillingDate: new Date(data.next_billing_date),
@@ -83,10 +124,10 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
         ?? "MAX";
 
       // Enforce seat cap before activating: an out-of-band downgrade (DodoPay
-      // portal) or cancel/re-subscribe can leave more members than the tier allows.
-      // checkout.ts blocks this in-app; this is the safety net for already-charged
-      // webhooks, and must run before the fan-out below.
-      await enforceSeatCap(clerkUserId, tier);
+      // portal) or cancel/re-subscribe can leave more members than the tier +
+      // paid mailboxes allow. checkout.ts blocks this in-app; this is the safety
+      // net for already-charged webhooks, and must run before the fan-out below.
+      await enforceSeatCap(clerkUserId, tier, extraMailboxes);
 
       // Admin's payment covers the whole team: activate watch and set tier for
       // owner + every member. handleWatchActivation swallows its own errors, so
@@ -179,38 +220,135 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
 }
 
 /**
- * Evicts members over the tier's seat cap (keeping earliest-joined) so downgrades
- * that arrive out-of-band (DodoPay portal, cancel/re-subscribe) can't leave more
- * members than TIER_LIMITS allows. Evicted members get their own free account,
- * watch stopped.
+ * Strips every paid extra mailbox from a subscription after its money was taken back.
+ *
+ * Revoked with do_not_bill — "Seat removed, no credit". This is the one place a credit
+ * would be wrong: the customer already has the cash via the chargeback, so crediting
+ * the unused seat-time on top would pay them twice. do_not_bill also leaves the billing
+ * date alone, which matters because we're touching a subscription mid-dispute.
+ *
+ * The resulting plan_changed webhook writes extraMailboxes back to 0, and enforceSeatCap
+ * pauses whichever teammates that leaves over cap.
+ *
+ * Never throws — the webhook must still ack.
+ */
+async function revokePaidMailboxes(
+  dodoPaymentId: string,
+  reason: string,
+): Promise<void> {
+  try {
+    const payment = await db.paymentHistory.findUnique({
+      where: { dodoPaymentId },
+      select: { subscription: true },
+    });
+    const sub = payment?.subscription;
+    // No linked subscription, or nothing paid for — nothing to revoke.
+    if (!sub || sub.extraMailboxes <= 0) return;
+
+    console.warn(
+      "[mailbox-revoke] %s for payment %s — stripping %d paid mailbox(es) from subscription %s",
+      reason, dodoPaymentId, sub.extraMailboxes, sub.dodoSubscriptionId,
+    );
+
+    const dodopayments = getDodoPayments();
+    await dodopayments.subscriptions.changePlan(sub.dodoSubscriptionId, {
+      product_id: sub.productId,
+      proration_billing_mode: "do_not_bill" as "prorated_immediately",
+      quantity: 1,
+      addons: [],
+    });
+
+    await sendMailboxRevokedEmail({
+      ownerId: sub.clerkUserId,
+      reason,
+      revokedCount: sub.extraMailboxes,
+      dodoPaymentId,
+    });
+  } catch (error) {
+    // Money is gone and the seats are still attached — needs a human.
+    console.error(
+      "[mailbox-revoke] FAILED for payment %s (%s) — seats still active despite %s:",
+      dodoPaymentId, reason, reason, error,
+    );
+  }
+}
+
+/**
+ * A chargeback is the adversarial case: the customer pulled the money back themselves,
+ * so the seats it bought go immediately. Refunds are handled differently (see
+ * addRefundtoDb) because those are merchant-initiated — you meant to do that.
+ */
+export async function handleDisputeOpened(payload: DisputePayload): Promise<void> {
+  await revokePaidMailboxes(payload.data?.payment_id, "chargeback opened");
+}
+
+/**
+ * PAUSES members over the effective seat cap (see effectiveSeatCap — the tier's included
+ * seats, plus paid extra mailboxes only on a tier that may hold them), newest-joined
+ * first, so an out-of-band downgrade (DodoPay portal,
+ * cancel/re-subscribe, dropped add-ons) can't leave a team using more seats than it
+ * pays for. Paused members keep their row, seat and tier but lose service: the watch is
+ * stopped, and addSubscriptiontoDb's fan-out already skips active:false members when
+ * re-arming, so a pause survives later webhooks.
+ *
+ * Deliberately NOT detachMembersFromOrg. That is irreversible — it deletes the
+ * membership, drops them to FREE and latches trial_used — while the count it acts on is
+ * inferred from a webhook payload that can be stale, out-of-order, or unreadable. Any
+ * of those reads as "0 paid seats", so eviction would silently destroy a PAYING
+ * customer's team with no undo. Pausing protects the revenue just as well (no service
+ * without payment) and costs one flag flip to reverse if the count was wrong.
+ *
+ * Skipped when extraMailboxes is null (cart uninterpretable) — an unknown count must
+ * never be enforced as if it were zero. The operator is alerted either way; restoring a
+ * wrongly-paused member is a human decision, not an automatic one.
  */
 async function enforceSeatCap(
   ownerId: string | undefined,
   tier: Tier,
+  extraMailboxes: number | null,
 ): Promise<void> {
   if (!ownerId) return;
-  const seatCap = TIER_LIMITS[tier].maxTeamMembers;
+  if (extraMailboxes === null) return;
+  const seatCap = effectiveSeatCap(tier, extraMailboxes);
 
   const org = await db.organization.findFirst({
     where: { created_by: ownerId },
     select: {
       members: {
-        where: { role: "MEMBER" },
+        where: { role: "MEMBER", active: true },
         orderBy: { created_at: "asc" },
-        select: { user_id: true },
+        select: { id: true, user_id: true },
       },
     },
   });
   if (!org) return;
 
-  // Keep the earliest-joined members up to the cap; evict the remainder.
-  const excess = org.members.slice(seatCap).map((m) => m.user_id);
+  // Keep the earliest-joined up to the cap; pause the rest.
+  const excess = org.members.slice(seatCap);
   if (excess.length === 0) return;
 
-  await detachMembersFromOrg(excess);
-  for (const userId of excess) {
-    await handleWatchDeactivation(userId); // self-isolating, never throws
+  console.warn(
+    "[seat-cap] owner=%s tier=%s cap=%d active-members=%d — pausing %d newest member(s)",
+    ownerId, tier, seatCap, org.members.length, excess.length,
+  );
+
+  await db.organizationMember.updateMany({
+    where: { id: { in: excess.map((m) => m.id) } },
+    data: { active: false },
+  });
+  for (const member of excess) {
+    await handleWatchDeactivation(member.user_id); // self-isolating, never throws
   }
+
+  // Pausing is reversible but not self-reversing — nothing un-pauses automatically,
+  // because we can't tell an over-cap pause from an admin's deliberate one.
+  await sendSeatCapAlertEmail({
+    ownerId,
+    tier,
+    seatCap,
+    memberCount: org.members.length,
+    pausedUserIds: excess.map((m) => m.user_id),
+  });
 }
 
 // Returns true if the watch was armed, false otherwise. Self-isolating: never
@@ -442,8 +580,15 @@ export async function addRefundtoDb(payload: RefundPayload) {
       where: { dodoPaymentId: data.payment_id },
     });
 
+    // Don't throw: the route turns that into a 500, DodoPay redelivers, and it fails
+    // identically forever. An unrecordable refund is worth an alert, not a retry loop.
     if (!payment) {
-      throw new Error(`Payment not found for payment_id: ${data.payment_id}`);
+      console.error(
+        "Refund %s references unknown payment %s — refund NOT recorded.",
+        data.refund_id,
+        data.payment_id,
+      );
+      return;
     }
 
     await db.$transaction(async (tx) => {
@@ -473,6 +618,28 @@ export async function addRefundtoDb(payload: RefundPayload) {
         },
       });
     });
+
+    // Deliberately does NOT auto-revoke seats, unlike a chargeback. A refund is
+    // merchant-initiated — you meant to issue it — and we can't tell from the payload
+    // whether it covered a seat purchase or was goodwill on a base charge. Stripping a
+    // customer's paid seats because you refunded them a month would be the wrong
+    // surprise. Alerted instead so you can decide; revoke by hand if it was a seat refund.
+    if (data.status === "succeeded" && payment.subscriptionId) {
+      const sub = await db.subscription.findUnique({
+        where: { id: payment.subscriptionId },
+        select: { clerkUserId: true, extraMailboxes: true },
+      });
+      if (sub && sub.extraMailboxes > 0) {
+        await sendRefundWithSeatsEmail({
+          ownerId: sub.clerkUserId,
+          seatCount: sub.extraMailboxes,
+          dodoPaymentId: data.payment_id,
+          amount: data.amount,
+          currency: data.currency,
+          isPartial: data.is_partial,
+        });
+      }
+    }
   } catch (error) {
     console.error("Error adding refund to db", error);
     throw error;

@@ -8,10 +8,20 @@ export interface SubscriptionStatus {
   tier: Tier;
   status?: string;
   price?: number;
+  /**
+   * The subscription's billing currency. Prices must be shown from THIS, not from
+   * the viewer's geo — a customer billed in INR who opens the page from abroad would
+   * otherwise be quoted USD while still being charged INR.
+   */
+  currency?: string;
   interval?: "monthly" | "annual";
   next_billing_date?: Date | null;
   cancel_at_next_billing_date?: boolean | null;
   freeTrial: boolean;
+  /** Paid extra-mailbox add-on seats on the owner's subscription (0 when none). */
+  extraMailboxes: number;
+  /** A payment is mid-flight (DodoPay "processing") — plan will update once it settles. */
+  paymentProcessing: boolean;
 }
 
 /**
@@ -24,7 +34,7 @@ export async function resolveSubscriptionStatus(
 ): Promise<SubscriptionStatus> {
   const ownerId = await getBillingOwnerId(userId);
 
-  const [data, freeTrial, owner] = await Promise.all([
+  const [data, freeTrial, owner, processingPayment] = await Promise.all([
     db.subscription.findFirst({
       where: { clerkUserId: ownerId },
       select: {
@@ -32,8 +42,10 @@ export async function resolveSubscriptionStatus(
         nextBillingDate: true,
         status: true,
         recurringAmount: true,
+        currency: true,
         paymentFrequencyInterval: true,
         paymentFrequencyCount: true,
+        extraMailboxes: true,
       },
       orderBy: { updatedAt: "desc" },
     }),
@@ -42,7 +54,13 @@ export async function resolveSubscriptionStatus(
       where: { clerk_user_id: ownerId },
       select: { tier: true },
     }),
+    db.paymentHistory.findFirst({
+      where: { clerkUserId: ownerId, status: "processing" },
+      select: { id: true },
+    }),
   ]);
+
+  const paymentProcessing = !!processingPayment;
 
   const zero_payment = await db.paymentHistory.findFirst({
     where: { clerkUserId: ownerId, amount: 0, status: "succeeded" },
@@ -77,9 +95,18 @@ export async function resolveSubscriptionStatus(
         next_billing_date: freeTrial!.expires_at,
         cancel_at_next_billing_date: null,
         freeTrial: true,
+        extraMailboxes: 0,
+        paymentProcessing,
       };
     }
-    return { success: false, subscribed: false, tier, freeTrial: false };
+    return {
+      success: false,
+      subscribed: false,
+      tier,
+      freeTrial: false,
+      extraMailboxes: 0,
+      paymentProcessing,
+    };
   }
 
   // Subscription row exists but isn't active, yet a trial still covers them.
@@ -92,6 +119,8 @@ export async function resolveSubscriptionStatus(
       next_billing_date: freeTrial!.expires_at,
       cancel_at_next_billing_date: null,
       freeTrial: true,
+      extraMailboxes: data.extraMailboxes ?? 0,
+      paymentProcessing,
     };
   }
 
@@ -106,9 +135,12 @@ export async function resolveSubscriptionStatus(
     tier,
     status: data.status,
     price: data.recurringAmount / 100,
+    currency: data.currency,
     interval: isAnnual ? "annual" : "monthly",
     next_billing_date: data.nextBillingDate,
     cancel_at_next_billing_date: data.cancelAtNextBillingDate,
     freeTrial: paidFreeTrial,
+    extraMailboxes: data.extraMailboxes ?? 0,
+    paymentProcessing,
   };
 }

@@ -56,6 +56,23 @@ export async function isBillingOwner(userId: string): Promise<boolean> {
 }
 
 /**
+ * Paid extra-mailbox add-on seats for the billing owner (the tier's included seats
+ * are separate — see TIER_LIMITS.maxTeamMembers). Resolves through the org admin, so
+ * it's safe to call with a member id. 0 when there is no active subscription.
+ *
+ * Every effective seat cap is `TIER_LIMITS[tier].maxTeamMembers + getExtraMailboxes(owner)`.
+ */
+export async function getExtraMailboxes(userId: string): Promise<number> {
+  const ownerId = await getBillingOwnerId(userId);
+  const sub = await db.subscription.findFirst({
+    where: { clerkUserId: ownerId, status: "active" },
+    select: { extraMailboxes: true },
+    orderBy: { updatedAt: "desc" },
+  });
+  return sub?.extraMailboxes ?? 0;
+}
+
+/**
  * Inverse of getBillingOwnerId: all member ids the given owner administers. Admin's own id is
  * included only if they have a member row.
  */
@@ -99,6 +116,64 @@ export async function isMemberAccessPaused(userId: string): Promise<boolean> {
 export function soloOrgName(email: string | null | undefined): string {
   const local = email?.split("@")[0]?.trim();
   return local ? `${local}'s team` : "My team";
+}
+
+/**
+ * Every org this user is or was ever associated with, as a set of org ids:
+ *  - an org they own (Organization.created_by),
+ *  - an org they currently belong to (OrganizationMember),
+ *  - any org they ever joined (a claimed OrganizationInvite.used_by).
+ *
+ * The claimed-invite entry is the durable one: membership rows are deleted on
+ * detach (detachMembersFromOrg), but the used invite survives as long as the
+ * org does, so an ex-member still resolves to the org they left.
+ */
+async function orgIdsEverForUser(userId: string): Promise<Set<string>> {
+  const [owned, membership, invites] = await Promise.all([
+    db.organization.findUnique({
+      where: { created_by: userId },
+      select: { id: true },
+    }),
+    db.organizationMember.findUnique({
+      where: { user_id: userId },
+      select: { organization_id: true },
+    }),
+    db.organizationInvite.findMany({
+      where: { used_by: userId },
+      select: { organization_id: true },
+    }),
+  ]);
+
+  const ids = new Set<string>();
+  if (owned) ids.add(owned.id);
+  if (membership) ids.add(membership.organization_id);
+  for (const invite of invites) ids.add(invite.organization_id);
+  return ids;
+}
+
+/**
+ * True if two users were EVER on the same team, even after either has left.
+ * A member inherits the admin's plan for free, so an admin "referring" their
+ * own current-or-former teammate (or the reverse) is circular, not a genuine
+ * new customer — referrals between such pairs are blocked.
+ *
+ * A match means they share an org id across owned / current-member / ever-joined
+ * (see orgIdsEverForUser). Everyone owns a distinct solo org, so a solo org
+ * never produces a false match; only a genuinely shared org intersects.
+ */
+export async function haveEverSharedTeam(
+  userA: string,
+  userB: string,
+): Promise<boolean> {
+  if (userA === userB) return false;
+  const [orgsA, orgsB] = await Promise.all([
+    orgIdsEverForUser(userA),
+    orgIdsEverForUser(userB),
+  ]);
+  for (const id of orgsA) {
+    if (orgsB.has(id)) return true;
+  }
+  return false;
 }
 
 /**

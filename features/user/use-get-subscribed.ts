@@ -9,10 +9,14 @@ export interface UserSubscriptionResponse {
   tier: Tier;
   status?: string;
   price?: number;
+  /** Billing currency of the subscription — show prices from this, not from geo. */
+  currency?: string;
   interval?: "monthly" | "annual";
   next_billing_date?: string | null;
   cancel_at_next_billing_date?: boolean | null;
   freeTrial: boolean;
+  extraMailboxes: number;
+  paymentProcessing: boolean;
 }
 
 export const useGetUserSubscribed = () => {

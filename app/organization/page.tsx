@@ -4,14 +4,14 @@ import Link from "next/link";
 
 import TeamSettings from "@/components/TeamSettings";
 import { NotSubscribedState } from "@/components/NotSubscribedState";
-import { useTierAccess } from "@/features/user/use-tier-access";
+import { useGetTeam } from "@/features/organization/use-get-team";
 import { Button } from "@/components/ui/button";
 
 function TeamGate() {
-  const { isMax, isLoading } = useTierAccess();
+  const { data, isLoading } = useGetTeam();
 
-  // Wait for the tier to resolve so members (whose tier is materialised to the
-  // team's plan) don't flash the upsell before the team view loads.
+  // Wait for the team context to resolve so members (whose tier is materialised
+  // to the team's plan) don't flash the upsell before the team view loads.
   if (isLoading) {
     return (
       <div className="mx-auto max-w-5xl">
@@ -27,8 +27,15 @@ function TeamGate() {
     );
   }
 
-  // Team seats are a Max-only feature (FREE 0, PRO 0, MAX +1 seat).
-  if (!isMax) {
+  // Access = you're on a team (member), or you own one with at least one seat.
+  // seatLimit is the effective cap (see effectiveSeatCap): Max's included seat
+  // plus any paid mailboxes, which are Max-only. A Pro owner has no seats and
+  // doesn't get in; members of a Pro-owned team still do, since their own
+  // access isn't tier-gated.
+  const hasAccess =
+    data?.role === "member" || (data?.role === "admin" && data.seatLimit > 0);
+
+  if (!hasAccess) {
     return (
       <div className="mx-auto max-w-md">
         <NotSubscribedState

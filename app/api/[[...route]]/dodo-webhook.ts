@@ -2,7 +2,12 @@
 
 import { Hono } from "hono";
 import { Webhook } from "standardwebhooks";
-import { addPaymenttoDb, addRefundtoDb, addSubscriptiontoDb } from "@/lib/payement";
+import {
+  addPaymenttoDb,
+  addRefundtoDb,
+  addSubscriptiontoDb,
+  handleDisputeOpened,
+} from "@/lib/payement";
 import { maybeScheduleTrialReminder } from "@/lib/trial-reminder";
 import { maybeRewardReferral } from "@/lib/referral";
 import { isDodoWebhookProcessed, markDodoWebhookProcessed, unmarkDodoWebhookProcessed } from "@/lib/redis";
@@ -85,6 +90,22 @@ const app = new Hono().post("/", async (ctx) => {
         break;
       }
       
+      // Fires on upgrade, downgrade, and add-on changes. This is the write-back
+      // that makes extraMailboxes authoritative after a /mailboxes changePlan —
+      // without it a paid mailbox never reaches the DB and the seat cap never grows.
+      case "subscription.plan_changed": {
+        await addSubscriptiontoDb(payload);
+        posthog.capture({
+          distinctId: clerkUserId || "system",
+          event: "subscription_plan_changed",
+          properties: {
+            tier: payload.data?.metadata?.tier,
+            product_id: payload.data?.product_id,
+          },
+        });
+        break;
+      }
+
       case "subscription.active": {
         await addSubscriptiontoDb(payload);
         posthog.capture({
@@ -168,6 +189,40 @@ const app = new Hono().post("/", async (ctx) => {
         posthog.capture({
           distinctId: clerkUserId || "system",
           event: "payment_failed",
+        });
+        break;
+      }
+
+      // A chargeback is the one case where the customer takes the money back without
+      // our consent, so the seats it bought are stripped immediately. The remaining
+      // dispute.* events are lifecycle notifications — recorded, but nothing to undo:
+      // the seats are already gone by then, and winning does not restore them.
+      case "dispute.opened": {
+        await handleDisputeOpened(payload);
+        posthog.capture({
+          distinctId: clerkUserId || "system",
+          event: "dispute_opened",
+          properties: { amount: payload.data?.amount, currency: payload.data?.currency },
+        });
+        break;
+      }
+
+      case "dispute.accepted":
+      case "dispute.cancelled":
+      case "dispute.challenged":
+      case "dispute.expired":
+      case "dispute.lost":
+      case "dispute.won": {
+        console.log(
+          "[dispute] %s for payment %s (dispute %s)",
+          payload.type,
+          payload.data?.payment_id,
+          payload.data?.dispute_id,
+        );
+        posthog.capture({
+          distinctId: clerkUserId || "system",
+          event: payload.type.replace(".", "_"),
+          properties: { amount: payload.data?.amount, currency: payload.data?.currency },
         });
         break;
       }

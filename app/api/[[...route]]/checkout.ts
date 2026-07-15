@@ -1,10 +1,25 @@
 import { db } from "@/lib/prisma";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import DodoPayments from "dodopayments";
-import { getProductId, TIER_LIMITS, type Tier } from "@/lib/tiers";
+import {
+  getProductId,
+  getMailboxAddonId,
+  getPlanFromProductId,
+  getRegionFromCurrency,
+  intervalFromFrequency,
+  effectiveSeatCap,
+  tierAllowsExtraMailboxes,
+  type BillingIntervalName,
+  type Tier,
+} from "@/lib/tiers";
 import { getUserTier } from "@/lib/tier-guard";
-import { isBillingOwner, getBillingTeamIds } from "@/lib/organization";
+import {
+  isBillingOwner,
+  getBillingTeamIds,
+  getExtraMailboxes,
+} from "@/lib/organization";
 import { redeemReferralCookie } from "@/lib/referral";
+import { resolveSubscriptionStatus } from "@/lib/subscription";
 
 import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
@@ -16,6 +31,68 @@ export const getDodoPayments = () => {
     bearerToken: process.env.DODO_API!,
   });
 };
+
+// Sanity bound on the extra-mailbox add-on quantity; DodoPay may impose a lower
+// per-add-on max, which it enforces on its side.
+const MAX_EXTRA_MAILBOXES = 50;
+
+// do_not_bill is a valid DodoPay proration mode but is missing from the SDK's
+// union type, so call sites cast to it.
+type ProrationBillingMode =
+  | "prorated_immediately"
+  | "difference_immediately"
+  | "full_immediately"
+  | "do_not_bill";
+
+// on_payment_failure is a documented change-plan param that the SDK's types omit, so
+// call sites cast. It has NO safe implicit default — DodoPay falls back to a
+// business-level dashboard setting we can't see from here — so it must always be sent.
+type OnPaymentFailure = "prevent_change" | "apply_change";
+
+// Mailbox seat changes are billed IMMEDIATELY on both cadences, adding and removing.
+// Per DodoPay's seat-billing table, prorated_immediately = "Charge for remaining days
+// in cycle" when adding and "Credit for unused days" when removing — so the customer
+// pays only for the seat-time they actually get, and no seat is ever free.
+//
+// Two consequences worth knowing, both accepted deliberately:
+//  - The billing cycle "Resets to today" on every change (only do_not_bill preserves
+//    it). A seat change therefore moves the customer's renewal anniversary.
+//  - The charge is off-session, and DodoPay does NOT retry plan-change charges — hence
+//    prevent_change below, which is what keeps money and seats in lockstep.
+const MAILBOX_PRORATION_MODE = "prorated_immediately" as ProrationBillingMode;
+
+// "Keep subscription on current plan until payment succeeds" — no payment, no seats.
+// Never omit it: the implicit default is a business-level dashboard setting this code
+// cannot see, and the other value (apply_change) grants the seat even if the charge
+// fails, which is precisely the failure this feature must not have.
+const MAILBOX_ON_PAYMENT_FAILURE = "prevent_change" as OnPaymentFailure;
+
+/**
+ * The add-on that matches a subscription's base plan. Both its currency and its billing
+ * cycle must match the plan's, so BOTH are read off the plan's own product id rather
+ * than inferred — inference disagrees in real cases:
+ *  - Region from `currency` vs the plan's actual region: the base product is picked from
+ *    cf-ipcountry at checkout, so a geo miss (VPN, Cloudflare) can leave an INR-billed
+ *    customer on the GLOBAL product. Inferring IN from the currency would then bolt an
+ *    INR add-on onto a USD plan.
+ *  - Cadence from payment_frequency_*: annual can arrive as Year/1 or Month/12.
+ *
+ * Falls back to inference only for a product id we don't recognise (grandfathered, or
+ * created straight in the DodoPay dashboard).
+ */
+function resolveMailboxAddon(sub: {
+  productId: string;
+  currency: string;
+  paymentFrequencyInterval: string;
+  paymentFrequencyCount: number;
+}): { addonId: string | null; interval: BillingIntervalName } {
+  const plan = getPlanFromProductId(sub.productId);
+  const region = plan?.region ?? getRegionFromCurrency(sub.currency);
+  const interval =
+    plan?.interval ??
+    intervalFromFrequency(sub.paymentFrequencyInterval, sub.paymentFrequencyCount);
+  return { addonId: getMailboxAddonId(region, interval), interval };
+}
 
 const app = new Hono()
   .post("/", async (ctx) => {
@@ -75,6 +152,41 @@ const app = new Hono()
           { error: "You have an active subscription or a payment in process" },
           409,
         );
+      }
+
+      // A subscription that is active but scheduled to cancel must be RESUMED, never
+      // duplicated. It falls through the guard above (hasActiveSub is false), and
+      // checkout always creates a new subscription without checking for an existing
+      // one — so without this the customer ends up with two active subscriptions
+      // billing in parallel, and the second one's webhook reports zero paid seats
+      // against the team the first one paid for.
+      if (subscription?.status === "active" && isCancelling) {
+        const resumed = await fetch(
+          `${process.env.DODO_WEB_URL!}/subscriptions/${subscription.dodoSubscriptionId}`,
+          {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${process.env.DODO_API!}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ cancel_at_next_billing_date: false }),
+          },
+        );
+
+        if (!resumed.ok) {
+          console.error(
+            "Failed to resume cancelling subscription %s: %s",
+            subscription.dodoSubscriptionId,
+            await resumed.text().catch(() => "<unreadable>"),
+          );
+          return ctx.json(
+            { error: "Couldn't resume your subscription. Please try again." },
+            502,
+          );
+        }
+
+        // The subscription.updated webhook writes cancelAtNextBillingDate back.
+        return ctx.json({ success: true, resumed: true }, 200);
       }
 
       // Trial eligibility: block on a prior $0 succeeded payment (own past trial), or
@@ -141,7 +253,8 @@ const app = new Hono()
         select: { _count: { select: { members: true } } },
       });
       const memberCount = ownedOrg?._count.members ?? 0;
-      if (memberCount > TIER_LIMITS[tier].maxTeamMembers) {
+      const seatCap = effectiveSeatCap(tier, await getExtraMailboxes(userId));
+      if (memberCount > seatCap) {
         return ctx.json(
           {
             error: `Your team has ${memberCount} member${memberCount === 1 ? "" : "s"}, which the ${tier} plan doesn't include. Remove ${memberCount === 1 ? "them" : "your members"} before switching to ${tier}.`,
@@ -347,7 +460,28 @@ const app = new Hono()
         select: { _count: { select: { members: true } } },
       });
       const memberCount = ownedOrg?._count.members ?? 0;
-      if (memberCount > TIER_LIMITS[targetTier].maxTeamMembers) {
+
+      // Paid mailboxes are MAX-only, so they can't ride along to a tier that can't hold
+      // them. Refuse rather than dropping them silently: the seats are paid for, and
+      // cancelling them is the owner's call to make, not a side effect of a plan change.
+      if (
+        !tierAllowsExtraMailboxes(targetTier) &&
+        subscription.extraMailboxes > 0
+      ) {
+        return ctx.json(
+          {
+            error: `Extra mailboxes are only available on MAX. Remove your ${subscription.extraMailboxes} extra mailbox${subscription.extraMailboxes === 1 ? "" : "es"} before switching to ${targetTier}.`,
+            code: "MAILBOXES_NOT_ON_TARGET_TIER",
+            extraMailboxes: subscription.extraMailboxes,
+          },
+          409,
+        );
+      }
+
+      // Paid mailboxes carry across the plan change, so they count toward the
+      // target's effective cap. Only the tier's included seats change here.
+      const seatCap = effectiveSeatCap(targetTier, subscription.extraMailboxes);
+      if (memberCount > seatCap) {
         return ctx.json(
           {
             error: `Your team has ${memberCount} member${memberCount === 1 ? "" : "s"}. Remove ${memberCount === 1 ? "them" : "enough members"} before switching to ${targetTier}.`,
@@ -368,11 +502,51 @@ const app = new Hono()
         );
       }
 
+      // Carry paid mailbox seats across the plan change. The SDK drops any add-on not
+      // re-sent ("Leaving this empty would remove any existing addons"), so an
+      // unmodified changePlan would silently wipe the customer's mailboxes.
+      //
+      // Resolved against the TARGET interval, not the current one: an add-on's billing
+      // cycle must match its subscription's, so a monthly→annual switch has to swap the
+      // monthly add-on for the annual one. Re-sending the old id would attach a
+      // cycle-mismatched add-on.
+      let preservedAddons: { addon_id: string; quantity: number }[] = [];
+      if (subscription.extraMailboxes > 0) {
+        const addonId = getMailboxAddonId(
+          getRegionFromCurrency(subscription.currency),
+          interval,
+        );
+        if (!addonId) {
+          return ctx.json(
+            { error: "Payment configuration error (mailbox add-on)" },
+            500,
+          );
+        }
+        preservedAddons = [
+          { addon_id: addonId, quantity: subscription.extraMailboxes },
+        ];
+      }
+
       const dodopayments = getDodoPayments();
       await dodopayments.subscriptions.changePlan(subscription.dodoSubscriptionId, {
         product_id: productId,
         proration_billing_mode: "difference_immediately",
         quantity: 1,
+        addons: preservedAddons,
+      });
+
+      // Mirror the committed change locally instead of waiting on the webhook. An
+      // add-on-only /mailboxes call re-sends subscription.productId as its base plan,
+      // so a stale row here would revert the customer to the plan they just left.
+      // The webhook overwrites all of this with DodoPay's authoritative values; this
+      // only closes the gap until it lands (and bumps updatedAt, arming the cooldown).
+      await db.subscription.update({
+        where: { id: subscription.id },
+        data: {
+          productId,
+          paymentFrequencyInterval: interval === "annual" ? "Year" : "Month",
+          paymentFrequencyCount: 1,
+        },
       });
 
       // Propagate the new tier to the whole billing team so members' materialised tier
@@ -410,11 +584,46 @@ const app = new Hono()
         return ctx.json({ error: "No active subscription found" }, 400);
       }
 
+      // Mirror /changePlan's refusal, or the dialog quotes a change the commit path
+      // won't make.
+      if (
+        !tierAllowsExtraMailboxes(targetTier) &&
+        subscription.extraMailboxes > 0
+      ) {
+        return ctx.json(
+          {
+            error: `Extra mailboxes are only available on MAX. Remove your ${subscription.extraMailboxes} extra mailbox${subscription.extraMailboxes === 1 ? "" : "es"} before switching to ${targetTier}.`,
+            code: "MAILBOXES_NOT_ON_TARGET_TIER",
+            extraMailboxes: subscription.extraMailboxes,
+          },
+          409,
+        );
+      }
+
       const country = ctx.req.header("cf-ipcountry") ?? "";
       const productId = getProductId(targetTier, country, interval);
 
       if (!productId) {
         return ctx.json({ error: "Product not configured" }, 500);
+      }
+
+      // Mirror the changePlan call exactly — same target interval for the add-on — so
+      // the previewed charge matches what the real plan change will bill.
+      let preservedAddons: { addon_id: string; quantity: number }[] = [];
+      if (subscription.extraMailboxes > 0) {
+        const addonId = getMailboxAddonId(
+          getRegionFromCurrency(subscription.currency),
+          interval,
+        );
+        if (!addonId) {
+          return ctx.json(
+            { error: "Payment configuration error (mailbox add-on)" },
+            500,
+          );
+        }
+        preservedAddons = [
+          { addon_id: addonId, quantity: subscription.extraMailboxes },
+        ];
       }
 
       const dodopayments = getDodoPayments();
@@ -424,6 +633,7 @@ const app = new Hono()
           product_id: productId,
           proration_billing_mode: "difference_immediately",
           quantity: 1,
+          addons: preservedAddons,
         },
       );
 
@@ -555,6 +765,269 @@ const app = new Hono()
     } catch (error) {
       console.error("Error getting portal for customer", error);
       return ctx.json({ error: "Error getting portal for customer" }, 500);
+    }
+  })
+
+  // Set the absolute number of paid extra mailboxes on the current subscription.
+  // Add-on-only change (base plan unchanged), prorated immediately. Removal is
+  // blocked while the seats it would drop are still occupied.
+  .post("/mailboxes", async (ctx) => {
+    try {
+      const { userId } = await auth();
+
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      // Add-ons bill against the org's subscription; only the owner may change them.
+      if (!(await isBillingOwner(userId))) {
+        return ctx.json(
+          { error: "Billing is managed by your organization admin" },
+          403,
+        );
+      }
+
+      const body = await ctx.req.json().catch(() => ({}));
+      const count = body.count;
+      if (
+        !Number.isInteger(count) ||
+        count < 0 ||
+        count > MAX_EXTRA_MAILBOXES
+      ) {
+        return ctx.json(
+          { error: `Mailbox count must be a whole number between 0 and ${MAX_EXTRA_MAILBOXES}` },
+          400,
+        );
+      }
+
+      const subscription = await db.subscription.findFirst({
+        where: { clerkUserId: userId, status: "active" },
+      });
+
+      if (!subscription) {
+        return ctx.json(
+          { error: "An active subscription is required to add mailboxes" },
+          400,
+        );
+      }
+
+      // Card trials report status:"active", so without this a trialist would reach the
+      // immediate-charge path below. Per DodoPay's seat-billing table a proration mode
+      // ENDS the trial — so adding a seat would silently cut their trial short and start
+      // billing the plan. Blocking is the kind refusal.
+      // resolveSubscriptionStatus owns the card-trial definition; don't re-derive it.
+      if ((await resolveSubscriptionStatus(userId)).freeTrial) {
+        return ctx.json(
+          { error: "Extra mailboxes are available once your subscription starts." },
+          400,
+        );
+      }
+
+      // MAX-only add-on: PRO is a solo plan and doesn't sell seats. Only BUYING is
+      // gated — a reduction stays open on every tier, so a subscription that reached a
+      // non-MAX plan still holding add-ons (an out-of-band downgrade in the DodoPay
+      // portal) can always stop paying for seats it can no longer use.
+      const tier = await getUserTier(userId);
+      if (!tierAllowsExtraMailboxes(tier) && count > subscription.extraMailboxes) {
+        return ctx.json(
+          {
+            error: "Extra mailboxes are only available on the MAX plan. Upgrade to MAX to add teammates.",
+            code: "MAILBOXES_NOT_ON_TIER",
+          },
+          403,
+        );
+      }
+
+      if (count === subscription.extraMailboxes) {
+        return ctx.json(
+          {
+            error: `You already have ${count} extra mailbox${count === 1 ? "" : "es"}.`,
+          },
+          409,
+        );
+      }
+
+      // Mirror /changePlan's cooldown so rapid clicks can't fire overlapping prorated
+      // charges. Every change now bills immediately, so this matters: updatedAt is
+      // bumped by the plan_changed webhook the changePlan below triggers. DodoPay also
+      // rejects a second change while one is pending (PendingPlanChangeExists), which
+      // covers the window before that webhook lands.
+      const cooldownSeconds = 30;
+      if (Date.now() - subscription.updatedAt.getTime() < cooldownSeconds * 1000) {
+        return ctx.json(
+          { error: `Billing was recently changed. Please wait ${cooldownSeconds}s before changing again.` },
+          429,
+        );
+      }
+
+      // Block removal that would strip an occupied seat. Effective capacity after
+      // the change is (tier's included seats + count); if that can't hold the
+      // current headcount (members + still-open invites), refuse and make the owner
+      // free up seats first. Increases never reach this branch.
+      //
+      // Skipped on a tier that can't hold paid seats: there the add-ons already grant
+      // nothing (the members they'd cover are paused), so dropping them strips no live
+      // seat — and refusing would trap the owner into paying for seats they can't use.
+      if (count < subscription.extraMailboxes && tierAllowsExtraMailboxes(tier)) {
+        const org = await db.organization.findUnique({
+          where: { created_by: userId },
+          select: { id: true },
+        });
+        let occupied = 0;
+        if (org) {
+          const [memberCount, pendingInvites] = await Promise.all([
+            db.organizationMember.count({
+              where: { organization_id: org.id, role: "MEMBER" },
+            }),
+            db.organizationInvite.count({
+              where: {
+                organization_id: org.id,
+                used_at: null,
+                expires_at: { gt: new Date() },
+              },
+            }),
+          ]);
+          occupied = memberCount + pendingInvites;
+        }
+        if (effectiveSeatCap(tier, count) < occupied) {
+          return ctx.json(
+            {
+              error: `You have ${occupied} team seat${occupied === 1 ? "" : "s"} in use. Remove members or revoke pending invites before reducing to ${count} extra mailbox${count === 1 ? "" : "es"}.`,
+              code: "MAILBOX_SEATS_IN_USE",
+              occupied,
+            },
+            409,
+          );
+        }
+      }
+
+      const { addonId } = resolveMailboxAddon(subscription);
+      if (!addonId) {
+        return ctx.json(
+          { error: "Payment configuration error (mailbox add-on)" },
+          500,
+        );
+      }
+
+      const dodopayments = getDodoPayments();
+      await dodopayments.subscriptions.changePlan(subscription.dodoSubscriptionId, {
+        product_id: subscription.productId,
+        proration_billing_mode: MAILBOX_PRORATION_MODE as "prorated_immediately",
+        quantity: 1,
+        addons: count > 0 ? [{ addon_id: addonId, quantity: count }] : [],
+        on_payment_failure: MAILBOX_ON_PAYMENT_FAILURE,
+      } as Parameters<typeof dodopayments.subscriptions.changePlan>[1]);
+
+      // The subscription (plan_changed) webhook writes extraMailboxes back as the
+      // source of truth; we don't mutate it here to avoid drift with DodoPay. Under
+      // prevent_change that webhook only lands once the charge settles — which is the
+      // point: the seat count in our DB can never run ahead of the money.
+      return ctx.json({ success: true, count }, 200);
+    } catch (error) {
+      console.error("Update mailboxes error:", error);
+      return ctx.json({ error: "Failed to update mailboxes" }, 500);
+    }
+  })
+
+  // Preview the prorated charge for changing to `count` extra mailboxes, without
+  // committing. Powers the confirm dialog.
+  .post("/mailboxes/preview", async (ctx) => {
+    try {
+      const { userId } = await auth();
+
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      if (!(await isBillingOwner(userId))) {
+        return ctx.json(
+          { error: "Billing is managed by your organization admin" },
+          403,
+        );
+      }
+
+      const body = await ctx.req.json().catch(() => ({}));
+      const count = body.count;
+      if (
+        !Number.isInteger(count) ||
+        count < 0 ||
+        count > MAX_EXTRA_MAILBOXES
+      ) {
+        return ctx.json(
+          { error: `Mailbox count must be a whole number between 0 and ${MAX_EXTRA_MAILBOXES}` },
+          400,
+        );
+      }
+
+      const subscription = await db.subscription.findFirst({
+        where: { clerkUserId: userId, status: "active" },
+      });
+
+      if (!subscription) {
+        return ctx.json({ error: "No active subscription found" }, 400);
+      }
+
+      // Same MAX-only gate as POST /mailboxes — never quote a purchase the commit path
+      // will refuse. Reductions stay previewable on every tier, for the same reason.
+      const tier = await getUserTier(userId);
+      if (!tierAllowsExtraMailboxes(tier) && count > subscription.extraMailboxes) {
+        return ctx.json(
+          {
+            error: "Extra mailboxes are only available on the MAX plan. Upgrade to MAX to add teammates.",
+            code: "MAILBOXES_NOT_ON_TIER",
+          },
+          403,
+        );
+      }
+
+      const { addonId, interval } = resolveMailboxAddon(subscription);
+      if (!addonId) {
+        return ctx.json(
+          { error: "Payment configuration error (mailbox add-on)" },
+          500,
+        );
+      }
+
+      // Must mirror POST /mailboxes exactly — same mode, same cart — or the dialog
+      // quotes a charge the commit path won't make.
+      const dodopayments = getDodoPayments();
+      const preview = await dodopayments.subscriptions.previewChangePlan(
+        subscription.dodoSubscriptionId,
+        {
+          product_id: subscription.productId,
+          proration_billing_mode: MAILBOX_PRORATION_MODE as "prorated_immediately",
+          quantity: 1,
+          addons: count > 0 ? [{ addon_id: addonId, quantity: count }] : [],
+        },
+      );
+
+      const summary = preview.immediate_charge?.summary;
+
+      // summary.total_amount is DodoPay's own answer to "what would you charge for this
+      // change", already net of customer_credits — which matter here, because
+      // prorated_immediately re-prorates the WHOLE plan and credits the already-paid
+      // term back. Summing line_items instead ignores that credit and can overstate the
+      // charge several-fold. A removal nets to a credit, so this can be 0.
+      return ctx.json(
+        {
+          count,
+          currentCount: subscription.extraMailboxes,
+          currency: summary?.currency ?? subscription.currency,
+          /** Amount charged today. 0 on a removal, which credits instead. */
+          chargedNow: summary?.total_amount ?? 0,
+          /** Credit for unused seat-time, already netted off chargedNow. */
+          credits: summary?.customer_credits ?? 0,
+          tax: summary?.tax ?? 0,
+          /** Next recurring charge, PRE-TAX, on the `annual` cadence below. */
+          newRecurring: preview.new_plan?.recurring_pre_tax_amount ?? 0,
+          annual: interval === "annual",
+          nextBillingDate: preview.new_plan?.next_billing_date ?? null,
+        },
+        200,
+      );
+    } catch (error) {
+      console.error("Preview mailboxes error:", error);
+      return ctx.json({ error: "Failed to preview mailbox change" }, 500);
     }
   })
 

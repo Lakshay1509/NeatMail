@@ -1,7 +1,27 @@
 import { Resend } from "resend";
 import { db } from "./prisma";
+import type { Tier } from "./tiers";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const ADMIN_ALERT_EMAIL = process.env.ADMIN_ALERT_EMAIL;
+
+// Plain ops alerts to the operator, not customer mail: monospace, no branding.
+async function opsAlert(subject: string, body: string, context: string) {
+  if (!ADMIN_ALERT_EMAIL) {
+    console.error("[ops-alert] ADMIN_ALERT_EMAIL unset; %s not reported: %s", context, subject);
+    return;
+  }
+  try {
+    await resend.emails.send({
+      from: "NeatMail Ops <notifications@send.neatmail.app>",
+      to: ADMIN_ALERT_EMAIL,
+      subject,
+      html: `<pre style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;white-space:pre-wrap;">${escapeHtml(body)}</pre>`,
+    });
+  } catch (error) {
+    console.error(`[ops-alert] failed to send "${context}" alert:`, error);
+  }
+}
 
 // Escape user-controlled values (team name, inviter name) before HTML interpolation.
 function escapeHtml(value: string): string {
@@ -243,6 +263,70 @@ export async function sendTrialReminderEmail(params: TrialReminderEmailParams) {
     subject,
     html,
   });
+}
+
+interface MailboxRevokedParams {
+  ownerId: string;
+  reason: string;
+  revokedCount: number;
+  dodoPaymentId: string;
+}
+
+/** Sent after a chargeback strips a customer's paid mailbox seats automatically. */
+export async function sendMailboxRevokedEmail(params: MailboxRevokedParams) {
+  const { ownerId, reason, revokedCount, dodoPaymentId } = params;
+  await opsAlert(
+    `[NeatMail] ${revokedCount} paid mailbox(es) revoked (${reason})`,
+    `Owner: ${ownerId}\nReason: ${reason}\nSeats revoked: ${revokedCount}\nPayment: ${dodoPaymentId}\n\n` +
+      `Teammates left over the seat cap are paused, not deleted; see the seat-cap alert.`,
+    "mailbox-revoke",
+  );
+}
+
+interface RefundWithSeatsParams {
+  ownerId: string;
+  seatCount: number;
+  dodoPaymentId: string;
+  amount: number;
+  currency: string;
+  isPartial: boolean;
+}
+
+// Refunds are merchant-initiated and we can't tell what they covered, so
+// nothing changes automatically. The operator decides.
+export async function sendRefundWithSeatsEmail(params: RefundWithSeatsParams) {
+  const { ownerId, seatCount, dodoPaymentId, amount, currency, isPartial } = params;
+  await opsAlert(
+    `[NeatMail] Refund on a subscription with ${seatCount} paid mailbox(es)`,
+    `NOTHING WAS CHANGED; you issued this refund, so you decide.\n\n` +
+      `Owner: ${ownerId}\nPaid seats: ${seatCount}\nPayment: ${dodoPaymentId}\n` +
+      `Refund: ${(amount / 100).toFixed(2)} ${currency}${isPartial ? " (partial)" : ""}\n\n` +
+      `If this refund covered a SEAT purchase, remove the seats in the DodoPay dashboard.`,
+    "refund-with-seats",
+  );
+}
+
+interface SeatCapAlertParams {
+  ownerId: string;
+  tier: Tier;
+  seatCap: number;
+  memberCount: number;
+  pausedUserIds: string[];
+}
+
+// Nothing un-pauses these members automatically. An over-cap pause looks
+// identical to an admin's deliberate one, so restoring is a human call.
+// Never throws: the webhook must still ack.
+export async function sendSeatCapAlertEmail(params: SeatCapAlertParams) {
+  const { ownerId, tier, seatCap, memberCount, pausedUserIds } = params;
+  await opsAlert(
+    `[NeatMail] ${pausedUserIds.length} member(s) paused (team over seat cap, ${tier})`,
+    `Owner: ${ownerId}\nTier: ${tier}\nSeat cap: ${seatCap}\nActive members: ${memberCount}\n` +
+      `Paused: ${pausedUserIds.join(", ")}\n\n` +
+      `These members are not removed; their membership, seat and tier are intact and reversible. ` +
+      `Nothing un-pauses automatically (an over-cap pause looks identical to an admin's deliberate pause).`,
+    "seat-cap",
+  );
 }
 
 interface ReferralRewardEmailParams {

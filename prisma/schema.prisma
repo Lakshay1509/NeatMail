@@ -153,6 +153,9 @@ model Subscription {
   currency                 String           @default("USD")
   recurringAmount          Int              @map("recurring_amount")
   quantity                 Int              @default(1)
+  // Paid extra-mailbox add-on seats beyond the tier's included allowance. Derived
+  // from the DodoPay subscription's `addons` array on every webhook (source of truth).
+  extraMailboxes           Int              @default(0) @map("extra_mailboxes")
   paymentFrequencyInterval String           @map("payment_frequency_interval")
   paymentFrequencyCount    Int              @map("payment_frequency_count")
   nextBillingDate          DateTime?        @map("next_billing_date")

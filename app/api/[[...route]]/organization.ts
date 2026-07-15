@@ -10,10 +10,11 @@ import {
   isBillingOwner,
   detachMembersFromOrg,
   soloOrgName,
+  getExtraMailboxes,
 } from "@/lib/organization";
 import { getUserSubscribed } from "@/lib/supabase";
 import { handleWatchActivation, handleWatchDeactivation } from "@/lib/payement";
-import { TIER_LIMITS } from "@/lib/tiers";
+import { effectiveSeatCap } from "@/lib/tiers";
 import { sendTeamInviteEmail, sendMemberLeftEmail } from "@/lib/resend";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -92,7 +93,7 @@ const app = new Hono()
       }
 
       const tier = await getUserTier(userId);
-      const seatCap = TIER_LIMITS[tier].maxTeamMembers;
+      const seatCap = effectiveSeatCap(tier, await getExtraMailboxes(userId));
       if (seatCap <= 0) {
         return ctx.json(
           { error: "Your plan does not include team members" },
@@ -322,7 +323,7 @@ const app = new Hono()
       }
 
       const adminTier = await getUserTier(adminId);
-      const seatCap = TIER_LIMITS[adminTier].maxTeamMembers;
+      const seatCap = effectiveSeatCap(adminTier, await getExtraMailboxes(adminId));
 
       // Populated in the tx when a cancelled ex-admin joins; their released
       // members' watches are stopped after commit.
@@ -626,7 +627,8 @@ const app = new Hono()
         getUserTier(userId),
       ]);
 
-      const seatLimit = TIER_LIMITS[tier].maxTeamMembers;
+      // Effective cap = tier's included seats + paid extra-mailbox add-ons (MAX only).
+      const seatLimit = effectiveSeatCap(tier, await getExtraMailboxes(userId));
       return ctx.json(
         {
           role: "admin" as const,
