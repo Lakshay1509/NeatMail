@@ -16,6 +16,8 @@ interface PreviewData {
     totalAmount: number;
     customerCredits: number;
     settlementAmount: number;
+    /** Presentment currency — totalAmount/customerCredits are in its minor unit. */
+    currency: string;
   };
   newPlan: {
     recurringAmount: number;
@@ -72,7 +74,9 @@ export function PlanChangeDialog({
 
   const { summary, newPlan } = preview;
   const planCurr = newPlan.currency;
-  
+  // Credits and the charge are in the PRESENTMENT currency; the recurring amount is in
+  // the plan's own. They can differ (₹ vs $), so each formats with its own.
+  const chargeCurr = summary.currency;
 
   const cardCharge = summary.totalAmount;
   const wallet = summary.customerCredits;
@@ -81,7 +85,9 @@ export function PlanChangeDialog({
     ? Math.round(newPlan.recurringAmount / 12)
     : newPlan.recurringAmount;
 
-  const months = monthly > 0
+  // "Covers N months" divides a credit by a price, so it is only meaningful when both
+  // are the same currency. Mixing them (₹ credit ÷ $ price) inflated it ~80x.
+  const months = monthly > 0 && chargeCurr === planCurr
     ? Math.floor(wallet / monthly)
     : 0;
 
@@ -110,7 +116,7 @@ export function PlanChangeDialog({
         <div className="space-y-4">
           
 
-          {planCurr && wallet > 0 && (
+          {chargeCurr && wallet > 0 && (
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 space-y-2">
               <div className="flex items-center gap-2">
                 <Wallet className="h-4 w-4 text-emerald-600" />
@@ -121,7 +127,7 @@ export function PlanChangeDialog({
               <div className="flex items-center justify-between">
                 <span className="text-sm text-emerald-700">Balance</span>
                 <span className="text-lg font-bold text-emerald-800">
-                  {fmt(wallet, planCurr)}
+                  {fmt(wallet, chargeCurr)}
                 </span>
               </div>
               {months > 0 && (

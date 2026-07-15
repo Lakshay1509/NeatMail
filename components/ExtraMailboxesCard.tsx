@@ -50,7 +50,7 @@ function formatDate(iso: string): string {
 interface MailboxPreview {
   count: number;
   currentCount: number;
-  /** Plan currency; amounts below are in its minor unit. */
+  /** Presentment currency; chargedNow/credits/tax are in its minor unit. */
   currency: string;
   /** Charged today; 0 on a removal, which credits instead. */
   chargedNow: number;
@@ -59,6 +59,8 @@ interface MailboxPreview {
   tax: number;
   /** Next recurring charge, pre-tax; cadence is given by `annual` below. */
   newRecurring: number;
+  /** Currency of newRecurring ONLY — can differ from `currency`; never swap them. */
+  recurringCurrency: string;
   annual: boolean;
   nextBillingDate: string | null;
 }
@@ -262,7 +264,7 @@ export function ExtraMailboxesCard({
                   New total (before tax)
                 </span>
                 <span className="tabular-nums">
-                  {money(preview.newRecurring, preview.currency)}
+                  {money(preview.newRecurring, preview.recurringCurrency)}
                   {preview.annual ? "/yr" : "/mo"}
                 </span>
               </div>

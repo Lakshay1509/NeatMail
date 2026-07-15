@@ -80,6 +80,54 @@ const MAILBOX_ON_PAYMENT_FAILURE = "prevent_change" as OnPaymentFailure;
  * to `currency`: DodoPay stores "USD" for every subscription, so that silently resolved
  * every customer — Indian ones included — to GLOBAL.
  */
+/**
+ * The new plan's full recurring charge (pre-tax, minor units) in the currency the
+ * customer actually sees, plus that currency.
+ *
+ * DodoPay reports a preview in TWO currencies and they are not interchangeable:
+ *  - `immediate_charge.summary` and every `line_item` are in the PRESENTMENT currency —
+ *    what the customer is billed in (INR for an Indian plan).
+ *  - `new_plan` is a Subscription, so `new_plan.recurring_pre_tax_amount` is in
+ *    `new_plan.currency` — the SETTLEMENT currency, which DodoPay reports as "USD" for
+ *    every subscription, Indian ones included.
+ *
+ * Rendering the second under the first's label is what made a ₹550/mo plan display as
+ * "₹6.74/mo" (it was $6.74). So prefer the line items: their `unit_price` is the full
+ * per-unit price and `proration_factor` is applied separately, so summing
+ * unit_price × quantity across the subscription and add-on lines is the untouched
+ * recurring total — already in presentment currency, directly comparable to the summary.
+ *
+ * Falls back to new_plan's own amount AND its own currency when there are no usable line
+ * items. The pair is returned together precisely so the two can never drift apart again.
+ */
+function presentmentRecurring(preview: {
+  immediate_charge?: {
+    summary?: { currency?: string | null } | null;
+    line_items?: Array<{ type: string; unit_price?: number; quantity?: number }> | null;
+  } | null;
+  new_plan?: { recurring_pre_tax_amount?: number; currency?: string | null } | null;
+}): { amount: number; currency: string } {
+  const lines = (preview.immediate_charge?.line_items ?? []).filter(
+    (i) => i.type === "subscription" || i.type === "addon",
+  );
+  const presentmentCurrency = preview.immediate_charge?.summary?.currency;
+
+  if (lines.length > 0 && presentmentCurrency) {
+    return {
+      amount: lines.reduce(
+        (sum, i) => sum + (i.unit_price ?? 0) * (i.quantity ?? 0),
+        0,
+      ),
+      currency: presentmentCurrency,
+    };
+  }
+
+  return {
+    amount: preview.new_plan?.recurring_pre_tax_amount ?? 0,
+    currency: preview.new_plan?.currency ?? presentmentCurrency ?? "USD",
+  };
+}
+
 function resolveMailboxAddon(
   sub: {
     productId: string;
@@ -641,7 +689,7 @@ const app = new Hono()
 
       const s = preview.immediate_charge.summary;
       const p = preview.new_plan;
-      const dbCurrency = subscription.currency;
+      const recurring = presentmentRecurring(preview);
 
       return ctx.json(
         {
@@ -649,10 +697,16 @@ const app = new Hono()
             totalAmount: s.total_amount,
             customerCredits: s.customer_credits,
             settlementAmount: s.settlement_amount,
+            /**
+             * Currency of totalAmount/customerCredits — the PRESENTMENT currency. It was
+             * previously taken from subscription.currency, which DodoPay stores as "USD"
+             * for everyone, so an Indian customer's ₹ credit rendered as "USD".
+             */
+            currency: s.currency ?? recurring.currency,
           },
           newPlan: {
-            recurringAmount: p.recurring_pre_tax_amount,
-            currency: dbCurrency,
+            recurringAmount: recurring.amount,
+            currency: recurring.currency,
             nextBillingDate: p.next_billing_date,
             interval:
               p.payment_frequency_interval === "Year" ||
@@ -1010,6 +1064,7 @@ const app = new Hono()
       );
 
       const summary = preview.immediate_charge?.summary;
+      const recurring = presentmentRecurring(preview);
 
       // summary.total_amount is DodoPay's own answer to "what would you charge for this
       // change", already net of customer_credits — which matter here, because
@@ -1020,14 +1075,21 @@ const app = new Hono()
         {
           count,
           currentCount: subscription.extraMailboxes,
-          currency: summary?.currency ?? subscription.currency,
+          /** Currency of chargedNow/credits/tax — DodoPay's PRESENTMENT currency. */
+          currency: summary?.currency ?? recurring.currency,
           /** Amount charged today. 0 on a removal, which credits instead. */
           chargedNow: summary?.total_amount ?? 0,
           /** Credit for unused seat-time, already netted off chargedNow. */
           credits: summary?.customer_credits ?? 0,
           tax: summary?.tax ?? 0,
           /** Next recurring charge, PRE-TAX, on the `annual` cadence below. */
-          newRecurring: preview.new_plan?.recurring_pre_tax_amount ?? 0,
+          newRecurring: recurring.amount,
+          /**
+           * Currency of newRecurring ONLY. Separate from `currency` above because the
+           * two can genuinely differ — see presentmentRecurring. Never format the
+           * recurring with `currency`, or an Indian customer's $6.74 renders as ₹6.74.
+           */
+          recurringCurrency: recurring.currency,
           annual: interval === "annual",
           nextBillingDate: preview.new_plan?.next_billing_date ?? null,
         },
