@@ -1,14 +1,16 @@
 <div align="center">
   <h1>NeatMail</h1>
   <h2><strong>Get to inbox zero faster</strong></h2>
-  <p>NeatMail organizes priority emails and drafts replies in Gmail and Outlook, so you can clear your inbox in less time.</p>
-  
+  <p>NeatMail is an <strong>AI email assistant for Gmail and Outlook</strong> that organizes priority emails, auto-labels your inbox, and drafts replies in your own voice — so you can clear your inbox in less time.</p>
+
   <p>
     <a href="https://www.neatmail.app">Website</a> •
+    <a href="https://www.neatmail.app/pricing">Pricing</a> •
+    <a href="https://www.neatmail.app/blog">Blog</a> •
+    <a href="#built-for-your-team--industry">Use Cases</a> •
+    <a href="https://www.neatmail.app/tools">Free Tools</a> •
     <a href="#features">Features</a> •
-    <a href="#getting-started">Getting Started</a> •
-    <a href="#deployment">Deployment</a> •
-    <a href="#tech-stack">Tech Stack</a>
+    <a href="#getting-started">Getting Started</a>
   </p>
 
   <p>
@@ -27,6 +29,9 @@
 
 - [What is NeatMail?](#what-is-neatmail)
 - [Features](#features)
+- [Built for Your Team & Industry](#built-for-your-team--industry)
+- [Guides & Resources](#guides--resources)
+- [Free Email Tools](#free-email-tools)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
@@ -41,7 +46,9 @@
 
 ## What is NeatMail?
 
-NeatMail is an email management platform that automatically organizes your Gmail and Outlook inboxes in real-time. No complicated setup, no manual sorting — just clean, organized emails labeled exactly where you need them.
+NeatMail is an [email management platform](https://www.neatmail.app) that automatically organizes your Gmail and Outlook inboxes in real-time. No complicated setup, no manual sorting — just clean, organized emails labeled exactly where you need them.
+
+Want to see how it stacks up? Read [Superhuman vs NeatMail: email productivity compared (2026)](https://www.neatmail.app/blog/superhuman-vs-neatmail-email-productivity-compared-2026), check out our [pricing plans](https://www.neatmail.app/pricing), or learn more [about the team](https://www.neatmail.app/about).
 
 ---
 
@@ -50,10 +57,13 @@ NeatMail is an email management platform that automatically organizes your Gmail
 - **Gmail & Outlook Integration:** Connect in minutes via OAuth. Labels sync directly in real time.
 - **Smart Email Labeling:** AI automatically categorizes incoming emails into labels like **Action Needed** or **Pending Response**.
 - **Custom Labels:** Create personalized label systems to match your exact workflow.
-- **AI-Powered Draft Replies:** Auto-generate context-aware draft responses based on your conversation history and writing tone.
+- **AI-Powered Draft Replies:** Auto-generate context-aware draft responses based on your conversation history and writing tone. See [how AI draft generation actually works](https://www.neatmail.app/blog/how-ai-draft-generation-actually-works-in-neatmail-context-pipeline-explained).
 - **One-Click Unsubscribe:** Instantly remove unwanted newsletters to keep your inbox clutter-free.
 - **Auto-Archive Rules:** Set rules to automatically archive emails based on labels, senders, or categories.
+- **Follow-Ups:** Never drop a thread — NeatMail surfaces emails that need a nudge. Learn [how to handle email follow-ups](https://www.neatmail.app/blog/how-to-handle-email-follow-ups).
 - **Telegram Integration:** Receive alerts, set routing rules, and approve AI drafts directly from Telegram.
+
+See the full [feature list and pricing →](https://www.neatmail.app/pricing)
 
 ---
 
@@ -108,10 +118,70 @@ NeatMail is an email management platform that automatically organizes your Gmail
 
 ---
 
+## Built for Your Team & Industry
+
+NeatMail adapts to how different teams and industries handle email. Explore the workflow built for you:
+
+**By role**
+
+- [NeatMail for Founders](https://www.neatmail.app/for/founders)
+- [NeatMail for Sales Teams](https://www.neatmail.app/for/sales-teams)
+- [NeatMail for Customer Support](https://www.neatmail.app/for/customer-support)
+- [NeatMail for Recruiters](https://www.neatmail.app/for/recruiters)
+- [NeatMail for Consultants](https://www.neatmail.app/for/consultants)
+- [NeatMail for Executive Assistants](https://www.neatmail.app/for/executive-assistants)
+
+**By industry**
+
+- [NeatMail for Law Firms](https://www.neatmail.app/for/law-firms)
+- [NeatMail for Real Estate](https://www.neatmail.app/for/real-estate)
+- [NeatMail for Accounting Firms](https://www.neatmail.app/for/accounting-firms)
+- [NeatMail for MSPs](https://www.neatmail.app/for/msps)
+- [NeatMail for Financial Advisors](https://www.neatmail.app/for/financial-advisors)
+- [NeatMail for Healthcare Clinics](https://www.neatmail.app/for/healthcare-clinics)
+
+---
+
+## Guides & Resources
+
+Practical guides from the [NeatMail blog](https://www.neatmail.app/blog) on inbox zero, email organization, and productivity:
+
+- [How to manage your email inbox — the complete guide (2026)](https://www.neatmail.app/blog/how-to-manage-email-inbox-complete-guide-2026)
+- [Inbox zero when you get 100+ emails a day](https://www.neatmail.app/blog/inbox-zero-100-emails-a-day)
+- [Inbox zero for freelancers](https://www.neatmail.app/blog/inbox-zero-for-freelancers)
+- [Best email filters and folders for inbox zero](https://www.neatmail.app/blog/best-email-filters-folders-inbox-zero)
+- [Email labels vs folders — which should you use?](https://www.neatmail.app/blog/email-labels-vs-folders)
+- [How to stop newsletter clutter in Gmail (2026)](https://www.neatmail.app/blog/how-to-stop-newsletter-clutter-gmail-2026)
+- [How to handle promotional & marketing emails](https://www.neatmail.app/blog/how-to-handle-promotional-emails-marketing)
+- [Open-source email assistant — 2026 guide](https://www.neatmail.app/blog/open-source-email-assistant-2026-guide)
+- [Superhuman vs NeatMail — email productivity compared (2026)](https://www.neatmail.app/blog/superhuman-vs-neatmail-email-productivity-compared-2026)
+
+See all posts on the [blog →](https://www.neatmail.app/blog) · Track updates in the [changelog](https://www.neatmail.app/changelog).
+
+---
+
+## Free Email Tools
+
+Free, no-signup [email tools](https://www.neatmail.app/tools) from NeatMail:
+
+- [Gmail Filter Generator](https://www.neatmail.app/tools/gmail-filter-generator)
+- [Unsubscribe Email Generator](https://www.neatmail.app/tools/unsubscribe-email-generator)
+- [Email Header Parser](https://www.neatmail.app/tools/email-header-parser)
+- [SPF Record Generator](https://www.neatmail.app/tools/spf-record-generator)
+- [Spam Word Checker](https://www.neatmail.app/tools/spam-word-checker)
+- [Email Read Time Calculator](https://www.neatmail.app/tools/email-read-time)
+- [Email Open Rate Checker](https://www.neatmail.app/tools/email-rate-open-checker)
+- [Meeting Agenda Generator](https://www.neatmail.app/tools/meeting-agenda-generator)
+- [Meeting Cost Calculator](https://www.neatmail.app/tools/meeting-cost-calculator)
+- [Text Case Converter](https://www.neatmail.app/tools/text-case-converter)
+- [Remove Duplicate Lines](https://www.neatmail.app/tools/remove-duplicate-lines)
+
+---
+
 ## Getting Started
 
 ### Prerequisites
-- Node.js 20+ and your preferred package manager (npm/yarn/pnpm/bun)
+- [Bun](https://bun.sh) (this project's package manager) and Node.js 20+
 - PostgreSQL database
 - Redis instance (e.g., Upstash)
 - Third-party credentials for:
@@ -233,4 +303,12 @@ Distributed under the Elastic License 2.0. See `LICENSE` for more information.
 
 <div align="center">
   <p>Built by the NeatMail team — <a href="https://www.neatmail.app">neatmail.app</a></p>
+  <p>
+    <a href="https://www.neatmail.app/pricing">Pricing</a> •
+    <a href="https://www.neatmail.app/blog">Blog</a> •
+    <a href="https://www.neatmail.app/tools">Free Tools</a> •
+    <a href="https://www.neatmail.app/about">About</a> •
+    <a href="https://www.neatmail.app/privacy">Privacy</a> •
+    <a href="https://www.neatmail.app/terms-and-conditions">Terms</a>
+  </p>
 </div>
