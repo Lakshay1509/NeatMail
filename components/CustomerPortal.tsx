@@ -1,8 +1,9 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGetUserCustomerPortal } from "@/features/checkout/use-get-customer-portal";
+import { SUPPORT_EMAIL } from "@/lib/support";
 import Image from "next/image";
 
 export const CustomerPortal = () => {
@@ -15,7 +16,7 @@ export const CustomerPortal = () => {
   };
 
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+    <div className="rounded-xl border bg-card text-card-foreground">
       <div className="flex flex-col gap-3 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
         <p className="text-sm text-muted-foreground flex flex-wrap items-center gap-1.5">
           Payment and billing is managed by{" "}
@@ -27,15 +28,28 @@ export const CustomerPortal = () => {
             className="inline-block shrink-0"
           />
         </p>
-        <Button
-          size="sm"
-          onClick={handleManage}
-          disabled={isLoading || !data?.data}
-          className="gap-1.5 text-xs font-semibold tracking-widest uppercase w-full sm:w-auto"
-        >
-          Manage
-          <ExternalLink className="size-3.5" />
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            className="gap-1.5 text-xs font-semibold uppercase tracking-widest w-full sm:w-auto"
+          >
+            <a href={`mailto:${SUPPORT_EMAIL}`}>
+              <Mail className="size-3.5" />
+              Contact us
+            </a>
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleManage}
+            disabled={isLoading || !data?.data}
+            className="gap-1.5 text-xs font-semibold tracking-widest uppercase w-full sm:w-auto"
+          >
+            Manage
+            <ExternalLink className="size-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
   );

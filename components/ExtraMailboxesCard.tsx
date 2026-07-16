@@ -147,17 +147,17 @@ export function ExtraMailboxesCard({
         <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary">
           <Mailbox className="h-4 w-4 text-foreground" />
         </div>
-        <div className="flex-1">
+        <div>
           <h3 className="text-sm font-semibold text-foreground">Extra mailboxes</h3>
-          <p className="mt-1 max-w-prose text-xs leading-relaxed text-foreground/70">
-            Add a teammate seat for {unit.symbol}
-            {unit.price}
-            {per} each, charged today for the time left in your billing period. Invite
-            them from your{" "}
-            <a href="/organization" className="font-medium underline underline-offset-2">
+          <p className="mt-0.5 text-xs leading-relaxed text-foreground/70">
+            A paid seat per teammate. Invite them from your{" "}
+            <a
+              href="/organization"
+              className="font-medium text-foreground underline underline-offset-2"
+            >
               Team
             </a>{" "}
-            page once added.
+            page.
           </p>
         </div>
       </div>
@@ -166,36 +166,59 @@ export function ExtraMailboxesCard({
         <p className="mt-3 text-xs font-medium text-destructive">{error}</p>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex items-center rounded-lg border">
-          <button
-            type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-l-lg text-muted-foreground transition-colors hover:bg-muted disabled:opacity-40"
-            onClick={() => setTarget((n) => Math.max(0, n - 1))}
-            disabled={loading || target <= 0}
-            aria-label="Remove a mailbox"
-          >
-            <Minus className="h-4 w-4" />
-          </button>
-          <span className="w-12 text-center text-sm font-semibold tabular-nums">
-            {target}
-          </span>
-          <button
-            type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-r-lg text-muted-foreground transition-colors hover:bg-muted disabled:opacity-40"
-            onClick={() => setTarget((n) => Math.min(MAX_EXTRA_MAILBOXES, n + 1))}
-            disabled={loading || target >= MAX_EXTRA_MAILBOXES}
-            aria-label="Add a mailbox"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="flex items-center gap-3">
+          <div className="inline-flex items-center rounded-lg border">
+            <button
+              type="button"
+              className="flex h-9 w-9 items-center justify-center rounded-l-lg text-muted-foreground transition-colors hover:bg-muted disabled:opacity-40"
+              onClick={() => setTarget((n) => Math.max(0, n - 1))}
+              disabled={loading || target <= 0}
+              aria-label="Remove a mailbox"
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+            <span className="w-12 text-center text-sm font-semibold tabular-nums">
+              {target}
+            </span>
+            <button
+              type="button"
+              className="flex h-9 w-9 items-center justify-center rounded-r-lg text-muted-foreground transition-colors hover:bg-muted disabled:opacity-40"
+              onClick={() => setTarget((n) => Math.min(MAX_EXTRA_MAILBOXES, n + 1))}
+              disabled={loading || target >= MAX_EXTRA_MAILBOXES}
+              aria-label="Add a mailbox"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+
+          <p className="text-sm text-muted-foreground tabular-nums">
+            {target === 0 ? (
+              <>
+                {unit.symbol}
+                {unit.price.toLocaleString("en-US")}
+                {per} per mailbox
+              </>
+            ) : (
+              <>
+                {target} × {unit.symbol}
+                {unit.price.toLocaleString("en-US")}
+                {per} ={" "}
+                <span className="font-semibold text-foreground">
+                  {unit.symbol}
+                  {(target * unit.price).toLocaleString("en-US")}
+                  {per}
+                </span>
+              </>
+            )}
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
           {dirty && (
             <button
               type="button"
-              className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+              className="text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
               onClick={() => setTarget(currentCount)}
               disabled={loading}
             >
@@ -210,14 +233,6 @@ export function ExtraMailboxesCard({
           </Button>
         </div>
       </div>
-
-      <p className="mt-3 text-xs text-foreground/70">
-        {currentCount === 0
-          ? "You have no extra mailboxes yet."
-          : `You currently have ${currentCount} extra mailbox${
-              currentCount === 1 ? "" : "es"
-            } — ${unit.symbol}${currentCount * unit.price}${per}.`}
-      </p>
 
       <Dialog open={dialogOpen} onOpenChange={(o) => !loading && setDialogOpen(o)}>
         <DialogContent className="w-[calc(100%-2rem)] max-w-sm rounded-2xl">
