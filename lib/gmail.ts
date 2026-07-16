@@ -10,6 +10,21 @@ export class OAuthError extends Error {
   }
 }
 
+// True only for a genuine token revoke / permission removal — the cases where
+// the user must reconnect. Transient Clerk failures (429 rate limit, 5xx,
+// network) are NOT revokes: callers should retry/ack, not email "reconnect".
+export function isOAuthRevokedError(error: any): boolean {
+  const oauthError = error?.errors?.some?.(
+    (e: any) =>
+      e.code === "oauth_token_retrieval_error" ||
+      e.code === "oauth_missing_refresh_token",
+  );
+  return (
+    (error?.code === "api_response_error" && error?.status === 400) ||
+    Boolean(oauthError)
+  );
+}
+
 interface Attachment {
   filename: string;
   mimeType: string;
@@ -52,16 +67,7 @@ export async function getGmailClient(userId: string) {
 
     return google.gmail({ version: "v1", auth: oauth2Client });
   } catch (error: any) {
-    const oauthError = error.errors?.some?.(
-      (e: any) =>
-        e.code === "oauth_token_retrieval_error" ||
-        e.code === "oauth_missing_refresh_token",
-    );
-
-    if (
-      (error.code === "api_response_error" && error.status === 400) ||
-      oauthError
-    ) {
+    if (isOAuthRevokedError(error)) {
       throw new OAuthError(
         "Google OAuth token has expired or is invalid. Please reconnect your Google account.",
       );

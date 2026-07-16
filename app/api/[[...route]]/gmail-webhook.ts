@@ -1,5 +1,5 @@
 import { gmailMailQueue, gmailSentQueue } from "@/lib/queue";
-import { getGmailClient, OAuthError } from "@/lib/gmail";
+import { getGmailClient, OAuthError, isOAuthRevokedError } from "@/lib/gmail";
 import {
   claimReconnectReminder,
   releaseReconnectReminder,
@@ -102,7 +102,11 @@ const app = new Hono().post("/", async (ctx) => {
         "google",
       );
       tokenData = tokenResponse.data[0]?.token;
-    } catch {
+    } catch (err: any) {
+      // Only a genuine revoke/permission removal means the user must reconnect.
+      // Transient Clerk failures (429 rate limit, 5xx, network) leave the token
+      // intact — rethrow so we log/ack instead of falsely emailing "reconnect".
+      if (!isOAuthRevokedError(err)) throw err;
       console.log(`[webhook] OAuth token unavailable for ${emailAddress} — acking`);
     }
 

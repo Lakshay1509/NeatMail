@@ -1,5 +1,5 @@
 import { Job } from "bullmq";
-import { getGraphClient } from "@/lib/outlook";
+import { getGraphClient, OAuthError } from "@/lib/outlook";
 import { db } from "@/lib/prisma";
 import {
   addMailtoDB,
@@ -9,7 +9,13 @@ import {
   incrementFollowUpCount,
 } from "@/lib/supabase";
 import { clerkClient } from "@clerk/nextjs/server";
-import { isMessageProcessed, markMessageProcessed } from "@/lib/redis";
+import {
+  isMessageProcessed,
+  markMessageProcessed,
+  claimReconnectReminder,
+  releaseReconnectReminder,
+} from "@/lib/redis";
+import { sendReconnectEmail } from "@/lib/resend";
 import { getModelResponse, ModelResponse } from "@/lib/model";
 import { checkAndForwardToTelegram } from "@/lib/telegram";
 import { flow, followUpQueue } from "@/lib/queue";
@@ -67,7 +73,49 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
     return { skipped: true, reason: "member access paused" };
   }
 
-  const client = await getGraphClient(subscription.clerk_user_id);
+  let client;
+  try {
+    client = await getGraphClient(subscription.clerk_user_id);
+  } catch (err) {
+    if (err instanceof OAuthError) {
+      // Token revoked/removed (e.g. user pulled access from the Microsoft
+      // dashboard). Nudge them to reconnect, throttled to once per few days so
+      // the notification flood doesn't spam. Ack the job — retrying can't help
+      // until they reconnect. Mirrors the Gmail webhook's reconnect flow.
+      console.log(
+        `[outlook-webhook] OAuth token unavailable for ${subscription.email} — acking`,
+      );
+      if (await claimReconnectReminder(subscription.clerk_user_id)) {
+        try {
+          let fullName = "";
+          try {
+            const clerk = await clerkClient();
+            const clerkUser = await clerk.users.getUser(
+              subscription.clerk_user_id,
+            );
+            fullName = `${clerkUser.fullName ?? ""}`.trim();
+          } catch {
+            // Name is best-effort; send the nudge with an empty name rather
+            // than skip it over a failed profile lookup.
+          }
+          await sendReconnectEmail(subscription.email, fullName, "Microsoft");
+          console.log(
+            `[outlook-webhook] Sent reconnect reminder to ${subscription.email}`,
+          );
+        } catch (e) {
+          // Release the claim so a later notification can retry the send.
+          await releaseReconnectReminder(subscription.clerk_user_id);
+          console.error(
+            `[outlook-webhook] Failed to send reconnect reminder to ${subscription.email}`,
+            e,
+          );
+        }
+      }
+      return { skipped: true, reason: "token revoked" };
+    }
+    throw err;
+  }
+
   const mail = await client
     .api(`/me/messages/${messageId}`)
     .header("Prefer", 'outlook.body-content-type="text"')

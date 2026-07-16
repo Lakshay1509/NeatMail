@@ -161,9 +161,14 @@ export async function sendSubExpiredEmail(userEmail:string, userName:string){
     }
 }
 
-// Sent when the Google OAuth token is unreachable (revoked/removed). Caller
-// throttles via Redis to at most once every few days.
-export async function sendReconnectEmail(userEmail: string, userName: string) {
+// Sent when the OAuth token is unreachable (revoked/removed). Caller throttles
+// via Redis to at most once every few days. `provider` tailors the copy to the
+// mailbox the user connected (Google for Gmail, Microsoft for Outlook).
+export async function sendReconnectEmail(
+  userEmail: string,
+  userName: string,
+  provider: "Google" | "Microsoft" = "Google",
+) {
   const firstName = userName?.trim().split(" ")[0] || "there";
 
   const html = `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:24px;max-width:480px;margin:0 auto;">
@@ -172,7 +177,7 @@ export async function sendReconnectEmail(userEmail: string, userName: string) {
       Hi ${firstName},
     </p>
     <p style="font-size:15px;color:#444;line-height:1.6;margin:0 0 16px;">
-      NeatMail lost access to your Google account, so we've paused organizing your inbox.
+      NeatMail lost access to your ${provider} account, so we've paused organizing your inbox.
       This usually happens when the connection is removed or access is revoked.
     </p>
     <p style="font-size:15px;color:#444;line-height:1.6;margin:0 0 24px;">

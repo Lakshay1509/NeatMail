@@ -3,6 +3,16 @@ import { Subscription } from "@microsoft/microsoft-graph-types";
 import { clerkClient } from "@clerk/nextjs/server";
 import { extractUnsubscribeLinkFromBodyOutlook } from "./unsubscribe";
 
+// Thrown when the Microsoft OAuth token is missing/revoked/invalid, so callers
+// can distinguish "user needs to reconnect" from transient Graph failures.
+// Mirrors OAuthError in lib/gmail.ts.
+export class OAuthError extends Error {
+  constructor(msg: string) {
+    super(msg);
+    this.name = "OAuthError";
+  }
+}
+
 export async function getGraphClient(userId: string): Promise<Client> {
   try {
     const clerk = await clerkClient();
@@ -15,7 +25,7 @@ export async function getGraphClient(userId: string): Promise<Client> {
     const accessToken = externalAccounts.data[0]?.token;
 
     if (!accessToken) {
-      throw new Error(
+      throw new OAuthError(
         "No Microsoft access token found. User needs to reconnect their Microsoft account.",
       );
     }
@@ -32,8 +42,17 @@ export async function getGraphClient(userId: string): Promise<Client> {
       clerkTraceId: error.clerkTraceId,
     });
 
-    if (error.code === "api_response_error" && error.status === 400) {
-      throw new Error(
+    const oauthError = error.errors?.some?.(
+      (e: any) =>
+        e.code === "oauth_token_retrieval_error" ||
+        e.code === "oauth_missing_refresh_token",
+    );
+
+    if (
+      (error.code === "api_response_error" && error.status === 400) ||
+      oauthError
+    ) {
+      throw new OAuthError(
         "Microsoft OAuth token has expired or is invalid. Please reconnect your Microsoft account in your user profile.",
       );
     }
