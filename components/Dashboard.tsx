@@ -212,16 +212,7 @@ const Dashboard = () => {
         />
       </div>
 
-       {/* Senders & Labels */}
-      <div
-        className={`grid grid-cols-1 gap-3 ${
-          showLabelCards ? "lg:grid-cols-3" : "lg:grid-cols-2"
-        }`}
-      >
-        <MostEmails from={from} to={to} />
-        <Clutter from={from} to={to} />
-        {showLabelCards && <LabelDistribution from={from} to={to} />}
-      </div>
+       
 
       {/* Status + Trend */}
       <div
@@ -231,6 +222,17 @@ const Dashboard = () => {
       >
         {showLabelCards && <EmailStatusBreakdown from={from} to={to} />}
         <ReadVsUnread from={from} to={to} />
+      </div>
+
+      {/* Senders & Labels */}
+      <div
+        className={`grid grid-cols-1 gap-3 ${
+          showLabelCards ? "lg:grid-cols-3" : "lg:grid-cols-2"
+        }`}
+      >
+        <MostEmails from={from} to={to} />
+        <Clutter from={from} to={to} />
+        {showLabelCards && <LabelDistribution from={from} to={to} />}
       </div>
 
      
