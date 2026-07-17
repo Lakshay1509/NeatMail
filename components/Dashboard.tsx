@@ -2,6 +2,7 @@
 
 import { useGetOverview } from "@/features/stats/use-get-overview";
 import { useGetReadVsUnread } from "@/features/stats/use-get-read-vs-unread";
+import { useGetUserTagsWeek } from "@/features/stats/use-get-user-tagsThisWeek";
 import { useUser } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
 import { DateRange } from "react-day-picker";
@@ -14,7 +15,6 @@ import HeatMap from "./Dashboard/HeatMap";
 import MostEmails from "./Dashboard/MostEmails";
 import ReadVsUnread from "./Dashboard/ReadVsUnread";
 import EmailStatusBreakdown from "./Dashboard/EmailStatusBreakdown";
-import { InsightHighlights } from "./Dashboard/InsightHighlights";
 import { StatCard, type StatTrend } from "./Dashboard/StatCard";
 
 const subtitles = {
@@ -110,6 +110,16 @@ const Dashboard = () => {
   // network call; we only borrow the daily series for the KPI sparklines.
   const { data: trend } = useGetReadVsUnread(from, to);
 
+  // The two label-based cards (Unread Breakdown + Label Distribution) are hidden
+  // entirely when there's no AI label data yet, instead of showing an empty
+  // state. Shares its query key with <LabelDistribution/>, so React Query dedupes
+  // the call. Kept visible while loading so existing users don't see a layout jump.
+  const { data: labelTags, isLoading: labelsLoading } = useGetUserTagsWeek(
+    from,
+    to
+  );
+  const showLabelCards = labelsLoading || (labelTags?.length ?? 0) > 0;
+
   const series = trend?.data ?? [];
   const totalSeries = series.map((d) => d.total);
   const unreadSeries = series.map((d) => d.unread);
@@ -162,9 +172,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Insight Highlights */}
-      <InsightHighlights from={from} to={to} />
-
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
@@ -205,18 +212,28 @@ const Dashboard = () => {
         />
       </div>
 
+       {/* Senders & Labels */}
+      <div
+        className={`grid grid-cols-1 gap-3 ${
+          showLabelCards ? "lg:grid-cols-3" : "lg:grid-cols-2"
+        }`}
+      >
+        <MostEmails from={from} to={to} />
+        <Clutter from={from} to={to} />
+        {showLabelCards && <LabelDistribution from={from} to={to} />}
+      </div>
+
       {/* Status + Trend */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <EmailStatusBreakdown from={from} to={to} />
+      <div
+        className={`grid grid-cols-1 gap-3 ${
+          showLabelCards ? "lg:grid-cols-2" : ""
+        }`}
+      >
+        {showLabelCards && <EmailStatusBreakdown from={from} to={to} />}
         <ReadVsUnread from={from} to={to} />
       </div>
 
-      {/* Senders & Labels */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <MostEmails from={from} to={to} />
-        <Clutter from={from} to={to} />
-        <LabelDistribution from={from} to={to} />
-      </div>
+     
 
       {/* Inbox Traffic Heatmap */}
       <HeatMap from={from} to={to} />
