@@ -150,7 +150,9 @@ const app = new Hono()
         },
       });
 
-      const response = await db.$transaction([
+      const activeTagIds = tagRecords.map((tag) => tag.id);
+
+      const ops = [
         db.user_tags.deleteMany({
           where: {
             user_id: userId,
@@ -163,7 +165,25 @@ const app = new Hono()
           })),
           skipDuplicates: true,
         }),
-      ]);
+      ];
+
+      // Turning a label off deactivates its archive rule too (not deleted, so
+      // the duration survives). Re-enabling the label doesn't re-arm the rule —
+      // that's a deliberate re-enable via the dialog, not a side effect here.
+      if (activeTagIds.length > 0) {
+        ops.push(
+          db.archiveRule.updateMany({
+            where: {
+              user_id: userId,
+              tag_id: { not: null, notIn: activeTagIds },
+              isActive: true,
+            },
+            data: { isActive: false },
+          }),
+        );
+      }
+
+      const response = await db.$transaction(ops);
 
       if (!response) {
         return ctx.json({ error: "Error creating tags" }, 500);

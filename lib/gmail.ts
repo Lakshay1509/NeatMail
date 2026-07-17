@@ -1109,11 +1109,76 @@ export async function replyToGmailThread(
   return res.data;
 }
 
+// Gmail rejects batchModify calls over 1000 ids. Callers can pass a whole
+// backlog, so chunk here instead of at every call site.
+const GMAIL_BATCH_MODIFY_LIMIT = 1000;
+
+function chunkIds(messageIds: string[], size: number): string[][] {
+  const batches: string[][] = [];
+  for (let i = 0; i < messageIds.length; i += size) {
+    batches.push(messageIds.slice(i, i + size));
+  }
+  return batches;
+}
+
+// batchModify 404s if any single id is stale, failing the whole call. The
+// per-message fallback runs in capped waves so it doesn't rate-limit the rest.
+const GMAIL_FALLBACK_CONCURRENCY = 25;
+
+async function settledInWaves<T, R>(
+  items: T[],
+  size: number,
+  fn: (item: T) => Promise<R>,
+): Promise<PromiseSettledResult<R>[]> {
+  const out: PromiseSettledResult<R>[] = [];
+  for (let i = 0; i < items.length; i += size) {
+    out.push(...(await Promise.allSettled(items.slice(i, i + size).map(fn))));
+  }
+  return out;
+}
+
+// batchModify fails the WHOLE call if a single id is bad (stale / permanently
+// deleted / malformed), and Gmail is inconsistent about whether that surfaces as
+// 404 or 400 — so treat both as "retry per-message". That isolates the one
+// poisoned id (a deleted message 404s individually and is skipped) and lets the
+// other 999 through, instead of one dead id blocking a rule's whole batch every
+// run. Deliberately NOT transient errors (429 / 5xx / quota 403): those should
+// retry the whole batch, not fan out into per-message calls.
+function isBadIdBatchError(e: any): boolean {
+  const status = e?.code ?? e?.status;
+  return status === 404 || status === 400;
+}
+
 export async function trashMessages(userId: string, messageIds: string[]) {
   if (!messageIds || messageIds.length === 0) {
     return { success: true, trashed: 0, trashedIds: [], message: "No messages to trash" };
   }
 
+  const batches = chunkIds(messageIds, GMAIL_BATCH_MODIFY_LIMIT);
+  if (batches.length === 1) return trashMessagesBatch(userId, batches[0]);
+
+  const trashedIds: string[] = [];
+  let skipped = 0;
+  // Sequential, not parallel: each batchModify costs 50 quota units, and a large
+  // backlog would otherwise burst straight through the per-user limit.
+  for (const batch of batches) {
+    const result = await trashMessagesBatch(userId, batch);
+    trashedIds.push(...result.trashedIds);
+    skipped += result.skipped ?? 0;
+  }
+
+  const failed = messageIds.length - trashedIds.length;
+  return {
+    success: failed === 0,
+    trashed: trashedIds.length,
+    trashedIds,
+    skipped,
+    message: `Trashed ${trashedIds.length} message(s)` + (failed > 0 ? `, ${failed} failed` : ""),
+    error: failed > 0 ? `${failed} message(s) failed to trash` : undefined,
+  };
+}
+
+async function trashMessagesBatch(userId: string, messageIds: string[]) {
   const gmail = await getGmailClient(userId);
 
   try {
@@ -1128,9 +1193,11 @@ export async function trashMessages(userId: string, messageIds: string[]) {
 
     return { success: true, trashed: messageIds.length, trashedIds: [...messageIds] };
   } catch (batchError: any) {
-    if (batchError?.code === 404 || batchError?.status === 404) {
-      const results = await Promise.allSettled(
-        messageIds.map(async (messageId) => {
+    if (isBadIdBatchError(batchError)) {
+      const results = await settledInWaves(
+        messageIds,
+        GMAIL_FALLBACK_CONCURRENCY,
+        async (messageId) => {
           try {
             await gmail.users.messages.trash({
               userId: "me",
@@ -1143,7 +1210,7 @@ export async function trashMessages(userId: string, messageIds: string[]) {
             }
             return { messageId, success: false, error: err?.message || String(err) };
           }
-        })
+        },
       );
 
       const trashedIds: string[] = [];
@@ -1186,6 +1253,26 @@ export async function archiveGmailMessages(userId: string, messageIds: string[])
     return { success: true, archived: 0, archivedIds: [], message: "No messages to archive" };
   }
 
+  const batches = chunkIds(messageIds, GMAIL_BATCH_MODIFY_LIMIT);
+  if (batches.length === 1) return archiveGmailBatch(userId, batches[0]);
+
+  const archivedIds: string[] = [];
+  // Sequential for the same quota reason as trashMessages above.
+  for (const batch of batches) {
+    const result = await archiveGmailBatch(userId, batch);
+    archivedIds.push(...result.archivedIds);
+  }
+
+  const failed = messageIds.length - archivedIds.length;
+  return {
+    success: failed === 0,
+    archived: archivedIds.length,
+    archivedIds,
+    message: `Archived ${archivedIds.length} message(s)` + (failed > 0 ? `, ${failed} failed` : ""),
+  };
+}
+
+async function archiveGmailBatch(userId: string, messageIds: string[]) {
   const gmail = await getGmailClient(userId);
 
   try {
@@ -1198,9 +1285,11 @@ export async function archiveGmailMessages(userId: string, messageIds: string[])
     });
     return { success: true, archived: messageIds.length, archivedIds: [...messageIds] };
   } catch (batchError: any) {
-    if (batchError?.code === 404 || batchError?.status === 404) {
-      const results = await Promise.allSettled(
-        messageIds.map(async (messageId) => {
+    if (isBadIdBatchError(batchError)) {
+      const results = await settledInWaves(
+        messageIds,
+        GMAIL_FALLBACK_CONCURRENCY,
+        async (messageId) => {
           try {
             await gmail.users.messages.modify({
               userId: "me",
@@ -1214,7 +1303,7 @@ export async function archiveGmailMessages(userId: string, messageIds: string[])
             }
             return { messageId, success: false };
           }
-        }),
+        },
       );
 
       const archivedIds: string[] = [];

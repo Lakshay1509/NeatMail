@@ -108,6 +108,18 @@ export const trialReminderQueue = new Queue("trial-reminder", {
   },
 });
 
+// Sweeps a newly-enabled tag rule's backlog immediately instead of waiting for
+// the daily cron. Idempotent, so a retry is safe.
+export const archiveBacklogQueue = new Queue("archive-backlog", {
+  connection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 2000 },
+    removeOnComplete: true,
+    removeOnFail: 100,
+  },
+});
+
 export const queueAdapters = [
   new BullMQAdapter(outlookMailQueue),
   new BullMQAdapter(outlookMailUpdateQueue),
@@ -119,4 +131,5 @@ export const queueAdapters = [
   new BullMQAdapter(classifyQueue),
   new BullMQAdapter(followUpQueue),
   new BullMQAdapter(trialReminderQueue),
+  new BullMQAdapter(archiveBacklogQueue),
 ];

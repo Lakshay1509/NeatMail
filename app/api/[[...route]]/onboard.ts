@@ -10,6 +10,7 @@ import { encryptDomain } from "@/lib/encode";
 import { getUserIsGmail, getUserSubscribed } from "@/lib/supabase";
 import { getPostHogClient } from "@/lib/posthog-server";
 import { ensureResolvedTag } from "@/lib/tags";
+import { ARCHIVE_DEFAULTS } from "@/lib/archive-defaults";
 
 const app = new Hono().post(
   "/",
@@ -184,6 +185,42 @@ const app = new Hono().post(
             tag_id: tag.id,
           })),
           skipDuplicates: true,
+        });
+
+        // Seed default archive rules for whichever ARCHIVE_DEFAULTS categories
+        // the user picked. SEEDED, so they're future-only and never touch the
+        // history imported above. skipDuplicates keeps a re-run idempotent
+        // without clobbering a rule the user already edited.
+        const tagIdByName = new Map(tagRecords.map((t) => [t.name, t.id]));
+        const seedRows = ARCHIVE_DEFAULTS.map((d) => {
+          const tagId = tagIdByName.get(d.name);
+          return tagId
+            ? {
+                user_id: userId,
+                tag_id: tagId,
+                archiveAfterDays: d.days,
+                isActive: true,
+                source: "SEEDED" as const,
+              }
+            : null;
+        }).filter((r): r is NonNullable<typeof r> => r !== null);
+
+        if (seedRows.length > 0) {
+          await tx.archiveRule.createMany({
+            data: seedRows,
+            skipDuplicates: true,
+          });
+        }
+
+        // Same contract as the tags route: dropping a category on re-onboarding
+        // deactivates its archive rule too. No-op on first-time onboarding.
+        await tx.archiveRule.updateMany({
+          where: {
+            user_id: userId,
+            tag_id: { not: null, notIn: tagRecords.map((t) => t.id) },
+            isActive: true,
+          },
+          data: { isActive: false },
         });
 
         if (body.followUpPrefs) {

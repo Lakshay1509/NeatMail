@@ -17,13 +17,15 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { MoreVertical, Pencil, Trash } from "lucide-react";
+import { Clock, MoreVertical, Pencil, Trash } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
 import { useTierAccess } from "@/features/user/use-tier-access";
 import CreateLabel from "./CreateLabel";
 import EditLabel from "./EditLabel";
 import UpdateFolderPrefernce from "./UpdateFolderPrefernce";
 import LabelsNotInGmail from "./LabelsNotInGmail";
+import AutoArchiveDialog from "./AutoArchiveDialog";
+import { useGetTagArchiveRules } from "@/features/email/use-get-tag-archive";
 import { useGetUserIsGmail } from "@/features/user/use-get-user-isGmail";
 import WatchedFolderSelect from "./WatchedFolderSelect";
 import { toast } from "sonner";
@@ -59,6 +61,30 @@ const UserLabelSettings = () => {
 		color: string;
 		description: string | null;
 	} | null>(null);
+
+	const { data: archiveRuleData } = useGetTagArchiveRules();
+	const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
+	const [archiveTarget, setArchiveTarget] = useState<{
+		id: string;
+		name: string;
+		color: string;
+	} | null>(null);
+
+	// System labels come from the hardcoded CATEGORIES array with no id, but a
+	// rule needs a tag_id — only available once the label is on (via user_tags).
+	const tagIdByName = new Map(
+		(data?.data ?? []).map((t) => [t.tag.name, t.tag.id]),
+	);
+	const ruleByTagId = new Map(
+		(archiveRuleData?.data ?? []).flatMap((r) =>
+			r.tag_id ? [[r.tag_id, r] as const] : [],
+		),
+	);
+
+	const openArchiveDialog = (target: { id: string; name: string; color: string }) => {
+		setArchiveTarget(target);
+		setIsArchiveDialogOpen(true);
+	};
 
 	// Auto-save: each toggle persists on its own; this drives the inline
 	// "Saving / Saved / Retry" indicator that replaces the old Save button.
@@ -273,11 +299,15 @@ const UserLabelSettings = () => {
 						<div className="space-y-3">
 							{CATEGORIES.map((category) => {
 								const isResolvedLocked = followUpsEnabled && category.name === "Resolved";
+								const isOn = isResolvedLocked || selectedCategories.includes(category.name);
+								const tagId = tagIdByName.get(category.name);
+								const rule = tagId ? ruleByTagId.get(tagId) : undefined;
+								const archiveOn = rule?.isActive === true;
 								return (
-								<div key={category.name} className="grid grid-cols-[auto_1fr] gap-x-6 items-center group hover:bg-muted p-3 rounded-lg transition-colors -mx-3">
+								<div key={category.name} className="grid grid-cols-[auto_1fr_auto] gap-x-6 items-center group hover:bg-muted p-3 rounded-lg transition-colors -mx-3">
 									<div className="flex justify-center w-24">
 										<Switch
-											checked={isResolvedLocked ? true : selectedCategories.includes(category.name)}
+											checked={isOn}
 											onCheckedChange={() => toggleCategory(category.name)}
 											disabled={isResolvedLocked}
 											aria-label={`Enable ${category.name}`}
@@ -296,6 +326,36 @@ const UserLabelSettings = () => {
 												<span className="text-muted-foreground"> · Required while follow-ups are on</span>
 											)}
 										</span>
+									</div>
+									<div className="flex items-center gap-2 shrink-0">
+										{archiveOn && (
+											<span className="hidden sm:inline-flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
+												<Clock className="h-3 w-3" aria-hidden="true" />
+												Archive after {rule?.archiveAfterDays}d
+											</span>
+										)}
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild disabled={!isOn || !tagId}>
+												<button
+													type="button"
+													className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40"
+												>
+													<MoreVertical className="h-4 w-4" />
+													<span className="sr-only">Open menu for {category.name}</span>
+												</button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align="end">
+												<DropdownMenuItem
+													onClick={() => {
+														if (!tagId) return;
+														openArchiveDialog({ id: tagId, name: category.name, color: category.color });
+													}}
+												>
+													<Clock className="mr-2 h-4 w-4" />
+													{archiveOn ? "Edit auto-archive" : "Auto-archive"}
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
 									</div>
 								</div>
 								);
@@ -362,8 +422,10 @@ const UserLabelSettings = () => {
 										{category.name}
 									</span>
 									<div className="flex items-center gap-1 shrink-0">
+										{(() => { const customOn = selectedCategories.includes(category.name); return (
+										<>
 										<Switch
-											checked={selectedCategories.includes(category.name)}
+											checked={customOn}
 											onCheckedChange={() => toggleCategory(category.name)}
 											aria-label={`Enable ${category.name}`}
 										/>
@@ -383,6 +445,16 @@ const UserLabelSettings = () => {
 													Edit
 												</DropdownMenuItem>
 												<DropdownMenuItem
+													disabled={!customOn}
+													onClick={() => {
+														if (!customOn) return;
+														openArchiveDialog({ id: category.id, name: category.name, color: category.color });
+													}}
+												>
+													<Clock className="mr-2 h-4 w-4" />
+													{ruleByTagId.get(category.id)?.isActive ? "Edit auto-archive" : "Auto-archive"}
+												</DropdownMenuItem>
+												<DropdownMenuItem
 													onClick={() => { handleDialogClick(category.id) }}
 													className="text-destructive"
 												>
@@ -391,6 +463,8 @@ const UserLabelSettings = () => {
 												</DropdownMenuItem>
 											</DropdownMenuContent>
 										</DropdownMenu>
+										</>
+										); })()}
 									</div>
 								</div>
 								<p className="mt-3 text-sm text-muted-foreground leading-snug line-clamp-2">
@@ -418,6 +492,16 @@ const UserLabelSettings = () => {
 					open={isEditDialogOpen}
 					onOpenChange={setIsEditDialogOpen}
 					tag={editTarget}
+				/>
+			)}
+
+			{archiveTarget && (
+				<AutoArchiveDialog
+					key={archiveTarget.id}
+					open={isArchiveDialogOpen}
+					onOpenChange={setIsArchiveDialogOpen}
+					tag={archiveTarget}
+					rule={ruleByTagId.get(archiveTarget.id)}
 				/>
 			)}
 

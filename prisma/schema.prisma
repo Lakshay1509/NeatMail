@@ -98,6 +98,7 @@ model tag {
   user_tokens       user_tokens?       @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
   user_tags         user_tags[]
   integration_rules integrationRules[]
+  archive_rules     ArchiveRule[]
 
   @@unique([name, user_id])
   @@schema("public")
@@ -332,20 +333,37 @@ model free_trial {
   @@schema("public")
 }
 
+enum ArchiveRuleSource {
+  USER
+  SEEDED
+
+  @@schema("public")
+}
+
+// Fires on exactly one target, `domain` XOR `tag_id` — enforced by a CHECK
+// constraint Prisma can't express. See the /archive-messages cron.
 model ArchiveRule {
-  id               String  @id @default(uuid())
+  id               String            @id @default(uuid())
   user_id          String
-  domain           String
+  domain           String?
+  tag_id           String?           @db.Uuid
   archiveAfterDays Int
-  isActive         Boolean @default(true)
+  isActive         Boolean           @default(true)
+
+  // USER rules sweep the existing backlog; SEEDED (onboarding defaults) only
+  // touch mail arriving after createdAt. Enforced in the /archive-messages cron.
+  source           ArchiveRuleSource @default(USER)
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   user_tokens user_tokens @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+  tag         tag?        @relation(fields: [tag_id], references: [id], onDelete: Cascade)
 
   @@unique([user_id, domain])
+  @@unique([user_id, tag_id])
   @@index([isActive, user_id])
+  @@index([isActive, tag_id])
   @@schema("public")
 }
 

@@ -971,27 +971,39 @@ export async function archiveMessagesOutlook(userId: string, messageIds: string[
     throw new Error("Unable to access the Archive folder. Please ensure the folder exists.");
   }
 
-  // Move each message to the Archive folder in parallel
-  const results = await Promise.allSettled(
-    messageIds.map(async (messageId) => {
-      try {
-        await client.api(`/me/messages/${messageId}/move`).post({
-          destinationId: archiveFolderId,
-        });
-        return { messageId, success: true };
-      } catch (error: any) {
-        if (error?.statusCode === 404) {
-          return { messageId, success: true, skipped: true };
+  // Bounded-concurrency waves — firing thousands of ids at once would trip
+  // Graph's per-mailbox throttling (429).
+  const MOVE_CONCURRENCY = 20;
+  const results: PromiseSettledResult<{
+    messageId: string;
+    success: boolean;
+    skipped?: boolean;
+    error?: string;
+  }>[] = [];
+  for (let i = 0; i < messageIds.length; i += MOVE_CONCURRENCY) {
+    const wave = messageIds.slice(i, i + MOVE_CONCURRENCY);
+    const waveResults = await Promise.allSettled(
+      wave.map(async (messageId) => {
+        try {
+          await client.api(`/me/messages/${messageId}/move`).post({
+            destinationId: archiveFolderId,
+          });
+          return { messageId, success: true };
+        } catch (error: any) {
+          if (error?.statusCode === 404) {
+            return { messageId, success: true, skipped: true };
+          }
+          console.error(`Failed to archive message ${messageId}:`, error);
+          return {
+            messageId,
+            success: false,
+            error: error?.message || "Unknown error",
+          };
         }
-        console.error(`Failed to archive message ${messageId}:`, error);
-        return {
-          messageId,
-          success: false,
-          error: error?.message || "Unknown error"
-        };
-      }
-    })
-  );
+      }),
+    );
+    results.push(...waveResults);
+  }
 
   // Count successes and failures, and collect successfully archived IDs
   let archivedCount = 0;

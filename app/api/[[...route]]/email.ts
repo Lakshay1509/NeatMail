@@ -22,6 +22,7 @@ import {
   getOutlookMessageBody,
 } from "@/lib/outlook";
 import { db } from "@/lib/prisma";
+import { archiveBacklogQueue } from "@/lib/queue";
 import { auth } from "@clerk/nextjs/server";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
@@ -353,6 +354,192 @@ const app = new Hono()
       }
 
       return ctx.json({ data }, 200);
+    },
+  )
+
+  // Tag-scoped archive rules — same sweep and behaviour as domain rules, just
+  // finer-grained durations since label rules target shorter-lived mail.
+  .put(
+    "/archive/tag",
+    zValidator(
+      "json",
+      z.object({
+        tagId: z.string().uuid(),
+        enabled: z.boolean(),
+        duration: z.union([
+          z.literal(1),
+          z.literal(3),
+          z.literal(7),
+          z.literal(14),
+          z.literal(30),
+          z.literal(60),
+        ]),
+      }),
+    ),
+    async (ctx) => {
+      const { userId } = await auth();
+
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const values = ctx.req.valid("json");
+
+      // FREE users must still be able to turn a rule off after a plan lapses.
+      if (values.enabled) {
+        const tier = await getUserTier(userId);
+        if (tier === "FREE") {
+          return ctx.json({ error: "Upgrade to Pro to use archive rules" }, 403);
+        }
+      }
+
+      // Allow the user's own tags plus shared system presets (user_id null),
+      // so a user can't attach a rule to someone else's custom label.
+      const tag = await db.tag.findFirst({
+        where: {
+          id: values.tagId,
+          OR: [{ user_id: userId }, { user_id: null }],
+        },
+        select: { id: true },
+      });
+
+      if (!tag) {
+        return ctx.json({ error: "Label not found" }, 404);
+      }
+
+      const existingRule = await db.archiveRule.findUnique({
+        where: {
+          user_id_tag_id: {
+            user_id: userId,
+            tag_id: values.tagId,
+          },
+        },
+      });
+
+      // Domain and tag rules share the one maxArchiveRules allowance.
+      if (!existingRule) {
+        const ruleCount = await db.archiveRule.count({
+          where: { user_id: userId },
+        });
+
+        const limitCheck = await checkFeatureLimit(
+          userId,
+          "maxArchiveRules",
+          ruleCount,
+        );
+
+        if (!limitCheck.allowed) {
+          return ctx.json({ error: limitCheck.reason }, 402);
+        }
+      }
+
+      // A rule "widens" when it newly exposes existing mail: off→on, first
+      // creation, or shortening the window on an active rule. Only a widening
+      // triggers the immediate backlog sweep.
+      const wasActive = existingRule?.isActive === true;
+      const shortened =
+        wasActive && !!existingRule && values.duration < existingRule.archiveAfterDays;
+      const widensBacklog = values.enabled && (!wasActive || shortened);
+
+      // Only promote SEEDED to USER when we're actually sweeping the backlog,
+      // so an untouched SEEDED rule keeps its future-only floor.
+      const data = await db.archiveRule.upsert({
+        where: {
+          user_id_tag_id: {
+            user_id: userId,
+            tag_id: values.tagId,
+          },
+        },
+        update: {
+          isActive: values.enabled,
+          archiveAfterDays: values.duration,
+          ...(widensBacklog ? { source: "USER" as const } : {}),
+        },
+        create: {
+          user_tokens: { connect: { clerk_user_id: userId } },
+          tag: { connect: { id: values.tagId } },
+          isActive: values.enabled,
+          archiveAfterDays: values.duration,
+          source: "USER",
+        },
+      });
+
+      if (!data) {
+        return ctx.json({ error: "Error creating auto archive" }, 500);
+      }
+
+      // Best-effort: sweep now instead of waiting for the cron. A failed
+      // enqueue shouldn't fail the save — the cron will catch up regardless.
+      if (widensBacklog) {
+        try {
+          // Stable jobId dedupes a double-click or an overlapping cron run.
+          await archiveBacklogQueue.add(
+            "sweep-tag-backlog",
+            { userId, tagId: values.tagId },
+            { jobId: `sweep:${userId}:${values.tagId}` },
+          );
+        } catch (err) {
+          console.error("Failed to enqueue archive backlog sweep:", err);
+        }
+      }
+
+      return ctx.json({ data }, 200);
+    },
+  )
+
+  // Backs the per-label auto-archive state in the labels UI.
+  .get("/archive/tag", async (ctx) => {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    const rules = await db.archiveRule.findMany({
+      where: { user_id: userId, tag_id: { not: null } },
+      select: {
+        tag_id: true,
+        isActive: true,
+        archiveAfterDays: true,
+      },
+    });
+
+    return ctx.json({ data: rules }, 200);
+  })
+
+  // Count of mail this rule would sweep on save, so the dialog can warn first.
+  // Mirrors the cron's USER-rule query — no SEEDED arrival floor.
+  .get(
+    "/archive/tag/preview",
+    zValidator(
+      "query",
+      z.object({
+        tagId: z.string().uuid(),
+        duration: z.coerce.number().int().positive(),
+      }),
+    ),
+    async (ctx) => {
+      const { userId } = await auth();
+
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const { tagId, duration } = ctx.req.valid("query");
+
+      const thresholdDate = new Date();
+      thresholdDate.setDate(thresholdDate.getDate() - duration);
+
+      const count = await db.email_tracked.count({
+        where: {
+          user_id: userId,
+          tag_id: tagId,
+          created_at: { lt: thresholdDate },
+          archive_at: null,
+        },
+      });
+
+      return ctx.json({ count }, 200);
     },
   )
 

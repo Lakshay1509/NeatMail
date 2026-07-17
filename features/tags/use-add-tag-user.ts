@@ -28,6 +28,8 @@ export const addTagstoUser = () => {
     onSuccess: async () => {
       query.invalidateQueries({ queryKey: ["user-custom-tags"] });
       query.invalidateQueries({ queryKey: ["user-tags"] });
+      // Server may have deactivated the archive rule; refetch to stay in sync.
+      query.invalidateQueries({ queryKey: ["tag-archive-rules"] });
 
       // Preferences now auto-save on each toggle; the settings UI shows an
       // inline "Saved" indicator, so a success toast per save would be noise.

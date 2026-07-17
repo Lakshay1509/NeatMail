@@ -15,8 +15,7 @@ import {
 } from "@/lib/supabase";
 import { createOutlookSubscription } from "@/lib/outlook";
 import { getUserTier } from "@/lib/tier-guard";
-import { trashMessages as archiveGmailMessages } from "@/lib/gmail";
-import { archiveMessagesOutlook } from "@/lib/outlook";
+import { sweepArchiveRule } from "@/lib/archive-rules";
 import { Resend } from "resend";
 
 import DailyDigestEmail from "@/components/Email/DailyDigestEmail";
@@ -694,12 +693,17 @@ const app = new Hono()
       const activeRules = await db.archiveRule.findMany({
         where: {
           isActive: true,
+          // Same deleted_flag guard as the other cron routes below.
+          user_tokens: { deleted_flag: false },
         },
         select: {
           id: true,
           user_id: true,
           domain: true,
+          tag_id: true,
           archiveAfterDays: true,
+          source: true,
+          createdAt: true,
         },
       });
 
@@ -719,142 +723,21 @@ const app = new Hono()
             continue;
           }
 
-          const thresholdDate = new Date(now);
-          thresholdDate.setDate(
-            thresholdDate.getDate() - rule.archiveAfterDays,
-          );
-
-          const messagesToArchive = await db.email_tracked.findMany({
-            where: {
-              user_id: rule.user_id,
-              domain: rule.domain,
-              created_at: {
-                lt: thresholdDate,
-              },
-              archive_at: null,
-            },
-            select: {
-              message_id: true,
-              user_tokens: {
-                select: {
-                  is_gmail: true,
-                  clerk_user_id: true,
-                },
-              },
-            },
-          });
-
-          if (messagesToArchive.length === 0) {
-            continue;
-          }
-
-          results.totalMessages += messagesToArchive.length;
-
-          const gmailMessagesByUser = new Map<string, string[]>();
-          const outlookMessagesByUser = new Map<string, string[]>();
-
-          for (const msg of messagesToArchive) {
-            const userId = msg.user_tokens.clerk_user_id;
-            const messageId = msg.message_id;
-
-            if (msg.user_tokens.is_gmail) {
-              const existing = gmailMessagesByUser.get(userId) || [];
-              existing.push(messageId);
-              gmailMessagesByUser.set(userId, existing);
-            } else {
-              const existing = outlookMessagesByUser.get(userId) || [];
-              existing.push(messageId);
-              outlookMessagesByUser.set(userId, existing);
-            }
-          }
-
-          for (const [userId, messageIds] of gmailMessagesByUser) {
-            try {
-              const archiveResult = await archiveGmailMessages(
-                userId,
-                messageIds,
-              );
-              if (archiveResult.success) {
-                results.archivedGmail += archiveResult.trashed || 0;
-                // Only update archive_at for successfully archived IDs
-                if (
-                  archiveResult.trashedIds &&
-                  archiveResult.trashedIds.length > 0
-                ) {
-                  await db.email_tracked.updateMany({
-                    where: {
-                      user_id: userId,
-                      message_id: { in: archiveResult.trashedIds },
-                    },
-                    data: {
-                      archive_at: now,
-                    },
-                  });
-                }
-              } else {
-                results.failed += messageIds.length;
-              }
-            } catch (error) {
-              results.failed += messageIds.length;
-              const errorMessage =
-                error instanceof Error ? error.message : String(error);
-              results.errors.push(
-                `Failed to archive Gmail messages for user ${userId}: ${errorMessage}`,
-              );
-              console.error(
-                `Failed to archive Gmail messages for user ${userId}:`,
-                error,
-              );
-            }
-          }
-
-          for (const [userId, messageIds] of outlookMessagesByUser) {
-            try {
-              const archiveResult = await archiveMessagesOutlook(
-                userId,
-                messageIds,
-              );
-              if (archiveResult.success) {
-                results.archivedOutlook += archiveResult.archived || 0;
-                // Only update archive_at for successfully archived IDs
-                if (
-                  archiveResult.archivedIds &&
-                  archiveResult.archivedIds.length > 0
-                ) {
-                  await db.email_tracked.updateMany({
-                    where: {
-                      user_id: userId,
-                      message_id: { in: archiveResult.archivedIds },
-                    },
-                    data: {
-                      archive_at: now,
-                    },
-                  });
-                }
-              } else {
-                results.failed += messageIds.length;
-              }
-            } catch (error) {
-              results.failed += messageIds.length;
-              const errorMessage =
-                error instanceof Error ? error.message : String(error);
-              results.errors.push(
-                `Failed to archive Outlook messages for user ${userId}: ${errorMessage}`,
-              );
-              console.error(
-                `Failed to archive Outlook messages for user ${userId}:`,
-                error,
-              );
-            }
-          }
+          // Shared with the immediate-sweep worker so both stay in sync.
+          const swept = await sweepArchiveRule(rule, now);
+          results.totalMessages += swept.matched;
+          results.archivedGmail += swept.archivedGmail;
+          results.archivedOutlook += swept.archivedOutlook;
+          results.failed += swept.failed;
+          results.errors.push(...swept.errors);
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
           results.errors.push(
-            `Failed to process rule for domain ${rule.domain}: ${errorMessage}`,
+            `Failed to process rule for ${rule.tag_id ? `tag ${rule.tag_id}` : `domain ${rule.domain}`}: ${errorMessage}`,
           );
           console.error(
-            `Failed to process archive rule for domain ${rule.domain}:`,
+            `Failed to process archive rule (${rule.tag_id ? `tag ${rule.tag_id}` : `domain ${rule.domain}`}):`,
             error,
           );
         }
