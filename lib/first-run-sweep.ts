@@ -9,9 +9,10 @@ import { getGmailClient, archiveGmailMessages } from "@/lib/gmail";
  *  - Gmail already sorts bulk mail into CATEGORY_* buckets (promotions, social,
  *    updates, forums). Those are the "never needed you" piles, pre-classified by
  *    Google at no cost to us.
- *  - We only ever touch mail currently in the inbox, and always exclude anything
- *    the user has signalled matters (starred / important). We never touch the
- *    Primary category.
+ *  - We only ever touch mail currently in the inbox, and exclude anything the
+ *    user explicitly STARRED. We never touch the Primary category.
+ *  - Counts are of CONVERSATIONS (threads), matching what the user sees in the
+ *    Gmail tabs — not raw message counts, which run higher.
  *
  * Cost per sweep is a handful of `messages.list` calls (5 units each) plus
  * `batchModify` calls (50 units / up to 1000 messages). A 5k-mail inbox is
@@ -35,9 +36,12 @@ export interface SweepBucket {
   categoryLabelId: string;
 }
 
-// Safety rail: never touch mail the user flagged. labelIds already pins us to the
-// inbox, so this only carries the exclusions, passed as `q` alongside labelIds.
-const SWEEP_EXCLUDE_Q = "-is:starred -is:important";
+// Safety rail: never auto-archive mail the user explicitly STARRED. We do NOT
+// exclude is:important — Gmail auto-applies "important" to a large, algorithmic
+// share of mail (not a user signal), importance doesn't remove a message from its
+// category tab, and excluding it badly undercounts the real pile. Passed as `q`
+// alongside labelIds.
+const SWEEP_EXCLUDE_Q = "-is:starred";
 
 export const SWEEP_BUCKETS: SweepBucket[] = [
   { key: "promotions", label: "Promotions", categoryLabelId: "CATEGORY_PROMOTIONS" },
@@ -78,9 +82,10 @@ export interface SweepBucketCount {
 // paginate forever. Past the cap the banner just shows "5,000+".
 const PREVIEW_COUNT_CAP = 5000;
 
-// Counts messages matching a query by tallying real ids (ids only — no bodies),
-// paginating up to the cap. Accurate, unlike resultSizeEstimate.
-async function countMessages(
+// Counts CONVERSATIONS (threads), not messages — that's the unit the user sees in
+// Gmail's tabs. messages.list counts each message in a thread separately and runs
+// higher than the inbox shows. Tallies real thread ids, paginated, capped.
+async function countThreads(
   gmail: Gmail,
   bucket: SweepBucket,
 ): Promise<{ count: number; capped: boolean }> {
@@ -88,13 +93,13 @@ async function countMessages(
   let pageToken: string | undefined;
 
   do {
-    const res = await gmail.users.messages.list({
+    const res = await gmail.users.threads.list({
       ...bucketListParams(bucket),
       maxResults: LIST_PAGE_SIZE,
-      fields: "messages/id,nextPageToken",
+      fields: "threads/id,nextPageToken",
       pageToken,
     });
-    count += res.data.messages?.length ?? 0;
+    count += res.data.threads?.length ?? 0;
     pageToken = res.data.nextPageToken ?? undefined;
   } while (pageToken && count < PREVIEW_COUNT_CAP);
 
@@ -102,9 +107,9 @@ async function countMessages(
 }
 
 /**
- * Preview for the dashboard banner. Counts the actual mail each bucket would
- * archive (real ids, capped, no bodies, no AI) so the headline number matches
- * the sweep exactly. A few `messages.list` calls per bucket — cheap.
+ * Preview for the dashboard banner. Counts CONVERSATIONS per bucket (threads,
+ * capped, no bodies, no AI) so the headline number matches what the user sees in
+ * their Gmail tabs. A few `threads.list` calls per bucket — cheap.
  */
 export async function previewFirstRunSweep(
   userId: string,
@@ -114,7 +119,7 @@ export async function previewFirstRunSweep(
   const buckets = await Promise.all(
     SWEEP_BUCKETS.map(async (bucket) => {
       try {
-        const { count, capped } = await countMessages(gmail, bucket);
+        const { count, capped } = await countThreads(gmail, bucket);
         return { key: bucket.key, label: bucket.label, count, capped };
       } catch (err) {
         console.error(`[first-sweep] preview failed for bucket ${bucket.key}:`, err);
