@@ -11,11 +11,9 @@ import {
   ChevronRight,
   Check,
   ShieldCheck,
-  UserCheck,
-  CalendarClock,
-  Lock,
   PartyPopper,
   Loader2,
+  Archive,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -23,9 +21,17 @@ import { Separator } from "@/components/ui/separator"
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
 import { useIncomingReferral } from "@/features/referral/use-referral";
+import { useFirstSweepPreview } from "@/features/first-sweep/use-first-sweep-preview";
 import { cn } from "@/lib/utils";
 import { useGeo } from "@/features/geo/use-geo";
-import { getTierPrices } from "@/lib/tiers";
+import {
+  getTierPrices,
+  planFeatures,
+  maxUpgrades,
+  annualSavingsPct,
+  TIER_LABELS,
+  TIER_DESCRIPTIONS,
+} from "@/lib/tiers";
 import { toast } from "sonner";
 import { InviteConfirm } from "@/components/InviteConfirm";
 
@@ -119,39 +125,25 @@ const stepSubtitles = (trialDays: number) => [
 
 type TrialTier = "PRO" | "MAX";
 
+// Plan cards derive their copy from lib/tiers (TIER_LABELS / TIER_DESCRIPTIONS /
+// planFeatures / maxUpgrades) — the same source the billing page reads — so the
+// onboarding paywall can't drift from real entitlements. Pro shows the full list;
+// Max shows only the deltas under an "Everything in Pro" header.
 const TRIAL_PLANS: {
   tier: TrialTier;
   name: string;
   tagline: string;
-  popular?: boolean;
+  popular: boolean;
+  isMax: boolean;
   features: string[];
-}[] = [
-  {
-    tier: "PRO",
-    name: "Pro",
-    tagline: "AI-powered inbox for busy professionals.",
-    features: [
-      "Unlimited tracked emails & labels",
-      "100 AI draft replies / month",
-      "25 archive rules",
-      "Daily digest & follow-up tracking",
-      "Telegram & Slack integrations",
-    ],
-  },
-  {
-    tier: "MAX",
-    name: "Max",
-    tagline: "Unlimited everything. For power users.",
-    popular: true,
-    features: [
-      "Everything in Pro",
-      "Unlimited AI draft replies",
-      "Unlimited archive rules",
-      "Advanced analytics",
-      "Priority support",
-    ],
-  },
-];
+}[] = (["PRO", "MAX"] as const).map((tier) => ({
+  tier,
+  name: TIER_LABELS[tier],
+  tagline: TIER_DESCRIPTIONS[tier],
+  popular: tier === "MAX",
+  isMax: tier === "MAX",
+  features: tier === "MAX" ? maxUpgrades() : planFeatures("PRO"),
+}));
 
 type BillingInterval = "monthly" | "annual";
 
@@ -176,6 +168,11 @@ export default function OnboardingPage() {
   const alreadySubscribed = subData?.subscribed === true;
   const { data: incomingReferral } = useIncomingReferral();
   const referred = incomingReferral?.referred === true;
+  // Personalized value hook for the paywall step: how much clutter their trial
+  // would clear in one click. Fetches in the background during steps 0–2, so it's
+  // ready by the paywall. Hidden when 0 / not eligible / not Gmail.
+  const { data: sweepPreview } = useFirstSweepPreview();
+  const sweepTotal = sweepPreview?.eligible ? sweepPreview.total : 0;
   const trialDays = referred ? 14 : 7;
   const dirRef = useRef(1);
   const [step, setStep] = useState(0);
@@ -341,138 +338,112 @@ export default function OnboardingPage() {
 
   return (
     <div className="-mt-[100px] min-h-screen flex flex-col md:flex-row bg-white">
-      <div className="hidden md:flex w-[38%] bg-[#f6f5f4] flex-col relative overflow-hidden">
-        <div className="flex-1 flex items-center justify-center p-12">
-          <div className="relative w-full max-w-[420px] aspect-square">
+      {step !== 3 && (
+        <div className="hidden md:flex w-[38%] bg-[#f6f5f4] flex-col relative overflow-hidden">
+          <div className="flex-1 flex items-center justify-center p-12">
+            <div className="relative w-full max-w-[420px] aspect-square">
+              <AnimatePresence mode="wait" custom={dirRef.current}>
+                <motion.div
+                  key={MASCOTS[step]}
+                  custom={dirRef.current}
+                  variants={stepVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="absolute inset-0"
+                >
+                  <Image
+                    src={MASCOTS[step]}
+                    alt="Onboarding illustration"
+                    fill
+                    className="object-contain select-none pointer-events-none"
+                    priority
+                    unoptimized
+                  />
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+          <div className="px-12 pb-10">
+            <div className="flex items-center justify-center">
+              <div className="flex items-center gap-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className={`h-1.5 rounded-full transition-all duration-500 ${
+                      i <= step ? "bg-neutral-900 w-8" : "bg-neutral-200 w-6"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 flex flex-col pt-[100px]">
+        {step !== 3 && (
+          <div className="md:hidden bg-[#f6f5f4] px-6 py-8 flex flex-col items-center gap-4">
+            <div className="relative w-50 h-50">
+              <AnimatePresence mode="wait" custom={dirRef.current}>
+                <motion.div
+                  key={MASCOTS[step]}
+                  custom={dirRef.current}
+                  variants={stepVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="absolute inset-0"
+                >
+                  <Image
+                    src={MASCOTS[step]}
+                    alt="Onboarding illustration"
+                    fill
+                    className="object-contain select-none pointer-events-none"
+                    priority
+                    unoptimized
+                  />
+                </motion.div>
+              </AnimatePresence>
+            </div>
             <AnimatePresence mode="wait" custom={dirRef.current}>
-              <motion.div
-                key={MASCOTS[step]}
+              <motion.p
+                key={step}
                 custom={dirRef.current}
                 variants={stepVariants}
                 initial="enter"
                 animate="center"
                 exit="exit"
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="absolute inset-0"
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="text-sm text-neutral-600 text-center leading-relaxed max-w-sm"
               >
-                <Image
-                  src={MASCOTS[step]}
-                  alt="Onboarding illustration"
-                  fill
-                  className="object-contain select-none pointer-events-none"
-                  priority
-                  unoptimized
-                />
-              </motion.div>
+                {currentSubtitles[step]}
+              </motion.p>
             </AnimatePresence>
-          </div>
-        </div>
-        {step === 3 && (
-          <div className="px-12 pb-5">
-            <div className="mx-auto max-w-[320px] rounded-full border border-neutral-200/70 bg-white/60 px-4 py-2.5 text-center">
-              <p className="text-xs text-neutral-600 leading-relaxed">
-                Trusted by{" "}
-                <span className="font-semibold text-neutral-900">
-                  120+ professionals
-                </span>{" "}
-                across{" "}
-                <span className="font-semibold text-neutral-900">
-                  20+ industries
-                </span>
-              </p>
+            <div className="flex items-center justify-center w-full max-w-xs pt-2">
+              <div className="flex items-center gap-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className={`h-1.5 rounded-full transition-all duration-500 ${
+                      i <= step ? "bg-neutral-900 w-8" : "bg-neutral-200 w-6"
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         )}
-        <div className="px-12 pb-10">
-          <div className="flex items-center justify-center">
-            <div className="flex items-center gap-2">
-              {[0, 1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className={`h-1.5 rounded-full transition-all duration-500 ${
-                    i <= step ? "bg-neutral-900 w-8" : "bg-neutral-200 w-6"
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 flex flex-col pt-[100px]">
-        <div className="md:hidden bg-[#f6f5f4] px-6 py-8 flex flex-col items-center gap-4">
-          <div className="relative w-50 h-50">
-            <AnimatePresence mode="wait" custom={dirRef.current}>
-              <motion.div
-                key={MASCOTS[step]}
-                custom={dirRef.current}
-                variants={stepVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="absolute inset-0"
-              >
-                <Image
-                  src={MASCOTS[step]}
-                  alt="Onboarding illustration"
-                  fill
-                  className="object-contain select-none pointer-events-none"
-                  priority
-                  unoptimized
-                />
-              </motion.div>
-            </AnimatePresence>
-          </div>
-          <AnimatePresence mode="wait" custom={dirRef.current}>
-            <motion.p
-              key={step}
-              custom={dirRef.current}
-              variants={stepVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="text-sm text-neutral-600 text-center leading-relaxed max-w-sm"
-            >
-              {currentSubtitles[step]}
-            </motion.p>
-          </AnimatePresence>
-          {step === 3 && referred && (
-            <div className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-center">
-              <PartyPopper className="h-3.5 w-3.5 shrink-0 text-emerald-700" />
-              <p className="text-xs font-medium text-emerald-800">
-                You&apos;ve been referred — enjoy 14 days free!
-              </p>
-            </div>
-          )}
-          {step === 3 && (
-            <div className="rounded-full border border-neutral-200/70 bg-white/70 px-4 py-2 text-center">
-              <p className="text-xs text-neutral-600">
-                Trusted by{" "}
-                <span className="font-semibold text-neutral-900">
-                  120+ professionals
-                </span>{" "}
-                across 20+ industries
-              </p>
-            </div>
-          )}
-          <div className="flex items-center justify-center w-full max-w-xs pt-2">
-            <div className="flex items-center gap-2">
-              {[0, 1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className={`h-1.5 rounded-full transition-all duration-500 ${
-                    i <= step ? "bg-neutral-900 w-8" : "bg-neutral-200 w-6"
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
 
         <div className="flex-1 overflow-y-auto px-5 md:p-10">
-          <div className="max-w-4xl mx-auto pt-4 md:pt-6 pb-8">
+          <div
+            className={cn(
+              "mx-auto pt-4 md:pt-6 pb-8",
+              step === 3 ? "max-w-2xl" : "max-w-4xl",
+            )}
+          >
             <AnimatePresence mode="wait" custom={dirRef.current}>
               <motion.div
                 key={step}
@@ -483,13 +454,17 @@ export default function OnboardingPage() {
                 exit="exit"
                 transition={{ duration: 0.25, ease: "easeInOut" }}
               >
-                <h1 className="hidden md:block text-[22px] font-bold tracking-tight text-neutral-900 leading-tight">
-                  {STEP_TITLES[step]}
-                </h1>
-                <p className="hidden md:block text-[14px] text-neutral-500 mt-1.5 leading-relaxed">
-                  {currentSubtitles[step]}
-                </p>
-                <Separator className="mt-4 hidden md:block" />
+                {step !== 3 && (
+                  <>
+                    <h1 className="hidden md:block text-[22px] font-bold tracking-tight text-neutral-900 leading-tight">
+                      {STEP_TITLES[step]}
+                    </h1>
+                    <p className="hidden md:block text-[14px] text-neutral-500 mt-1.5 leading-relaxed">
+                      {currentSubtitles[step]}
+                    </p>
+                    <Separator className="mt-4 hidden md:block" />
+                  </>
+                )}
 
                 <div className="mt-6 md:mt-8 space-y-8">
                   {step === 0 && (
@@ -623,155 +598,200 @@ export default function OnboardingPage() {
                   )}
 
                   {step === 3 && (
-                    <div className="space-y-5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-neutral-700">
-                          Choose a plan
-                        </span>
-                        <div className="inline-flex rounded-full border border-neutral-200 p-0.5">
-                          {(["monthly", "annual"] as const).map((opt) => (
-                            <button
-                              key={opt}
-                              type="button"
-                              onClick={() => setBillingInterval(opt)}
-                              className={cn(
-                                "px-3 py-1.5 text-xs font-medium rounded-full transition-colors flex items-center gap-1.5",
-                                billingInterval === opt
-                                  ? "bg-neutral-900 text-white"
-                                  : "text-neutral-500 hover:text-neutral-900",
-                              )}
-                            >
-                              {opt === "monthly" ? "Monthly" : "Annual"}
-                              {opt === "annual" && (
-                                <span
-                                  className={cn(
-                                    "text-[10px] font-semibold rounded px-1",
-                                    billingInterval === "annual"
-                                      ? "bg-white/20"
-                                      : "bg-emerald-100 text-emerald-700",
-                                  )}
-                                >
-                                  Save ~17%
-                                </span>
-                              )}
-                            </button>
-                          ))}
-                        </div>
+                    <div className="space-y-6">
+                      {/* Progress (relocated from the mascot panel) */}
+                      <div className="flex items-center gap-2">
+                        {[0, 1, 2, 3].map((i) => (
+                          <div
+                            key={i}
+                            className={cn(
+                              "h-1.5 rounded-full transition-all duration-500",
+                              i <= step ? "bg-neutral-900 w-8" : "bg-neutral-200 w-6",
+                            )}
+                          />
+                        ))}
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {TRIAL_PLANS.map((plan) => {
-                          const isSelected = selectedTier === plan.tier;
-                          return (
-                            <button
-                              key={plan.tier}
-                              type="button"
-                              role="radio"
-                              aria-checked={isSelected}
-                              onClick={() => setSelectedTier(plan.tier)}
-                              className={cn(
-                                "relative flex flex-col text-left rounded-2xl border p-5 cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2",
-                                isSelected
-                                  ? "border-neutral-900 bg-neutral-50 ring-1 ring-neutral-900"
-                                  : "border-neutral-200 hover:border-neutral-300",
-                              )}
-                            >
-                              {plan.popular && (
-                                <span className="absolute -top-2.5 right-4 rounded-full bg-neutral-900 px-2.5 py-0.5 text-[10px] font-semibold text-white">
-                                  Most popular
-                                </span>
-                              )}
-
-                              <div className="flex items-start justify-between gap-2">
-                                <h3 className="text-base font-bold text-neutral-900">
-                                  {plan.name}
-                                </h3>
-                                <div
-                                  className={cn(
-                                    "w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center shrink-0",
-                                    isSelected
-                                      ? "border-neutral-900 bg-neutral-900"
-                                      : "border-neutral-300",
-                                  )}
-                                >
-                                  {isSelected && (
-                                    <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                                  )}
-                                </div>
-                              </div>
-
-                              <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
-                                {plan.tagline}
-                              </p>
-
-                              <div className="mt-4 flex items-baseline gap-1">
-                                <span className="text-3xl font-bold text-neutral-900 tabular-nums">
-                                  {monthlyEquivalent(plan.tier)}
-                                </span>
-                                <span className="text-sm text-neutral-500">/mo</span>
-                              </div>
-                              <p className="text-[11px] text-neutral-400 mt-0.5 h-4">
-                                {billingInterval === "annual"
-                                  ? `${prices[plan.tier].symbol}${prices[plan.tier].annual} billed yearly`
-                                  : "billed monthly"}
-                              </p>
-
-                              <ul className="mt-4 space-y-2">
-                                {plan.features.map((feature) => (
-                                  <li
-                                    key={feature}
-                                    className="flex items-start gap-2 text-[13px] text-neutral-700"
-                                  >
-                                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
-                                    <span>{feature}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </button>
-                          );
-                        })}
+                      {/* Header */}
+                      <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 leading-tight">
+                          Start your free trial
+                        </h1>
+                        <p className="mt-1.5 text-sm leading-relaxed text-neutral-500">
+                          Full access to every feature, free for {trialDays} days.{" "}
+                          <span className="font-medium text-neutral-700">$0 today</span>{" "}
+                          — cancel anytime.
+                        </p>
                       </div>
 
-                      <div className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
-                        <div className="flex items-center gap-2">
-                          <ShieldCheck className="h-4 w-4 shrink-0 text-neutral-900" />
-                          <p className="text-xs font-semibold text-neutral-900">
-                            Why we ask for a card
+                      {referred && (
+                        <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                          <PartyPopper className="h-4 w-4 shrink-0 text-emerald-700" />
+                          <p className="text-sm font-medium text-emerald-800">
+                            You&apos;ve been referred — your trial is {trialDays} days
+                            instead of 7.
                           </p>
                         </div>
-                        <div className="mt-3 space-y-3">
-                          <div className="flex items-start gap-2.5">
-                            <UserCheck className="h-4 w-4 shrink-0 text-neutral-700 mt-0.5" />
-                            <p className="text-xs text-neutral-600 leading-relaxed">
-                              <span className="font-medium text-neutral-900">
-                                Confirms it&apos;s really you.
-                              </span>{" "}
-                              Ray works with sensitive email, so we verify every
-                              account belongs to a real person — protecting your data
-                              and everyone you correspond with.
-                            </p>
-                          </div>
-                          <div className="flex items-start gap-2.5">
-                            <CalendarClock className="h-4 w-4 shrink-0 text-neutral-700 mt-0.5" />
-                            <p className="text-xs text-neutral-600 leading-relaxed">
-                              <span className="font-medium text-neutral-900">
-                                $0 today.
-                              </span>{" "}
-                              Enjoy full access for {trialDays} days. We&apos;ll email you 1 day
-                              before your first payment — cancel anytime in one click.
-                            </p>
-                          </div>
-                          <div className="flex items-start gap-2.5">
-                            <Lock className="h-4 w-4 shrink-0 text-neutral-700 mt-0.5" />
-                            <p className="text-xs text-neutral-600 leading-relaxed">
-                              <span className="font-medium text-neutral-900">
-                                Your card stays private.
-                              </span>{" "}
-                              Encrypted and processed by our PCI-compliant payment
-                              provider. NeatMail never stores your card details.
-                            </p>
+                      )}
+
+                      {sweepTotal > 0 && (
+                        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white">
+                              <Archive className="size-[18px] text-neutral-900" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-neutral-900">
+                                <span className="tabular-nums">
+                                  {sweepTotal.toLocaleString()}
+                                </span>{" "}
+                                emails are cluttering your inbox right now
+                              </p>
+                              <p className="mt-0.5 text-xs leading-relaxed text-neutral-600">
+                                Your trial clears them all in one click — reversible,
+                                nothing deleted.
+                              </p>
+                            </div>
                           </div>
                         </div>
+                      )}
+
+                      {/* Plan chooser */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-neutral-700">
+                            Choose a plan
+                          </span>
+                          <div className="inline-flex rounded-full border border-neutral-200 p-0.5">
+                            {(["monthly", "annual"] as const).map((opt) => (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => setBillingInterval(opt)}
+                                className={cn(
+                                  "px-3 py-1.5 text-xs font-medium rounded-full transition-colors flex items-center gap-1.5",
+                                  billingInterval === opt
+                                    ? "bg-neutral-900 text-white"
+                                    : "text-neutral-500 hover:text-neutral-900",
+                                )}
+                              >
+                                {opt === "monthly" ? "Monthly" : "Annual"}
+                                {opt === "annual" && (
+                                  <span
+                                    className={cn(
+                                      "text-[10px] font-semibold rounded px-1",
+                                      billingInterval === "annual"
+                                        ? "bg-white/20"
+                                        : "bg-emerald-100 text-emerald-700",
+                                    )}
+                                  >
+                                    Save {annualSavingsPct(region)}%
+                                  </span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {TRIAL_PLANS.map((plan) => {
+                            const isSelected = selectedTier === plan.tier;
+                            const annualSavings =
+                              prices[plan.tier].monthly * 12 -
+                              prices[plan.tier].annual;
+                            return (
+                              <button
+                                key={plan.tier}
+                                type="button"
+                                role="radio"
+                                aria-checked={isSelected}
+                                onClick={() => setSelectedTier(plan.tier)}
+                                className={cn(
+                                  "relative flex flex-col text-left rounded-2xl border p-5 cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2",
+                                  isSelected
+                                    ? "border-neutral-900 bg-neutral-50 ring-1 ring-neutral-900"
+                                    : "border-neutral-200 hover:border-neutral-300",
+                                )}
+                              >
+                                {plan.popular && (
+                                  <span className="absolute -top-2.5 right-4 rounded-full bg-neutral-900 px-2.5 py-0.5 text-[10px] font-semibold text-white">
+                                    Most popular
+                                  </span>
+                                )}
+
+                                <div className="flex items-start justify-between gap-2">
+                                  <h3 className="text-base font-bold text-neutral-900">
+                                    {plan.name}
+                                  </h3>
+                                  <div
+                                    className={cn(
+                                      "w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center shrink-0",
+                                      isSelected
+                                        ? "border-neutral-900 bg-neutral-900"
+                                        : "border-neutral-300",
+                                    )}
+                                  >
+                                    {isSelected && (
+                                      <Check
+                                        className="w-3 h-3 text-white"
+                                        strokeWidth={3}
+                                      />
+                                    )}
+                                  </div>
+                                </div>
+
+                                <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
+                                  {plan.tagline}
+                                </p>
+
+                                <div className="mt-4 flex items-baseline gap-1">
+                                  <span className="text-3xl font-bold text-neutral-900 tabular-nums">
+                                    {monthlyEquivalent(plan.tier)}
+                                  </span>
+                                  <span className="text-sm text-neutral-500">/mo</span>
+                                </div>
+                                <p className="text-[11px] text-neutral-400 mt-0.5 h-4">
+                                  {billingInterval === "annual"
+                                    ? `${prices[plan.tier].symbol}${prices[plan.tier].annual} billed yearly · save ${prices[plan.tier].symbol}${annualSavings}`
+                                    : "billed monthly"}
+                                </p>
+
+                                {plan.isMax && (
+                                  <p className="mt-4 text-xs font-medium text-neutral-700">
+                                    Everything in Pro, plus
+                                  </p>
+                                )}
+                                <ul
+                                  className={cn(
+                                    "space-y-2",
+                                    plan.isMax ? "mt-2" : "mt-4",
+                                  )}
+                                >
+                                  {plan.features.map((feature) => (
+                                    <li
+                                      key={feature}
+                                      className="flex items-start gap-2 text-[13px] text-neutral-700"
+                                    >
+                                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                                      <span>{feature}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* One compact reassurance line, adjacent to the CTA */}
+                      <div className="flex items-start gap-2 text-xs leading-relaxed text-neutral-500">
+                        <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
+                        <p>
+                          <span className="font-medium text-neutral-700">$0 today.</span>{" "}
+                          We&apos;ll remind you two days before your {trialDays}-day trial
+                          ends — cancel in one click and pay nothing. Your card is
+                          encrypted, never stored.
+                        </p>
                       </div>
                     </div>
                   )}
@@ -783,7 +803,7 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between px-5 md:px-10 py-5 border-t border-neutral-100 shrink-0">
+        <div className="flex items-center justify-between gap-4 px-5 md:px-10 py-5 border-t border-neutral-100 shrink-0">
           <Button
             variant="ghost"
             onClick={goBack}
@@ -793,23 +813,37 @@ export default function OnboardingPage() {
             <ChevronLeft className="w-4 h-4" />
             Back
           </Button>
-          <Button
-            onClick={goNext}
-            disabled={!canContinue() || saving}
-            className="gap-1.5 bg-neutral-900 text-white hover:bg-neutral-800 rounded-full px-7 disabled:opacity-40"
-          >
-            {step === 3 ? (
-              <>
-                <ShieldCheck className="w-4 h-4" />
-                Start {trialDays}-day free trial
-              </>
-            ) : (
-              <>
-                Continue
-                <ChevronRight className="w-4 h-4" />
-              </>
+          <div className="flex flex-col items-end gap-1.5">
+            <Button
+              onClick={goNext}
+              disabled={!canContinue() || saving}
+              className="gap-1.5 bg-neutral-900 text-white hover:bg-neutral-800 rounded-full px-7 disabled:opacity-40"
+            >
+              {step === 3 ? (
+                saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Starting…
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4" />
+                    Start {trialDays}-day free trial
+                  </>
+                )
+              ) : (
+                <>
+                  Continue
+                  <ChevronRight className="w-4 h-4" />
+                </>
+              )}
+            </Button>
+            {step === 3 && (
+              <p className="text-[11px] text-neutral-400">
+                No charge today · Cancel anytime
+              </p>
             )}
-          </Button>
+          </div>
         </div>
       </div>
     </div>

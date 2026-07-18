@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
-import { TIER_LIMITS, getTierPrices, type TierLimits, type BillingRegion } from "@/lib/tiers";
+import { TIER_LIMITS, getTierPrices, annualSavingsPct, type TierLimits, type BillingRegion } from "@/lib/tiers";
 import { useGeo } from "@/features/geo/use-geo";
 import posthog from "posthog-js";
 
@@ -24,9 +24,11 @@ type BillingInterval = "monthly" | "annual";
 const BillingToggle = ({
   value,
   onChange,
+  savingsPct,
 }: {
   value: BillingInterval;
   onChange: (v: BillingInterval) => void;
+  savingsPct: number;
 }) => (
   <div className="inline-flex rounded-lg border border-zinc-200 bg-white p-0.5">
     <button
@@ -49,7 +51,7 @@ const BillingToggle = ({
     >
       Annual
       <span className={`text-[10px] font-medium rounded px-1 ${value === "annual" ? "bg-white/20" : "bg-emerald-100 text-emerald-700"}`}>
-        Save ~17%
+        Save {savingsPct}%
       </span>
     </button>
   </div>
@@ -150,7 +152,11 @@ export const SubscriptionModal = ({
         </DialogHeader>
 
         <div className="flex justify-end">
-          <BillingToggle value={interval} onChange={setInterval} />
+          <BillingToggle
+            value={interval}
+            onChange={setInterval}
+            savingsPct={annualSavingsPct(region)}
+          />
         </div>
 
         <div className="overflow-x-auto">

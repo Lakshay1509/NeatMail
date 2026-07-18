@@ -29,6 +29,19 @@ export function getTierPrices(region: BillingRegion): Record<Exclude<Tier, "FREE
   return region === "IN" ? TIER_PRICES_INR : TIER_PRICES;
 }
 
+/**
+ * Smallest annual discount across the paid tiers, floored — the honest figure for a
+ * single "Save N%" toggle badge, since every plan saves at least this much. Derived
+ * from the price table so the badge tracks price changes instead of drifting.
+ */
+export function annualSavingsPct(region: BillingRegion): number {
+  const p = getTierPrices(region);
+  const pcts = (["PRO", "MAX"] as const).map(
+    (t) => 1 - p[t].annual / (p[t].monthly * 12),
+  );
+  return Math.floor(Math.min(...pcts) * 100);
+}
+
 export interface TierLimits {
   maxTrackedEmails: number;
   maxCustomLabels: number;
@@ -85,6 +98,55 @@ export const TIER_LIMITS: Record<Tier, TierLimits> = {
     hasPrioritySupport: true,
   },
 };
+
+// ── Plan display (labels, descriptions, feature lines) ───────────────────────
+// Presentation derived from TIER_LIMITS so every plan surface — the billing page,
+// the onboarding paywall, the upsell modal — reads one source and can't drift.
+
+export const TIER_LABELS: Record<Tier, string> = {
+  FREE: "Free",
+  PRO: "Pro",
+  MAX: "Max",
+};
+
+export const TIER_DESCRIPTIONS: Record<Exclude<Tier, "FREE">, string> = {
+  PRO: "A calmer inbox for busy professionals.",
+  MAX: "Everything, unlimited, for power users and small teams.",
+};
+
+/**
+ * Human-readable feature lines for a plan, derived from TIER_LIMITS so a card can
+ * never drift from the real entitlements. Pro renders the full list; Max renders
+ * only the deltas (see maxUpgrades) under an "Everything in Pro" header.
+ */
+export function planFeatures(tier: Exclude<Tier, "FREE">): string[] {
+  const l = TIER_LIMITS[tier];
+  const mailboxes = l.maxTeamMembers + 1;
+  const lines = [
+    `${mailboxes} mailbox${mailboxes === 1 ? "" : "es"}`,
+    "Unlimited tracked emails & labels",
+    l.maxAiDraftsPerMonth === Infinity
+      ? "Unlimited AI draft replies"
+      : `${l.maxAiDraftsPerMonth} AI draft replies / month`,
+    l.maxArchiveRules === Infinity
+      ? "Unlimited archive rules"
+      : `${l.maxArchiveRules} archive rules`,
+    l.maxFollowUpsPerMonth === Infinity
+      ? "Unlimited follow-ups"
+      : `${l.maxFollowUpsPerMonth} follow-ups / month`,
+    "Daily digest",
+    "Telegram & Slack alerts",
+  ];
+  if (l.hasAdvancedAnalytics) lines.push("Advanced analytics");
+  if (l.hasPrioritySupport) lines.push("Priority support");
+  return lines;
+}
+
+/** Max features that Pro doesn't have — the reason to pay more, shown as a "plus" list. */
+export function maxUpgrades(): string[] {
+  const pro = new Set(planFeatures("PRO"));
+  return planFeatures("MAX").filter((line) => !pro.has(line));
+}
 
 type Interval = "monthly" | "annual";
 type Region = "IN" | "GLOBAL";

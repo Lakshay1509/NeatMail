@@ -9,60 +9,24 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { PlanChangeDialog } from "./PlanChangeDialog";
 import { ExtraMailboxesCard } from "./ExtraMailboxesCard";
-import { TIER_LIMITS, getTierPrices, type Tier, type BillingRegion } from "@/lib/tiers";
+import {
+  getTierPrices,
+  planFeatures,
+  maxUpgrades,
+  annualSavingsPct,
+  TIER_LABELS,
+  TIER_DESCRIPTIONS,
+  type Tier,
+  type BillingRegion,
+} from "@/lib/tiers";
 import { SUPPORT_EMAIL } from "@/lib/support";
 import { useGeo } from "@/features/geo/use-geo";
 import posthog from "posthog-js";
-
-const TIER_LABELS: Record<Tier, string> = {
-  FREE: "Free",
-  PRO: "Pro",
-  MAX: "Max",
-};
-
-const TIER_DESCRIPTIONS: Record<Exclude<Tier, "FREE">, string> = {
-  PRO: "A calmer inbox for busy professionals.",
-  MAX: "Everything, unlimited, for power users and small teams.",
-};
 
 const TIER_RANK: Record<Tier, number> = { FREE: 0, PRO: 1, MAX: 2 };
 
 type PaidTier = "PRO" | "MAX";
 type BillingInterval = "monthly" | "annual";
-
-/**
- * Human-readable feature lines for a plan, derived from TIER_LIMITS so the card
- * can never drift from the real entitlements. Pro renders the full list; Max
- * renders only the deltas (see maxUpgrades) under an "Everything in Pro" header.
- */
-function planFeatures(tier: PaidTier): string[] {
-  const l = TIER_LIMITS[tier];
-  const mailboxes = l.maxTeamMembers + 1;
-  const lines = [
-    `${mailboxes} mailbox${mailboxes === 1 ? "" : "es"}`,
-    "Unlimited tracked emails & labels",
-    l.maxAiDraftsPerMonth === Infinity
-      ? "Unlimited AI draft replies"
-      : `${l.maxAiDraftsPerMonth} AI draft replies / month`,
-    l.maxArchiveRules === Infinity
-      ? "Unlimited archive rules"
-      : `${l.maxArchiveRules} archive rules`,
-    l.maxFollowUpsPerMonth === Infinity
-      ? "Unlimited follow-ups"
-      : `${l.maxFollowUpsPerMonth} follow-ups / month`,
-    "Daily digest",
-    "Telegram & Slack alerts",
-  ];
-  if (l.hasAdvancedAnalytics) lines.push("Advanced analytics");
-  if (l.hasPrioritySupport) lines.push("Priority support");
-  return lines;
-}
-
-/** Max features that Pro doesn't have — the reason to pay more, shown as a "plus" list. */
-function maxUpgrades(): string[] {
-  const pro = new Set(planFeatures("PRO"));
-  return planFeatures("MAX").filter((line) => !pro.has(line));
-}
 
 /** Per-month price (annual shown as its monthly equivalent), rounded for display. */
 function perMonthPrice(tier: PaidTier, interval: BillingInterval, region: BillingRegion) {
@@ -79,15 +43,6 @@ function annualTotal(tier: PaidTier, region: BillingRegion) {
 function annualSaving(tier: PaidTier, region: BillingRegion) {
   const p = getTierPrices(region)[tier];
   return { symbol: p.symbol, amount: p.monthly * 12 - p.annual };
-}
-
-/** Smallest annual discount across tiers, floored — honest for the toggle badge. */
-function annualSavingsPct(region: BillingRegion): number {
-  const p = getTierPrices(region);
-  const pcts = (["PRO", "MAX"] as const).map(
-    (t) => 1 - p[t].annual / (p[t].monthly * 12),
-  );
-  return Math.floor(Math.min(...pcts) * 100);
 }
 
 const money = (symbol: string, amount: number) =>
