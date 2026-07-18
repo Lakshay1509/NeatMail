@@ -476,7 +476,7 @@ const app = new Hono()
           await archiveBacklogQueue.add(
             "sweep-tag-backlog",
             { userId, tagId: values.tagId },
-            { jobId: `sweep:${userId}:${values.tagId}` },
+            { jobId: `sweep-${userId}-${values.tagId}` },
           );
         } catch (err) {
           console.error("Failed to enqueue archive backlog sweep:", err);

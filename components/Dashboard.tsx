@@ -16,6 +16,7 @@ import MostEmails from "./Dashboard/MostEmails";
 import ReadVsUnread from "./Dashboard/ReadVsUnread";
 import EmailStatusBreakdown from "./Dashboard/EmailStatusBreakdown";
 import { StatCard, type StatTrend } from "./Dashboard/StatCard";
+import FirstRunSweepBanner from "./FirstRunSweepBanner";
 
 const subtitles = {
   morning: [
@@ -171,6 +172,10 @@ const Dashboard = () => {
           <DatePickerWithRange date={date} setDate={setDate} />
         </div>
       </div>
+
+      {/* First-run "Kaboom" sweep — one-tap inbox clear-out for new users.
+          Self-gates: renders nothing once swept, or for Outlook users. */}
+      <FirstRunSweepBanner />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

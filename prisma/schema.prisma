@@ -34,6 +34,11 @@ model user_tokens {
   outlook_id              String?
   is_folder               Boolean                @default(false)
   watched_folders         Json                   @default("[]")
+  // First-run "Kaboom" sweep: stamped when the user runs the one-tap onboarding
+  // inbox clear-out. Null = never swept, which is what gates the dashboard banner.
+  // Count is the running total archived by the sweep (feeds the "quieter" metric).
+  first_sweep_at          DateTime?
+  first_sweep_count       Int                    @default(0)
   draft_preference        draft_preference?
   email_tracked           email_tracked[]
   payment_history         PaymentHistory[]

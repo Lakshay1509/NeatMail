@@ -200,7 +200,7 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
             },
             {
               delay: pref.days * 24 * 60 * 60 * 1000,
-              jobId: `follow-up:outlook:${threadId}`,
+              jobId: `follow-up-outlook-${threadId}`,
             },
           );
         }

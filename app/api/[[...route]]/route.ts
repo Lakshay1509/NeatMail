@@ -27,6 +27,7 @@ import chat from './chat'
 import onboard from './onboard'
 import referral from './referral'
 import organization from './organization'
+import firstSweep from './first-sweep'
 
 export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
@@ -102,6 +103,7 @@ const routes = app
     .route('/onboard',onboard)
     .route('/referral',referral)
     .route('/organization',organization)
+    .route('/first-sweep',firstSweep)
 
 
 

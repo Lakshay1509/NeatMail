@@ -11,6 +11,7 @@ import { processClassify } from "./process-classify";
 import { processFollowUpDraft } from "./follow-up-draft";
 import { processTrialReminder } from "./trial-reminder";
 import { processArchiveBacklog } from "./archive-tag-backlog";
+import { processFirstSweep } from "./first-sweep";
 import { dbBatchQueue, classifyQueue } from "@/lib/queue";
 
 // Shared cap protecting Gmail/Outlook API quota: at most 10 jobs run at once,
@@ -99,6 +100,15 @@ export async function startWorkers() {
     lockDuration: 300_000,
   });
 
+  // One job fans a whole inbox backlog into many Gmail calls (chunked internally
+  // by the archive helpers), so keep concurrency low and the lock long.
+  const firstSweepWorker = new Worker("first-sweep", processFirstSweep, {
+    connection,
+    concurrency: 3,
+    limiter: MAIL_API_LIMITER,
+    lockDuration: 600_000,
+  });
+
   workers = [
     outlookMailWorker,
     outlookMailUpdateWorker,
@@ -111,6 +121,7 @@ export async function startWorkers() {
     followUpDraftWorker,
     trialReminderWorker,
     archiveBacklogWorker,
+    firstSweepWorker,
   ];
 
   await dbBatchQueue.add("flush-db-batch", {}, {

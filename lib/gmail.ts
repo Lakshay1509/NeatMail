@@ -1248,18 +1248,22 @@ async function trashMessagesBatch(userId: string, messageIds: string[]) {
  * inbox but stays in "All Mail". Mirrors `trashMessages`' batch-then-fallback
  * shape so the agent's archive tool behaves consistently with trash.
  */
-export async function archiveGmailMessages(userId: string, messageIds: string[]) {
+export async function archiveGmailMessages(
+  userId: string,
+  messageIds: string[],
+  addLabelIds?: string[],
+) {
   if (!messageIds || messageIds.length === 0) {
     return { success: true, archived: 0, archivedIds: [], message: "No messages to archive" };
   }
 
   const batches = chunkIds(messageIds, GMAIL_BATCH_MODIFY_LIMIT);
-  if (batches.length === 1) return archiveGmailBatch(userId, batches[0]);
+  if (batches.length === 1) return archiveGmailBatch(userId, batches[0], addLabelIds);
 
   const archivedIds: string[] = [];
   // Sequential for the same quota reason as trashMessages above.
   for (const batch of batches) {
-    const result = await archiveGmailBatch(userId, batch);
+    const result = await archiveGmailBatch(userId, batch, addLabelIds);
     archivedIds.push(...result.archivedIds);
   }
 
@@ -1272,8 +1276,15 @@ export async function archiveGmailMessages(userId: string, messageIds: string[])
   };
 }
 
-async function archiveGmailBatch(userId: string, messageIds: string[]) {
+async function archiveGmailBatch(
+  userId: string,
+  messageIds: string[],
+  addLabelIds?: string[],
+) {
   const gmail = await getGmailClient(userId);
+  // Only send addLabelIds when there's something to add — an empty array is a
+  // no-op but keeps the request body cleaner without it.
+  const addLabels = addLabelIds?.length ? { addLabelIds } : {};
 
   try {
     await gmail.users.messages.batchModify({
@@ -1281,6 +1292,7 @@ async function archiveGmailBatch(userId: string, messageIds: string[]) {
       requestBody: {
         ids: messageIds,
         removeLabelIds: ["INBOX"],
+        ...addLabels,
       },
     });
     return { success: true, archived: messageIds.length, archivedIds: [...messageIds] };
@@ -1294,7 +1306,7 @@ async function archiveGmailBatch(userId: string, messageIds: string[]) {
             await gmail.users.messages.modify({
               userId: "me",
               id: messageId,
-              requestBody: { removeLabelIds: ["INBOX"] },
+              requestBody: { removeLabelIds: ["INBOX"], ...addLabels },
             });
             return { messageId, success: true };
           } catch (err: any) {

@@ -120,6 +120,19 @@ export const archiveBacklogQueue = new Queue("archive-backlog", {
   },
 });
 
+// First-run "Kaboom" sweep: archives a new user's promo/social/updates/forums
+// backlog out of the inbox in one shot. One job per user (jobId-deduped), and
+// the archive itself is idempotent, so a retry is safe.
+export const firstSweepQueue = new Queue("first-sweep", {
+  connection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 2000 },
+    removeOnComplete: true,
+    removeOnFail: 100,
+  },
+});
+
 export const queueAdapters = [
   new BullMQAdapter(outlookMailQueue),
   new BullMQAdapter(outlookMailUpdateQueue),
@@ -132,4 +145,5 @@ export const queueAdapters = [
   new BullMQAdapter(followUpQueue),
   new BullMQAdapter(trialReminderQueue),
   new BullMQAdapter(archiveBacklogQueue),
+  new BullMQAdapter(firstSweepQueue),
 ];

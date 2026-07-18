@@ -120,7 +120,7 @@ export async function processGmailSent(
       },
       {
         delay: pref.days * 24 * 60 * 60 * 1000,
-        jobId: `follow-up:gmail:${threadId}`,
+        jobId: `follow-up-gmail-${threadId}`,
       },
     );
 

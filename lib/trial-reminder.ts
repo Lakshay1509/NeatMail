@@ -83,7 +83,7 @@ export async function maybeScheduleTrialReminder(payload: PaymentPayload) {
         },
         {
           delay,
-          jobId: `trial-reminder:${subscriptionId}`,
+          jobId: `trial-reminder-${subscriptionId}`,
           removeOnComplete: true,
           removeOnFail: false,
         },
