@@ -255,6 +255,59 @@ export async function getDigestCount(userId: string): Promise<number> {
   });
 }
 
+export interface AutoMutedSender {
+  domain: string;
+  archivedCount: number;
+}
+
+// Senders auto-muted by the engagement scan in the last 24h (see lib/engagement.ts).
+// Powers the "Muted for you" section of the daily digest; Undo lives on the
+// dashboard. Only active AUTO rules are surfaced, so an undone mute drops off.
+export async function getAutoMutedForUser(
+  userId: string,
+  since?: Date,
+): Promise<AutoMutedSender[]> {
+  // Key the window off the caller's last digest send when provided, so a mute is
+  // announced exactly once even as the daily send time drifts (±15m, DST).
+  // Falls back to a 24h window (e.g. the manual test send).
+  const cutoff =
+    since ??
+    (() => {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      return d;
+    })();
+
+  const rules = await db.archiveRule.findMany({
+    where: {
+      user_id: userId,
+      source: "AUTO",
+      isActive: true,
+      createdAt: { gte: cutoff },
+    },
+    select: { domain: true, createdAt: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const senders: AutoMutedSender[] = [];
+  for (const rule of rules) {
+    if (!rule.domain) continue;
+    const archivedCount = await db.email_tracked.count({
+      where: {
+        user_id: userId,
+        domain: rule.domain,
+        archive_at: { gte: rule.createdAt },
+      },
+    });
+    senders.push({
+      domain: await decryptDomain(rule.domain),
+      archivedCount,
+    });
+  }
+
+  return senders;
+}
+
 // Follow-up drafts are stored in email_tracked by addMailtoDB with a null
 // tag_id and an ai_action of "follow up required" (see bullmq/workers/
 // follow-up-draft.ts). That pair uniquely identifies them: every other

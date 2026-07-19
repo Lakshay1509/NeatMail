@@ -133,6 +133,20 @@ export const firstSweepQueue = new Queue("first-sweep", {
   },
 });
 
+// Periodic scan that finds high-volume senders the user almost never opens and
+// writes AUTO archive rules for them. Fired by a repeatable job (see
+// bullmq/workers/index.ts); enforcing those rules per arrival happens in the
+// mail workers, not here.
+export const engagementScanQueue = new Queue("engagement-scan", {
+  connection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 5000 },
+    removeOnComplete: true,
+    removeOnFail: 100,
+  },
+});
+
 export const queueAdapters = [
   new BullMQAdapter(outlookMailQueue),
   new BullMQAdapter(outlookMailUpdateQueue),
@@ -146,4 +160,5 @@ export const queueAdapters = [
   new BullMQAdapter(trialReminderQueue),
   new BullMQAdapter(archiveBacklogQueue),
   new BullMQAdapter(firstSweepQueue),
+  new BullMQAdapter(engagementScanQueue),
 ];

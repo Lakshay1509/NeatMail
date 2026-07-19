@@ -11,6 +11,7 @@ import {
   trimDigestForEmail,
   markEmailAsDone,
   snoozeEmail,
+  getAutoMutedForUser,
 } from "@/lib/digest";
 import { db } from "@/lib/prisma";
 import { Resend } from "resend";
@@ -162,8 +163,9 @@ const app = new Hono()
 
       const count = await getDigestCount(userId);
       const followUps = await getFollowUpsForUser(userId, 5);
+      const autoMuted = await getAutoMutedForUser(userId);
 
-      if (count === 0 && followUps.total === 0) {
+      if (count === 0 && followUps.total === 0 && autoMuted.length === 0) {
         await resend.emails.send({
           from: "NeatMail <digest@send.neatmail.app>",
           to: user.email,
@@ -210,13 +212,16 @@ const app = new Hono()
               ageText: getAgeText(f.created_at),
             })),
             followUpRemaining,
+            autoMuted,
           })
         );
 
         const subject =
           shownCount > 0
             ? `[TEST] NeatMail digest: ${shownCount} email${shownCount > 1 ? "s" : ""}`
-            : `[TEST] NeatMail digest: ${shownFollowUps} follow-up${shownFollowUps > 1 ? "s" : ""} ready`;
+            : shownFollowUps > 0
+              ? `[TEST] NeatMail digest: ${shownFollowUps} follow-up${shownFollowUps > 1 ? "s" : ""} ready`
+              : `[TEST] NeatMail: ${autoMuted.length} noisy sender${autoMuted.length > 1 ? "s" : ""} muted`;
 
         await resend.emails.send({
           from: "NeatMail <digest@send.neatmail.app>",

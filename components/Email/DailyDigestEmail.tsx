@@ -30,6 +30,11 @@ interface FollowUpEmail {
   ageText: string;
 }
 
+interface AutoMutedSender {
+  domain: string;
+  archivedCount: number;
+}
+
 interface DailyDigestEmailProps {
   totalEmails: number;
   dateLabel: string;
@@ -38,6 +43,7 @@ interface DailyDigestEmailProps {
   remainingCount?: number;
   followUps?: FollowUpEmail[];
   followUpRemaining?: number;
+  autoMuted?: AutoMutedSender[];
 }
 
 const COLORS = {
@@ -45,6 +51,7 @@ const COLORS = {
   needs_reply: "#D97706",
   new_today: "#059669",
   follow_up: "#2563EB",
+  muted: "#0D9488",
 };
 
 function emailUrl(messageId: string, isGmail: boolean): string {
@@ -61,6 +68,7 @@ export default function DailyDigestEmail({
   remainingCount,
   followUps,
   followUpRemaining,
+  autoMuted,
 }: DailyDigestEmailProps) {
   return (
     <Html>
@@ -164,6 +172,49 @@ export default function DailyDigestEmail({
                   </Text>
                 </Section>
               )}
+            </Section>
+          )}
+
+          {autoMuted && autoMuted.length > 0 && (
+            <Section style={groupSection}>
+              <Section style={groupHeader}>
+                <Text
+                  style={{
+                    ...groupLabel,
+                    color: COLORS.muted,
+                  }}
+                >
+                  Muted for you
+                </Text>
+                <Text style={groupCount}>{autoMuted.length}</Text>
+              </Section>
+
+              <Text style={mutedIntro}>
+                You rarely open these, so NeatMail now auto-archives them on
+                arrival — your inbox stays clean.
+              </Text>
+
+              {autoMuted.map((sender, i) => (
+                <Section key={i} style={item}>
+                  <Text style={itemTitle}>{sender.domain}</Text>
+                  <Text style={itemMeta}>
+                    {sender.archivedCount > 0
+                      ? `${sender.archivedCount} message${sender.archivedCount > 1 ? "s" : ""} archived`
+                      : "Auto-archiving new mail"}
+                  </Text>
+                </Section>
+              ))}
+
+              <Section style={overflowSection}>
+                <a
+                  href="https://dashboard.neatmail.app/unsubscribe"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={undoLink}
+                >
+                  Undo any of these &rarr;
+                </a>
+              </Section>
             </Section>
           )}
 
@@ -295,4 +346,20 @@ const footerText = {
   fontSize: "12px",
   color: "#a8a29e",
   margin: "0",
+};
+
+// Reuses the template's existing literal values (email HTML can't use tokens):
+// the teal matches COLORS.muted / the on-page badge, 13px matches `date`.
+const mutedIntro = {
+  fontSize: "13px",
+  color: "#78716c",
+  margin: "0 0 8px",
+  lineHeight: 1.5,
+};
+
+const undoLink = {
+  fontSize: "13px",
+  color: "#0D9488",
+  textDecoration: "none",
+  fontWeight: 600,
 };

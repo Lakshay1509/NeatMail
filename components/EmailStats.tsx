@@ -32,6 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useGetUserEmailStats } from "@/features/email/use-get-stats";
 import { useUnsubscribeDomain } from "@/features/email/use-post-unsubscribe";
 import { useArchiveMutation } from "@/features/email/use-post-archive";
+import { useUndoAutoArchive } from "@/features/email/use-undo-auto-archive";
 import { UnsubscribeFailedDialog } from "@/components/UnsubscribeFailedDialog";
 import { DateRange } from "react-day-picker";
 import { subDays } from "date-fns";
@@ -49,6 +50,7 @@ type EmailStatsRow = {
   unread_count: number;
   unread_percentage: number;
   is_archived: boolean;
+  auto_archived: boolean;
   archive_after_days: number | null;
 };
 
@@ -126,18 +128,40 @@ const ActionsCell = ({
   domain,
   displayDomain,
   isArchived,
+  autoArchived,
   archiveAfterDays,
   globalDuration,
 }: {
   domain: string;
   displayDomain: string;
   isArchived: boolean;
+  autoArchived: boolean;
   archiveAfterDays: number | null;
   globalDuration: 30 | 60;
 }) => {
   const unsubscribeMutation = useUnsubscribeDomain();
   const archiveAfterMutation = useArchiveMutation();
+  const undoAutoArchive = useUndoAutoArchive();
   const [failedDialogOpen, setFailedDialogOpen] = React.useState(false);
+
+  // Auto-muted senders just get an Undo button, not the manual Archive/Unsubscribe pair.
+  if (autoArchived) {
+    return (
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={undoAutoArchive.isPending}
+          onClick={(e) => {
+            e.stopPropagation();
+            undoAutoArchive.mutate({ domain });
+          }}
+        >
+          Undo auto-archive
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -239,10 +263,17 @@ const EmailStats = () => {
         ),
         cell: ({ row }) => (
           <div
-            className="font-medium "
+            className="flex items-center gap-2 font-medium"
             title={getDomainLabel(row.original.domain)}
           >
-            {truncateLabel(getDomainLabel(row.original.domain), 30)}
+            <span>
+              {truncateLabel(getDomainLabel(row.original.domain), 30)}
+            </span>
+            {row.original.auto_archived && (
+              <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 whitespace-nowrap dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-400">
+                Auto-archived by NeatMail
+              </span>
+            )}
           </div>
         ),
         sortingFn: "alphanumeric",
@@ -323,6 +354,7 @@ const EmailStats = () => {
               domain={domain}
               displayDomain={getDomainLabel(row.original.domain)}
               isArchived={row.original.is_archived}
+              autoArchived={row.original.auto_archived}
               archiveAfterDays={row.original.archive_after_days}
               globalDuration={archiveDuration}
             />

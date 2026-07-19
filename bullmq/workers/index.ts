@@ -12,7 +12,8 @@ import { processFollowUpDraft } from "./follow-up-draft";
 import { processTrialReminder } from "./trial-reminder";
 import { processArchiveBacklog } from "./archive-tag-backlog";
 import { processFirstSweep } from "./first-sweep";
-import { dbBatchQueue, classifyQueue } from "@/lib/queue";
+import { processEngagementScan } from "./engagement-scan";
+import { dbBatchQueue, classifyQueue, engagementScanQueue } from "@/lib/queue";
 
 // Shared cap protecting Gmail/Outlook API quota: at most 10 jobs run at once,
 // and no more than 10 new jobs start per rolling second — so a burst of 100
@@ -109,6 +110,18 @@ export async function startWorkers() {
     lockDuration: 600_000,
   });
 
+  // No Gmail/Outlook calls here, just DB reads, so no need for the mail limiter.
+  // Concurrency 1 with a long lock since one run walks every subscribed mailbox.
+  const engagementScanWorker = new Worker(
+    "engagement-scan",
+    processEngagementScan,
+    {
+      connection,
+      concurrency: 1,
+      lockDuration: 600_000,
+    },
+  );
+
   workers = [
     outlookMailWorker,
     outlookMailUpdateWorker,
@@ -122,6 +135,7 @@ export async function startWorkers() {
     trialReminderWorker,
     archiveBacklogWorker,
     firstSweepWorker,
+    engagementScanWorker,
   ];
 
   await dbBatchQueue.add("flush-db-batch", {}, {
@@ -140,6 +154,17 @@ export async function startWorkers() {
     removeOnComplete: true,
     removeOnFail: false,
     jobId: "flush-classify-repeat",
+  });
+
+  // Re-scans every 6 hours for senders the user ignores and creates AUTO
+  // archive rules. jobId keeps this a single repeatable across restarts.
+  await engagementScanQueue.add("scan", {}, {
+    repeat: {
+      pattern: "0 */6 * * *",
+    },
+    removeOnComplete: true,
+    removeOnFail: false,
+    jobId: "engagement-scan-repeat",
   });
 
   console.log("BullMQ workers started (in-process)");

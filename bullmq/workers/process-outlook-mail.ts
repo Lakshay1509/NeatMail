@@ -1,6 +1,8 @@
 import { Job } from "bullmq";
-import { getGraphClient, OAuthError } from "@/lib/outlook";
+import { getGraphClient, OAuthError, archiveMessagesOutlook } from "@/lib/outlook";
 import { db } from "@/lib/prisma";
+import { encryptDomain } from "@/lib/encode";
+import { markBufferedEmailArchived } from "@/lib/batch-insert";
 import {
   addMailtoDB,
   labelColor,
@@ -312,6 +314,38 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
     (labelName === "Pending Response" || labelName === "Action Needed") &&
     responseRequired;
 
+  // Mirrors the Gmail worker's auto-archive check. `from` is the plain sender
+  // address, same as what addMailtoDB encrypts and stores, so re-encrypting it
+  // here matches the scan's rule without decrypting anything.
+  const AUTO_ARCHIVE_EXCLUDED = [
+    "Action Needed",
+    "Pending Response",
+    "Finance",
+    "Event update",
+  ];
+  let autoArchive = false;
+  if (
+    labelName.trim().length > 0 &&
+    !AUTO_ARCHIVE_EXCLUDED.includes(labelName)
+  ) {
+    try {
+      const encryptedFrom = await encryptDomain(from);
+      const autoRule = await db.archiveRule.findUnique({
+        where: {
+          user_id_domain: {
+            user_id: subscription.clerk_user_id,
+            domain: encryptedFrom,
+          },
+        },
+        select: { isActive: true, source: true },
+      });
+      autoArchive =
+        !!autoRule && autoRule.isActive && autoRule.source === "AUTO";
+    } catch (err) {
+      console.error("[outlook-auto-archive] rule lookup failed:", err);
+    }
+  }
+
   let movedMessageId: string = messageId;
 
   if (labelName.trim().length === 0) {
@@ -397,14 +431,48 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
       classification?.ai_action,
     );
 
-    checkAndForwardToTelegram(
-      subscription.clerk_user_id,
-      from,
-      subject,
-      body,
-      tagProperties.id,
-      tagProperties.name,
-    );
+    let autoArchived = false;
+    if (autoArchive) {
+      try {
+        if (subscription.is_folder) {
+          // The move above already dropped this into the watched label folder,
+          // so just mark it archived. Don't move it again into Archive: that
+          // folder isn't watched, so a later read wouldn't fire an `updated`
+          // notification and un-mute-on-read would stop working.
+          await markBufferedEmailArchived(
+            movedMessageId,
+            new Date().toISOString(),
+          );
+        } else {
+          // Non-folder subscriptions have no watched folder to leave it in, so
+          // move it to Archive. That folder isn't watched either, which means
+          // un-mute-on-read doesn't work for these users; only explicit Undo does.
+          await archiveMessagesOutlook(subscription.clerk_user_id, [
+            movedMessageId,
+          ]);
+          await markBufferedEmailArchived(
+            movedMessageId,
+            new Date().toISOString(),
+          );
+        }
+        autoArchived = true;
+      } catch (err) {
+        console.error("[outlook-auto-archive] archive-on-arrival failed:", err);
+      }
+    }
+
+    // Only skip the notification if the archive actually succeeded; a failed
+    // archive leaves the mail visible, so the user should still get pinged.
+    if (!autoArchived) {
+      checkAndForwardToTelegram(
+        subscription.clerk_user_id,
+        from,
+        subject,
+        body,
+        tagProperties.id,
+        tagProperties.name,
+      );
+    }
   }
 
   if (shouldDraft && isDirectTo) {

@@ -341,6 +341,12 @@ model free_trial {
 enum ArchiveRuleSource {
   USER
   SEEDED
+  // Created by the engagement scan (lib/engagement.ts) for senders the user
+  // gets a lot of mail from but almost never opens. archiveAfterDays is 0: the
+  // mail workers archive their mail on arrival, and the daily sweep clears the
+  // backlog. When a user hits Undo, the row stays as a tombstone (isActive
+  // false) instead of being deleted, so the scan never re-mutes them.
+  AUTO
 
   @@schema("public")
 }

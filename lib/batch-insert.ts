@@ -5,6 +5,7 @@ import { dbBatchQueue } from "@/lib/queue";
 
 const BATCH_KEY = "batch:emails";
 const READ_HASH_KEY = "batch:emails:reads";
+const ARCHIVE_HASH_KEY = "batch:emails:archives";
 const FLUSH_SCHEDULED_KEY = "batch:emails:flush-scheduled";
 const BATCH_SIZE = 500;
 const MAX_ROUNDS = 10;
@@ -80,6 +81,22 @@ export async function markBufferedEmailRead(
   });
 }
 
+// Mirrors markBufferedEmailRead. The mail workers can auto-archive a noisy
+// sender's mail on arrival before its row has landed in the batch, so we
+// stash the archive time in Redis and let the next flush pick it up; the
+// updateMany below is just a best-effort update if the row's already there.
+export async function markBufferedEmailArchived(
+  message_id: string,
+  archived_at: string,
+): Promise<void> {
+  await redis.hset(ARCHIVE_HASH_KEY, message_id, archived_at);
+
+  await db.email_tracked.updateMany({
+    where: { message_id },
+    data: { archive_at: new Date(archived_at) },
+  });
+}
+
 export async function flushEmailBatch(): Promise<number> {
   let totalInserted = 0;
 
@@ -100,16 +117,18 @@ export async function flushEmailBatch(): Promise<number> {
     const messageIds = items.map((i) => i.m);
 
     const pendingReads = await redis.hmget(READ_HASH_KEY, ...messageIds);
+    const pendingArchives = await redis.hmget(ARCHIVE_HASH_KEY, ...messageIds);
 
     const placeholders: string[] = [];
     const params: (string | null | boolean)[] = [];
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      const base = i * 7;
+      const base = i * 8;
       const isRead = pendingReads[i] === "1";
+      const archivedAt = pendingArchives[i] ?? null;
       placeholders.push(
-        `($${base + 1}::text, $${base + 2}::uuid, $${base + 3}::text, $${base + 4}::text, $${base + 5}::text, $${base + 6}::text, $${base + 7}::boolean)`,
+        `($${base + 1}::text, $${base + 2}::uuid, $${base + 3}::text, $${base + 4}::text, $${base + 5}::text, $${base + 6}::text, $${base + 7}::boolean, $${base + 8}::timestamptz)`,
       );
       params.push(
         item.u,
@@ -119,16 +138,18 @@ export async function flushEmailBatch(): Promise<number> {
         item.s,
         item.a,
         isRead,
+        archivedAt,
       );
     }
 
     const query = `
-      INSERT INTO "email_tracked" ("user_id", "tag_id", "message_id", "domain", "ai_summary", "ai_action", "isRead")
+      INSERT INTO "email_tracked" ("user_id", "tag_id", "message_id", "domain", "ai_summary", "ai_action", "isRead", "archive_at")
       VALUES ${placeholders.join(",\n  ")}
       ON CONFLICT ("message_id") DO UPDATE SET
         "domain" = COALESCE(EXCLUDED."domain", "email_tracked"."domain"),
         "ai_summary" = COALESCE(EXCLUDED."ai_summary", "email_tracked"."ai_summary"),
-        "ai_action" = COALESCE(EXCLUDED."ai_action", "email_tracked"."ai_action")
+        "ai_action" = COALESCE(EXCLUDED."ai_action", "email_tracked"."ai_action"),
+        "archive_at" = COALESCE(EXCLUDED."archive_at", "email_tracked"."archive_at")
     `;
 
     await db.$executeRawUnsafe(query, ...params);
@@ -136,6 +157,7 @@ export async function flushEmailBatch(): Promise<number> {
     totalInserted += items.length;
     await redis.ltrim(BATCH_KEY, rawItems.length, -1);
     await redis.hdel(READ_HASH_KEY, ...messageIds);
+    await redis.hdel(ARCHIVE_HASH_KEY, ...messageIds);
   }
 
   return totalInserted;

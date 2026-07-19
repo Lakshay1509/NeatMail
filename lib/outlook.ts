@@ -722,9 +722,12 @@ export async function getPreviousOutlookMails(userId: string) {
       nextLink = (response as any)["@odata.nextLink"];
 
       for (const msg of messageList) {
-        const fullemail = msg.from?.emailAddress
-          ? `${msg.from.emailAddress.name} <${msg.from.emailAddress.address}>`
-          : "";
+        // Use the bare address, not "Name <addr>": that's what encryptDomain
+        // is called with elsewhere. Building the "Name <addr>" form here used to
+        // produce a different ciphertext for the same sender, so archive rules
+        // created from backfilled history didn't match live mail, and the stats
+        // page counted the sender twice.
+        const fullemail = msg.from?.emailAddress?.address ?? "";
 
         messages.push({
           messageId: msg.id,

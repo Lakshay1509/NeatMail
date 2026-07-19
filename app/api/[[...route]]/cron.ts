@@ -24,6 +24,7 @@ import {
   getDigestCount,
   trimDigestForEmail,
   getFollowUpsForUser,
+  getAutoMutedForUser,
 } from "@/lib/digest";
 import { formatInTimeZone } from "date-fns-tz";
 import { render } from "@react-email/render";
@@ -917,8 +918,12 @@ Also — as an early user, I'm locking in your current plan at a rate I can't of
 
           const count = await getDigestCount(userId);
           const followUps = await getFollowUpsForUser(userId, 5);
+          const autoMuted = await getAutoMutedForUser(
+            userId,
+            pref.last_sent_at ?? undefined,
+          );
 
-          if (count === 0 && followUps.total === 0) {
+          if (count === 0 && followUps.total === 0 && autoMuted.length === 0) {
             await resend.emails.send({
               from: "NeatMail <digest@send.neatmail.app>",
               to: userEmail,
@@ -963,13 +968,16 @@ Also — as an early user, I'm locking in your current plan at a rate I can't of
                   ageText: getAgeText(f.created_at),
                 })),
                 followUpRemaining,
+                autoMuted,
               })
             );
 
             const subject =
               shownCount > 0
                 ? `NeatMail digest: ${shownCount} email${shownCount > 1 ? "s" : ""}`
-                : `NeatMail digest: ${shownFollowUps} follow-up${shownFollowUps > 1 ? "s" : ""} ready`;
+                : shownFollowUps > 0
+                  ? `NeatMail digest: ${shownFollowUps} follow-up${shownFollowUps > 1 ? "s" : ""} ready`
+                  : `NeatMail: ${autoMuted.length} noisy sender${autoMuted.length > 1 ? "s" : ""} muted`;
 
             await resend.emails.send({
               from: "NeatMail <digest@send.neatmail.app>",

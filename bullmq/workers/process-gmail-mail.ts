@@ -16,6 +16,9 @@ import {
 import { getUserTier } from "@/lib/tier-guard";
 import { getModelResponse, ModelResponse } from "@/lib/model";
 import { checkAndForwardToTelegram } from "@/lib/telegram";
+import { db } from "@/lib/prisma";
+import { encryptDomain } from "@/lib/encode";
+import { markBufferedEmailArchived } from "@/lib/batch-insert";
 import { draftQueue, followUpQueue } from "@/lib/queue";
 import { gmailUserBurstLimiter } from "@/lib/rate-limit";
 
@@ -245,6 +248,35 @@ export async function processGmailMail(
       (labelName === "Pending Response" || labelName === "Action Needed") &&
       responseRequired;
 
+    // If this isn't actionable and the sender already has an active AUTO rule,
+    // archive it on arrival. Re-encrypting emailData.from gives the same
+    // ciphertext the scan stored, so this matches without decrypting anything.
+    const AUTO_ARCHIVE_EXCLUDED = [
+      "Action Needed",
+      "Pending Response",
+      "Finance",
+      "Event update",
+    ];
+    let autoArchive = false;
+    if (
+      labelName.trim().length > 0 &&
+      !AUTO_ARCHIVE_EXCLUDED.includes(labelName)
+    ) {
+      try {
+        const encryptedFrom = await encryptDomain(emailData.from);
+        const autoRule = await db.archiveRule.findUnique({
+          where: {
+            user_id_domain: { user_id: clerkUserId, domain: encryptedFrom },
+          },
+          select: { isActive: true, source: true },
+        });
+        autoArchive =
+          !!autoRule && autoRule.isActive && autoRule.source === "AUTO";
+      } catch (err) {
+        console.error("[gmail-auto-archive] rule lookup failed:", err);
+      }
+    }
+
     if (labelName === "" && !shouldDraft) {
       await addMailtoDB(clerkUserId, null, String(messageId), emailData.from);
       return { success: true, labeled: false };
@@ -278,7 +310,11 @@ export async function processGmailMail(
         await gmail.users.messages.modify({
           userId: "me",
           id: messageId,
-          requestBody: { addLabelIds: [labelId] },
+          requestBody: {
+            addLabelIds: [labelId],
+            // Auto-muted senders get INBOX dropped in the same call that labels them.
+            ...(autoArchive ? { removeLabelIds: ["INBOX"] } : {}),
+          },
         });
       } catch (err: any) {
         if (err.code === 404 || err.status === 404) {
@@ -288,14 +324,17 @@ export async function processGmailMail(
       }
 
       const { senderEmail } = parseFromHeader(emailData.from);
-      await checkAndForwardToTelegram(
-        clerkUserId,
-        senderEmail,
-        emailData.subject,
-        fullBody,
-        colourofLabel.id,
-        colourofLabel.name,
-      );
+      // Skip the Telegram ping for mail we just auto-archived.
+      if (!autoArchive) {
+        await checkAndForwardToTelegram(
+          clerkUserId,
+          senderEmail,
+          emailData.subject,
+          fullBody,
+          colourofLabel.id,
+          colourofLabel.name,
+        );
+      }
 
       await addMailtoDB(
         clerkUserId,
@@ -305,6 +344,14 @@ export async function processGmailMail(
         classificationResult?.ai_summary,
         classificationResult?.ai_action,
       );
+
+      // Stamp archive_at through the batch to match the Gmail modify above.
+      if (autoArchive) {
+        await markBufferedEmailArchived(
+          String(messageId),
+          new Date().toISOString(),
+        );
+      }
     }
 
     if (shouldDraft && isDirectTo) {

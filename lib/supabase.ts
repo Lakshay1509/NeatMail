@@ -366,6 +366,18 @@ export async function updateMessageStatus(
       return { updated: false };
     }
 
+    // Reading a message we auto-archived means the mute was wrong, so un-mute
+    // the sender. Wrapped so it can never break the read status update below;
+    // dynamic import avoids an engagement <-> supabase circular import.
+    if (is_read && exist[0].archive_at && exist[0].domain) {
+      try {
+        const { unmuteSenderOnRead } = await import("./engagement");
+        await unmuteSenderOnRead(exist[0].user_id, exist[0].domain);
+      } catch (err) {
+        console.error("[auto-unmute] failed on read:", err);
+      }
+    }
+
     const data = await db.email_tracked.updateMany({
       where: { message_id: message_id },
       data: {

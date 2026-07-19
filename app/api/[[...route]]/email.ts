@@ -178,7 +178,12 @@ const app = new Hono()
       }),
       db.archiveRule.findMany({
         where: { user_id: userId },
-        select: { domain: true, isActive: true, archiveAfterDays: true },
+        select: {
+          domain: true,
+          isActive: true,
+          archiveAfterDays: true,
+          source: true,
+        },
       }),
     ]);
 
@@ -189,7 +194,7 @@ const app = new Hono()
     const archiveMap = new Map(
       archiveRules.map((r) => [
         r.domain,
-        { isActive: r.isActive, days: r.archiveAfterDays },
+        { isActive: r.isActive, days: r.archiveAfterDays, source: r.source },
       ]),
     );
 
@@ -210,7 +215,13 @@ const app = new Hono()
           unread_count: unreadCount,
           unread_percentage:
             totalCount > 0 ? Math.round((unreadCount / totalCount) * 100) : 0,
-          is_archived: archiveSetting?.isActive ?? false,
+          // is_archived is the manual toggle only; AUTO rules show up as auto_archived instead.
+          is_archived:
+            (archiveSetting?.isActive ?? false) &&
+            archiveSetting?.source !== "AUTO",
+          auto_archived:
+            (archiveSetting?.isActive ?? false) &&
+            archiveSetting?.source === "AUTO",
           archive_after_days: archiveSetting?.days ?? null,
         };
       }),
@@ -314,8 +325,9 @@ const app = new Hono()
       });
 
       if (!existingRule) {
+        // AUTO rules are system-generated, so they don't count against the limit.
         const ruleCount = await db.archiveRule.count({
-          where: { user_id: userId },
+          where: { user_id: userId, source: { not: "AUTO" } },
         });
 
         const limitCheck = await checkFeatureLimit(userId, "maxArchiveRules", ruleCount);
@@ -354,6 +366,28 @@ const app = new Hono()
       }
 
       return ctx.json({ data }, 200);
+    },
+  )
+
+  // Undoes an engagement auto-archive: deactivates the AUTO rule instead of
+  // deleting it, so the next scan sees the tombstone and leaves this sender alone.
+  .post(
+    "/archive/auto-undo",
+    zValidator("json", z.object({ domain: z.string() })),
+    async (ctx) => {
+      const { userId } = await auth();
+      if (!userId) {
+        return ctx.json({ error: "Unauthorized" }, 401);
+      }
+
+      const { domain } = ctx.req.valid("json");
+
+      const result = await db.archiveRule.updateMany({
+        where: { user_id: userId, domain, source: "AUTO" },
+        data: { isActive: false },
+      });
+
+      return ctx.json({ ok: true, updated: result.count }, 200);
     },
   )
 
@@ -417,9 +451,10 @@ const app = new Hono()
       });
 
       // Domain and tag rules share the one maxArchiveRules allowance.
+      // AUTO rules are system-generated, so they don't count against the limit.
       if (!existingRule) {
         const ruleCount = await db.archiveRule.count({
-          where: { user_id: userId },
+          where: { user_id: userId, source: { not: "AUTO" } },
         });
 
         const limitCheck = await checkFeatureLimit(

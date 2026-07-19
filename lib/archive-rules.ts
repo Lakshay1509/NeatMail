@@ -3,6 +3,17 @@ import { archiveGmailMessages } from "@/lib/gmail";
 import { archiveMessagesOutlook } from "@/lib/outlook";
 import type { ArchiveRuleSource } from "@/prisma/generated/prisma/client";
 
+// Categories an AUTO rule must never sweep out of the inbox, matching the
+// mail workers' on-arrival guard and the scan exclusions in lib/engagement.ts.
+// Otherwise a domain-only match would archive an important message that
+// happens to arrive later from an already-muted sender.
+const AUTO_ARCHIVE_EXCLUDED_CATEGORIES = [
+  "Action Needed",
+  "Pending Response",
+  "Finance",
+  "Event update",
+];
+
 // Minimal field set so both the cron and the immediate-sweep worker can
 // `select` exactly these and pass them straight in.
 export interface ArchiveRuleForSweep {
@@ -56,6 +67,16 @@ export async function sweepArchiveRule(
         ...arrivedAfterRule,
       },
       archive_at: null,
+      // AUTO rules protect actionable/finance mail even when it later arrives
+      // from an already-muted sender; USER/SEEDED rules archive the domain
+      // wholesale (the user opted in explicitly).
+      ...(rule.source === "AUTO"
+        ? {
+            NOT: {
+              tag: { is: { name: { in: AUTO_ARCHIVE_EXCLUDED_CATEGORIES } } },
+            },
+          }
+        : {}),
     },
     select: {
       message_id: true,
