@@ -1349,9 +1349,12 @@ async function archiveGmailBatch(
 export async function getPreviousMails(userId: string) {
   const gmail = await getGmailClient(userId);
 
+  // Only backfill incoming mail. `in:inbox` drops Sent/Drafts/Spam, and
+  // `-in:sent` additionally drops self-sent mail (which carries both INBOX and
+  // SENT). Without this the history sync tracked the user's own outgoing mail.
   const listRes = await gmail.users.messages.list({
     userId: "me",
-    q: "newer_than:14d",
+    q: "in:inbox -in:sent newer_than:14d",
     maxResults: 500,
   });
 

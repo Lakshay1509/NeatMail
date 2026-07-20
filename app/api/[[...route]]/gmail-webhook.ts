@@ -192,11 +192,17 @@ const app = new Hono().post("/", async (ctx) => {
       }
     }
 
+    // Incoming mail only. A self-sent message carries both INBOX and SENT, so
+    // guard against SENT here too — otherwise the user's own mail leaks into the
+    // incoming pipeline and gets tracked/classified. Genuine sent mail (SENT and
+    // not INBOX) is handled separately below for follow-ups.
     const messages =
       history.data.history?.flatMap(
         (h) =>
-          h.messagesAdded?.filter((m) =>
-            m.message?.labelIds?.includes("INBOX"),
+          h.messagesAdded?.filter(
+            (m) =>
+              m.message?.labelIds?.includes("INBOX") &&
+              !m.message?.labelIds?.includes("SENT"),
           ) || [],
       ) || [];
 

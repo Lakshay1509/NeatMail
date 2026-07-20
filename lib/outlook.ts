@@ -709,10 +709,14 @@ export async function getPreviousOutlookMails(userId: string) {
 
   do {
     try {
+      // Scope to the Inbox folder so we only backfill incoming mail. Querying
+      // /me/messages spans every folder — including Sent Items — which tracked
+      // the user's own outgoing mail. Mirrors the live worker, which skips any
+      // message whose parentFolderId is SentItems.
       const response = nextLink
         ? await client.api(nextLink).get()
         : await client
-            .api("/me/messages")
+            .api("/me/mailFolders/inbox/messages")
             .filter(`receivedDateTime ge ${filterDate}`)
             .select("id,from,receivedDateTime,isRead")
             .top(100)

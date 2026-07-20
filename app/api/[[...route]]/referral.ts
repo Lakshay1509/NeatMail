@@ -5,6 +5,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { getOrCreateReferralCode, isReferralRedeemable, MAX_REFERRAL_MONTHS } from "@/lib/referral";
+import { isBillingOwner } from "@/lib/organization";
 
 // cursor = id of the last row from the previous page
 const listReferralsSchema = z.object({
@@ -17,6 +18,18 @@ const app = new Hono()
   .get("/code", async (ctx) => {
     const { userId } = await auth();
     if (!userId) return ctx.json({ error: "Unauthorized" }, 401);
+
+    // Only the billing owner (solo user or org admin) may refer. A non-admin
+    // team member rides the admin's plan and has no subscription of their own to
+    // push forward, so a reward could never actually be applied to them
+    // (applyReferralReward would leave it PENDING forever). Block minting a code
+    // outright rather than hand out a link that can never pay out.
+    if (!(await isBillingOwner(userId))) {
+      return ctx.json(
+        { error: "Referrals are managed by your team admin." },
+        403,
+      );
+    }
 
     const code = await getOrCreateReferralCode(userId);
 
@@ -63,6 +76,14 @@ const app = new Hono()
   .get("/status", zValidator("query", listReferralsSchema), async (ctx) => {
     const { userId } = await auth();
     if (!userId) return ctx.json({ error: "Unauthorized" }, 401);
+
+    // Same gate as /code: the referral feature is off for non-admin team members.
+    if (!(await isBillingOwner(userId))) {
+      return ctx.json(
+        { error: "Referrals are managed by your team admin." },
+        403,
+      );
+    }
 
     const { limit, cursor } = ctx.req.valid("query");
 

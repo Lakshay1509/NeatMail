@@ -28,7 +28,9 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import ReferralCard from "@/components/ReferralCard"
 import { useTierAccess } from "@/features/user/use-tier-access"
+import { useGetTeam } from "@/features/organization/use-get-team"
 import type { Tier } from "@/lib/tiers"
+import posthog, { DisplaySurveyType } from "posthog-js"
 
 const TIER_LABELS: Record<Tier, string> = {
   FREE: "Free",
@@ -42,12 +44,35 @@ const TIER_COLORS: Record<Tier, string> = {
   MAX: "#D97706",
 }
 
+// Feedback is collected through a PostHog survey instead of a third-party form.
+// Create a *popover* survey in the PostHog dashboard and set its ID in
+// NEXT_PUBLIC_POSTHOG_FEEDBACK_SURVEY_ID. displaySurvey renders PostHog's own
+// styled popover and captures the "survey sent" response automatically;
+// ignoreConditions/ignoreDelay force it open on click, bypassing the survey's
+// targeting rules and configured delay.
+const FEEDBACK_SURVEY_ID = process.env.NEXT_PUBLIC_POSTHOG_FEEDBACK_SURVEY_ID
+
+function openFeedbackSurvey() {
+  if (!FEEDBACK_SURVEY_ID) {
+    console.warn(
+      "[feedback] NEXT_PUBLIC_POSTHOG_FEEDBACK_SURVEY_ID is not set — cannot open feedback survey",
+    )
+    return
+  }
+  posthog.displaySurvey(FEEDBACK_SURVEY_ID, {
+    displayType: DisplaySurveyType.Popover,
+    ignoreConditions: true,
+    ignoreDelay: true,
+  })
+}
+
 type SidebarItem = {
   title: string
-  url: string
+  url?: string
   icon: LucideIcon
   external?: boolean
   danger?: boolean
+  onClick?: () => void
 }
 
 const items: SidebarItem[] = [
@@ -64,7 +89,7 @@ const userSettingsItems: SidebarItem[] = [
   { title: "Billing", url: "/billing", icon: Receipt },
   { title: "Team", url: "/organization", icon: Users },
   { title: "Daily Digest", url: "/settings/digest", icon: Bell },
-  { title: "Feedback", url: "https://forms.baytix.net/forms/neatmail-feedback-form-8fc4565d", icon: MessageSquareDashed, external: true },
+  { title: "Feedback", icon: MessageSquareDashed, onClick: openFeedbackSurvey },
   { title: "Danger Zone", url: "/danger", icon: AlertCircle, danger: true },
 ]
 
@@ -93,7 +118,14 @@ export function AppSidebar() {
   const { isMobile, setOpenMobile } = useSidebar()
   const pathname = usePathname()
   const { tier, isFree } = useTierAccess()
+  const { data: team } = useGetTeam()
   const [referralOpen, setReferralOpen] = useState(false)
+
+  // Non-admin team members ride the admin's plan and can't earn referral
+  // rewards (see the /api/referral/code guard), so hide "Refer and Earn" for
+  // them. Default to showing it until the role loads — solo users and admins
+  // are the common case, and the backend enforces the block regardless.
+  const isTeamMember = team?.role === "member"
 
   const handleLinkClick = () => {
     if (isMobile) setOpenMobile(false)
@@ -101,37 +133,57 @@ export function AppSidebar() {
 
   const renderItems = (items: SidebarItem[]) =>
     items.map((item) => {
-      const isActive = pathname === item.url || (item.url !== "/" && pathname.startsWith(item.url))
+      const isActive = item.url
+        ? pathname === item.url || (item.url !== "/" && pathname.startsWith(item.url))
+        : false
       const isDisabled = isFree && FREE_GATED_TITLES.has(item.title)
       const Icon = item.icon
+
+      const content = (
+        <>
+          {isActive && (
+            <motion.div
+              layoutId="activeIndicator"
+              className="absolute left-0 top-1.5 bottom-1.5 w-[2.5px] rounded-r-full bg-indigo-500"
+              transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+            />
+          )}
+          <Icon size={16} className="shrink-0 opacity-70 group-data-[active=true]/menu-button:opacity-100 group-hover:opacity-100" aria-hidden="true" />
+          <span>{item.title}</span>
+          {item.title === "Chat" && (
+            <span className="text-[9px] font-semibold tracking-wider uppercase text-[#a39e98] ml-auto px-1.5 py-0.5 rounded-full border border-[#e6e6e6] leading-none">
+              beta
+            </span>
+          )}
+        </>
+      )
+
+      const buttonClassName = cn(
+        "group/menu-button relative",
+        item.danger && "text-red-600 hover:text-red-700",
+        isDisabled && "opacity-40 pointer-events-none",
+      )
+
       return (
         <SidebarMenuItem key={item.title}>
-          <SidebarMenuButton
-            asChild
-            isActive={isActive}
-            className={cn(
-              "group/menu-button relative",
-              item.danger && "text-red-600 hover:text-red-700",
-              isDisabled && "opacity-40 pointer-events-none",
-            )}
-          >
-            <Link href={item.url} onClick={handleLinkClick} {...("external" in item && item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
-              {isActive && (
-                <motion.div
-                  layoutId="activeIndicator"
-                  className="absolute left-0 top-1.5 bottom-1.5 w-[2.5px] rounded-r-full bg-indigo-500"
-                  transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-                />
-              )}
-              <Icon size={16} className="shrink-0 opacity-70 group-data-[active=true]/menu-button:opacity-100 group-hover:opacity-100" aria-hidden="true" />
-              <span>{item.title}</span>
-              {item.title === "Chat" && (
-                <span className="text-[9px] font-semibold tracking-wider uppercase text-[#a39e98] ml-auto px-1.5 py-0.5 rounded-full border border-[#e6e6e6] leading-none">
-                  beta
-                </span>
-              )}
-            </Link>
-          </SidebarMenuButton>
+          {item.onClick ? (
+            <SidebarMenuButton
+              isActive={isActive}
+              className={buttonClassName}
+              onClick={() => {
+                item.onClick?.()
+                handleLinkClick()
+              }}
+            >
+              {content}
+            </SidebarMenuButton>
+          ) : (
+            <SidebarMenuButton asChild isActive={isActive} className={buttonClassName}>
+              <Link href={item.url!} onClick={handleLinkClick} {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>
+                {content}
+              </Link>
+            </SidebarMenuButton>
+          )}
         </SidebarMenuItem>
       )
     })
@@ -192,15 +244,17 @@ export function AppSidebar() {
               </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={() => setReferralOpen(true)}
-              className="text-xs font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground"
-            >
-              <Gift size={14} className="shrink-0" aria-hidden="true" />
-              <span>Refer and Earn</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {!isTeamMember && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => setReferralOpen(true)}
+                className="text-xs font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground"
+              >
+                <Gift size={14} className="shrink-0" aria-hidden="true" />
+                <span>Refer and Earn</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
           <Collapsible className="group/collapsible w-full">
             <SidebarMenuItem>
               <CollapsibleTrigger asChild>
@@ -220,20 +274,22 @@ export function AppSidebar() {
           </Collapsible>
         </SidebarMenu>
       </SidebarFooter>
-      <Dialog open={referralOpen} onOpenChange={setReferralOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <Gift className="h-5 w-5 text-primary" />
-              Refer and Earn
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              Share your referral link and earn free months when friends subscribe.
-            </DialogDescription>
-          </DialogHeader>
-          <ReferralCard bare />
-        </DialogContent>
-      </Dialog>
+      {!isTeamMember && (
+        <Dialog open={referralOpen} onOpenChange={setReferralOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg">
+                <Gift className="h-5 w-5 text-primary" />
+                Refer and Earn
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                Share your referral link and earn free months when friends subscribe.
+              </DialogDescription>
+            </DialogHeader>
+            <ReferralCard bare />
+          </DialogContent>
+        </Dialog>
+      )}
     </Sidebar>
   )
 }
