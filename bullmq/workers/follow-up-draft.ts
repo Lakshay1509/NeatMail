@@ -1,7 +1,13 @@
 import { Job } from "bullmq";
+import { db } from "@/lib/prisma";
 import { createGmailDraft, getGmailClient } from "@/lib/gmail";
 import { createOutlookDraft, getGraphClient } from "@/lib/outlook";
-import { useGetUserDraftPreference, addMailtoDB } from "@/lib/supabase";
+import {
+  useGetUserDraftPreference,
+  addMailtoDB,
+  getUserSubscribed,
+} from "@/lib/supabase";
+import { getUserTier } from "@/lib/tier-guard";
 import { generateFollowUpMessage } from "@/lib/sent-followup";
 import { clerkClient } from "@clerk/nextjs/server";
 
@@ -19,6 +25,35 @@ interface FollowUpDraftData {
 export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
   const { userId, messageId, threadId, subject, to, body, isGmail, aiDrafts } =
     job.data;
+
+  // Defense-in-depth: this job was enqueued with a multi-day delay
+  // (follow_up_preference.days), so the user's entitlement may have lapsed since
+  // it was scheduled — cancelled, failed to renew, disabled follow-ups, or
+  // deleted their account. Re-check at run time, mirroring the archive-backlog
+  // and first-sweep workers.
+  const tier = await getUserTier(userId);
+  if (tier === "FREE") {
+    return { status: "skipped", reason: "not subscribed" };
+  }
+
+  const sub = await getUserSubscribed(userId);
+  if (!sub.subscribed) {
+    return { status: "skipped", reason: "not subscribed" };
+  }
+
+  const followUpPref = await db.follow_up_preference.findUnique({
+    where: { user_id: userId },
+    select: {
+      enabled: true,
+      user_tokens: { select: { deleted_flag: true } },
+    },
+  });
+  if (followUpPref?.user_tokens?.deleted_flag) {
+    return { status: "skipped", reason: "account deleted" };
+  }
+  if (!followUpPref?.enabled) {
+    return { status: "skipped", reason: "follow-ups disabled" };
+  }
 
   const prefs = await useGetUserDraftPreference(userId);
 

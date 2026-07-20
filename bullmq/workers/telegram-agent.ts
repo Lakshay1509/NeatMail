@@ -1,6 +1,6 @@
 import { Job } from "bullmq";
 import { runAgent, executeLatestPending } from "@/lib/agent/orchestrator";
-import { getUserIsGmail } from "@/lib/supabase";
+import { getUserIsGmail, getUserSubscribed } from "@/lib/supabase";
 import { htmlToTelegramHtml } from "@/lib/telegramFormatter";
 import {
   deleteTelegramMessage,
@@ -16,6 +16,14 @@ interface TelegramQueryData {
 
 export async function telegramAgent(job: Job<TelegramQueryData>) {
   const { text, userId, chatId } = job.data;
+
+  // Defense-in-depth: the webhook checks subscription before enqueuing, but
+  // re-verify here in case entitlement lapsed between enqueue and processing.
+  const subscription = await getUserSubscribed(userId);
+  if (!subscription.subscribed) {
+    await sendTelegramMessage(chatId, "You are not subscribed");
+    return { skipped: true, reason: "not subscribed" };
+  }
 
   let thinkingMsgId: number | undefined | null;
 

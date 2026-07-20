@@ -11,6 +11,7 @@ import {
   incrementFollowUpCount,
 } from "@/lib/supabase";
 import { checkSentRequiresFollowUp } from "@/lib/sent-followup";
+import { getUserTier } from "@/lib/tier-guard";
 import { followUpQueue } from "@/lib/queue";
 import { gmailUserBurstLimiter } from "@/lib/rate-limit";
 
@@ -41,6 +42,14 @@ export async function processGmailSent(
   await markMessageProcessed(messageId);
 
   try {
+    // Defense-in-depth: skip lapsed/free accounts before doing any Gmail or
+    // model work, mirroring process-gmail-mail. checkFollowUpLimit below already
+    // rejects FREE (limit 0), but bailing here avoids the wasted API + model calls.
+    const tier = await getUserTier(clerkUserId);
+    if (tier === "FREE") {
+      return { skipped: true, reason: "not subscribed" };
+    }
+
     const gmail = await getGmailClient(clerkUserId);
 
     let email;
