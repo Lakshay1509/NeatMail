@@ -1,3 +1,207 @@
+e47b356 feat: enhance email handling to exclude self-sent messages and improve feedback survey integration
+fa765c5 feat: implement engagement-based auto-archive rules
+3edac70 feat(onboarding): enhance onboarding flow with updated trial plan features and savings display
+c35e166 feat(first-run-sweep): refine sweep logic to exclude only starred messages and count conversations accurately
+718367a feat(first-sweep): implement first-run inbox sweep feature with preview and undo capabilities
+3d52d66 feat: implement auto-archive functionality for user tags
+48e6ffb feat(dashboard): reorganize components in Dashboard for improved layout and clarity
+79eb394 feat(dashboard): remove InsightHighlights component and related new senders logic; update layout for label distribution
+aee863f feat(readme): enhance README with clearer description, additional links, and new sections for team and industry use cases
+d87ea67 feat(auth): enhance OAuth error handling and reconnect notifications for Gmail and Outlook
+5c28edd feat(billing): enhance billing page with additional information and support contact
+b209c7c refactor(payment): rename presentmentRecurring to planRecurring and update logic for recurring charges
+d088e63 feat(payment): implement presentment currency handling for recurring charges and credits
+247a96f refactor(payment): replace currency-based region inference with plan-based resolution
+e357d45 fix(billing): update region logic in ExtraMailboxesCard to use geo information
+9ee9e0a feat(ui): enhance styling of ExtraMailboxesCard for improved readability
+d55e39d feat(migration): add migration to backfill solo organizations for pre-existing signups
+eebb7ed feat(billing): add mailboxes feature label and update formatFeatures for tier limits
+31c3e99 fix(dodo): correct DodoDisputeData.amount to string, matching DodoPay's actual webhook contract
+7dffc91 feat(referral): implement teammate referral guard to prevent circular rewards
+0429ccc feat(ui): implement ConfirmDialog for consistent destructive action confirmations in TeamSettings
+79ecf04 feat: add support for extra mailbox add-ons in subscriptions
+a3fcaae fix(ui): update AppSidebar, user settings, sign-in, onboarding, and Resend lib
+4fead6b fix(email): update Outlook workers, watch activation, cron, and Gmail webhook
+99d994a feat(db): update schema with org fields and add migrations for invite tokens, member active flag, and trial flag
+3ad6ae8 feat(billing): update checkout, subscription, billing page, and user deletion with org support
+59bb079 feat(org): add organization API, pages, components, and route registration
+cf10499 feat(org): add organization hooks for invite, team, and member management
+10bf11d feat: implement organization-aware billing tier resolution for users
+7b72bac feat: add organization and organization_members models with relationships and roles
+4243e75 feat: implement per-user burst limiter for Gmail processing to prevent mailbox flooding
+08b3c9b feat: implement Gmail processing queues and workers for incoming and sent messages
+e9f9cd2 feat: migrate from Azure OpenAI to OpenAI API by updating environment variables and references
+995b869 feat: extend timeout for classification polling from 60 seconds to 600 seconds
+3d05a89 feat: update metadata and add new favicon assets for improved branding
+b9816f9 feat: replace Checkbox with Switch component in user preferences and enhance save state handling
+877d91e feat: implement edit label functionality with validation and API integration
+972a2fd feat: enhance input validation for tag name and description, update greeting logic in Dashboard, and adjust button size in LabelsNotInGmail
+3dfbb68 feat(billing): add billing portal access for subscriptions on hold
+4362291 feat: add referral system with referral code generation, tracking, and rewards
+54df078 feat: implement follow-up feature with mandatory "Resolved" tag and related checks
+b8334ab refactor: remove 'Discussion' label and related checks from email processing
+d81ab50 feat(chat): implement chat session management and message persistence
+936cd17 feat: improve chat markdown styling and enhance date formatting for emails
+aea3dd6 Refactor email handling: Introduce provider-agnostic types, remove Gmail and Outlook specific implementations
+17bd6f4 feat: enhance attachment resolution by implementing fallback to most recent candidate for generic requests
+ff89298 feat: enhance attachment resolution by adding keyword-based search for Outlook attachments
+2894f43 feat: update sign-in page header and description for improved clarity
+9659124 feat: add carousel functionality to sign-in page with new images for enhanced user experience
+668567d feat: enhance attachment resolution by including email subject and confidence level in draft processing
+515873f feat: implement attachment auto-resolution for drafts, enhancing file retrieval and attachment capabilities
+b211974 feat: add follow-up email functionality to daily digest, including retrieval and display of follow-ups
+6b02768 fix: update pricing tiers for Pro and Max plans, remove free tier option
+3105ba5 feat: enhance onboarding page with trust and reassurance messaging for card verification
+3423f78 feat: add comprehensive agent guide for NeatMail including build, architecture, pricing, and API details for claude
+27cf288 Merge pull request #19 from Lakshay1509/fix/trial-tier-and-watch-teardown
+9e86a06 fix: degrade tier on trial expiry, deactivate watch on delete, harden watch teardown
+65c8c60 feat: implement reconnect reminder system to notify users when OAuth token is revoked
+b221868 feat: integrate UnsubscribeFailedDialog for improved unsubscribe error handling
+9c0f408 feat: implement trial reminder system for card-required free trials
+19f36e7 Implement code changes to enhance functionality and improve performance
+e016e92 feat: enhance UserLabel component to handle loading states and stale data
+707c334 feat: add UnsubscribeFailedDialog component for handling unsubscribe failures
+ac665a4 feat: update pricing for PRO and MAX tiers and adjust tier limits
+ca7489a feat: implement card-required free trial logic and enhance onboarding flow
+1678406 feat: adjust layout spacing in Navbar and AppSidebar, update sidebar width for consistency
+ac5e120 feat: update license to Elastic License 2.0 and modify README for consistency
+0afb377 feat: add new endpoint for tracking new senders and integrate into dashboard insights
+2988475 feat(dashboard): enhance email statistics and insights
+f08d6f3 feat: add detailed logging for OAuth scopes retrieval process
+a4fbc67 feat: enhance Google API integration to check Gmail access and scopes
+40ac4b1 feat: update ConditionalSidebar to hide on the onboard-complete page
+fb84571 sign-in: redesign page with tagline, mascot, trust badges
+156255a onboarding: replace bare redirect with 4-step wizard + OAuth re-auth flow
+6b97612 feat: add user_defined property to tags for enhanced user identification
+0bae875 feat: update email digest logic to send only to users with active subscriptions or trials
+a05e23e feat: enhance email classification logic to include handling for read-only and discussion tags
+22fdc1b feat: refine email classification logic by filtering out specific tags for improved accuracy
+b995e51 feat: enhance noReplyNeeded detection logic with comprehensive read-only signals
+5b7e6b2 feat: enhance email extraction logic and update follow-up tracking descriptions in Billing component
+1058fa9 refactor: comment out addMailtoDB calls in follow-up draft processing and WatchedFolderSelect component
+3e2d8b3 feat: implement follow-up message handling for Gmail and Outlook, including moving messages to inbox and marking as unread
+31b5b83 fix: correct spelling of "Follow-up" in sidebar items
+a6ed55c feat: update AI model parameters and enhance response handling in follow-up checks
+aaa9482 feat: update follow-up detection logic and improve AI model parameters
+9b3a2ef feat: implement follow-up limits and tracking for user preferences
+7d30495 feat: add throttling to sendNewMails endpoint to avoid rate limits
+05b36d0 feat: add follow-up preferences to onboarding and update EmailCategorizationModal with default values
+0b7b381 feat: refactor follow-up handling by removing redundant database calls in Gmail and Outlook processing
+d1baea5 feat: add follow-up detection, AI draft generation, and preference management
+9906b38 feat(digest): enhance DailyDigestEmail with message_id and is_gmail support for dynamic email links
+2a0bf00 feat(digest): increase trimmed digest emails from 5 to 10 and update related components
+b1d1fc3 feat(digest): implement animated BeamAvatar component and enhance DigestRow with formatted date and time
+a24fe50 feat(digest): add completed tab with dedicated API and redesign digest section
+acf9d02 feat(docker): add PostHog project token and host as build arguments and environment variables
+020d04b feat(integration): add PostHog tracking for user events and onboarding processes
+9fb5051 feat(onboarding): enhance user token upsert with email and Gmail provider check
+9f9a8c0 feat(onboarding): update onboarding page title and adjust sidebar visibility logic
+50220a4 feat(user-email): prioritize primary email address in user-related API responses
+e03cdeb feat(onboarding): create onboarding API endpoint and implement onboarding page fix(SignInOrInvite): update redirect URLs for sign-in and sign-up flows
+b8ba85a feat(EmailCategorizationModal): add loading steps and interval for onboarding process
+398e075 feat(onboarding): implement onboarding API and integrate with email categorization modal
+46aad5c fix(chat-mobile): reduce horizontal/vertical padding on small screens
+f8fddc7 fix(chat-mobile): use dvh for viewport height, add safe-area-inset-bottom padding
+ba64dba docs: add DESIGN.md to notion/
+71f7b0b chore(deps): add react-markdown and remark-gfm for chat markdown rendering
+d71ebca feat(chat-frontend): add chat UI components with markdown rendering, sidebar integration
+584cbe4 feat(chat-backend): add AI agent tools (create_draft, trash_messages, web attachments)
+551c812 feat: update free trial condition to allow null or inactive status
+068498b feat: implement tier-based feature restrictions and update UI components for free users
+2f1d1b8 feat: update tag name from "Action Needed" to "Automated alerts" in email processing logic
+188d107 feat: enhance DigestSection with animation for email actions and improve UI elements
+33d89e9 feat: update tag name from "Action Needed" to "Automated alerts" in email processing logic
+d826f5b feat: simplify DigestRow component styling by removing unnecessary transition effects
+d52eecb feat: improve digest section styles and add skeleton loading state
+278f46e feat: skip free users with no tracked emails in the last 24 hours for digest processing
+3fa8a0c feat: add confetti animation to onboarding success dialog and update styles
+de4152e feat: enhance processing logic for digest emails in Gmail and Outlook handlers
+e6b86ae feat: enhance label correction logic to include null user IDs for tags in Gmail and Outlook
+ef31023 feat: add NeatMail footer to Gmail and Outlook draft emails
+d138110 fix: enable free trial users to select PRO plan in billing
+30dd6a5 feat: add free trial activation functionality and enhance onboarding process
+4b4dcf2 feat: verify tag existence in database before sending corrections in Gmail and Outlook handlers
+ea7c0ed feat: implement OAuthError class and enhance error handling in Gmail client
+32d800a feat: update tier limits for free users to allow AI drafts and enable digest feature
+453496e feat: enhance sidebar item rendering with tier-based access control
+f90239e feat: ensure history ID is updated as a string in Gmail webhook processing
+f45cb96 feat: reduce batch size for classification jobs from 10 to 5
+df442a7 feat: update subscription checks to use tier-based limits for free users in Outlook mail processing
+fbe9d0c feat: update subscription checks for free tier users in Outlook/Gmail mail processing
+737a4c6 feat: remove deprecated endpoint for deactivating expired watch subscriptions
+648c75c feat: refine no-reply detection rules and clarify sender patterns for email processing
+b9b4acb feat: add tier-based display in AppSidebar with color indicators
+60e6a27 feat: enhance Navbar session management and update WelcomeDialog subscription handling
+d378d9a feat: add session listener to Navbar for welcome dialog management
+963dac7 feat: update trial promotion message from Pro to Max tier in CanTakeFreeTrial component
+4359e35 feat: implement region-aware pricing and update subscription tiers with INR support
+ae972c3 feat: update subscription tier from PRO to MAX for users with active trials
+3c6077b feat: upgrade existing PRO subscribers to MAX tier and enhance support features
+97ef8a9 feat: implement tier-based access control for various features and add draft count tracking
+dbba4ad fix: update analytics section to dashboard in pricing strategy
+d09b3bf fix: update analytics tier details in pricing strategy
+31151fa feat: add support for renewing watches for free users in cron job
+be1ea24 chore: update env example with tier product IDs, add pricing strategy doc
+9597702 feat: frontend — tier gating, onboarding flow, billing cards, plan preview dialog
+7ac325c feat: tier-aware API endpoints — checkout, changePlan, preview, trial, limits
+e78180d feat: core tier infrastructure — limits, webhook sync, tier hooks
+737b15c feat: add Tier enum and field to user_tokens with migration
+695e4ed fix: add challenges.cloudflare.com to CSP script-src and frame-src for Turnstile
+7de49b6 refactor: remove allowedToken model and associated migration
+826a3c0 refactor: remove unused authentication and invite handling code
+f930fcd fix: tighten draft prompt to prevent over-elaborate replies
+df2e126 fix: increase API timeout settings for draft and model requests
+8a4f157 fix: adjust memory settings and improve email digest messaging
+85194e5 feat: add comprehensive health check endpoint at /api/health
+4b0dc47 fix(github): remove global search fallback for repo resolution to prevent leaking unrelated public repos
+cfed5a7 feat(draft): expand style mirroring to cover emojis, expressiveness, capitalization, abbreviations, and sign-offs
+7dd9eb1 fix(draft): replace bracket placeholders with natural human replies in prompt examples
+c9ddea2 fix(draft): increase MAX_OUTPUT_TOKENS from 600 to 4096 to prevent finish_reason=length truncation
+a4407c3 fix: deduplicate batch by message_id to prevent ON CONFLICT error 21000
+4985348 feat(github): enhance repo resolution and add search fallback
+54048b6 feat: batch email classification via Redis buffer queue
+6892e79 fix(draft): guard against empty OpenAI response to prevent JSON parse crash
+80cbca2 fix(build): restrict instrumentation + workers to Node.js runtime
+c1de8bc perf(db): batch email inserts via Redis buffer + BullMQ
+30f925c fix(csp): add media-src for Cloudinary; redesign SubscriptionModal
+dfed38a fix(docker): copy @bull-board to runtime (dynamically required by @bull-board/api)
+a5e690c fix(docker): use oven/bun:1-alpine instead of manual Bun install on Alpine
+f8cc787 fix(docker): add bash to Alpine deps (Bun install script requires it)
+0eeb958 perf(docker): reduce image size ~82% (900MB → 160MB) with Alpine + in-process workers
+9d4d3b8 fix(calendar): fix regex character-class range bug in timePart extraction
+7ae5ab7 fix(calendar): handle ISO 8601 interval format from draft API
+03dbfe6 fix(calendar): use DB timezone over ISO offset, cross-check FreeBusy with events.list
+0743565 revert: removeOnComplete back to true to prevent Redis RDB bloat
+3f0909a fix: keep last 50 completed jobs and increase lockDuration for long-running workers
+a05e47a feat:refactored the dashboard ui
+f834a33 fix: check for error field in unsubscribe response even on HTTP 200
+e2db39f fix: show 'Message already deleted or moved' on unsubscribe 404
+3cdea3b fix: handle 404 gracefully when messages are manually deleted by user
+77752fc security: add min password length, global rate limit, and auth failure delay to bullboard
+0198f83 security: harden bullboard auth with rate limiting, timing-safe comparison, and audit logging
+1e0abe6 refactor: remove debug logs from bullboard auth middleware
+7fad3a6 debug: add hex dump of bullboard password to identify extra byte
+662a13b fix: improve basic auth password parsing and add debug logs for bullboard
+28841a0 fix:added some debug statmenets in api/bullboard
+530852c docs: update Inngest references to BullMQ across README, AGENTS.md, and tags.ts
+5d3a9c9 refactor: replace Inngest with BullMQ for background job processing
+78f69bf feat:added the condition to check for google verification in oauth
+b6705fb fix:updated the supabase.ts to not encrypt non empty strings
+10b33b6 fixed: chnaged prompt in pipeline to give better results
+c9e9489 fix:fixed the post-reply to update the isDone instead of is_read in db
+a043867 fixed: refactor the email digest template to remove redundant elements
+ed24535 fix: improve message body formatting in DigestRow component
+71f24fc feat: replace is_read with isDone in email tracking and update schema
+88657b7 feat: add message body retrieval and reply functionality in digest section
+99e2ca3 fix: set default enabled state to false and remove timezone state
+d75fb6e fix: limit digest email to 5 items and simplify email template
+d0ec301 fix: remove auto-create of digest preferences on GET
+6b31b01 Merge pull request #15 from Lakshay1509/feature/daily-digest
+92d3af0 fix: encrypt ai_summary and ai_action at rest in the database
+ecdf778 feat: add digest UI pages and restructure sidebar
+0cc4a05 feat: add daily digest backend with cron job and email template
+d045b57 feat: add digest schema and AI summary/action pipeline
+c980311 chore: update changelog and commits file for version 1.7.0 with recent features, changes, and documentation updates
 5bf9e23 feat: implement user deletion functionality in draft and model services with error handling
 205eb4e fix: optimize getLastSentMessageInThreadOutlook by directly querying sent items and improving filter criteria
 216533e feat: add Google verification email handling for history sync in email route to be removed after verification

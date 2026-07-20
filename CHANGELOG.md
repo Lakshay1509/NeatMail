@@ -7,6 +7,300 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.27.0] — 2026-07-20
+
+### Added
+- Engagement-based auto-archive rules — auto-mute senders a user consistently ignores (`fa765c5`)
+- Feedback survey integration in the app (`e47b356`)
+
+### Changed
+- Email handling excludes self-sent messages from tracking and processing (`e47b356`)
+
+## [1.26.0] — 2026-07-18
+
+### Added
+- First-run inbox sweep with preview and one-click undo (`718367a`)
+- Auto-archive functionality for user tags (`3d52d66`)
+
+### Changed
+- Onboarding flow updated with trial plan features and savings display (`3edac70`)
+- First-run sweep refined to exclude only starred messages and count conversations accurately (`c35e166`)
+- Dashboard components reorganized for improved layout and clarity (`48e6ffb`)
+
+### Removed
+- InsightHighlights component and related new-senders logic (`79eb394`)
+
+## [1.25.0] — 2026-07-16
+
+### Added
+- Extra mailbox add-ons for subscriptions — paid seats via DodoPay (`79ecf04`)
+- `ConfirmDialog` for consistent destructive-action confirmations in TeamSettings (`0429ccc`)
+- Teammate referral guard to prevent circular rewards (`7dffc91`)
+- "Mailboxes" feature label; `formatFeatures` updated for tier limits (`eebb7ed`)
+- Migration to backfill solo organizations for pre-existing signups (`d55e39d`)
+
+### Changed
+- Payment region inference switched from currency-based to plan-based resolution (`247a96f`)
+- Presentment currency handling for recurring charges and credits (`d088e63`); `presentmentRecurring` renamed to `planRecurring` (`b209c7c`)
+- `ExtraMailboxesCard` region logic now uses geo information (`e357d45`); styling improved (`9ee9e0a`)
+- Billing page enhanced with additional information and support contact (`5c28edd`)
+- OAuth error handling and reconnect notifications enhanced for Gmail and Outlook (`d87ea67`)
+- README enhanced with clearer description, links, and team/industry use cases (`aee863f`)
+
+### Fixed
+- `DodoDisputeData.amount` corrected to string, matching DodoPay's webhook contract (`31c3e99`)
+
+## [1.24.0] — 2026-07-14
+
+### Added
+- Organizations & teams — `organization` and `organization_members` models with roles (`7b72bac`)
+- Organization-aware billing tier resolution for users (`10bf11d`)
+- Organization hooks for invite, team, and member management (`cf10499`)
+- Organization API, pages, components, and route registration (`59bb079`)
+- Schema org fields and migrations for invite tokens, member active flag, and trial flag (`99d994a`)
+
+### Changed
+- Checkout, subscription, billing page, and user deletion updated with org support (`3ad6ae8`)
+- AppSidebar, user settings, sign-in, onboarding, and Resend lib updated for orgs (`a3fcaae`)
+- Outlook workers, watch activation, cron, and Gmail webhook updated for orgs (`4fead6b`)
+
+## [1.23.0] — 2026-07-12
+
+### Added
+- Gmail processing queues and workers for incoming and sent messages (`08b3c9b`)
+- Per-user burst limiter for Gmail processing to prevent mailbox flooding (`4243e75`)
+- Edit-label functionality with validation and API integration (`877d91e`)
+- New favicon assets and updated metadata for branding (`3d05a89`)
+
+### Changed
+- Migrated from Azure OpenAI to the OpenAI API (`e9f9cd2`)
+- Classification polling timeout extended from 60s to 600s (`995b869`)
+- Checkbox replaced with Switch in user preferences; save-state handling enhanced (`b9816f9`)
+- Input validation for tag name/description; Dashboard greeting logic refined (`972a2fd`)
+
+## [1.22.0] — 2026-07-09
+
+### Added
+- Referral system — referral code generation, tracking, and rewards (`4362291`)
+- Billing portal access for subscriptions on hold (`3dfbb68`)
+
+## [1.21.0] — 2026-07-07
+
+### Added
+- Chat session management and message persistence (`d81ab50`)
+- Follow-up feature with a mandatory "Resolved" tag and related checks (`54df078`)
+- Keyword-based attachment search for Outlook; fallback to most recent candidate for generic requests (`ff89298`, `17bd6f4`)
+
+### Changed
+- Email handling refactored to provider-agnostic types; Gmail/Outlook-specific implementations removed (`aea3dd6`)
+- Chat markdown styling improved; email date formatting enhanced (`936cd17`)
+
+### Removed
+- "Discussion" label and related checks from email processing (`b8334ab`)
+
+## [1.20.0] — 2026-07-02
+
+### Added
+- Attachment auto-resolution for drafts — file retrieval and attachment capabilities (`515873f`)
+- Email subject and confidence level included in attachment resolution (`668567d`)
+- Follow-up email functionality in the daily digest (`b211974`)
+- Carousel on the sign-in page with new imagery (`9659124`)
+- Comprehensive agent guide (`CLAUDE.md`) — build, architecture, pricing, and API details (`3423f78`)
+
+### Changed
+- Onboarding page enhanced with trust and reassurance messaging for card verification (`3105ba5`)
+- Sign-in page header and description updated for clarity (`2894f43`)
+
+### Fixed
+- Pricing tiers updated for Pro and Max; free-tier option removed (`6b02768`)
+- Tier degraded on trial expiry; watch deactivated on delete; watch teardown hardened (`9e86a06`)
+
+## [1.19.0] — 2026-06-29
+
+### Added
+- Card-required free trial logic with an enhanced onboarding flow (`ca7489a`)
+- Trial reminder system for card-required free trials (`9c0f408`)
+- Reconnect reminder system to notify users when an OAuth token is revoked (`65c8c60`)
+- `UnsubscribeFailedDialog` for improved unsubscribe error handling (`707c334`, `b221868`)
+
+### Changed
+- Pricing updated for PRO and MAX tiers; tier limits adjusted (`ac665a4`)
+- `UserLabel` component handles loading states and stale data (`e016e92`)
+- Navbar and AppSidebar layout spacing; sidebar width normalized (`1678406`)
+
+## [1.18.0] — 2026-06-26
+
+### Added
+- New-senders tracking endpoint integrated into dashboard insights (`0afb377`)
+- Dashboard email statistics and insights enhanced (`2988475`)
+
+### Changed
+- License updated to Elastic License 2.0; README updated for consistency (`ac5e120`)
+- `ConditionalSidebar` hidden on the onboard-complete page (`40ac4b1`)
+- Google API integration checks Gmail access and scopes (`a4fbc67`, `f08d6f3`)
+
+## [1.17.0] — 2026-06-23
+
+### Added
+- 4-step onboarding wizard replacing the bare redirect, with an OAuth re-auth flow (`156255a`)
+- `user_defined` property on tags for identification (`6b97612`)
+
+### Changed
+- Sign-in page redesigned with tagline, mascot, and trust badges (`fb84571`)
+- Email digest sent only to users with an active subscription or trial (`0bae875`)
+- Email classification: read-only/discussion tag handling and expanded `noReplyNeeded` read-only signals (`a05e23e`, `b995e51`, `22fdc1b`)
+
+### Fixed
+- "Follow-up" spelling corrected in sidebar items (`31b5b83`)
+
+## [1.16.0] — 2026-06-19
+
+### Added
+- Follow-up system — detection, AI draft generation, and preference management (`d1baea5`)
+- Follow-up limits and tracking for user preferences (`9b3a2ef`)
+- Follow-up preferences in onboarding; default values in `EmailCategorizationModal` (`05b36d0`)
+- Follow-up message handling for Gmail and Outlook — move to inbox, mark unread (`3e2d8b3`)
+- Digest "Completed" tab with a dedicated API; digest section redesigned (`a24fe50`)
+- Animated `BeamAvatar` component; `DigestRow` with formatted date/time (`b1d1fc3`)
+
+### Changed
+- `DailyDigestEmail` supports `message_id` and `is_gmail` for dynamic email links (`9906b38`)
+- Trimmed digest emails increased from 5 to 10 (`2a0bf00`)
+- Throttling added to the `sendNewMails` endpoint to avoid rate limits (`7d30495`)
+- AI model parameters tuned for follow-up checks (`a6ed55c`, `aaa9482`)
+
+## [1.15.0] — 2026-06-16
+
+### Added
+- PostHog tracking for user events and onboarding (`020d04b`)
+- PostHog project token and host wired as Docker build args and env vars (`acf9d02`)
+
+### Changed
+- User-token upsert enhanced with email and Gmail provider check (`9fb5051`)
+- Onboarding page title and sidebar visibility logic updated (`9f9a8c0`)
+- Primary email address prioritized in user-related API responses (`50220a4`)
+
+## [1.14.0] — 2026-06-13
+
+### Added
+- AI chat agent — backend tools (`create_draft`, `trash_messages`, web attachments) (`584cbe4`)
+- Chat UI with markdown rendering and sidebar integration (`d71ebca`)
+- Onboarding API integrated with the email categorization modal (`398e075`, `e03cdeb`)
+- Loading steps and interval in `EmailCategorizationModal` during onboarding (`b8ba85a`)
+
+### Changed
+- `react-markdown` and `remark-gfm` added for chat markdown rendering (`71f7b0b`)
+
+### Fixed
+- Chat mobile: `dvh` viewport height, safe-area padding, reduced padding on small screens (`f8fddc7`, `46aad5c`)
+
+### Docs
+- `DESIGN.md` added to `notion/` (`ba64dba`)
+
+## [1.13.0] — 2026-06-12
+
+### Added
+- Free trial activation with onboarding integration (`30dd6a5`)
+- `OAuthError` class with enhanced error handling in the Gmail client (`ea7c0ed`)
+- NeatMail footer on Gmail and Outlook draft emails (`ef31023`)
+
+### Changed
+- Tier-based feature restrictions and UI updates for free users (`068498b`)
+- Confetti animation on the onboarding success dialog (`3fa8a0c`)
+- Classification batch size reduced from 10 to 5 (`f45cb96`)
+- "Action Needed" tag renamed to "Automated alerts" (`2f1d1b8`)
+
+### Fixed
+- Free trial users can select the PRO plan in billing (`d138110`)
+- History ID updated as a string in Gmail webhook processing (`f90239e`)
+
+## [1.12.0] — 2026-06-07
+
+### Added
+- Tier system — `Tier` enum and field on `user_tokens` with migration (`737b15c`)
+- Core tier infrastructure — limits, webhook sync, tier hooks (`e78180d`)
+- Tier-aware API endpoints — checkout, changePlan, preview, trial, limits (`7ac325c`)
+- Frontend tier gating, onboarding flow, billing cards, and plan preview dialog (`9597702`)
+- Region-aware pricing with INR support (`4359e35`)
+- Draft count tracking with tier-based access control (`97ef8a9`)
+
+### Changed
+- Existing PRO subscribers upgraded to MAX tier; support features enhanced (`3c6077b`)
+- Trial subscription tier set to MAX (`ae972c3`)
+- Watch renewal supported for free users in cron (`31151fa`)
+
+### Docs
+- Env example updated with tier product IDs; pricing strategy doc added (`be1ea24`)
+
+## [1.11.0] — 2026-06-02
+
+### Added
+- Health check endpoint at `/api/health` (`85194e5`)
+- Batch email classification via a Redis buffer queue (`54048b6`)
+
+### Changed
+- Draft `MAX_OUTPUT_TOKENS` increased from 600 to 4096 to prevent length truncation (`c9ddea2`)
+- Draft style mirroring expanded — emojis, expressiveness, capitalization, abbreviations, sign-offs (`cfed5a7`)
+- Draft prompt uses natural human replies instead of bracket placeholders (`7dd9eb1`)
+- GitHub repo resolution enhanced (`4985348`)
+
+### Fixed
+- Empty OpenAI response guarded to prevent a JSON parse crash (`6892e79`)
+- Batch deduplicated by `message_id` to prevent ON CONFLICT error 21000 (`a4407c3`)
+- GitHub global search fallback removed to prevent leaking unrelated public repos (`4b0dc47`)
+
+## [1.10.0] — 2026-05-31
+
+### Added
+- Redis-buffered batch email inserts via BullMQ (`c1de8bc`)
+
+### Changed
+- Docker image size reduced ~82% (900MB → 160MB) with Alpine + in-process workers (`0eeb958`)
+- `SubscriptionModal` redesigned; `media-src` added for Cloudinary (`30f925c`)
+
+### Fixed
+- Calendar timezone handling — DB timezone over ISO offset, FreeBusy cross-checked with `events.list` (`03dbfe6`)
+- ISO 8601 interval format handled from the draft API (`7ae5ab7`)
+- Regex character-class range bug in `timePart` extraction (`9d4d3b8`)
+- Docker/Alpine build fixes — bash dependency, `oven/bun` image, `@bull-board` runtime copy (`f8cc787`, `a5e690c`, `dfed38a`)
+- Instrumentation and workers restricted to the Node.js runtime (`80cbca2`)
+
+## [1.9.0] — 2026-05-29
+
+### Added
+- Dashboard UI refreshed (`a05e47a`)
+
+### Changed
+- Background job processing migrated from Inngest to BullMQ (`5d3a9c9`)
+- Bull Board auth hardened — rate limiting, timing-safe comparison, audit logging, min password length (`0198f83`, `77752fc`)
+
+### Fixed
+- 404 handled gracefully when messages are manually deleted by the user (`3cdea3b`)
+- Unsubscribe shows "Message already deleted or moved" on 404; error field checked even on HTTP 200 (`e2db39f`, `f834a33`)
+- BullMQ: keep last 50 completed jobs, increased `lockDuration`; `removeOnComplete` reverted to prevent Redis RDB bloat (`3f0909a`, `0743565`)
+
+### Docs
+- Inngest references updated to BullMQ across README, AGENTS.md, and `tags.ts` (`530852c`)
+
+## [1.8.0] — 2026-05-27
+
+### Added
+- Daily Digest — schema and AI summary/action pipeline (`d045b57`)
+- Daily digest backend with cron job and email template (`0cc4a05`)
+- Digest UI pages with restructured sidebar (`ecdf778`)
+- Message body retrieval and reply functionality in the digest section (`88657b7`)
+
+### Changed
+- Email tracking uses `isDone` instead of `is_read` (`71f24fc`)
+- Google verification check added in OAuth (`78f69bf`)
+
+### Fixed
+- Digest preferences no longer auto-created on GET; default enabled state is false (`d0ec301`, `99e2ca3`)
+- `supabase.ts` encryption handling corrected for non-empty strings (`b6705fb`)
+
+### Security
+- `ai_summary` and `ai_action` encrypted at rest (`92d3af0`)
+
 ## [1.7.0] — 2026-05-26
 
 ### Added
