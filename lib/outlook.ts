@@ -2,6 +2,7 @@ import { Client } from "@microsoft/microsoft-graph-client";
 import { Subscription } from "@microsoft/microsoft-graph-types";
 import { clerkClient } from "@clerk/nextjs/server";
 import { extractUnsubscribeLinkFromBodyOutlook } from "./unsubscribe";
+import { toEditorHtml } from "./signature-html";
 
 // Thrown when the Microsoft OAuth token is missing/revoked/invalid, so callers
 // can distinguish "user needs to reconnect" from transient Graph failures.
@@ -332,7 +333,8 @@ export async function createOutlookDraft(
   attachments: OutlookDraftAttachment[] = [],
 ) {
   const formattedBody = draftBody.replace(/\n/g, "<br>");
-  const formattedSignature = signature ? signature.replace(/\n/g, "<br>") : "";
+  // toEditorHtml passes real HTML through untouched and only escapes/<br>-converts legacy plain-text signatures, so we never run \n-to-<br> across HTML tags or attributes.
+  const formattedSignature = signature ? toEditorHtml(signature) : "";
   const neatmailFooter = `<br><br><span style="font-size:11px;color:#888;">Sent with <a href="https://www.neatmail.app" style="color:#888;text-decoration:underline;">NeatMail</a></span>`;
 
   const htmlContent = `

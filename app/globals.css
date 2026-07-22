@@ -512,3 +512,78 @@ body{
   max-width: 100%;
   border-radius: 8px;
 }
+
+/* Signature rich-text editor (Tiptap / ProseMirror) */
+.signature-editor .ProseMirror {
+  outline: none;
+  min-height: 120px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.signature-editor .ProseMirror:focus {
+  outline: none;
+}
+
+.signature-editor .ProseMirror > *:first-child {
+  margin-top: 0;
+}
+
+.signature-editor .ProseMirror > *:last-child {
+  margin-bottom: 0;
+}
+
+.signature-editor .ProseMirror p {
+  margin: 0 0 0.35em;
+}
+
+/* Placeholder text shown while the signature is empty. */
+.signature-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.signature-editor .ProseMirror a {
+  color: #0075de;
+  text-decoration: underline;
+  cursor: text;
+}
+
+.signature-editor .ProseMirror ul,
+.signature-editor .ProseMirror ol {
+  margin: 0.35em 0;
+  padding-left: 1.5em;
+}
+
+.signature-editor .ProseMirror ul {
+  list-style: disc;
+}
+
+.signature-editor .ProseMirror ol {
+  list-style: decimal;
+}
+
+.signature-editor .ProseMirror li {
+  margin: 0.1em 0;
+}
+
+.signature-editor .ProseMirror blockquote {
+  margin: 0.4em 0;
+  padding-left: 0.75em;
+  border-left: 3px solid var(--border);
+  color: var(--muted-foreground);
+}
+
+.signature-editor .ProseMirror img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Selected image outline (Tiptap adds .ProseMirror-selectednode). */
+.signature-editor .ProseMirror img.ProseMirror-selectednode {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}

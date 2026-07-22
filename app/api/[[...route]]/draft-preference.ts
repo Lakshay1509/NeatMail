@@ -4,6 +4,7 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import z from "zod";
 import { getUserTier } from "@/lib/tier-guard";
+import { sanitizeSignatureHtml, MAX_SIGNATURE_LENGTH } from "@/lib/sanitize-signature";
 
 
 const app = new Hono()
@@ -60,7 +61,7 @@ const app = new Hono()
         draftPrompt: z.string().max(1000).optional(),
         fontColor: z.string(),
         fontSize: z.number().min(8).max(72),
-        signature: z.string().optional(),
+        signature: z.string().max(MAX_SIGNATURE_LENGTH).optional(),
         timezone:z.string(),
         senstivity:z.string().optional(),
         language:z.string().optional()
@@ -80,6 +81,12 @@ const app = new Hono()
 
       const values = ctx.req.valid("json");
 
+      // The signature is rich-editor HTML dropped raw into outgoing email bodies (lib/gmail.ts, lib/outlook.ts), so strip anything that isn't presentational markup first.
+      const signature =
+        values.signature !== undefined
+          ? sanitizeSignatureHtml(values.signature)
+          : undefined;
+
       const data = await db.draft_preference.upsert({
         where: { user_id: userId },
         update: {
@@ -87,7 +94,7 @@ const app = new Hono()
           draftPrompt: values.draftPrompt,
           fontColor: values.fontColor,
           fontSize: values.fontSize,
-          signature: values.signature,
+          signature,
           timezone:values.timezone,
           senstivity:values.senstivity,
           language:values.language
@@ -100,7 +107,7 @@ const app = new Hono()
           draftPrompt: values.draftPrompt,
           fontColor: values.fontColor,
           fontSize: values.fontSize,
-          signature: values.signature,
+          signature,
           timezone:values.timezone,
           senstivity:values.senstivity,
           language:values.language

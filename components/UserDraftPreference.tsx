@@ -17,6 +17,8 @@ import { Button } from "./ui/button"
 import { HelpCircle } from "lucide-react"
 import { useAddUserDraftPrefernce } from "@/features/draftPreference/use-add-user-draftPreference"
 import { useTierAccess } from "@/features/user/use-tier-access"
+import { useGetUserIsGmail } from "@/features/user/use-get-user-isGmail"
+import SignatureEditor from "./signature/SignatureEditor"
 
 
 const SENSITIVITY_OPTIONS = [
@@ -49,7 +51,11 @@ const LANGUAGE_OPTIONS = [
 const UserDraftPreference = () => {
   const { data, isLoading, isError } = useGetUserDraftPreference();
   const { isFree, isPro, limits } = useTierAccess();
+  const { data: isGmailData } = useGetUserIsGmail();
   const muation = useAddUserDraftPrefernce();
+
+  // Default to the Gmail-style toolbar until the provider resolves.
+  const isGmail = isGmailData?.is_gmail ?? true;
 
   const [draftPrompt, setDraftPrompt] = useState<string>("")
   const [signature, setSignature] = useState<string>("")
@@ -159,21 +165,18 @@ const UserDraftPreference = () => {
       {/* Email Signature */}
       <div className="space-y-1.5">
         <div className="flex items-center gap-1.5">
-          <Label htmlFor="email-signature" className="text-lg font-semibold">
+          <Label className="text-lg font-semibold">
             Email signature
           </Label>
           <HelpCircle className="h-4 w-4 text-muted-foreground" />
         </div>
         <p className="text-xs text-muted-foreground">
-          To make sure your signature appears properly, copy it from your Gmail settings rather than from a previously sent email.
+          Format your signature just like in {isGmail ? "Gmail" : "Outlook"} — fonts, colors, links, and a logo. It’s added to the bottom of every AI draft.
         </p>
-        <Textarea
-          id="email-signature"
-          placeholder="Paste signature here"
+        <SignatureEditor
           value={signature}
-          onChange={(e) => setSignature(e.target.value)}
-          rows={4}
-          className="resize-none w-full"
+          onChange={setSignature}
+          isGmail={isGmail}
         />
       </div>
 
