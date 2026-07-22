@@ -12,6 +12,7 @@ import { getPostHogClient } from "@/lib/posthog-server";
 import { ensureResolvedTag } from "@/lib/tags";
 import { ARCHIVE_DEFAULTS } from "@/lib/archive-defaults";
 import { engagementScanQueue } from "@/lib/queue";
+import { ENGAGEMENT_CONFIG } from "@/lib/engagement";
 
 const app = new Hono().post(
   "/",
@@ -295,6 +296,81 @@ const app = new Hono().post(
         },
         500,
       );
+    }
+  },
+).get(
+  // Reports the outcome of the onboarding scan enqueued in POST / above
+  // (jobId `onboard-scan:${userId}`), for the /onboard-complete reveal.
+  // Domains are encrypted, so we only ever surface counts, not identities.
+  "/reveal",
+  async (ctx) => {
+    const { userId } = await auth();
+    if (!userId) {
+      return ctx.json({ error: "Unauthorized" }, 401);
+    }
+
+    try {
+      // Job is only a "still running?" signal; once it's gone or terminal we
+      // trust the DB, since rules are committed before the job completes.
+      const job = await engagementScanQueue.getJob(`onboard-scan:${userId}`);
+      if (job) {
+        const state = await job.getState();
+        const inProgress =
+          state === "waiting" ||
+          state === "active" ||
+          state === "delayed" ||
+          state === "prioritized" ||
+          state === "waiting-children";
+        if (inProgress) {
+          return ctx.json({ status: "pending" as const });
+        }
+      }
+
+      // AUTO rules written in the last 15 min == this scan's output.
+      const windowStart = new Date(Date.now() - 15 * 60_000);
+      const rules = await db.archiveRule.findMany({
+        where: {
+          user_id: userId,
+          source: "AUTO",
+          isActive: true,
+          createdAt: { gte: windowStart },
+          domain: { not: null },
+        },
+        select: { domain: true },
+      });
+
+      const domains = rules
+        .map((r) => r.domain)
+        .filter((d): d is string => d !== null);
+      const sendersMuted = domains.length;
+
+      let emailsSilenced = 0;
+      if (sendersMuted > 0) {
+        const trackWindow = new Date(
+          Date.now() - ENGAGEMENT_CONFIG.windowDays * 86_400_000,
+        );
+        emailsSilenced = await db.email_tracked.count({
+          where: {
+            user_id: userId,
+            domain: { in: domains },
+            created_at: { gte: trackWindow },
+          },
+        });
+      }
+
+      return ctx.json({
+        status: "done" as const,
+        sendersMuted,
+        emailsSilenced,
+      });
+    } catch (error) {
+      // Degrade to an empty "done" so a failure here doesn't trap the reveal screen.
+      console.error("Onboard reveal error (non-fatal):", error);
+      return ctx.json({
+        status: "done" as const,
+        sendersMuted: 0,
+        emailsSilenced: 0,
+      });
     }
   },
 );
