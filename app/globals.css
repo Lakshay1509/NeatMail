@@ -289,6 +289,74 @@ body{
   }
 }
 
+/* ── Onboarding setup finale (typewriter sequence + reveal) ── */
+@keyframes neat-rise-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* "light and darks" — the waiting line pulses while the scan finishes. */
+@keyframes neat-blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
+@keyframes neat-caret {
+  0%, 45%  { opacity: 1; }
+  50%, 95% { opacity: 0; }
+  100%     { opacity: 1; }
+}
+
+.neat-beat {
+  animation: neat-rise-in 300ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  transition:
+    opacity 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Fade the current beat out before the next one types in. */
+.neat-beat[data-leaving="true"] {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* One line at every width: large on desktop, scaling down on small screens so
+   the longest beat (plus its "…" wait state) never wraps or overflows. */
+.neat-beat-line {
+  white-space: nowrap;
+  font-size: clamp(0.85rem, 3.9vw, 2.5rem);
+}
+
+.neat-beat-line[data-waiting="true"] {
+  animation: neat-blink 1.15s ease-in-out infinite;
+}
+
+.neat-reveal {
+  animation: neat-rise-in 440ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.neat-caret {
+  animation: neat-caret 1.05s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neat-beat,
+  .neat-reveal {
+    animation: none;
+    transition: none;
+  }
+  .neat-beat[data-leaving="true"] {
+    opacity: 0;
+  }
+  .neat-beat-line[data-waiting="true"] {
+    animation: none;
+  }
+  .neat-caret {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 /* ── Ray chat markdown ─────────────────────────────────────── */
 .chat-markdown {
   font-size: 15px;
