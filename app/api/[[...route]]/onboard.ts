@@ -11,6 +11,7 @@ import { getUserIsGmail, getUserSubscribed } from "@/lib/supabase";
 import { getPostHogClient } from "@/lib/posthog-server";
 import { ensureResolvedTag } from "@/lib/tags";
 import { ARCHIVE_DEFAULTS } from "@/lib/archive-defaults";
+import { engagementScanQueue } from "@/lib/queue";
 
 const app = new Hono().post(
   "/",
@@ -245,6 +246,22 @@ const app = new Hono().post(
           }
         }
       });
+
+      // Dedicated engagement scan for this brand-new user. The history sync
+      // above just backfilled email_tracked, so the scan has data to judge
+      // noisy senders against right away instead of waiting up to 6h for the
+      // periodic run. notify:true → the worker emails the auto-mute count when
+      // it finds anything. jobId dedupes retries/re-onboards; enqueue failures
+      // are non-fatal so a Redis hiccup can't fail an otherwise-complete onboard.
+      try {
+        await engagementScanQueue.add(
+          "scan-user",
+          { userId, notify: true },
+          { jobId: `onboard-scan:${userId}` },
+        );
+      } catch (err) {
+        console.error("Failed to enqueue onboarding engagement scan (non-fatal):", err);
+      }
 
       const posthog = getPostHogClient();
       posthog.capture({

@@ -107,7 +107,10 @@ export default function OnboardCompletePage() {
       onboardMutation.mutate(payload, {
         onSuccess: () => {
           setTimeout(() => {
-            router.push("/");
+            // ?scan=1 → dashboard fires the "scanning for annoying senders"
+            // toast once (OnboardingScanToast). The scan itself is queued
+            // server-side by POST /api/onboard.
+            router.push("/?scan=1");
           }, 3000); // 3 seconds
         },
       });
@@ -156,7 +159,7 @@ export default function OnboardCompletePage() {
               const payload = buildPayload();
               if (payload)
                 onboardMutation.mutate(payload, {
-                  onSuccess: () => router.push("/"),
+                  onSuccess: () => router.push("/?scan=1"),
                 });
             }}
             className="px-6 py-2 rounded-full bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors disabled:opacity-40"

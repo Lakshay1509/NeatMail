@@ -270,6 +270,47 @@ export async function sendTrialReminderEmail(params: TrialReminderEmailParams) {
   });
 }
 
+interface NoisySendersFoundParams {
+  to: string;
+  count: number;
+}
+
+// Sent right after onboarding when the dedicated engagement scan auto-mutes one
+// or more noisy senders from the imported history. Only fires when count > 0.
+// Throws so the BullMQ worker can retry a transient send failure.
+export async function sendNoisySendersFoundEmail(params: NoisySendersFoundParams) {
+  const { to, count } = params;
+  const senderWord = count === 1 ? "sender" : "senders";
+
+  const subject = `We found ${count} noisy ${senderWord} in your inbox`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111111;line-height:1.6;padding:24px;max-width:480px;margin:0 auto;">
+  <h2 style="font-size:20px;margin:0 0 16px;">🧹 We cleared out some inbox noise</h2>
+  <p style="font-size:15px;color:#444;margin:0 0 16px;">Hi there,</p>
+  <p style="font-size:15px;color:#444;margin:0 0 16px;">
+    NeatMail scanned your inbox and found <strong>${count}</strong> ${senderWord} you almost
+    never open. From now on we'll <strong>auto-archive their emails</strong> so they skip your
+    inbox and stop cluttering it.
+  </p>
+  <p style="font-size:15px;color:#444;margin:0 0 24px;">
+    Nothing is deleted, and this is fully reversible — un-mute any sender in one click, or just
+    open one of their emails and they're back.
+  </p>
+  <a href="https://dashboard.neatmail.app/unsubscribe" style="display:inline-block;padding:11px 22px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">Review muted senders</a>
+  <p style="font-size:12px;color:#888;margin-top:24px;">You're receiving this because NeatMail just set up auto-archiving for your inbox. — The NeatMail team</p>
+</body>
+</html>`;
+
+  await resend.emails.send({
+    from: "NeatMail <notifications@send.neatmail.app>",
+    to,
+    subject,
+    html,
+  });
+}
+
 interface MailboxRevokedParams {
   ownerId: string;
   reason: string;
