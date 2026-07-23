@@ -147,6 +147,20 @@ export const engagementScanQueue = new Queue("engagement-scan", {
   },
 });
 
+// Periodic sweep that finds overdue, still-open inbound promises ("they owe
+// me") and resurfaces each with a nudge draft. Fired by a repeatable job (see
+// bullmq/workers/index.ts); fulfillment is handled per-arrival in the mail
+// worker, not here.
+export const promiseSweepQueue = new Queue("promise-sweep", {
+  connection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 5000 },
+    removeOnComplete: true,
+    removeOnFail: 100,
+  },
+});
+
 export const queueAdapters = [
   new BullMQAdapter(outlookMailQueue),
   new BullMQAdapter(outlookMailUpdateQueue),
@@ -161,4 +175,5 @@ export const queueAdapters = [
   new BullMQAdapter(archiveBacklogQueue),
   new BullMQAdapter(firstSweepQueue),
   new BullMQAdapter(engagementScanQueue),
+  new BullMQAdapter(promiseSweepQueue),
 ];

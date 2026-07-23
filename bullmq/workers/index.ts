@@ -13,10 +13,16 @@ import { processTrialReminder } from "./trial-reminder";
 import { processArchiveBacklog } from "./archive-tag-backlog";
 import { processFirstSweep } from "./first-sweep";
 import { processEngagementScan } from "./engagement-scan";
-import { dbBatchQueue, classifyQueue, engagementScanQueue } from "@/lib/queue";
+import { processPromiseSweep } from "./promise-sweep";
+import {
+  dbBatchQueue,
+  classifyQueue,
+  engagementScanQueue,
+  promiseSweepQueue,
+} from "@/lib/queue";
 
 // Shared cap protecting Gmail/Outlook API quota: at most 10 jobs run at once,
-// and no more than 10 new jobs start per rolling second — so a burst of 100
+// and no more than 10 new jobs start per rolling second. A burst of 100
 // queued messages drains in ~10 batches of 10 rather than all at once.
 const MAIL_API_LIMITER = { max: 10, duration: 1000 };
 
@@ -122,6 +128,15 @@ export async function startWorkers() {
     },
   );
 
+  // Makes a handful of Gmail calls per due promise; concurrency 1 keeps one
+  // sweep at a time, long lock since a run can process up to 200 promises.
+  const promiseSweepWorker = new Worker("promise-sweep", processPromiseSweep, {
+    connection,
+    concurrency: 1,
+    limiter: MAIL_API_LIMITER,
+    lockDuration: 600_000,
+  });
+
   workers = [
     outlookMailWorker,
     outlookMailUpdateWorker,
@@ -136,6 +151,7 @@ export async function startWorkers() {
     archiveBacklogWorker,
     firstSweepWorker,
     engagementScanWorker,
+    promiseSweepWorker,
   ];
 
   await dbBatchQueue.add("flush-db-batch", {}, {
@@ -165,6 +181,17 @@ export async function startWorkers() {
     removeOnComplete: true,
     removeOnFail: false,
     jobId: "engagement-scan-repeat",
+  });
+
+  // Sweeps overdue inbound promises every 2 hours, so a nudge fires within ~2h
+  // of the deadline. jobId keeps it a single repeatable across restarts.
+  await promiseSweepQueue.add("sweep", {}, {
+    repeat: {
+      pattern: "0 */2 * * *",
+    },
+    removeOnComplete: true,
+    removeOnFail: false,
+    jobId: "promise-sweep-repeat",
   });
 
   console.log("BullMQ workers started (in-process)");

@@ -17,7 +17,8 @@ import { getUserTier } from "@/lib/tier-guard";
 import { getModelResponse, ModelResponse } from "@/lib/model";
 import { checkAndForwardToTelegram } from "@/lib/telegram";
 import { db } from "@/lib/prisma";
-import { encryptDomain } from "@/lib/encode";
+import { encrypt, encryptDomain, decrypt } from "@/lib/encode";
+import { isPromiseCandidate, extractInboundPromise } from "@/lib/promise";
 import { markBufferedEmailArchived } from "@/lib/batch-insert";
 import { draftQueue, followUpQueue } from "@/lib/queue";
 import { gmailUserBurstLimiter } from "@/lib/rate-limit";
@@ -221,6 +222,56 @@ export async function processGmailMail(
           (l) => l.name === "Follow up",
         )?.id;
 
+        // Promise fulfillment ("they owe me"): when the promiser sends a new
+        // message in a thread with an open promise, the debt is delivered.
+        // Runs before promise creation and excludes the current message, so a
+        // promise can never fulfill itself. from_email is non-deterministically
+        // encrypted, so decrypt to compare the exact sender.
+        const openThreadPromises = await db.tracked_promise.findMany({
+          where: {
+            user_id: clerkUserId,
+            thread_id: emailData.threadId,
+            status: { in: ["PENDING", "NUDGED"] },
+            message_id: { not: messageId },
+          },
+          select: { id: true, message_id: true, from_email: true },
+        });
+
+        const fulfilledMessageIds = new Set<string>();
+        if (openThreadPromises.length) {
+          const senderNow = fromEmail.toLowerCase();
+          const fulfilledIds: string[] = [];
+          for (const p of openThreadPromises) {
+            let promiser = "";
+            try {
+              promiser = (await decrypt(p.from_email)).toLowerCase();
+            } catch {
+              continue;
+            }
+            if (promiser === senderNow) {
+              fulfilledIds.push(p.id);
+              fulfilledMessageIds.add(p.message_id);
+            }
+          }
+          if (fulfilledIds.length) {
+            await db.tracked_promise.updateMany({
+              where: { id: { in: fulfilledIds } },
+              data: { status: "FULFILLED", fulfilled_at: new Date() },
+            });
+            console.log(
+              `[promise] Fulfilled ${fulfilledIds.length} promise(s) on thread ${emailData.threadId} — promiser replied`,
+            );
+          }
+        }
+
+        // Message ids still carrying an OPEN promise must survive the reply-cancel
+        // below; only fulfillment or a manual dismiss clears a promise's label.
+        const openPromiseMessageIds = new Set(
+          openThreadPromises
+            .filter((p) => !fulfilledMessageIds.has(p.message_id))
+            .map((p) => p.message_id),
+        );
+
         if (followUpLabelId) {
           const messagesWithFollowUp = threadData.data.messages?.filter((m) =>
             m.labelIds?.includes(followUpLabelId),
@@ -228,6 +279,7 @@ export async function processGmailMail(
 
           if (messagesWithFollowUp?.length) {
             for (const msg of messagesWithFollowUp) {
+              if (msg.id && openPromiseMessageIds.has(msg.id)) continue;
               await gmail.users.messages.modify({
                 userId: "me",
                 id: msg.id!,
@@ -241,6 +293,72 @@ export async function processGmailMail(
         console.error(
           `[gmail-followup] Error removing "Follow up" for thread ${emailData.threadId}: ${err.message}`,
         );
+      }
+    }
+
+    // --- Inbound promise tracking ("they owe me") ---
+    // Opt-in per user. The zero-cost regex gate runs first, so the nano
+    // extractor only fires on the rare mail that actually looks like a dated
+    // commitment. Wrapped so it can never break mail processing.
+    if (
+      isDirectTo &&
+      emailData.threadId &&
+      fromEmail.toLowerCase() !== emailAddress.toLowerCase()
+    ) {
+      try {
+        const followUpPref = await db.follow_up_preference.findUnique({
+          where: { user_id: clerkUserId },
+          select: { track_promises: true },
+        });
+        if (
+          followUpPref?.track_promises &&
+          isPromiseCandidate({
+            fromEmail,
+            subject: emailData.subject,
+            body: fullBody ?? "",
+          })
+        ) {
+          const draftPref = await useGetUserDraftPreference(clerkUserId);
+          const receivedDate = email.data.internalDate
+            ? new Date(Number(email.data.internalDate))
+            : new Date();
+          const promise = await extractInboundPromise({
+            subject: emailData.subject,
+            body: fullBody ?? "",
+            fromEmail,
+            receivedDate,
+            userTimezone: draftPref.timezone ?? "UTC",
+          });
+          if (promise) {
+            const domain = fromEmail.split("@")[1] || null;
+            // item + from_email are body-derived PII: encrypt at rest, same as
+            // email_tracked.ai_summary. domain uses encryptDomain for parity.
+            await db.tracked_promise.upsert({
+              where: {
+                user_id_message_id: {
+                  user_id: clerkUserId,
+                  message_id: messageId,
+                },
+              },
+              update: {},
+              create: {
+                user_id: clerkUserId,
+                thread_id: emailData.threadId,
+                message_id: messageId,
+                from_email: await encrypt(fromEmail),
+                from_domain: domain ? await encryptDomain(domain) : null,
+                item: await encrypt(promise.item),
+                due_at: promise.dueAt,
+                confidence: promise.confidence,
+              },
+            });
+            console.log(
+              `[promise] Tracked inbound promise on thread ${emailData.threadId}, due ${promise.dueAt.toISOString()}`,
+            );
+          }
+        }
+      } catch (err: any) {
+        console.error(`[promise] extraction failed: ${err?.message ?? err}`);
       }
     }
 

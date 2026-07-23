@@ -17,6 +17,15 @@ enum Tier {
   @@schema("public")
 }
 
+enum PromiseStatus {
+  PENDING
+  NUDGED
+  FULFILLED
+  DISMISSED
+
+  @@schema("public")
+}
+
 model user_tokens {
   clerk_user_id           String                 @id @unique
   email                   String                 @unique
@@ -54,6 +63,7 @@ model user_tokens {
   slack_integration       slack_integration?
   digest_preference       digest_preference?
   follow_up_preference    follow_up_preference?
+  tracked_promises        tracked_promise[]
   chat_sessions           ChatSession[]
   referral_code           String?                @unique
   referral_months_granted Int                    @default(0)
@@ -70,6 +80,7 @@ model follow_up_preference {
   user_id                  String      @unique
   enabled                  Boolean     @default(false)
   ai_drafts                Boolean     @default(true)
+  track_promises           Boolean     @default(false)
   days                     Int         @default(3)
   skip_emails              String      @default("")
   follow_up_count          Int         @default(0)
@@ -144,6 +155,35 @@ model email_tracked {
   @@index([user_id, tag_id], map: "idx_tracked_user_tag")
   @@index([user_id, domain], map: "idx_tracked_user_domain")
   @@index([user_id, is_read, snoozed_until], map: "idx_tracked_user_read_snooze")
+  @@schema("public")
+}
+
+/// Inbound "they owe me" promises extracted from received mail: a commitment the
+/// SENDER made to deliver something by `due_at`. While PENDING and past due, the
+/// sweep tags the Gmail thread ("Follow up" + INBOX + UNREAD) and drafts a nudge,
+/// moving it to NUDGED. Flipped to FULFILLED when the promised thing lands in the
+/// thread, or DISMISSED if the user strips the label themselves.
+/// `item` and `from_email` are body-derived PII and are stored ENCRYPTED at
+/// write-time, mirroring email_tracked.ai_summary (decrypt via lib helper on read).
+model tracked_promise {
+  id           String        @id @default(cuid())
+  user_id      String
+  thread_id    String
+  message_id   String
+  from_email   String
+  from_domain  String?
+  item         String
+  due_at       DateTime      @db.Timestamptz(6)
+  status       PromiseStatus @default(PENDING)
+  confidence   Float?
+  nudged_at    DateTime?     @db.Timestamptz(6)
+  fulfilled_at DateTime?     @db.Timestamptz(6)
+  created_at   DateTime      @default(now()) @db.Timestamptz(6)
+  user_tokens  user_tokens   @relation(fields: [user_id], references: [clerk_user_id], onDelete: Cascade)
+
+  @@unique([user_id, message_id])
+  @@index([status, due_at], map: "idx_promise_status_due")
+  @@index([user_id, thread_id], map: "idx_promise_user_thread")
   @@schema("public")
 }
 
@@ -351,7 +391,7 @@ enum ArchiveRuleSource {
   @@schema("public")
 }
 
-// Fires on exactly one target, `domain` XOR `tag_id` — enforced by a CHECK
+// Fires on exactly one target, `domain` XOR `tag_id`, enforced by a CHECK
 // constraint Prisma can't express. See the /archive-messages cron.
 model ArchiveRule {
   id               String            @id @default(uuid())
