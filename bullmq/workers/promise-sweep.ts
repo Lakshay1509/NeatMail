@@ -1,6 +1,8 @@
 import { Job } from "bullmq";
 import { db } from "@/lib/prisma";
 import { createGmailDraft, getGmailClient } from "@/lib/gmail";
+import { createOutlookDraft, getGraphClient } from "@/lib/outlook";
+import { markMessageProcessed } from "@/lib/redis";
 import { getUserTier } from "@/lib/tier-guard";
 import {
   getUserSubscribed,
@@ -18,10 +20,11 @@ const SWEEP_BATCH = 200;
 
 /**
  * Periodic sweep for overdue, still-open inbound promises. For each, resurfaces
- * the Gmail thread in place (Follow up + INBOX + UNREAD), drops a pre-written
- * nudge draft, and flips the promise to NUDGED. Fulfillment is event-driven in
- * process-gmail-mail.ts, so anything the sender already delivered was flipped
- * to FULFILLED and never appears here.
+ * the thread and drops a pre-written nudge draft, then flips it to NUDGED:
+ *   - Gmail  → tag in place: "Follow up" label + INBOX + UNREAD.
+ *   - Outlook → move the mail into the "Follow up" folder + mark unread.
+ * Fulfillment (per-arrival, in the mail workers) is event-driven, so anything
+ * the sender already delivered was flipped to FULFILLED and never appears here.
  */
 export async function processPromiseSweep(_job: Job) {
   const now = new Date();
@@ -38,6 +41,7 @@ export async function processPromiseSweep(_job: Job) {
       from_email: true,
       item: true,
       due_at: true,
+      user_tokens: { select: { is_gmail: true } },
     },
   });
 
@@ -71,11 +75,92 @@ export async function processPromiseSweep(_job: Job) {
 
       const to = await decrypt(p.from_email);
       const item = await decrypt(p.item);
+      const draftPref = await useGetUserDraftPreference(p.user_id);
+      const tz = draftPref.timezone ?? "UTC";
+      const dueLabel = formatInTimeZone(p.due_at, tz, "MMMM d");
 
+      // ---- Outlook: move the promise mail into the "Follow up" folder ----
+      if (p.user_tokens?.is_gmail === false) {
+        const graphClient = await getGraphClient(p.user_id);
+
+        let subject = "";
+        try {
+          const msg = await graphClient
+            .api(`/me/messages/${p.message_id}`)
+            .select("subject")
+            .get();
+          subject = msg.subject ?? "";
+        } catch (err: any) {
+          if (err?.statusCode === 404) {
+            await db.tracked_promise.update({
+              where: { id: p.id },
+              data: { status: "DISMISSED" },
+            });
+            continue;
+          }
+          throw err;
+        }
+
+        // Find or create the "Follow up" folder.
+        const foldersResponse = await graphClient
+          .api("/me/mailFolders")
+          .filter("displayName eq 'Follow up'")
+          .get();
+        let folderId: string;
+        if (foldersResponse.value && foldersResponse.value.length > 0) {
+          folderId = foldersResponse.value[0].id;
+        } else {
+          const newFolder = await graphClient
+            .api("/me/mailFolders")
+            .post({ displayName: "Follow up" });
+          folderId = newFolder.id;
+        }
+
+        // Move it there and mark unread. The move mints a NEW message id; mark
+        // it processed so the move's own "created" notification (when the
+        // Follow up folder is watched) can't be misread as the promiser
+        // delivering — same guard the follow-up move-back uses.
+        const moved = await graphClient
+          .api(`/me/messages/${p.message_id}/move`)
+          .post({ destinationId: folderId });
+        const newId = moved.id as string;
+        await markMessageProcessed(newId);
+        await graphClient.api(`/me/messages/${newId}`).patch({ isRead: false });
+
+        // Claim BEFORE the non-idempotent draft, and repoint the row at the
+        // moved id (the old id no longer exists after a move).
+        await db.tracked_promise.update({
+          where: { id: p.id },
+          data: { status: "NUDGED", nudged_at: new Date(), message_id: newId },
+        });
+        await incrementFollowUpCount(p.user_id);
+
+        if (pref.ai_drafts !== false) {
+          const nudge = await generatePromiseNudge({ subject, item, to, dueLabel });
+          if (nudge) {
+            await createOutlookDraft(
+              p.user_id,
+              newId,
+              subject,
+              to,
+              nudge,
+              draftPref.fontColor,
+              draftPref.fontSize,
+              draftPref.signature,
+            );
+          }
+        }
+
+        nudged++;
+        console.log(
+          `[promise-sweep] Nudged overdue promise ${p.id} on conversation ${p.thread_id} (outlook)`,
+        );
+        continue;
+      }
+
+      // ---- Gmail: tag in place ("Follow up" + INBOX + UNREAD) ----
       const gmail = await getGmailClient(p.user_id);
 
-      // The promise message carries the subject we reply into. If it's gone
-      // (deleted/expunged), the promise is moot, so drop it.
       let subject = "";
       try {
         const msg = await gmail.users.messages.get({
@@ -98,12 +183,6 @@ export async function processPromiseSweep(_job: Job) {
         throw err;
       }
 
-      const draftPref = await useGetUserDraftPreference(p.user_id);
-      const tz = draftPref.timezone ?? "UTC";
-      const dueLabel = formatInTimeZone(p.due_at, tz, "MMMM d");
-
-      // Resurface in place first: reuse the "Follow up" label and ensure the
-      // thread is back in the inbox + unread so the nudge is actually seen.
       const labelsResponse = await gmail.users.labels.list({ userId: "me" });
       let labelId = labelsResponse.data.labels?.find(
         (l) => l.name === "Follow up",
@@ -127,17 +206,13 @@ export async function processPromiseSweep(_job: Job) {
         requestBody: { addLabelIds: [labelId, "INBOX", "UNREAD"] },
       });
 
-      // Claim the promise BEFORE the non-idempotent draft. If drafting then
-      // fails, the row is already NUDGED so the next sweep won't re-pick it and
-      // re-draft (createGmailDraft has no dedup, so that would duplicate). Worst
-      // case is a surfaced thread without a pre-written draft, never a double.
+      // Claim BEFORE the non-idempotent draft so a failure can't re-draft.
       await db.tracked_promise.update({
         where: { id: p.id },
         data: { status: "NUDGED", nudged_at: new Date() },
       });
       await incrementFollowUpCount(p.user_id);
 
-      // Pre-written nudge draft, last (unless the user disabled AI drafts).
       if (pref.ai_drafts !== false) {
         const nudge = await generatePromiseNudge({ subject, item, to, dueLabel });
         if (nudge) {
@@ -157,7 +232,7 @@ export async function processPromiseSweep(_job: Job) {
 
       nudged++;
       console.log(
-        `[promise-sweep] Nudged overdue promise ${p.id} on thread ${p.thread_id}`,
+        `[promise-sweep] Nudged overdue promise ${p.id} on thread ${p.thread_id} (gmail)`,
       );
     } catch (err: any) {
       // Leave the row PENDING so the next sweep retries it.

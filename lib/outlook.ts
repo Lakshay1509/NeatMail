@@ -73,11 +73,33 @@ export async function createOutlookSubscription(
     const client = await getGraphClient(userId);
     const expirationDateTime = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
 
+    // Also watch the "Follow up" folder, so promise nudges moved there keep
+    // firing notifications (e.g. a reply that lands directly in the folder).
+    // Looked up by name and skipped if it doesn't exist yet (it's created on
+    // first use). Best-effort — a lookup failure must never block the core subs.
+    let followUpTarget: { resource: string; name: string } | null = null;
+    try {
+      const res = await client
+        .api("/me/mailFolders")
+        .filter("displayName eq 'Follow up'")
+        .get();
+      const id = res.value?.[0]?.id;
+      if (id) {
+        followUpTarget = {
+          resource: `me/mailFolders/${id}/messages`,
+          name: "Follow up",
+        };
+      }
+    } catch (e) {
+      console.warn("[outlook-sub] 'Follow up' folder lookup failed:", e);
+    }
+
     // Always include Inbox; append the rest (deduplicate if Inbox is in the list)
     const seen = new Set<string>();
     const targets = [
       { resource: "me/mailFolders/Inbox/messages", name: "Inbox" },
       { resource: "me/mailFolders/SentItems/messages", name: "Sent Items" },
+      ...(followUpTarget ? [followUpTarget] : []),
       ...(folders ?? []).map(f => ({ resource: `me/mailFolders/${f.id}/messages`, name: f.name })),
     ].filter(t => {
       if (seen.has(t.resource)) return false;
@@ -88,16 +110,32 @@ export async function createOutlookSubscription(
     const results = [];
 
     for (const target of targets) {
-      const data:Subscription = await client.api("/subscriptions").post({
-        changeType: "created,updated",
-        notificationUrl: `${process.env.NEXT_PUBLIC_API_URL}/api/outlook/webhook`,
-        resource: target.resource,
-        expirationDateTime,
-        clientState: process.env.OUTLOOK_WEBHOOK_SECRET,
-      } as Subscription);
+      try {
+        const data: Subscription = await client.api("/subscriptions").post({
+          changeType: "created,updated",
+          notificationUrl: `${process.env.NEXT_PUBLIC_API_URL}/api/outlook/webhook`,
+          resource: target.resource,
+          expirationDateTime,
+          clientState: process.env.OUTLOOK_WEBHOOK_SECRET,
+        } as Subscription);
 
-      console.log(`Subscription created for [${target.name}]:`, data.id);
-      results.push({ ...data, folderName: target.name });
+        console.log(`Subscription created for [${target.name}]:`, data.id);
+        results.push({ ...data, folderName: target.name });
+      } catch (e) {
+        // Isolate per-folder: one folder failing (e.g. it was deleted, or the
+        // 'Follow up' folder vanished) must not abort Inbox/Sent and leave the
+        // user with no mail notifications at all.
+        console.error(
+          `[outlook-sub] Subscription failed for [${target.name}] — continuing:`,
+          e,
+        );
+      }
+    }
+
+    // A single bad folder is tolerated above, but zero successful subscriptions
+    // means the user is fully dark (old subs were already deleted) — surface it.
+    if (results.length === 0 && targets.length > 0) {
+      throw new Error("All Outlook subscriptions failed to create");
     }
 
     return results;

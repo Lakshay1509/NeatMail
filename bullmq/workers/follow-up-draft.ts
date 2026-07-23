@@ -9,6 +9,7 @@ import {
 } from "@/lib/supabase";
 import { getUserTier } from "@/lib/tier-guard";
 import { generateFollowUpMessage } from "@/lib/sent-followup";
+import { markMessageProcessed } from "@/lib/redis";
 import { clerkClient } from "@clerk/nextjs/server";
 
 interface FollowUpDraftData {
@@ -148,6 +149,12 @@ export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
     });
 
   const targetMessageId = movedMessage.id as string;
+
+  // The "Follow up" folder is now watched for promise tracking, so this move
+  // fires its own "created" notification. Mark the moved id processed so the
+  // mail worker ignores it — otherwise it reprocesses and the move-back logic
+  // bounces this follow-up right back to the Inbox.
+  await markMessageProcessed(targetMessageId);
 
   const clerk = await clerkClient();
   const externalAccounts = await clerk.users.getUserOauthAccessToken(

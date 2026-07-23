@@ -1,7 +1,8 @@
 import { Job } from "bullmq";
 import { getGraphClient, OAuthError, archiveMessagesOutlook } from "@/lib/outlook";
 import { db } from "@/lib/prisma";
-import { encryptDomain } from "@/lib/encode";
+import { encrypt, encryptDomain, decrypt } from "@/lib/encode";
+import { isPromiseCandidate, extractInboundPromise } from "@/lib/promise";
 import { markBufferedEmailArchived } from "@/lib/batch-insert";
 import {
   addMailtoDB,
@@ -272,6 +273,48 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
     }
   }
 
+  // --- Inbound promise tracking ("they owe me") — Outlook ---
+  // Fulfillment first (before creation, excluding the current message) so a
+  // promise can't fulfill itself. Delivery detection rides on the Inbox watch:
+  // the promiser's reply lands here as a normal incoming message.
+  if (threadId) {
+    try {
+      const openThreadPromises = await db.tracked_promise.findMany({
+        where: {
+          user_id: subscription.clerk_user_id,
+          thread_id: threadId,
+          status: { in: ["PENDING", "NUDGED"] },
+          message_id: { not: messageId },
+        },
+        select: { id: true, from_email: true },
+      });
+      if (openThreadPromises.length) {
+        const senderNow = from.toLowerCase();
+        const fulfilledIds: string[] = [];
+        for (const p of openThreadPromises) {
+          let promiser = "";
+          try {
+            promiser = (await decrypt(p.from_email)).toLowerCase();
+          } catch {
+            continue;
+          }
+          if (promiser === senderNow) fulfilledIds.push(p.id);
+        }
+        if (fulfilledIds.length) {
+          await db.tracked_promise.updateMany({
+            where: { id: { in: fulfilledIds } },
+            data: { status: "FULFILLED", fulfilled_at: new Date() },
+          });
+          console.log(
+            `[promise] Fulfilled ${fulfilledIds.length} promise(s) on conversation ${threadId} — promiser replied (outlook)`,
+          );
+        }
+      }
+    } catch (err: any) {
+      console.error(`[promise] outlook fulfillment failed: ${err?.message ?? err}`);
+    }
+  }
+
   if (threadId) {
     const followUpFolderResponse = await client
       .api("/me/mailFolders")
@@ -515,6 +558,65 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
         is_gmail: false,
       },
     });
+  }
+
+  // Creation: detect a new inbound promise. Placed AFTER labeling so it records
+  // the message's FINAL id — for folder-mode users the classification step above
+  // moves the mail into a category folder, minting a new id; using the pre-move
+  // id would leave the sweep unable to find it (fetch 404 → wrongly dismissed).
+  // Opt-in, gated by the zero-cost regex; never track the user's own outbound mail.
+  if (isDirectTo && threadId && from.toLowerCase() !== userEmail) {
+    try {
+      const followUpPref = await db.follow_up_preference.findUnique({
+        where: { user_id: subscription.clerk_user_id },
+        select: { track_promises: true },
+      });
+      if (
+        followUpPref?.track_promises &&
+        isPromiseCandidate({ fromEmail: from, subject, body })
+      ) {
+        const draftPref = await useGetUserDraftPreference(
+          subscription.clerk_user_id,
+        );
+        const receivedDate = mail.receivedDateTime
+          ? new Date(mail.receivedDateTime)
+          : new Date();
+        const promise = await extractInboundPromise({
+          subject,
+          body,
+          fromEmail: from,
+          receivedDate,
+          userTimezone: draftPref.timezone ?? "UTC",
+        });
+        if (promise) {
+          const domain = from.split("@")[1] || null;
+          await db.tracked_promise.upsert({
+            where: {
+              user_id_message_id: {
+                user_id: subscription.clerk_user_id,
+                message_id: movedMessageId,
+              },
+            },
+            update: {},
+            create: {
+              user_id: subscription.clerk_user_id,
+              thread_id: threadId,
+              message_id: movedMessageId,
+              from_email: await encrypt(from),
+              from_domain: domain ? await encryptDomain(domain) : null,
+              item: await encrypt(promise.item),
+              due_at: promise.dueAt,
+              confidence: promise.confidence,
+            },
+          });
+          console.log(
+            `[promise] Tracked inbound promise on conversation ${threadId}, due ${promise.dueAt.toISOString()} (outlook, msg ${movedMessageId})`,
+          );
+        }
+      }
+    } catch (err: any) {
+      console.error(`[promise] outlook extraction failed: ${err?.message ?? err}`);
+    }
   }
 
   return { success: true, from, subject };
