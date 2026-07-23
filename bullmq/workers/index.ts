@@ -14,6 +14,7 @@ import { processArchiveBacklog } from "./archive-tag-backlog";
 import { processFirstSweep } from "./first-sweep";
 import { processEngagementScan } from "./engagement-scan";
 import { processPromiseSweep } from "./promise-sweep";
+import { processPromiseNudge } from "./promise-nudge";
 import {
   dbBatchQueue,
   classifyQueue,
@@ -137,6 +138,15 @@ export async function startWorkers() {
     lockDuration: 600_000,
   });
 
+  // One-off delayed jobs, one per outbound promise, each firing ~30 min before
+  // its deadline. A few Gmail/Outlook calls per job, so share the mail limiter.
+  const promiseNudgeWorker = new Worker("promise-nudge", processPromiseNudge, {
+    connection,
+    concurrency: 5,
+    limiter: MAIL_API_LIMITER,
+    lockDuration: 120_000,
+  });
+
   workers = [
     outlookMailWorker,
     outlookMailUpdateWorker,
@@ -152,6 +162,7 @@ export async function startWorkers() {
     firstSweepWorker,
     engagementScanWorker,
     promiseSweepWorker,
+    promiseNudgeWorker,
   ];
 
   await dbBatchQueue.add("flush-db-batch", {}, {

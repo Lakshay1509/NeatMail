@@ -161,6 +161,21 @@ export const promiseSweepQueue = new Queue("promise-sweep", {
   },
 });
 
+// Per-promise delayed jobs that fire ~30 min before an OUTBOUND promise ("I owe
+// them") comes due. Unlike promiseSweepQueue (a repeatable that scans for overdue
+// inbound promises), these are one-off delayed jobs scheduled at creation time
+// from the sent-mail workers, keyed by jobId=promise-nudge-<promiseId> so they can
+// be cancelled when the user delivers early. See bullmq/workers/promise-nudge.ts.
+export const promiseNudgeQueue = new Queue("promise-nudge", {
+  connection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 5000 },
+    removeOnComplete: true,
+    removeOnFail: 100,
+  },
+});
+
 export const queueAdapters = [
   new BullMQAdapter(outlookMailQueue),
   new BullMQAdapter(outlookMailUpdateQueue),
@@ -176,4 +191,5 @@ export const queueAdapters = [
   new BullMQAdapter(firstSweepQueue),
   new BullMQAdapter(engagementScanQueue),
   new BullMQAdapter(promiseSweepQueue),
+  new BullMQAdapter(promiseNudgeQueue),
 ];

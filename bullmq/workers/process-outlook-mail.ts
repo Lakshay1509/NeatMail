@@ -2,7 +2,13 @@ import { Job } from "bullmq";
 import { getGraphClient, OAuthError, archiveMessagesOutlook } from "@/lib/outlook";
 import { db } from "@/lib/prisma";
 import { encrypt, encryptDomain, decrypt } from "@/lib/encode";
-import { isPromiseCandidate, extractInboundPromise } from "@/lib/promise";
+import {
+  isPromiseCandidate,
+  extractInboundPromise,
+  isOutboundPromiseCandidate,
+  extractOutboundPromise,
+  NUDGE_LEAD_MS,
+} from "@/lib/promise";
 import { markBufferedEmailArchived } from "@/lib/batch-insert";
 import {
   addMailtoDB,
@@ -21,7 +27,7 @@ import {
 import { sendReconnectEmail } from "@/lib/resend";
 import { getModelResponse, ModelResponse } from "@/lib/model";
 import { checkAndForwardToTelegram } from "@/lib/telegram";
-import { flow, followUpQueue } from "@/lib/queue";
+import { flow, followUpQueue, promiseNudgeQueue } from "@/lib/queue";
 import { getUserTier } from "@/lib/tier-guard";
 import { isMemberAccessPaused } from "@/lib/organization";
 import { checkSentRequiresFollowUp } from "@/lib/sent-followup";
@@ -154,6 +160,102 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
   const isSentMessage = mail.parentFolderId === sentItemsFolder.id;
 
   if (isSentMessage) {
+    // --- Outbound promise tracking ("I owe them") — Outlook ---
+    // Independent of the follow-up feature: gated only on track_promises.
+    // Fulfillment first (excluding the current message) so a promise can't fulfill
+    // itself, then a fresh promise is extracted. Wrapped so it can't break sent processing.
+    if (threadId) {
+      try {
+        const openOutbound = await db.tracked_promise.findMany({
+          where: {
+            user_id: subscription.clerk_user_id,
+            thread_id: threadId,
+            direction: "OUTBOUND",
+            status: { in: ["PENDING", "NUDGED"] },
+            message_id: { not: messageId },
+          },
+          select: { id: true },
+        });
+        if (openOutbound.length) {
+          await db.tracked_promise.updateMany({
+            where: { id: { in: openOutbound.map((o) => o.id) } },
+            data: { status: "FULFILLED", fulfilled_at: new Date() },
+          });
+          for (const o of openOutbound) {
+            await promiseNudgeQueue.remove(`promise-nudge-${o.id}`);
+          }
+          console.log(
+            `[promise] Fulfilled ${openOutbound.length} outbound promise(s) on conversation ${threadId} — user sent again (outlook)`,
+          );
+        }
+
+        const followUpPref = await db.follow_up_preference.findUnique({
+          where: { user_id: subscription.clerk_user_id },
+          select: { track_promises: true },
+        });
+        const toEmail = mail.toRecipients?.[0]?.emailAddress?.address ?? "";
+        if (
+          followUpPref?.track_promises &&
+          toEmail &&
+          isOutboundPromiseCandidate({ subject, body })
+        ) {
+          const draftPref = await useGetUserDraftPreference(
+            subscription.clerk_user_id,
+          );
+          const sentDate = mail.sentDateTime
+            ? new Date(mail.sentDateTime)
+            : new Date();
+          const promise = await extractOutboundPromise({
+            subject,
+            body,
+            toEmail,
+            sentDate,
+            userTimezone: draftPref.timezone ?? "UTC",
+          });
+          if (promise) {
+            const domain = toEmail.split("@")[1] || null;
+            const row = await db.tracked_promise.upsert({
+              where: {
+                user_id_message_id: {
+                  user_id: subscription.clerk_user_id,
+                  message_id: messageId,
+                },
+              },
+              update: {},
+              create: {
+                user_id: subscription.clerk_user_id,
+                thread_id: threadId,
+                message_id: messageId,
+                from_email: await encrypt(toEmail),
+                from_domain: domain ? await encryptDomain(domain) : null,
+                item: await encrypt(promise.item),
+                due_at: promise.dueAt,
+                confidence: promise.confidence,
+                direction: "OUTBOUND",
+              },
+              select: { id: true },
+            });
+            const delay = Math.max(
+              0,
+              promise.dueAt.getTime() - NUDGE_LEAD_MS - Date.now(),
+            );
+            await promiseNudgeQueue.add(
+              "nudge",
+              { promiseId: row.id },
+              { delay, jobId: `promise-nudge-${row.id}` },
+            );
+            console.log(
+              `[promise] Tracked outbound promise on conversation ${threadId}, nudge in ~${Math.round(delay / 60000)}m (due ${promise.dueAt.toISOString()}) (outlook)`,
+            );
+          }
+        }
+      } catch (err: any) {
+        console.error(
+          `[promise] outbound extraction failed (outlook): ${err?.message ?? err}`,
+        );
+      }
+    }
+
     const needsFollowUp = await checkSentRequiresFollowUp({
       subject,
       body,

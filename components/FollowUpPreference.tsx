@@ -113,9 +113,12 @@ const FollowUpPreference = () => {
             Track promises
           </h2>
           <p className="text-muted-foreground text-sm max-w-2xl">
-            When someone emails you a commitment with a deadline, NeatMail keeps
-            track of it. If the deadline passes and it still hasn&rsquo;t arrived,
-            it resurfaces under Follow up with a ready-to-send nudge.
+            NeatMail tracks commitments with a deadline in both directions.
+            When someone owes <em>you</em> and it&rsquo;s overdue, it resurfaces
+            under Follow up with a ready-to-send nudge. When <em>you</em> promised
+            to send something, about 30 minutes before it&rsquo;s due &mdash; if you
+            still haven&rsquo;t sent it &mdash; it resurfaces under Follow up with a
+            drafted reply and emails you a reminder.
           </p>
         </div>
         <div className="flex items-center gap-2.5 pt-1 shrink-0">

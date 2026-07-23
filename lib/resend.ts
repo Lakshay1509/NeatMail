@@ -311,6 +311,54 @@ export async function sendNoisySendersFoundEmail(params: NoisySendersFoundParams
   });
 }
 
+interface PromiseDueEmailParams {
+  to: string; // the user's own email
+  firstName: string | null;
+  item: string; // what the user promised to send
+  recipient: string; // who they promised it to
+  dueLabel: string; // human-readable deadline, e.g. "March 4 at 3:00 PM"
+}
+
+// Sent ~30 min before an outbound promise ("I owe them") comes due, when the
+// user still hasn't sent the thing. The commitment is now surfaced under Follow
+// up with a ready-to-send draft; this is the "you need to send this" ping.
+// Throws so the BullMQ worker can retry a transient send failure.
+export async function sendPromiseDueEmail(params: PromiseDueEmailParams) {
+  const { to, firstName, item, recipient, dueLabel } = params;
+  const name = firstName?.trim().split(" ")[0] || "there";
+  const itemSafe = escapeHtml(item);
+  const recipientSafe = escapeHtml(recipient);
+  const dueSafe = escapeHtml(dueLabel);
+
+  // Subject is plain text — use raw values, not HTML-escaped ones.
+  const subject = `Reminder: you told ${recipient} you'd send ${item} by ${dueLabel}`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111111;line-height:1.6;padding:24px;max-width:480px;margin:0 auto;">
+  <h2 style="font-size:20px;margin:0 0 16px;">⏰ You've got something to send</h2>
+  <p style="font-size:15px;color:#444;margin:0 0 16px;">Hi ${name},</p>
+  <p style="font-size:15px;color:#444;margin:0 0 16px;">
+    You told <strong>${recipientSafe}</strong> you'd send <strong>${itemSafe}</strong> by
+    <strong>${dueSafe}</strong> — and it looks like you haven't sent it yet.
+  </p>
+  <p style="font-size:15px;color:#444;margin:0 0 24px;">
+    We've surfaced the thread under <strong>Follow up</strong> and drafted a reply for you.
+    Just review it (attach anything needed) and hit send.
+  </p>
+  <a href="https://dashboard.neatmail.app" style="display:inline-block;padding:11px 22px;background:#111;color:#fff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">Open NeatMail</a>
+  <p style="font-size:12px;color:#888;margin-top:24px;">You're receiving this because you have promise tracking on. — The NeatMail team</p>
+</body>
+</html>`;
+
+  await resend.emails.send({
+    from: "NeatMail <notifications@send.neatmail.app>",
+    to,
+    subject,
+    html,
+  });
+}
+
 interface MailboxRevokedParams {
   ownerId: string;
   reason: string;

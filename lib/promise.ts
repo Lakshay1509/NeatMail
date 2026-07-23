@@ -211,6 +211,233 @@ ${input.body.slice(0, 6000)}`;
   return { item, dueAt, confidence };
 }
 
+// How far before an OUTBOUND deadline ("I owe them") we surface the reminder.
+// The user asked for "usually 30 minutes before"; a per-promise delayed job is
+// scheduled at due_at - this (see the sent-mail workers).
+export const NUDGE_LEAD_MS = 30 * 60 * 1000;
+
+/**
+ * Outbound counterpart of {@link isPromiseCandidate}. The mail was SENT by the
+ * user, so there is no untrusted sender to screen (no AUTOMATED_FROM gate) — a
+ * real "I owe them" promise still needs BOTH a first-person commitment cue and a
+ * temporal cue, which the shared regexes already capture.
+ */
+export function isOutboundPromiseCandidate(input: {
+  subject: string;
+  body: string;
+}): boolean {
+  const haystack = `${input.subject}\n${input.body}`.slice(0, 6000);
+  return COMMITMENT_CUE.test(haystack) && TEMPORAL_CUE.test(haystack);
+}
+
+// A date-only OUTBOUND deadline ("by Friday", "by end of day") carries no clock
+// time. Anchor it to the end of the business day rather than midnight: the nudge
+// fires ~30 min before, so end-of-business lands the reminder at ~16:30 — while
+// there's still a workday left to act — instead of ~23:29. (Inbound is unaffected:
+// it keeps its own 23:59:59 sentinel and its sweep fires AFTER due, so it can give
+// the promiser the whole day before nagging.)
+const OUTBOUND_END_OF_BUSINESS_HOUR = 17; // 5pm local, in the user's timezone
+
+// Shared local-wall-clock → UTC normalization for OUTBOUND promises, tolerant of
+// non-padded month/day/hour and any stray offset the model added. Anchors "date
+// only" to end of the business day (above). Returns null on an unparseable, past,
+// or absurdly-far-out (wrong-year) result — including a same-day date-only promise
+// created after business hours, where a "before end of business" nudge is moot.
+function resolveDueAt(
+  dueLocal: string,
+  tz: string,
+  anchorMs: number,
+): Date | null {
+  const m = (dueLocal ?? "")
+    .trim()
+    .match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if (!m) return null;
+  const [, yy, mo, dd, hh, mi, ss] = m;
+  const datePart = `${yy}-${mo.padStart(2, "0")}-${dd.padStart(2, "0")}`;
+  const local =
+    hh !== undefined
+      ? `${datePart}T${hh.padStart(2, "0")}:${mi}:${(ss ?? "00").padStart(2, "0")}`
+      : `${datePart}T${String(OUTBOUND_END_OF_BUSINESS_HOUR).padStart(2, "0")}:00:00`;
+
+  const dueAt = fromZonedTime(local, tz);
+  if (isNaN(dueAt.getTime())) return null;
+  const deltaMs = dueAt.getTime() - anchorMs;
+  if (deltaMs <= 0) return null;
+  if (deltaMs > MAX_HORIZON_DAYS * 86_400_000) return null;
+  return dueAt;
+}
+
+/**
+ * Extraction for OUTBOUND promises ("I owe them"): a commitment the user made in
+ * an email they SENT to deliver something for the recipient by a deadline.
+ * Mirrors {@link extractInboundPromise} with an inverted prompt; the model turns
+ * natural language into a local wall-clock date, code turns that into a UTC
+ * instant against the user's timezone.
+ */
+export async function extractOutboundPromise(input: {
+  subject: string;
+  body: string;
+  toEmail: string;
+  sentDate: Date;
+  userTimezone: string;
+}): Promise<ExtractedPromise | null> {
+  const tz = input.userTimezone || "UTC";
+  // Anchor relative dates ("tomorrow", "Friday") on when the mail was sent,
+  // expressed in the user's own timezone.
+  const sentLabel = formatInTimeZone(
+    input.sentDate,
+    tz,
+    "EEEE, MMMM d, yyyy 'at' HH:mm",
+  );
+
+  const systemMessage =
+    "You extract delivery commitments the SENDER made in an email they SENT. Output only the requested JSON.";
+
+  const userMessage = `The user SENT the email below to a recipient. Extract a commitment the SENDER (the user — "I"/"we") made to send, deliver, share, or do something FOR the recipient by a specific deadline ("I owe them" promises).
+
+Only count a promise where the SENDER is the one who will deliver. Do NOT count:
+- things the RECIPIENT was asked to do
+- vague intentions with no deadline ("I'll be in touch sometime")
+- questions or requests aimed at the recipient
+- pleasantries or acknowledgements with no concrete deliverable
+
+Resolve relative dates against the sent time: ${sentLabel} (timezone ${tz}).
+- Return "dueLocal" as a local wall-clock time in that timezone, format "YYYY-MM-DD" (date only) or "YYYY-MM-DDTHH:mm" (with an explicit clock time). Do NOT include a timezone offset.
+- If only a day is given (e.g. "by Friday", "the 18th"), return date only and set hasTime=false.
+- "item" is a short noun phrase for what the sender owes (e.g. "the design deck", "the signed contract").
+- confidence 0-1: how sure you are this is a real dated commitment by the sender.
+- If there is no such promise, set hasPromise=false and leave other fields empty.
+
+To: ${input.toEmail}
+Subject: ${input.subject}
+
+Body:
+${input.body.slice(0, 6000)}`;
+
+  let rawContent = "";
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-5-nano",
+      max_completion_tokens: 400,
+      reasoning_effort: "low",
+      seed: 42,
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "OutboundPromise",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              hasPromise: {
+                type: "boolean",
+                description:
+                  "True only if the sender committed to deliver something for the recipient by a deadline.",
+              },
+              item: {
+                type: "string",
+                description:
+                  "Short noun phrase for what the sender owes. Empty when hasPromise is false.",
+              },
+              dueLocal: {
+                type: "string",
+                description:
+                  "Local wall-clock due time, 'YYYY-MM-DD' or 'YYYY-MM-DDTHH:mm', no timezone offset. Empty when hasPromise is false.",
+              },
+              hasTime: {
+                type: "boolean",
+                description: "True if an explicit clock time was stated.",
+              },
+              confidence: {
+                type: "number",
+                description: "0-1 confidence this is a real dated commitment.",
+              },
+            },
+            required: ["hasPromise", "item", "dueLocal", "hasTime", "confidence"],
+            additionalProperties: false,
+          },
+        },
+      },
+      messages: [
+        { role: "system", content: systemMessage },
+        { role: "user", content: userMessage },
+      ],
+    });
+    rawContent = completion.choices?.[0]?.message?.content ?? "";
+  } catch (err) {
+    console.error("[extractOutboundPromise] OpenAI call failed:", err);
+    return null;
+  }
+
+  if (!rawContent) return null;
+
+  let parsed: {
+    hasPromise?: boolean;
+    item?: string;
+    dueLocal?: string;
+    hasTime?: boolean;
+    confidence?: number;
+  };
+  try {
+    parsed = JSON.parse(rawContent);
+  } catch (err) {
+    console.error(
+      "[extractOutboundPromise] JSON parse failed. Raw:",
+      rawContent,
+      err,
+    );
+    return null;
+  }
+
+  if (!parsed.hasPromise) return null;
+
+  const item = (parsed.item ?? "").trim().slice(0, 300);
+  const confidence = typeof parsed.confidence === "number" ? parsed.confidence : 0;
+  if (!item || confidence < MIN_CONFIDENCE) return null;
+
+  const dueAt = resolveDueAt(parsed.dueLocal ?? "", tz, input.sentDate.getTime());
+  if (!dueAt) return null;
+
+  return { item, dueAt, confidence };
+}
+
+/**
+ * Draft body for an OUTBOUND promise coming due: the email that DELIVERS what the
+ * user committed to send. Framed as "here's the thing you owed", so the user just
+ * reviews (and attaches, if it's a file) and hits send.
+ */
+export async function generateOutboundPromiseDraft(request: {
+  subject: string;
+  item: string;
+  to: string;
+  dueLabel: string;
+}): Promise<string> {
+  const prompt = `You previously told the recipient you would send or deliver something by a deadline that is almost here, and you're about to follow through. Draft the email that delivers it: a short, friendly message (2-4 lines) that hands over the promised item or clearly says it's attached/enclosed. Keep it warm and natural. If the item is a file or document you can't actually produce, write it so the user only has to attach it and send.
+
+What you owe: ${request.item}
+Original subject: ${request.subject}
+Deadline: ${request.dueLabel}
+
+Write only the email body — no subject line, greeting, or sign-off. Just 2-4 natural lines.`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-5-mini",
+    messages: [
+      {
+        role: "system",
+        content:
+          "You write short, friendly, professional emails that deliver on a commitment. Output only the message body — no subject, greeting, or sign-off.",
+      },
+      { role: "user", content: prompt },
+    ],
+    reasoning_effort: "low",
+    max_completion_tokens: 500,
+    seed: 42,
+  });
+
+  return completion.choices[0]?.message?.content?.trim() ?? "";
+}
+
 /**
  * Nudge body for an overdue inbound promise. Mirrors generateFollowUpMessage
  * (lib/sent-followup.ts) but framed as "you said you'd send X, and it's overdue"
