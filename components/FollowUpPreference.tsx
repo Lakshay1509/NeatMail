@@ -17,12 +17,14 @@ const FollowUpPreference = () => {
   const [aiDrafts, setAiDrafts] = useState(true);
   const [days, setDays] = useState(3);
   const [skipEmails, setSkipEmails] = useState("");
+  const [trackPromises, setTrackPromises] = useState(false);
 
   useEffect(() => {
     if (data?.preference) {
       setEnabled(data.preference.enabled ?? false);
       setAiDrafts(data.preference.ai_drafts ?? true);
       setDays(data.preference.days ?? 3);
+      setTrackPromises(data.preference.track_promises ?? false);
       setSkipEmails(
         (data.preference.skip_emails ?? "").split(",").join("\n"),
       );
@@ -49,6 +51,7 @@ const FollowUpPreference = () => {
     await mutation.mutateAsync({
       enabled,
       aiDrafts,
+      trackPromises,
       days,
       skipEmails: skipEmails || "",
     });
@@ -99,6 +102,30 @@ const FollowUpPreference = () => {
             checked={aiDrafts}
             onCheckedChange={(checked) => setAiDrafts(checked)}
             aria-label="Create AI drafts for follow-ups"
+          />
+        </div>
+      </div>
+
+      {/* Track Promises */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground mb-1">
+            Track promises
+          </h2>
+          <p className="text-muted-foreground text-sm max-w-2xl">
+            When someone emails you a commitment with a deadline, NeatMail keeps
+            track of it. If the deadline passes and it still hasn&rsquo;t arrived,
+            it resurfaces under Follow up with a ready-to-send nudge.
+          </p>
+        </div>
+        <div className="flex items-center gap-2.5 pt-1 shrink-0">
+          <span className="text-sm font-medium text-foreground">
+            {trackPromises ? "On" : "Off"}
+          </span>
+          <Switch
+            checked={trackPromises}
+            onCheckedChange={(checked) => setTrackPromises(checked)}
+            aria-label="Track promises made to you"
           />
         </div>
       </div>

@@ -167,6 +167,17 @@ const app = new Hono().post(
           },
         });
 
+        // Promise tracking ("they owe me") defaults ON for new users. Set only
+        // on create so a re-onboard never flips a choice the user made later.
+        await tx.follow_up_preference.upsert({
+          where: { user_id: userId },
+          update: {},
+          create: {
+            user_id: userId,
+            track_promises: true,
+          },
+        });
+
         const tagRecords = await tx.tag.findMany({
           where: {
             name: { in: body.tags },
