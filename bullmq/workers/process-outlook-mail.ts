@@ -9,6 +9,7 @@ import {
   extractOutboundPromise,
   NUDGE_LEAD_MS,
 } from "@/lib/promise";
+import { fetchUpcomingOutlookEvents } from "@/lib/promise-calendar";
 import { markBufferedEmailArchived } from "@/lib/batch-insert";
 import {
   addMailtoDB,
@@ -211,6 +212,8 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
             toEmail,
             sentDate,
             userTimezone: draftPref.timezone ?? "UTC",
+            getUpcomingEvents: () =>
+              fetchUpcomingOutlookEvents(subscription.clerk_user_id, sentDate),
           });
           if (promise) {
             const domain = toEmail.split("@")[1] || null;
@@ -689,6 +692,8 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
           fromEmail: from,
           receivedDate,
           userTimezone: draftPref.timezone ?? "UTC",
+          getUpcomingEvents: () =>
+            fetchUpcomingOutlookEvents(subscription.clerk_user_id, receivedDate),
         });
         if (promise) {
           const domain = from.split("@")[1] || null;

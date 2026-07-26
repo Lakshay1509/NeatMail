@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { fromZonedTime } from "date-fns-tz/fromZonedTime";
 import { formatInTimeZone } from "date-fns-tz";
+import type { CalendarEventLite } from "@/lib/promise-calendar";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -39,6 +40,15 @@ const COMMITMENT_CUE =
 const TEMPORAL_CUE =
   /\b(?:today|tonight|tomorrow|tmrw|tmw|eod|cob|asap|end of (?:the )?(?:day|week|month|business day)|by (?:the )?end of|this (?:week|month|afternoon|evening|morning)|next (?:week|month|business day)|(?:by |on |this |next |before )?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tues|tue|wed|thurs|thu|fri|sat|sun)|in \d+ (?:days?|weeks?|hours?|business days?)|\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}(?:\/\d{2,4})?|\d{1,2}(?:st|nd|rd|th)|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{1,2}|\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec))\b/i;
 
+// A deadline anchored to a named meeting/event rather than a literal date
+// ("before the sprint review", "after our sync") — TEMPORAL_CUE never matches
+// these, so without this cue the promise is silently dropped at the gate and
+// the LLM never sees it. When this is the ONLY cue that matched (no literal
+// date), the extractor resolves the date by looking at the reader's actual
+// calendar — see getUpcomingEvents in extractInboundPromise/extractOutboundPromise.
+const EVENT_CUE =
+  /\b(?:before|after|by|ahead of|prior to|leading up to)\s+(?:the|our|next|this)\s+(?:[a-z0-9'-]+\s+){0,3}?(?:meeting|review|call|sync|session|standup|stand-up|demo|catch-?up|check-?in|1:1|one-on-one|kickoff|kick-?off|retro(?:spective)?|interview|presentation|workshop|webinar)\b/i;
+
 /**
  * Cheap pre-filter deciding whether an incoming email is worth an LLM look.
  * Runs on the already-fetched subject/body, so it costs nothing. Only when this
@@ -51,7 +61,48 @@ export function isPromiseCandidate(input: {
 }): boolean {
   if (AUTOMATED_FROM.test(input.fromEmail)) return false;
   const haystack = `${input.subject}\n${input.body}`.slice(0, 6000);
-  return COMMITMENT_CUE.test(haystack) && TEMPORAL_CUE.test(haystack);
+  return (
+    COMMITMENT_CUE.test(haystack) &&
+    (TEMPORAL_CUE.test(haystack) || EVENT_CUE.test(haystack))
+  );
+}
+
+// Builds the calendar-grounding block appended to the extraction prompt when a
+// candidate cleared the gate ONLY via EVENT_CUE (no literal date present).
+// Deliberately asks the model to match by title/attendees/timing rather than
+// exact wording — a user's phrasing ("our meeting") rarely matches the actual
+// calendar title verbatim ("EOD meeting with Alice"), so a hard string/embedding
+// similarity threshold would under-match; the model's semantic judgment doesn't.
+function buildCalendarContextBlock(
+  events: CalendarEventLite[],
+  tz: string,
+): string {
+  const lines = events.map((e) => {
+    const label = formatInTimeZone(
+      new Date(e.start),
+      tz,
+      "EEE, MMM d yyyy 'at' HH:mm",
+    );
+    const attendeesText = e.attendees?.length
+      ? ` (attendees: ${e.attendees.slice(0, 5).join(", ")})`
+      : "";
+    return `- "${e.title}" — ${label}${attendeesText}`;
+  });
+
+  return `\n\nThis deadline references a meeting/event by name rather than a literal date. Below are the reader's upcoming calendar events (next ~2 months) — match the referenced event using its title, attendees, and timing, NOT exact wording (a calendar title rarely matches the email's phrasing verbatim — e.g. "our meeting" could be a calendar event titled "EOD meeting with Alice"; use judgment). If you find a plausible match, use ITS date/time as dueLocal and set hasTime=true. If nothing in the list plausibly matches, set hasPromise=false rather than guessing.
+
+Upcoming calendar events:
+${lines.join("\n")}`;
+}
+
+/**
+ * Decides whether a gated-in candidate needs calendar grounding: true only
+ * when EVENT_CUE matched but TEMPORAL_CUE did not (a literal date always wins
+ * — no need to spend a calendar API call resolving it).
+ */
+function needsCalendarLookup(subject: string, body: string): boolean {
+  const haystack = `${subject}\n${body}`.slice(0, 6000);
+  return !TEMPORAL_CUE.test(haystack) && EVENT_CUE.test(haystack);
 }
 
 // Extraction: one gpt-5-nano call, only on gated candidates. The model turns
@@ -72,6 +123,8 @@ export async function extractInboundPromise(input: {
   fromEmail: string;
   receivedDate: Date;
   userTimezone: string;
+  /** Lazy — only invoked when the gate matched EVENT_CUE with no literal date. */
+  getUpcomingEvents?: () => Promise<CalendarEventLite[]>;
 }): Promise<ExtractedPromise | null> {
   const tz = input.userTimezone || "UTC";
   // Anchor relative dates ("tomorrow", "Friday") on when the mail actually
@@ -81,6 +134,21 @@ export async function extractInboundPromise(input: {
     tz,
     "EEEE, MMMM d, yyyy 'at' HH:mm",
   );
+
+  let calendarBlock = "";
+  if (
+    input.getUpcomingEvents &&
+    needsCalendarLookup(input.subject, input.body)
+  ) {
+    try {
+      const events = await input.getUpcomingEvents();
+      if (events.length > 0) {
+        calendarBlock = buildCalendarContextBlock(events, tz);
+      }
+    } catch (err) {
+      console.error("[extractInboundPromise] calendar lookup failed:", err);
+    }
+  }
 
   const systemMessage =
     "You extract delivery commitments made TO the reader from an email they received. Output only the requested JSON.";
@@ -100,6 +168,7 @@ Resolve relative dates against the received time: ${receivedLabel} (timezone ${t
 - "item" is a short noun phrase for what's owed (e.g. "the design deck", "the signed contract").
 - confidence 0-1: how sure you are this is a real dated commitment by the sender.
 - If there is no such promise, set hasPromise=false and leave other fields empty.
+${calendarBlock}
 
 From: ${input.fromEmail}
 Subject: ${input.subject}
@@ -284,6 +353,8 @@ export async function extractOutboundPromise(input: {
   toEmail: string;
   sentDate: Date;
   userTimezone: string;
+  /** Lazy — only invoked when the gate matched EVENT_CUE with no literal date. */
+  getUpcomingEvents?: () => Promise<CalendarEventLite[]>;
 }): Promise<ExtractedPromise | null> {
   const tz = input.userTimezone || "UTC";
   // Anchor relative dates ("tomorrow", "Friday") on when the mail was sent,
@@ -293,6 +364,21 @@ export async function extractOutboundPromise(input: {
     tz,
     "EEEE, MMMM d, yyyy 'at' HH:mm",
   );
+
+  let calendarBlock = "";
+  if (
+    input.getUpcomingEvents &&
+    needsCalendarLookup(input.subject, input.body)
+  ) {
+    try {
+      const events = await input.getUpcomingEvents();
+      if (events.length > 0) {
+        calendarBlock = buildCalendarContextBlock(events, tz);
+      }
+    } catch (err) {
+      console.error("[extractOutboundPromise] calendar lookup failed:", err);
+    }
+  }
 
   const systemMessage =
     "You extract delivery commitments the SENDER made in an email they SENT. Output only the requested JSON.";
@@ -312,6 +398,7 @@ Resolve relative dates against the sent time: ${sentLabel} (timezone ${tz}).
 - "item" is a short noun phrase for what the sender owes (e.g. "the design deck", "the signed contract").
 - confidence 0-1: how sure you are this is a real dated commitment by the sender.
 - If there is no such promise, set hasPromise=false and leave other fields empty.
+${calendarBlock}
 
 To: ${input.toEmail}
 Subject: ${input.subject}

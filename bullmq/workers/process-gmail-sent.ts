@@ -17,6 +17,7 @@ import {
   extractOutboundPromise,
   NUDGE_LEAD_MS,
 } from "@/lib/promise";
+import { fetchUpcomingGoogleEvents } from "@/lib/promise-calendar";
 import { encrypt, encryptDomain } from "@/lib/encode";
 import { getUserTier } from "@/lib/tier-guard";
 import { followUpQueue, promiseNudgeQueue } from "@/lib/queue";
@@ -127,6 +128,8 @@ export async function processGmailSent(
             toEmail,
             sentDate,
             userTimezone: draftPref.timezone ?? "UTC",
+            getUpcomingEvents: () =>
+              fetchUpcomingGoogleEvents(clerkUserId, sentDate),
           });
           if (promise) {
             const domain = toEmail.split("@")[1] || null;

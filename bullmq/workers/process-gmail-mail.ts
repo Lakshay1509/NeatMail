@@ -19,6 +19,7 @@ import { checkAndForwardToTelegram } from "@/lib/telegram";
 import { db } from "@/lib/prisma";
 import { encrypt, encryptDomain, decrypt } from "@/lib/encode";
 import { isPromiseCandidate, extractInboundPromise } from "@/lib/promise";
+import { fetchUpcomingGoogleEvents } from "@/lib/promise-calendar";
 import { markBufferedEmailArchived } from "@/lib/batch-insert";
 import { draftQueue, followUpQueue } from "@/lib/queue";
 import { gmailUserBurstLimiter } from "@/lib/rate-limit";
@@ -328,6 +329,8 @@ export async function processGmailMail(
             fromEmail,
             receivedDate,
             userTimezone: draftPref.timezone ?? "UTC",
+            getUpcomingEvents: () =>
+              fetchUpcomingGoogleEvents(clerkUserId, receivedDate),
           });
           if (promise) {
             const domain = fromEmail.split("@")[1] || null;
