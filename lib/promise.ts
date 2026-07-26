@@ -28,8 +28,11 @@ const AUTOMATED_FROM =
   /(?:^|[._+-])(?:no-?reply|do-?not-?reply|donotreply|notifications?|mailer-?daemon|postmaster|newsletter|bounces?|marketing|alerts?|billing)@/i;
 
 // The sender committing to send/do/deliver something for the recipient.
+// Includes hedged phrasing ("I should be able to...", "I'll try to...") — a
+// softened commitment is still a commitment, and dropping it at this free
+// regex gate loses the promise before the LLM ever gets a look.
 const COMMITMENT_CUE =
-  /\b(?:i(?:['’]?m| am) going to|i['’]?ll|i will|i shall|we['’]?ll|we will|let me (?:send|share|get|forward|pull)|i can (?:send|share|get|have)|(?:will|i['’]?ll|we['’]?ll) (?:send|share|forward|deliver|provide|revert|update|get back to you|circle back|follow up)|sending (?:it|this|that|them|the|over|you)|send (?:it|this|that|them|the)? ?over to you|get back to you|revert(?:ing)? (?:back )?to you|circle back|follow up with you|will (?:be )?(?:sent|shared|ready|delivered|provided|done|completed|forwarded)|you['’]?ll (?:have|get|receive)|(?:get|have) (?:it|this|that|them|the .{0,20}?) (?:to|for) you)\b/i;
+  /\b(?:i(?:['’]?m| am) going to|i['’]?ll|i will|i shall|we['’]?ll|we will|let me (?:send|share|get|forward|pull)|i can (?:send|share|get|have)|i (?:should|hope to|expect to|plan to) (?:be able to )?(?:send|share|get|have|deliver|provide)|(?:will|i['’]?ll|we['’]?ll) (?:send|share|forward|deliver|provide|revert|update|get back to you|circle back|follow up)|sending (?:it|this|that|them|the|over|you)|send (?:it|this|that|them|the)? ?over to you|get back to you|revert(?:ing)? (?:back )?to you|circle back|follow up with you|will (?:be )?(?:sent|shared|ready|delivered|provided|done|completed|forwarded)|you['’]?ll (?:have|get|receive)|(?:get|have) (?:it|this|that|them|the .{0,20}?) (?:to|for) you)\b/i;
 
 // A deadline-ish expression. Month names only count when paired with a day
 // number, so common modal words ("may") don't trip it.
@@ -93,6 +96,7 @@ Only count a promise where the SENDER is the one who will deliver. Do NOT count:
 Resolve relative dates against the received time: ${receivedLabel} (timezone ${tz}).
 - Return "dueLocal" as a local wall-clock time in that timezone, format "YYYY-MM-DD" (date only) or "YYYY-MM-DDTHH:mm" (with an explicit clock time). Do NOT include a timezone offset.
 - If only a day is given (e.g. "by Friday", "the 18th"), return date only and set hasTime=false.
+- Treat the work week as Monday-Friday: "end of week"/"by end of week"/"this week" means the coming Friday, and "next week" starts the following Monday.
 - "item" is a short noun phrase for what's owed (e.g. "the design deck", "the signed contract").
 - confidence 0-1: how sure you are this is a real dated commitment by the sender.
 - If there is no such promise, set hasPromise=false and leave other fields empty.
@@ -304,6 +308,7 @@ Only count a promise where the SENDER is the one who will deliver. Do NOT count:
 Resolve relative dates against the sent time: ${sentLabel} (timezone ${tz}).
 - Return "dueLocal" as a local wall-clock time in that timezone, format "YYYY-MM-DD" (date only) or "YYYY-MM-DDTHH:mm" (with an explicit clock time). Do NOT include a timezone offset.
 - If only a day is given (e.g. "by Friday", "the 18th"), return date only and set hasTime=false.
+- Treat the work week as Monday-Friday: "end of week"/"by end of week"/"this week" means the coming Friday, and "next week" starts the following Monday.
 - "item" is a short noun phrase for what the sender owes (e.g. "the design deck", "the signed contract").
 - confidence 0-1: how sure you are this is a real dated commitment by the sender.
 - If there is no such promise, set hasPromise=false and leave other fields empty.
