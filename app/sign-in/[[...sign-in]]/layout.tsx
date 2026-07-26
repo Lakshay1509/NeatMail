@@ -1,7 +1,9 @@
 import type { Metadata } from "next"
 
+// 152 chars — stays inside Google's ~155-160 char snippet cut, so the closing
+// clause survives instead of truncating mid-sentence.
 const DESCRIPTION =
-  "Sign in to NeatMail to track every promise in your Gmail or Outlook inbox — the ones you made and the ones made to you — with the follow-up drafted when it's due."
+  "Sign in to NeatMail to track every promise in your Gmail or Outlook inbox — the ones you made and the ones made to you — each follow-up drafted for you."
 
 /**
  * Must stay byte-identical to the landing site's organizationSchema @id
