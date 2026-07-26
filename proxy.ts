@@ -3,7 +3,12 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
 
 const isPublicRoute = createRouteMatcher([
-  '/sign-in(.*)'
+  '/sign-in(.*)',
+  // Served by app/robots.ts and app/sitemap.ts. The matcher below excludes
+  // neither `.txt` nor `.xml`, so without these crawlers get redirected to
+  // sign-in and never read the rules or the sitemap.
+  '/robots.txt',
+  '/sitemap.xml',
 ]);
 
 const isPublicApiRoute = createRouteMatcher([

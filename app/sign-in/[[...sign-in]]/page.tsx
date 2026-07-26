@@ -5,9 +5,13 @@ import { ShieldCheck, BadgeCheck, Sparkles } from 'lucide-react'
 import Image from 'next/image'
 import { SignInOrInvite } from '../SignInOrInvite'
 
+// Order matters: the promise slide leads, so the first thing a visitor (and the
+// caption text a crawler reads) sees is the same claim the landing page opens
+// with. The rest follow as supporting features, mirroring that page's running
+// order — promise first, then the tools that keep it from getting buried.
 const carouselImages = [
-  { src: '/sign-in/dashboard.webp', label: 'Visualize your inbox at a glance' },
-  { src: '/sign-in/followUp.webp', label: 'Never miss a follow-up again' },
+  { src: '/sign-in/followUp.webp', label: 'Every promise, tracked under one Follow up label' },
+  { src: '/sign-in/dashboard.webp', label: 'See what you owe, and what you are owed, at a glance' },
   { src: '/sign-in/integration.webp', label: 'Seamless integration with your favourite tools' },
   { src: '/sign-in/unsubscribe.webp', label: 'Unsubscribe with one click' },
 ]
@@ -29,11 +33,14 @@ export default function SignInPage() {
         <div className="w-full max-w-md space-y-12 px-6 md:px-0">
 
           <div className="space-y-2 mb-10 ">
+            {/* Same promise as the landing hero, word for word — a visitor
+                arriving from neatmail.app must not read a different pitch. */}
             <h1 className="text-2xl  font-semibold tracking-tight text-foreground">
-              Your inbox,<br />organizes itself
+              Never drop a promise<br />buried in your inbox
             </h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
-             Automatically organize newsletters, follow-ups, and client emails.
+              NeatMail finds every promise you made — or were made to you — and tracks it, right
+              inside Gmail and Outlook.
             </p>
           </div>
           

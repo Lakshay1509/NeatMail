@@ -1,7 +1,7 @@
 <div align="center">
   <h1>NeatMail</h1>
-  <h2><strong>Get to inbox zero faster</strong></h2>
-  <p>NeatMail is an <strong>AI email assistant for Gmail and Outlook</strong> that organizes priority emails, auto-labels your inbox, and drafts replies in your own voice — so you can clear your inbox in less time.</p>
+  <h2><strong>Never drop a promise buried in your inbox</strong></h2>
+  <p>NeatMail is an <strong>AI email assistant for Gmail and Outlook</strong> that tracks every promise you make and every promise made to you, files them under one Follow up label, and drafts the follow-up when it's due — plus auto-labeling, replies in your own voice, and a clearer inbox.</p>
 
   <p>
     <a href="https://www.neatmail.app">Website</a> •
