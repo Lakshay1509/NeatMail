@@ -683,6 +683,8 @@ const app = new Hono()
     const now = new Date();
     const results = {
       totalRules: 0,
+      totalUsers: 0,
+      usersSwept: 0,
       totalMessages: 0,
       archivedGmail: 0,
       archivedOutlook: 0,
@@ -694,11 +696,16 @@ const app = new Hono()
       const activeRules = await db.archiveRule.findMany({
         where: {
           isActive: true,
-          // Same deleted_flag guard as the other cron routes below.
-          user_tokens: { deleted_flag: false },
+          // Same deleted_flag guard as the other cron routes below. The tier
+          // filter is only a pre-filter to keep this from fetching rules we'd
+          // discard anyway: `user_tokens.tier` is a denormalised copy of the
+          // authoritative getUserTier, materialised for the whole billing team
+          // on join and on every subscription event (lib/payement.ts), and the
+          // free-tier reaper cron above already relies on that same invariant.
+          // The authoritative per-user check below stays the real gate.
+          user_tokens: { deleted_flag: false, tier: { not: "FREE" } },
         },
         select: {
-          id: true,
           user_id: true,
           domain: true,
           tag_id: true,
@@ -710,37 +717,65 @@ const app = new Hono()
 
       results.totalRules = activeRules.length;
 
+      // Tier and subscription are properties of the *user*, not the rule, but
+      // this used to resolve both once per rule — so a user with 30 AUTO rules
+      // (one per muted sender) paid for 30 identical billing lookups every run.
+      // Group first, resolve once, then sweep that user's rules.
+      const rulesByUser = new Map<string, typeof activeRules>();
       for (const rule of activeRules) {
+        const bucket = rulesByUser.get(rule.user_id);
+        if (bucket) bucket.push(rule);
+        else rulesByUser.set(rule.user_id, [rule]);
+      }
+
+      results.totalUsers = rulesByUser.size;
+
+      for (const [userId, userRules] of rulesByUser) {
         try {
-          // Skip users on FREE tier. Org-aware: a member inherits their admin's
-          // tier, so resolve it rather than reading the member's own row.
-          const tier = await getUserTier(rule.user_id);
+          // Org-aware: a member inherits their admin's tier, so resolve it
+          // rather than reading the member's own row.
+          const tier = await getUserTier(userId);
           if (tier === "FREE") {
             continue;
           }
 
-          const subStatus = await getUserSubscribed(rule.user_id);
+          const subStatus = await getUserSubscribed(userId);
           if (!subStatus.subscribed) {
             continue;
           }
-
-          // Shared with the immediate-sweep worker so both stay in sync.
-          const swept = await sweepArchiveRule(rule, now);
-          results.totalMessages += swept.matched;
-          results.archivedGmail += swept.archivedGmail;
-          results.archivedOutlook += swept.archivedOutlook;
-          results.failed += swept.failed;
-          results.errors.push(...swept.errors);
         } catch (error) {
+          // Billing resolution failed — skip this user's rules, not the run.
           const errorMessage =
             error instanceof Error ? error.message : String(error);
           results.errors.push(
-            `Failed to process rule for ${rule.tag_id ? `tag ${rule.tag_id}` : `domain ${rule.domain}`}: ${errorMessage}`,
+            `Failed to resolve billing for user ${userId}: ${errorMessage}`,
           );
-          console.error(
-            `Failed to process archive rule (${rule.tag_id ? `tag ${rule.tag_id}` : `domain ${rule.domain}`}):`,
-            error,
-          );
+          console.error(`Failed to resolve billing for user ${userId}:`, error);
+          continue;
+        }
+
+        results.usersSwept++;
+
+        for (const rule of userRules) {
+          try {
+            // Shared with the immediate-sweep worker so both stay in sync.
+            const swept = await sweepArchiveRule(rule, now);
+            results.totalMessages += swept.matched;
+            results.archivedGmail += swept.archivedGmail;
+            results.archivedOutlook += swept.archivedOutlook;
+            results.failed += swept.failed;
+            results.errors.push(...swept.errors);
+          } catch (error) {
+            const errorMessage =
+              error instanceof Error ? error.message : String(error);
+            results.errors.push(
+              `Failed to process rule for ${rule.tag_id ? `tag ${rule.tag_id}` : `domain ${rule.domain}`}: ${errorMessage}`,
+            );
+            console.error(
+              `Failed to process archive rule (${rule.tag_id ? `tag ${rule.tag_id}` : `domain ${rule.domain}`}):`,
+              error,
+            );
+          }
         }
       }
 

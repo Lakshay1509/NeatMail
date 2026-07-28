@@ -34,43 +34,51 @@ export async function resolveSubscriptionStatus(
 ): Promise<SubscriptionStatus> {
   const ownerId = await getBillingOwnerId(userId);
 
-  const [data, freeTrial, owner, processingPayment] = await Promise.all([
-    db.subscription.findFirst({
-      where: { clerkUserId: ownerId },
-      select: {
-        cancelAtNextBillingDate: true,
-        nextBillingDate: true,
-        status: true,
-        recurringAmount: true,
-        currency: true,
-        paymentFrequencyInterval: true,
-        paymentFrequencyCount: true,
-        extraMailboxes: true,
-      },
-      orderBy: { updatedAt: "desc" },
-    }),
-    db.free_trial.findUnique({ where: { user_id: ownerId } }),
-    db.user_tokens.findUnique({
-      where: { clerk_user_id: ownerId },
-      select: { tier: true },
-    }),
-    db.paymentHistory.findFirst({
-      where: { clerkUserId: ownerId, status: "processing" },
-      select: { id: true },
-    }),
-  ]);
+  // Every read here is projected down to the columns actually used below.
+  // PaymentHistory in particular carries a `metadata` Json blob straight from
+  // the DodoPay webhook, so an unprojected findFirst pulls multiple KB per call
+  // — and this function runs on hot paths (see the /archive-messages cron).
+  // The two payment probes are pure existence checks, hence `select: { id }`.
+  const [data, freeTrial, owner, processingPayment, zero_payment, paid_charge] =
+    await Promise.all([
+      db.subscription.findFirst({
+        where: { clerkUserId: ownerId },
+        select: {
+          cancelAtNextBillingDate: true,
+          nextBillingDate: true,
+          status: true,
+          recurringAmount: true,
+          currency: true,
+          paymentFrequencyInterval: true,
+          paymentFrequencyCount: true,
+          extraMailboxes: true,
+        },
+        orderBy: { updatedAt: "desc" },
+      }),
+      db.free_trial.findUnique({
+        where: { user_id: ownerId },
+        select: { status: true, expires_at: true },
+      }),
+      db.user_tokens.findUnique({
+        where: { clerk_user_id: ownerId },
+        select: { tier: true },
+      }),
+      db.paymentHistory.findFirst({
+        where: { clerkUserId: ownerId, status: "processing" },
+        select: { id: true },
+      }),
+      db.paymentHistory.findFirst({
+        where: { clerkUserId: ownerId, amount: 0, status: "succeeded" },
+        select: { id: true },
+      }),
+      // A real post-trial charge; once present, the card trial has converted to paid.
+      db.paymentHistory.findFirst({
+        where: { clerkUserId: ownerId, amount: { gt: 0 }, status: "succeeded" },
+        select: { id: true },
+      }),
+    ]);
 
   const paymentProcessing = !!processingPayment;
-
-  const zero_payment = await db.paymentHistory.findFirst({
-    where: { clerkUserId: ownerId, amount: 0, status: "succeeded" },
-    orderBy: { createdAt: "desc" },
-  });
-
-  // A real post-trial charge; once present, the card trial has converted to paid.
-  const paid_charge = await db.paymentHistory.findFirst({
-    where: { clerkUserId: ownerId, amount: { gt: 0 }, status: "succeeded" },
-  });
 
   const tier = (owner?.tier as Tier) ?? "FREE";
 
