@@ -1,8 +1,7 @@
 'use client'
 
-import { UserButton, useUser, useClerk } from '@clerk/nextjs'
+import { UserButton, useUser } from '@clerk/nextjs'
 import Link from 'next/link'
-import { useEffect, useRef } from 'react'
 import { SidebarTrigger } from './ui/sidebar';
 import { usePathname } from 'next/navigation';
 import { useGetUserSubscribed } from '@/features/user/use-get-subscribed';
@@ -11,18 +10,6 @@ import Image from 'next/image';
 
 const Navbar = () => {
   const { isSignedIn } = useUser();
-  const { addListener, session } = useClerk();
-  const prevSession = useRef(!!session);
-
-  useEffect(() => {
-    return addListener((resources) => {
-      const hasSession = !!resources.session;
-      if (prevSession.current && !hasSession) {
-        localStorage.removeItem("welcome_dialog_seen");
-      }
-      prevSession.current = hasSession;
-    });
-  }, [addListener]);
   const pathname = usePathname();
   const {data,isLoading,isError} = useGetUserSubscribed();
   const { tier, isFree } = useTierAccess();
