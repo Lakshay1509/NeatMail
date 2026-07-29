@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -102,6 +103,87 @@ const ROLES = [
   { value: "other", label: "Other" },
 ];
 
+// Free-mail domains read as personal use; anything else is almost certainly a
+// company address, where Founder is the modal answer for an inbox tool. The
+// guess exists only to remove the dead Continue button on step 0 — it is
+// pre-selected, clearly labelled as a guess, and changed in one click.
+const PERSONAL_DOMAINS = new Set([
+  "gmail.com",
+  "googlemail.com",
+  "outlook.com",
+  "outlook.fr",
+  "outlook.de",
+  "outlook.co.uk",
+  "hotmail.com",
+  "hotmail.co.uk",
+  "live.com",
+  "msn.com",
+  "yahoo.com",
+  "yahoo.co.uk",
+  "icloud.com",
+  "me.com",
+  "aol.com",
+  "proton.me",
+  "protonmail.com",
+]);
+
+const guessRole = (email: string | undefined): string => {
+  const domain = email?.split("@")[1]?.toLowerCase();
+  if (!domain) return "other";
+  return PERSONAL_DOMAINS.has(domain) ? "personal-use" : "founder";
+};
+
+// Roughly the time it takes to open, glance at, and dismiss one email. Used to
+// price the manual alternative in front of the plan cards.
+const SECONDS_PER_EMAIL = 3;
+
+const formatTriageTime = (count: number) => {
+  const mins = Math.round((count * SECONDS_PER_EMAIL) / 60);
+  if (mins < 60) return `${mins} min`;
+  const hours = Math.floor(mins / 60);
+  const rest = mins % 60;
+  return rest ? `${hours}h ${rest}m` : `${hours}h`;
+};
+
+const TOTAL_STEPS = 4;
+
+// Never opens at 0%. Signing up and granting mailbox access was real work, so
+// the track starts at 40% and the four steps carry it to 100% — a user with
+// visible momentum is measurably less likely to abandon (goal-gradient effect).
+const progressPct = (step: number) => 40 + step * 20;
+
+function ProgressTrack({
+  step,
+  align = "center",
+}: {
+  step: number;
+  align?: "center" | "start";
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-2",
+        align === "center" ? "items-center" : "items-start",
+      )}
+    >
+      <div className="flex items-center gap-2">
+        {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+          <div
+            key={i}
+            className={cn(
+              "h-1.5 rounded-full transition-all duration-500",
+              i <= step ? "bg-neutral-900 w-8" : "bg-neutral-200 w-6",
+            )}
+          />
+        ))}
+      </div>
+      <p className="text-[11px] font-medium tabular-nums text-neutral-500">
+        Step {step + 1} of {TOTAL_STEPS} · {progressPct(step)}%
+      </p>
+    </div>
+  );
+}
+
 const MASCOTS = [
   "/mascot/labels.svg",
   "/mascot/draft.svg",
@@ -162,6 +244,7 @@ const stepVariants = {
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { user } = useUser();
   const { saveStep } = useOnboarding();
   const { region } = useGeo();
   const { data: subData, refetch: refetchSub } = useGetUserSubscribed();
@@ -177,7 +260,10 @@ export default function OnboardingPage() {
   const dirRef = useRef(1);
   const [step, setStep] = useState(0);
   const [selectedTier, setSelectedTier] = useState<TrialTier>("MAX");
-  const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
+  // Annual is the interval carrying the savings badge, so it is also the
+  // default — a default that contradicts the recommendation wastes the ~70-90%
+  // of users who simply accept whatever is pre-selected.
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>("annual");
   const [data, setData] = useState<OnboardingData>({
     role: null,
     activeLabels: CATEGORIES.map((c) => c.name),
@@ -187,12 +273,33 @@ export default function OnboardingPage() {
 
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [mode, setMode] = useState<"loading" | "invite" | "wizard">("loading");
+  const [roleGuessed, setRoleGuessed] = useState(false);
+
+  // Smart default: step 0 opens with a role already selected and a working
+  // Continue button, instead of 13 unselected options and a dead button. Only
+  // fills while the field is untouched, so it can never overwrite a real pick.
+  useEffect(() => {
+    if (!user || data.role !== null) return;
+    setData((prev) =>
+      prev.role === null
+        ? { ...prev, role: guessRole(user.primaryEmailAddress?.emailAddress) }
+        : prev,
+    );
+    setRoleGuessed(true);
+  }, [user, data.role]);
 
   const prices = getTierPrices(region);
   const monthlyEquivalent = (tier: TrialTier) =>
     billingInterval === "annual"
       ? `${prices[tier].symbol}${(prices[tier].annual / 12).toFixed(2)}`
       : `${prices[tier].symbol}${prices[tier].monthly}`;
+  // Anchoring: the same price restated at day scale, shown after the cost of
+  // doing the work by hand so it lands as a rounding error, not a new expense.
+  const perDayPrice = (tier: TrialTier) => {
+    const p = prices[tier];
+    const yearly = billingInterval === "annual" ? p.annual : p.monthly * 12;
+    return `${p.symbol}${(yearly / 365).toFixed(2)}`;
+  };
   const currentSubtitles = stepSubtitles(trialDays);
 
   // Idempotent. Called for non-invited users and invite decliners so no one lands in the wizard org-less.
@@ -367,16 +474,7 @@ export default function OnboardingPage() {
           </div>
           <div className="px-12 pb-10">
             <div className="flex items-center justify-center">
-              <div className="flex items-center gap-2">
-                {[0, 1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className={`h-1.5 rounded-full transition-all duration-500 ${
-                      i <= step ? "bg-neutral-900 w-8" : "bg-neutral-200 w-6"
-                    }`}
-                  />
-                ))}
-              </div>
+              <ProgressTrack step={step} />
             </div>
           </div>
         </div>
@@ -423,16 +521,7 @@ export default function OnboardingPage() {
               </motion.p>
             </AnimatePresence>
             <div className="flex items-center justify-center w-full max-w-xs pt-2">
-              <div className="flex items-center gap-2">
-                {[0, 1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className={`h-1.5 rounded-full transition-all duration-500 ${
-                      i <= step ? "bg-neutral-900 w-8" : "bg-neutral-200 w-6"
-                    }`}
-                  />
-                ))}
-              </div>
+              <ProgressTrack step={step} />
             </div>
           </div>
         )}
@@ -469,17 +558,26 @@ export default function OnboardingPage() {
                 <div className="mt-6 md:mt-8 space-y-8">
                   {step === 0 && (
                     <div className="space-y-3">
-                      <label className="text-sm font-semibold text-neutral-700 block">
-                        Your role
-                      </label>
+                      <div className="space-y-1">
+                        <label className="text-sm font-semibold text-neutral-700 block">
+                          Your role
+                        </label>
+                        {roleGuessed && (
+                          <p className="text-xs text-neutral-500">
+                            We guessed from your email address — change it if
+                            that&apos;s not right.
+                          </p>
+                        )}
+                      </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {ROLES.map((role) => (
                           <button
                             key={role.value}
                             type="button"
-                            onClick={() =>
-                              setData((prev) => ({ ...prev, role: role.value }))
-                            }
+                            onClick={() => {
+                              setRoleGuessed(false);
+                              setData((prev) => ({ ...prev, role: role.value }));
+                            }}
                             className={`flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all ${
                               data.role === role.value
                                 ? "border-neutral-900 bg-neutral-50"
@@ -508,6 +606,24 @@ export default function OnboardingPage() {
 
                   {step === 1 && (
                     <div className="space-y-0.5">
+                      {/* Reciprocity: a real finding about their own inbox,
+                          surfaced before anything is asked of them. Already in
+                          flight since step 0, so it costs nothing extra here. */}
+                      {sweepTotal > 0 && (
+                        <div className="mb-5 flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white">
+                            <Archive className="size-[18px] text-neutral-900" />
+                          </div>
+                          <p className="text-sm leading-relaxed text-neutral-700">
+                            We scanned your inbox and found{" "}
+                            <span className="font-semibold tabular-nums text-neutral-900">
+                              {sweepTotal.toLocaleString()}
+                            </span>{" "}
+                            emails from senders you never open. These labels are
+                            what keep them out of your way.
+                          </p>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between pb-2">
                         <span className="text-xs text-neutral-400">
                           {data.activeLabels.length} of {CATEGORIES.length} selected
@@ -600,17 +716,7 @@ export default function OnboardingPage() {
                   {step === 3 && (
                     <div className="space-y-6">
                       {/* Progress (relocated from the mascot panel) */}
-                      <div className="flex items-center gap-2">
-                        {[0, 1, 2, 3].map((i) => (
-                          <div
-                            key={i}
-                            className={cn(
-                              "h-1.5 rounded-full transition-all duration-500",
-                              i <= step ? "bg-neutral-900 w-8" : "bg-neutral-200 w-6",
-                            )}
-                          />
-                        ))}
-                      </div>
+                      <ProgressTrack step={step} align="start" />
 
                       {/* Header */}
                       <div>
@@ -619,7 +725,9 @@ export default function OnboardingPage() {
                         </h1>
                         <p className="mt-1.5 text-sm leading-relaxed text-neutral-500">
                           Full access to every feature, free for {trialDays} days.{" "}
-                          <span className="font-medium text-neutral-700">$0 today</span>{" "}
+                          <span className="font-medium text-neutral-700">
+                            {prices[selectedTier].symbol}0 today
+                          </span>{" "}
                           — cancel anytime.
                         </p>
                       </div>
@@ -648,7 +756,11 @@ export default function OnboardingPage() {
                                 emails are cluttering your inbox right now
                               </p>
                               <p className="mt-0.5 text-xs leading-relaxed text-neutral-600">
-                                Your trial clears them all in one click — reversible,
+                                Clearing them by hand is about{" "}
+                                <span className="font-medium text-neutral-900">
+                                  {formatTriageTime(sweepTotal)}
+                                </span>{" "}
+                                of clicking. Your trial does it in one — reversible,
                                 nothing deleted.
                               </p>
                             </div>
@@ -781,13 +893,26 @@ export default function OnboardingPage() {
                             );
                           })}
                         </div>
+
+                        {/* The price restated at day scale, immediately after
+                            the cards so it is read against the hand-sorting
+                            time above rather than against Gmail costing $0. */}
+                        <p className="text-xs text-neutral-500">
+                          That&apos;s about{" "}
+                          <span className="font-medium tabular-nums text-neutral-700">
+                            {perDayPrice(selectedTier)}
+                          </span>{" "}
+                          a day.
+                        </p>
                       </div>
 
                       {/* One compact reassurance line, adjacent to the CTA */}
                       <div className="flex items-start gap-2 text-xs leading-relaxed text-neutral-500">
                         <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
                         <p>
-                          <span className="font-medium text-neutral-700">$0 today.</span>{" "}
+                          <span className="font-medium text-neutral-700">
+                            {prices[selectedTier].symbol}0 today.
+                          </span>{" "}
                           We&apos;ll remind you two days before your {trialDays}-day trial
                           ends — cancel in one click and pay nothing. Your card is
                           encrypted, never stored.
@@ -828,7 +953,18 @@ export default function OnboardingPage() {
                 ) : (
                   <>
                     <ShieldCheck className="w-4 h-4" />
-                    Start {trialDays}-day free trial
+                    {sweepTotal > 0 ? (
+                      <>
+                        <span className="hidden sm:inline">
+                          Start trial &amp; clear {sweepTotal.toLocaleString()} emails
+                        </span>
+                        <span className="sm:hidden">
+                          Start trial · clear {sweepTotal.toLocaleString()}
+                        </span>
+                      </>
+                    ) : (
+                      <>Start {trialDays}-day free trial</>
+                    )}
                   </>
                 )
               ) : (
@@ -839,8 +975,12 @@ export default function OnboardingPage() {
               )}
             </Button>
             {step === 3 && (
-              <p className="text-[11px] text-neutral-400">
-                No charge today · Cancel anytime
+              // Loss aversion: name what stays broken if they walk, not just
+              // what they gain if they don't.
+              <p className="text-[11px] text-neutral-400 text-right">
+                {sweepTotal > 0
+                  ? "Skip and these stay in your inbox · No charge today"
+                  : "No charge today · Cancel anytime"}
               </p>
             )}
           </div>
