@@ -60,7 +60,7 @@
     "libsodium-wrappers": "^0.8.2",
     "lucide-react": "^0.562.0",
     "nanoid": "^5.1.16",
-    "next": "16.2.6",
+    "next": "16.2.11",
     "openai": "^6.15.0",
     "pino": "^10.3.1",
     "pino-pretty": "^13.1.3",
