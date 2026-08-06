@@ -2,8 +2,12 @@
 
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Area, AreaChart, ResponsiveContainer } from "recharts";
-import { ArrowDown, ArrowUp, Minus, type LucideIcon } from "lucide-react";
+import {
+  Minus,
+  TrendingDown,
+  TrendingUp,
+  type LucideIcon,
+} from "lucide-react";
 
 export type StatTrend = {
   label: string;
@@ -16,8 +20,6 @@ type StatCardProps = {
   value: string | number;
   icon: LucideIcon;
   trend?: StatTrend | null;
-  sparkline?: number[];
-  accent?: string;
   isLoading?: boolean;
 };
 
@@ -26,28 +28,23 @@ export function StatCard({
   value,
   icon: Icon,
   trend,
-  sparkline,
-  accent = "#10b981",
   isLoading,
 }: StatCardProps) {
+  // Same two bands as the loaded card, so nothing shifts when data lands.
   if (isLoading) {
     return (
-      <div className="bg-card rounded-lg border p-4 min-h-[116px]">
-        <Skeleton className="h-3 w-24 mb-4" />
-        <Skeleton className="h-7 w-20 mb-2" />
-        <Skeleton className="h-3 w-16" />
+      <div className="bg-card rounded-lg border p-4">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="mt-2 h-6 w-20" />
       </div>
     );
   }
 
-  const sparkData = (sparkline ?? []).map((v, i) => ({ i, v }));
-  const gradientId = `spark-${title.replace(/[^a-z0-9]/gi, "-")}`;
-
   const TrendIcon =
     trend?.direction === "down"
-      ? ArrowDown
+      ? TrendingDown
       : trend?.direction === "up"
-        ? ArrowUp
+        ? TrendingUp
         : Minus;
 
   const trendColor =
@@ -57,68 +54,38 @@ export function StatCard({
         ? "text-emerald-600 dark:text-emerald-400"
         : "text-destructive";
 
-  const sparkline$ = sparkData.length > 1 && (
-    <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={sparkData} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
-        <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={accent} stopOpacity={0.35} />
-            <stop offset="100%" stopColor={accent} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <Area
-          type="monotone"
-          dataKey="v"
-          stroke={accent}
-          strokeWidth={1.5}
-          fill={`url(#${gradientId})`}
-          dot={false}
-          isAnimationActive={false}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
-  );
-
+  /*
+   * Two bands, both a fixed height: a single-line label, then the value with its
+   * delta on the same baseline. Nothing here can wrap or go missing, so the
+   * numbers land on the same line in every card of the row.
+   *
+   * The delta arrow is the card's only trend affordance — a sparkline alongside
+   * it was a third read of the same fact, and at these card widths it rendered
+   * as a strip of decoration rather than something anyone could read.
+   */
   return (
-    <div className="bg-card rounded-lg border p-4 flex flex-col justify-between overflow-hidden min-h-[116px]">
-      {/* Title row */}
-      <div className="flex items-start justify-between">
-        <p className="text-xs font-medium text-muted-foreground">{title}</p>
-        <Icon className="w-3.5 h-3.5 text-muted-foreground/50" />
+    <div className="@container bg-card rounded-lg border p-4">
+      <div className="flex h-4 items-center gap-1.5 text-muted-foreground">
+        <Icon className="w-3.5 h-3.5 shrink-0" />
+        <p className="min-w-0 truncate text-xs font-medium">{title}</p>
       </div>
 
-      {/* Body: stacks on mobile, side-by-side on sm+ */}
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between sm:gap-3 mt-2 gap-1.5">
-        <div className="min-w-0">
-          {/* Value row — trend sits inline on mobile (sm:hidden), below on desktop */}
-          <div className="flex items-baseline gap-2">
-            <p className="text-2xl font-semibold text-card-foreground tabular-nums leading-none">
-              {value}
-            </p>
-            {/* Mobile-only inline trend */}
-            {trend && (
-              <div className={cn("flex sm:hidden items-center gap-0.5 text-[11px] font-medium shrink-0", trendColor)}>
-                <TrendIcon className="w-3 h-3" />
-                <span className="whitespace-nowrap">
-                  {trend.label.replace(/ vs prev$/, "")}
-                </span>
-              </div>
+      {/* items-end, not items-baseline: the delta is a flex row led by an SVG, so
+          baseline alignment would synthesize its baseline from the icon's bottom
+          edge and float the group above the number's floor. */}
+      <div className="mt-2 flex items-end gap-2">
+        <p className="text-xl @3xs:text-2xl font-semibold leading-none tabular-nums text-card-foreground">
+          {value}
+        </p>
+        {trend && (
+          <div
+            className={cn(
+              "flex min-w-0 items-center gap-1 text-xs font-medium tabular-nums",
+              trendColor
             )}
-          </div>
-
-          {/* Desktop-only stacked trend */}
-          {trend && (
-            <div className={cn("hidden sm:flex items-center gap-1 mt-1 text-xs font-medium", trendColor)}>
-              <TrendIcon className="w-3 h-3" />
-              <span>{trend.label}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Sparkline: full-width below on mobile, fixed 96px on the right on sm+ */}
-        {sparkData.length > 1 && (
-          <div className="w-full h-8 sm:w-24 sm:h-10 sm:shrink-0">
-            {sparkline$}
+          >
+            <TrendIcon className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{trend.label}</span>
           </div>
         )}
       </div>

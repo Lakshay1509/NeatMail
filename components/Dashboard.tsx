@@ -1,7 +1,6 @@
 "use client";
 
 import { useGetOverview } from "@/features/stats/use-get-overview";
-import { useGetReadVsUnread } from "@/features/stats/use-get-read-vs-unread";
 import { useGetUserTagsWeek } from "@/features/stats/use-get-user-tagsThisWeek";
 import { useUser } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
@@ -64,8 +63,10 @@ function pctTrend(
     return { label: "No change", good: true, direction: "flat" };
   const direction = rounded > 0 ? "up" : "down";
   const good = positiveIsGood ? rounded > 0 : rounded < 0;
+  // No "vs prev" suffix — the arrow already says it, and the label sits inline
+  // with the value where the extra words don't fit on a narrow card.
   return {
-    label: `${rounded > 0 ? "+" : ""}${rounded}% vs prev`,
+    label: `${rounded > 0 ? "+" : ""}${rounded}%`,
     good,
     direction,
   };
@@ -77,7 +78,7 @@ function pointsTrend(current?: number, previous?: number): StatTrend | null {
   const diff = Number((current - previous).toFixed(1));
   if (diff === 0) return { label: "No change", good: true, direction: "flat" };
   return {
-    label: `${diff > 0 ? "+" : ""}${diff} pts vs prev`,
+    label: `${diff > 0 ? "+" : ""}${diff} pts`,
     good: diff > 0,
     direction: diff > 0 ? "up" : "down",
   };
@@ -114,9 +115,6 @@ const Dashboard = ({
       : 1;
 
   const { data: overview, isLoading } = useGetOverview(from, to);
-  // Shares the same query key as <ReadVsUnread/>, so React Query dedupes the
-  // network call; we only borrow the daily series for the KPI sparklines.
-  const { data: trend } = useGetReadVsUnread(from, to);
 
   // The two label-based cards (Unread Breakdown + Label Distribution) are hidden
   // entirely when there's no AI label data yet, instead of showing an empty
@@ -149,13 +147,6 @@ const Dashboard = ({
   const layoutPending = hasLabels === null;
   const showLabelCards = hasLabels !== false;
 
-  const series = trend?.data ?? [];
-  const totalSeries = series.map((d) => d.total);
-  const unreadSeries = series.map((d) => d.unread);
-  const readRateSeries = series.map((d) =>
-    d.total > 0 ? Number(((d.read / d.total) * 100).toFixed(1)) : 0
-  );
-
   const current = overview?.current ?? 0;
   const avgPerDay = Math.ceil(current / totalDays);
   const prevAvgPerDay = Math.ceil((overview?.previous ?? 0) / totalDays);
@@ -187,7 +178,7 @@ const Dashboard = ({
     <div className="max-w-7xl mx-auto space-y-5 md:space-y-6">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-3">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <h1 className="text-xl font-semibold text-foreground tracking-tight">
             {greeting ? `${greeting.text}, ` : ""}
             {user?.firstName || "User"}
@@ -196,7 +187,7 @@ const Dashboard = ({
             {greeting?.subtitle ?? " "}
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 w-full md:w-auto min-w-0">
           <DatePickerWithRange date={date} setDate={setDate} />
         </div>
       </div>
@@ -212,8 +203,6 @@ const Dashboard = ({
           value={current}
           icon={Mail}
           trend={pctTrend(overview?.current, overview?.previous, true)}
-          sparkline={totalSeries}
-          accent="#10b981"
           isLoading={isLoading}
         />
         <StatCard
@@ -221,8 +210,6 @@ const Dashboard = ({
           value={`${overview?.readRate ?? 0}%`}
           icon={MailOpen}
           trend={pointsTrend(overview?.readRate, overview?.previousReadRate)}
-          sparkline={readRateSeries}
-          accent="#0c5c49"
           isLoading={isLoading}
         />
         <StatCard
@@ -230,17 +217,14 @@ const Dashboard = ({
           value={overview?.unread ?? 0}
           icon={MailWarning}
           trend={pctTrend(overview?.unread, overview?.previousUnread, false)}
-          sparkline={unreadSeries}
-          accent="#3b82f6"
           isLoading={isLoading}
         />
+        {/* Short label so it stays on one line even in a narrow card */}
         <StatCard
-          title="Avg emails per day"
+          title="Avg per day"
           value={avgPerDay}
           icon={CalendarClock}
           trend={pctTrend(avgPerDay, prevAvgPerDay, true)}
-          sparkline={totalSeries}
-          accent="#10b981"
           isLoading={isLoading}
         />
       </div>
