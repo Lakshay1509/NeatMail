@@ -8,6 +8,14 @@ import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
 
 const FollowUpPreference = () => {
   const { data, isLoading, isError } = useGetFollowUpPreferences();
@@ -113,12 +121,44 @@ const FollowUpPreference = () => {
             Track promises
           </h2>
           <p className="text-muted-foreground text-sm max-w-2xl">
-            NeatMail tracks commitments with a deadline in both directions.
-            When someone owes <em>you</em> and it&rsquo;s overdue, it resurfaces
-            under Follow up with a ready-to-send nudge. When <em>you</em> promised
-            to send something, about 30 minutes before it&rsquo;s due &mdash; if you
-            still haven&rsquo;t sent it &mdash; it resurfaces under Follow up with a
-            drafted reply and emails you a reminder.
+            Catch commitments with a deadline &mdash; yours and theirs &mdash; before
+            they slip.{" "}
+            <Dialog>
+              <DialogTrigger className="font-medium text-foreground underline underline-offset-2 transition-colors hover:text-foreground/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 rounded-sm">
+                Learn more
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Track promises</DialogTitle>
+                  <DialogDescription>
+                    NeatMail reads sent and received mail for commitments that carry
+                    a deadline, then watches both sides of them.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 text-sm">
+                  <div className="space-y-1">
+                    <p className="font-medium text-foreground">
+                      When someone owes you
+                    </p>
+                    <p className="text-muted-foreground">
+                      Once the deadline passes with nothing received, the thread
+                      resurfaces under Follow up with a ready-to-send nudge.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-medium text-foreground">
+                      When you owe someone
+                    </p>
+                    <p className="text-muted-foreground">
+                      About 30 minutes before it&rsquo;s due &mdash; and only if you
+                      still haven&rsquo;t sent it &mdash; the thread resurfaces under
+                      Follow up with a drafted reply, and NeatMail emails you a
+                      reminder so you catch it away from the app.
+                    </p>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </p>
         </div>
         <div className="flex items-center gap-2.5 pt-1 shrink-0">

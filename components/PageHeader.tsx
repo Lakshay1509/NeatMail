@@ -22,7 +22,7 @@ export function PageHeader({ title, actions, className }: PageHeaderProps) {
     return (
       <div
         className={cn(
-          "sticky top-0 z-30 flex h-14 items-center border-b border-border/60 bg-background/85 px-3 backdrop-blur-md md:hidden",
+          "sticky top-0 z-30 flex h-14 shrink-0 items-center border-b border-border/60 bg-background/85 px-3 backdrop-blur-md md:hidden",
           className,
         )}
       >
@@ -35,7 +35,9 @@ export function PageHeader({ title, actions, className }: PageHeaderProps) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border/60 bg-background/85 px-3 backdrop-blur-md md:h-16 md:gap-3 md:px-10",
+        // shrink-0: the bar is a fixed-height flex child of the page column, and
+        // a page taller than the viewport would otherwise flex-squeeze it.
+        "sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-border/60 bg-background/85 px-3 backdrop-blur-md md:h-16 md:gap-3 md:px-10",
         className,
       )}
     >
