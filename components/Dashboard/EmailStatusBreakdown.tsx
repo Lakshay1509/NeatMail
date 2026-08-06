@@ -23,13 +23,18 @@ const CardShell = ({ children }: { children: React.ReactNode }) => (
 export default function EmailStatusBreakdown({
   from,
   to,
+  // Set while the dashboard doesn't yet know whether this card belongs on screen
+  // at all. Its own query can land first, so without this it would paint a real
+  // pie chart and then be unmounted a moment later.
+  pending,
 }: {
   from?: string;
   to?: string;
+  pending?: boolean;
 }) {
   const { data, isLoading, isError } = useGetUnreadBreakdown(from, to);
 
-  if (isLoading) {
+  if (isLoading || pending) {
     return (
       <CardShell>
         <div className="px-6 pt-5 pb-0">

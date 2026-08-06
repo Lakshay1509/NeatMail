@@ -6,16 +6,25 @@ import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { useMemo } from "react";
 
-const Clutter = ({ from, to }: { from?: string; to?: string }) => {
+const Clutter = ({
+  from,
+  to,
+  // See <ReadVsUnread/> — held on the skeleton until the row's column count is known.
+  pending,
+}: {
+  from?: string;
+  to?: string;
+  pending?: boolean;
+}) => {
   const { data, isLoading, isError } = useGetClutter(from, to);
- 
+
 
   const maxUnread = useMemo(() => {
     if (!data?.clutterData) return 1;
     return Math.max(...data.clutterData.map((d) => d.unreadCount || 0), 1);
   }, [data]);
 
-  if (isLoading) {
+  if (isLoading || pending) {
     return (
       <div className="bg-card rounded-lg border p-6 w-full min-h-[300px]">
         <Skeleton className="h-6 w-1/2 mb-8" />

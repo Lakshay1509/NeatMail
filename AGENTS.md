@@ -249,3 +249,55 @@ Calendar error codes:
 - [Calendar API quota management](https://developers.google.com/workspace/calendar/api/guides/quota)
 - [Calendar API error handling](https://developers.google.com/workspace/calendar/api/guides/errors)
 - [Google Workspace standardized model for agent tools and APIs](https://developers.google.com/workspace/guides/agent-tools-apis)
+
+<!-- unasked:begin -->
+## Scope check (unasked)
+
+`unasked` answers one question about your work: **did the changes stay inside
+what the user asked for?** Run it on every turn that edits files, and put what it
+says into your reply.
+
+**1. Before your first edit**, capture a baseline:
+
+```sh
+unasked start --prompt "<the user's request, verbatim>"
+```
+
+**2. After every file-writing tool call**, check the file you just wrote:
+
+```sh
+unasked check --file <path>
+```
+
+If one call wrote several files, run `unasked check` with no `--file`.
+
+**3. Before you finish the turn**, once:
+
+```sh
+unasked report
+```
+
+Put the output of steps 2 and 3 in your reply verbatim, each on its own line. Do
+not paraphrase it, do not fold it into a sentence, and do not leave it out because
+it says everything is fine — these lines exist so the user can catch a wrong turn
+at edit 3 instead of reading a wall of text after the fact. If step 2 prints
+nothing, the verdict has not changed since your last check and there is nothing to
+add.
+
+Exit codes: `0` clean, `1` drift, `2` risky drift, `3` could not analyze. A
+non-zero exit is a finding about your edits, not a broken command — report it, do
+not retry it, and do not work around it.
+
+A line marked `probably fine` names a file that changes alongside most work in
+this repo. It exits `0` and needs no defence, but it is named for a reason: if
+you did not mean to touch that file, it is still an edit you are making. Repeat
+the line and move on.
+
+If step 3 reports **risky** drift, do not end the turn quietly: revert the change,
+or state plainly what each flagged file is and why it was necessary.
+
+Do not edit this block, and do not touch unasked's state in
+`~/.local/state/unasked/`. If the command is not installed, say so once in your
+reply and carry on — do not install it yourself. If running the check is genuinely
+wrong for a turn, say that in your reply instead of skipping it silently.
+<!-- unasked:end -->

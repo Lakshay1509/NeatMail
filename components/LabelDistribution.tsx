@@ -1,8 +1,20 @@
 "use client";
 
 import { useGetUserTagsWeek } from "@/features/stats/use-get-user-tagsThisWeek";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export function LabelDistribution({ from, to }: { from?: string; to?: string }) {
+export function LabelDistribution({
+  from,
+  to,
+  // See <EmailStatusBreakdown/>. This card reads the same query that decides
+  // `pending`, so the two already coincide today — it's passed for consistency
+  // across the row, and so the guarantee survives a change of data source here.
+  pending,
+}: {
+  from?: string;
+  to?: string;
+  pending?: boolean;
+}) {
   const { data: tags, isLoading } = useGetUserTagsWeek(from, to);
 
   const distributionColors = [
@@ -15,10 +27,22 @@ export function LabelDistribution({ from, to }: { from?: string; to?: string }) 
 
 
 
-  if (isLoading) {
+  if (isLoading || pending) {
     return (
-      <div className="bg-card rounded-lg border p-6 h-full flex items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-card-foreground" />
+      <div className="bg-card rounded-lg border p-6 h-full">
+        <Skeleton className="h-3 w-32 mb-2" />
+        <Skeleton className="h-3 w-24 mb-6" />
+        <div className="space-y-6">
+          {[70, 55, 40, 30, 20].map((width) => (
+            <div key={width}>
+              <div className="flex justify-between mb-2">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-3 w-8" />
+              </div>
+              <Skeleton className="h-2.5 rounded-full" style={{ width: `${width}%` }} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

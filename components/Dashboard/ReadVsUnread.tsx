@@ -27,10 +27,21 @@ function ChartLegend() {
   );
 }
 
-export default function ReadVsUnread({ from, to }: { from?: string; to?: string }) {
+export default function ReadVsUnread({
+  from,
+  to,
+  // Set while the dashboard still doesn't know how wide this card will be.
+  // Holding the skeleton means the chart is painted once, at its final width,
+  // instead of mounting at half width and being re-measured at full width.
+  pending,
+}: {
+  from?: string;
+  to?: string;
+  pending?: boolean;
+}) {
   const { data: response, isLoading, isError } = useGetReadVsUnread(from, to);
 
-  if (isLoading) {
+  if (isLoading || pending) {
     return (
       <div className="bg-card rounded-lg border w-full h-[400px]">
         <div className="px-6 pt-5 pb-2 border-b flex items-center justify-between">

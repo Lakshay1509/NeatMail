@@ -83,7 +83,14 @@ function pointsTrend(current?: number, previous?: number): StatTrend | null {
   };
 }
 
-const Dashboard = () => {
+const Dashboard = ({
+  // Whether any mail in the picker's default range carries an AI label,
+  // resolved on the server (see app/page.tsx) so the first paint doesn't have
+  // to guess how many cards each chart row holds.
+  initialHasLabels,
+}: {
+  initialHasLabels?: boolean;
+}) => {
   const { user } = useUser();
   const [date, setDate] = useState<DateRange | undefined>({
     from: subDays(new Date(), 14),
@@ -114,12 +121,33 @@ const Dashboard = () => {
   // The two label-based cards (Unread Breakdown + Label Distribution) are hidden
   // entirely when there's no AI label data yet, instead of showing an empty
   // state. Shares its query key with <LabelDistribution/>, so React Query dedupes
-  // the call. Kept visible while loading so existing users don't see a layout jump.
-  const { data: labelTags, isLoading: labelsLoading } = useGetUserTagsWeek(
-    from,
-    to
-  );
-  const showLabelCards = labelsLoading || (labelTags?.length ?? 0) > 0;
+  // the call.
+  const {
+    data: labelTags,
+    isSuccess: labelsSuccess,
+    isError: labelsError,
+  } = useGetUserTagsWeek(from, to);
+
+  // Whether the label cards belong on screen decides the column count of the two
+  // rows below, so every card in those rows changes width when it flips. The
+  // server already answered it for the default range, which is what the first
+  // paint renders, so there's no guessing window: a new user gets the narrow
+  // layout immediately and never sees a placeholder for a card that won't
+  // arrive. Once the query resolves it owns the answer, since it tracks the
+  // range the user actually picked. `null` — nothing known — is only reachable
+  // if `initialHasLabels` was omitted.
+  const hasLabels = labelsSuccess
+    ? (labelTags?.length ?? 0) > 0
+    : labelsError
+      ? false
+      : (initialHasLabels ?? null);
+
+  // Only with the prop omitted, then. Siblings hold their skeletons until the
+  // count is known rather than mounting at a width they're about to lose: a grey
+  // block resizing is cheap, a mounted Recharts canvas being re-measured from
+  // half to full width is the flicker.
+  const layoutPending = hasLabels === null;
+  const showLabelCards = hasLabels !== false;
 
   const series = trend?.data ?? [];
   const totalSeries = series.map((d) => d.total);
@@ -225,8 +253,10 @@ const Dashboard = () => {
           showLabelCards ? "lg:grid-cols-2" : ""
         }`}
       >
-        {showLabelCards && <EmailStatusBreakdown from={from} to={to} />}
-        <ReadVsUnread from={from} to={to} />
+        {showLabelCards && (
+          <EmailStatusBreakdown from={from} to={to} pending={layoutPending} />
+        )}
+        <ReadVsUnread from={from} to={to} pending={layoutPending} />
       </div>
 
       {/* Senders & Labels */}
@@ -235,9 +265,11 @@ const Dashboard = () => {
           showLabelCards ? "lg:grid-cols-3" : "lg:grid-cols-2"
         }`}
       >
-        <MostEmails from={from} to={to} />
-        <Clutter from={from} to={to} />
-        {showLabelCards && <LabelDistribution from={from} to={to} />}
+        <MostEmails from={from} to={to} pending={layoutPending} />
+        <Clutter from={from} to={to} pending={layoutPending} />
+        {showLabelCards && (
+          <LabelDistribution from={from} to={to} pending={layoutPending} />
+        )}
       </div>
 
      
