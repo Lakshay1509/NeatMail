@@ -444,7 +444,10 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-svh flex flex-col md:flex-row bg-white">
+    // h-svh, not min-h-svh: the wizard is a fixed frame. A minimum lets the
+    // column grow past the viewport, which un-pins the footer and puts the
+    // scrollbar on the page instead of on the form.
+    <div className="h-svh flex flex-col md:flex-row bg-white overflow-hidden">
       {step !== 3 && (
         <div className="hidden md:flex w-[38%] bg-[#f6f5f4] flex-col relative overflow-hidden">
           <div className="flex-1 flex items-center justify-center p-12">
@@ -480,7 +483,14 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      <div className="flex-1 flex flex-col pt-[100px]">
+      {/* pt-[100px] lived here to clear the old fixed navbar, paired with a
+          -mt-[100px] on the shell. The navbar is gone and so is the negative
+          margin, so this was 100px of dead space at the top of every step. */}
+      <div className="flex min-h-0 flex-1 flex-col">
+        {/* The scroll region starts above the mobile mascot on purpose: in a
+            fixed h-svh frame a pinned mascot would eat ~320px of a phone
+            screen. Inside the scroller it scrolls away with the form. */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
         {step !== 3 && (
           <div className="md:hidden bg-[#f6f5f4] px-6 py-8 flex flex-col items-center gap-4">
             <div className="relative w-50 h-50">
@@ -526,10 +536,11 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto px-5 md:p-10">
           <div
             className={cn(
-              "mx-auto pt-4 md:pt-6 pb-8",
+              // Padding moved off the scroll container so the mobile mascot
+              // above can stay full-bleed inside it.
+              "mx-auto px-5 pt-4 pb-8 md:px-10 md:pt-8 md:pb-10",
               step === 3 ? "max-w-2xl" : "max-w-4xl",
             )}
           >
@@ -928,7 +939,10 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-4 px-5 md:px-10 py-5 border-t border-neutral-100 shrink-0">
+        {/* Fixed h-20 with the row centred, so Back/Continue land on the same
+            baseline for every step. The step-3 caption is positioned out of
+            flow — in flow it grew the footer and shifted the buttons up. */}
+        <div className="relative flex h-20 shrink-0 items-center justify-between gap-4 border-t border-neutral-100 px-5 md:px-10">
           <Button
             variant="ghost"
             onClick={goBack}
@@ -938,8 +952,7 @@ export default function OnboardingPage() {
             <ChevronLeft className="w-4 h-4" />
             Back
           </Button>
-          <div className="flex flex-col items-end gap-1.5">
-            <Button
+          <Button
               onClick={goNext}
               disabled={!canContinue() || saving}
               className="gap-1.5 bg-neutral-900 text-white hover:bg-neutral-800 rounded-full px-7 disabled:opacity-40"
@@ -973,17 +986,16 @@ export default function OnboardingPage() {
                   <ChevronRight className="w-4 h-4" />
                 </>
               )}
-            </Button>
-            {step === 3 && (
-              // Loss aversion: name what stays broken if they walk, not just
-              // what they gain if they don't.
-              <p className="text-[11px] text-neutral-400 text-right">
-                {sweepTotal > 0
-                  ? "Skip and these stay in your inbox · No charge today"
-                  : "No charge today · Cancel anytime"}
-              </p>
-            )}
-          </div>
+          </Button>
+          {step === 3 && (
+            // Loss aversion: name what stays broken if they walk, not just
+            // what they gain if they don't.
+            <p className="pointer-events-none absolute inset-x-5 bottom-2 text-right text-[11px] text-neutral-400 md:inset-x-10">
+              {sweepTotal > 0
+                ? "Skip and these stay in your inbox · No charge today"
+                : "No charge today · Cancel anytime"}
+            </p>
+          )}
         </div>
       </div>
     </div>

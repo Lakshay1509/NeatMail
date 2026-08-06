@@ -96,8 +96,13 @@ export default async function RootLayout({
             <SidebarProvider defaultOpen={sidebarOpen}>
               <ConditionalSidebar />
               {/* SidebarInset (not a bare <main>) so the content column shrinks
-                  and grows with the sidebar's expanded/icon state. */}
-              <SidebarInset className="min-w-0">
+                  and grows with the sidebar's expanded/icon state.
+
+                  h-svh + overflow-y-auto makes this the scrollport instead of
+                  the window: the shell is a fixed frame, so no page ever grows
+                  a vertical scrollbar of its own, and sticky headers pin to
+                  this box. Long content still scrolls — inside here. */}
+              <SidebarInset className="h-svh min-w-0 overflow-y-auto">
                 <Toaster richColors theme="light" />
                 <PageTransition>{children}</PageTransition>
               </SidebarInset>

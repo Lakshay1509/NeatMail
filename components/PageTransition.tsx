@@ -14,7 +14,10 @@ export default function PageTransition({ children }: { children: React.ReactNode
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-      className="flex min-h-0 w-full flex-1 flex-col"
+      // min-h-full, not flex-1 + min-h-0: inside a scrolling parent that combo
+      // caps the box at one viewport and lets tall content spill outside it.
+      // A floor of full height still lets full-bleed pages fill the frame.
+      className="flex min-h-full w-full flex-col"
     >
       {children}
     </motion.div>
