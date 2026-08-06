@@ -80,15 +80,17 @@ export default function SignInLayout({
 }: {
   children: React.ReactNode
 }) {
+  // A <div>, not a <main>: the root layout's SidebarInset already renders the
+  // page's one main landmark.
   return (
 
-        <main>
+        <div>
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(signInJsonLd) }}
           />
           {children}
-        </main>
+        </div>
 
   )
 }

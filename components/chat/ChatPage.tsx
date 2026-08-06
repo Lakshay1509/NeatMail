@@ -303,7 +303,10 @@ export function ChatPage() {
     !messagesQuery.isError
 
   return (
-    <div className="relative flex h-full min-w-0 flex-col overflow-hidden bg-[#f6f5f4]">
+    // flex-1 + min-h-0 rather than h-full: a percentage height needs a
+    // definite parent, and the shell above is a min-height chain. As a flex
+    // item this fills whatever the shell gives it with no arithmetic.
+    <div className="relative flex min-h-0 flex-1 min-w-0 flex-col overflow-hidden bg-[#f6f5f4]">
       {/* history sidebar, portaled over the conversation */}
       <ChatHistoryOverlay
         open={historyOpen}

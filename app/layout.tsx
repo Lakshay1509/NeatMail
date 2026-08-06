@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs'
 import "./globals.css";
-import Navbar from "../components/Navbar";
 import { QueryProviders } from "@/providers/QueryProvider";
 import { Toaster } from "sonner";
-import { SidebarProvider} from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { ConditionalSidebar } from "@/components/ConditionalSidebar";
 import PageTransition from "@/components/PageTransition";
 import { PostHogIdentify } from "@/components/PostHogIdentify";
@@ -78,6 +78,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // SidebarProvider persists the expanded/collapsed choice to `sidebar_state`
+  // but never reads it back. Seeding defaultOpen from the cookie here is what
+  // makes the icon-collapsed state survive a reload instead of flashing back
+  // to full width on every navigation that re-renders the shell.
+  const sidebarOpen =
+    (await cookies()).get("sidebar_state")?.value !== "false";
+
   return (
     <ClerkProvider>
       <html lang="en">
@@ -86,13 +93,14 @@ export default async function RootLayout({
         >
           <PostHogIdentify />
           <QueryProviders>
-            <SidebarProvider>
+            <SidebarProvider defaultOpen={sidebarOpen}>
               <ConditionalSidebar />
-              <main className="w-full">
+              {/* SidebarInset (not a bare <main>) so the content column shrinks
+                  and grows with the sidebar's expanded/icon state. */}
+              <SidebarInset className="min-w-0">
                 <Toaster richColors theme="light" />
-                <Navbar />
                 <PageTransition>{children}</PageTransition>
-              </main>
+              </SidebarInset>
             </SidebarProvider>
           </QueryProviders>
         </body>

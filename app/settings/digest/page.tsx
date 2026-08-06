@@ -3,6 +3,7 @@
 import DigestSettings from "@/components/DigestSettings";
 import { useTierAccess } from "@/features/user/use-tier-access";
 import { NotSubscribedState } from "@/components/NotSubscribedState";
+import { PageHeader } from "@/components/PageHeader";
 
 function DigestGate() {
   const { isFree } = useTierAccess();
@@ -22,8 +23,11 @@ function DigestGate() {
 
 export default function DigestSettingsPage() {
   return (
-    <div className="w-full p-6 md:px-10">
-      <DigestGate />
-    </div>
+    <>
+      <PageHeader title="Daily digest" />
+      <div className="w-full p-6 md:px-10">
+        <DigestGate />
+      </div>
+    </>
   );
 }

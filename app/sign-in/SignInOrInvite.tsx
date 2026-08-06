@@ -35,7 +35,7 @@ function SignInForm() {
   const onboardingUrl = qs ? `/onboarding?${qs}` : "/onboarding";
   // An invite must route existing users (sign-in) to onboarding too, so the
   // join step runs; without an invite, returning users go straight to the app.
-  const fallbackUrl = invite ? onboardingUrl : "/dashboard";
+  const fallbackUrl = invite ? onboardingUrl : "/";
 
   return (
     <SignIn
@@ -51,7 +51,7 @@ export function SignInOrInvite() {
     <div className="flex justify-center w-full animate-in fade-in duration-500">
       <Suspense
         fallback={
-          <SignIn fallbackRedirectUrl="/dashboard" signUpForceRedirectUrl="/onboarding" withSignUp={true} />
+          <SignIn fallbackRedirectUrl="/" signUpForceRedirectUrl="/onboarding" withSignUp={true} />
         }
       >
         <SignInForm />

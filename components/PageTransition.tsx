@@ -7,11 +7,14 @@ export default function PageTransition({ children }: { children: React.ReactNode
   const pathname = usePathname()
 
   return (
+    // Fade only, no y-offset: pages now open with a sticky <PageHeader />, and a
+    // transformed ancestor is an unreliable place to hang `position: sticky`.
     <motion.div
       key={pathname}
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+      className="flex min-h-0 w-full flex-1 flex-col"
     >
       {children}
     </motion.div>

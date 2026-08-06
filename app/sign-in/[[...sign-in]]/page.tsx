@@ -27,7 +27,10 @@ export default function SignInPage() {
   }, [])
 
   return (
-    <div className="flex overflow-hidden max-w-full h-[90vh]">
+    // min-h-svh, matching the shell wrapper exactly: this was h-[90vh], which
+    // left the carousel panel 10vh short of its own parent — a bare strip under
+    // the tint that the old navbar's 68px body padding happened to absorb.
+    <div className="flex max-w-full overflow-x-hidden min-h-svh">
       {/* Left side - Sign in form */}
       <div className="flex-1 flex items-center justify-center mx-auto bg-background">
         <div className="w-full max-w-md space-y-12 px-6 md:px-0">

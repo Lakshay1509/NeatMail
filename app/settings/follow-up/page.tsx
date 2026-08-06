@@ -3,6 +3,7 @@
 import FollowUpPreference from "@/components/FollowUpPreference";
 import { useTierAccess } from "@/features/user/use-tier-access";
 import { NotSubscribedState } from "@/components/NotSubscribedState";
+import { PageHeader } from "@/components/PageHeader";
 
 function FollowUpGate() {
   const { isFree } = useTierAccess();
@@ -22,9 +23,12 @@ function FollowUpGate() {
 
 const page = () => {
   return (
-    <div className="w-full flex justify-center p-6 md:px-10">
-      <FollowUpGate />
-    </div>
+    <>
+      <PageHeader title="Follow-up" />
+      <div className="w-full flex justify-center p-6 md:px-10">
+        <FollowUpGate />
+      </div>
+    </>
   );
 };
 

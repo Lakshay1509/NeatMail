@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import TeamSettings from "@/components/TeamSettings";
 import { NotSubscribedState } from "@/components/NotSubscribedState";
+import { PageHeader } from "@/components/PageHeader";
 import { useGetTeam } from "@/features/organization/use-get-team";
 import { Button } from "@/components/ui/button";
 
@@ -57,9 +58,12 @@ function TeamGate() {
 
 const page = () => {
   return (
-    <div className="w-full px-4 py-6 sm:px-6 md:px-10 md:py-8">
-      <TeamGate />
-    </div>
+    <>
+      <PageHeader title="Team" />
+      <div className="w-full px-4 py-6 sm:px-6 md:px-10 md:py-8">
+        <TeamGate />
+      </div>
+    </>
   );
 };
 

@@ -3,6 +3,7 @@
 import UserLabelSettings from "@/components/UserLabelSettings"
 import { useTierAccess } from "@/features/user/use-tier-access";
 import { NotSubscribedState } from "@/components/NotSubscribedState";
+import { PageHeader } from "@/components/PageHeader";
 
 function LabelsGate() {
   const { isFree } = useTierAccess();
@@ -22,9 +23,12 @@ function LabelsGate() {
 
 const page = () => {
   return (
-    <div className="w-full flex justify-center p-6 md:px-10">
-      <LabelsGate />
-    </div>
+    <>
+      <PageHeader title="Labels" />
+      <div className="w-full flex justify-center p-6 md:px-10">
+        <LabelsGate />
+      </div>
+    </>
   )
 }
 

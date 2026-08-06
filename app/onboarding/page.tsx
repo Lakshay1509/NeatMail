@@ -427,7 +427,7 @@ export default function OnboardingPage() {
   // Hold render until flow is decided, otherwise the wizard flashes before the invite gate mounts.
   if (mode === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
+      <div className="flex min-h-svh items-center justify-center bg-white">
         <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </div>
     );
@@ -437,14 +437,14 @@ export default function OnboardingPage() {
   // routes the user (dashboard for returning members, wizard for new users).
   if (mode === "invite" && inviteToken) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-svh bg-white">
         <InviteConfirm token={inviteToken} onResolve={handleInviteResolve} />
       </div>
     );
   }
 
   return (
-    <div className="-mt-[100px] min-h-screen flex flex-col md:flex-row bg-white">
+    <div className="min-h-svh flex flex-col md:flex-row bg-white">
       {step !== 3 && (
         <div className="hidden md:flex w-[38%] bg-[#f6f5f4] flex-col relative overflow-hidden">
           <div className="flex-1 flex items-center justify-center p-12">

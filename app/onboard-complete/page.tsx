@@ -226,7 +226,7 @@ function SetupSequence({
   const isWaiting = dwellDone && phase === LAST_BEAT && !workReady;
 
   return (
-    <div className="-mt-[100px] flex min-h-screen items-center justify-center bg-white px-6">
+    <div className="flex min-h-svh items-center justify-center bg-white px-6">
       <div
         role="status"
         aria-live="polite"
@@ -384,7 +384,7 @@ export default function OnboardCompletePage() {
 
   if (onboardMutation.isError) {
     return (
-      <div className="-mt-[100px] min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-svh flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
           <p className="text-sm text-red-600">
             {onboardMutation.error?.message}
@@ -423,7 +423,7 @@ export default function OnboardCompletePage() {
   return (
     <>
       {demo && mounted && <DemoBadge />}
-      <div className="-mt-[100px] min-h-screen flex items-center justify-center bg-white px-6">
+      <div className="min-h-svh flex items-center justify-center bg-white px-6">
       <div
         role="status"
         aria-live="polite"

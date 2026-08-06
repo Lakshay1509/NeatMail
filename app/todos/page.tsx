@@ -3,6 +3,7 @@
 import DigestSection from "@/components/Dashboard/DigestSection";
 import { useTierAccess } from "@/features/user/use-tier-access";
 import { NotSubscribedState } from "@/components/NotSubscribedState";
+import { PageHeader } from "@/components/PageHeader";
 
 function TodosGate() {
   const { isFree } = useTierAccess();
@@ -22,8 +23,11 @@ function TodosGate() {
 
 export default function Todos() {
   return (
-    <div className="w-full p-6 md:px-10">
-      <TodosGate />
-    </div>
+    <>
+      <PageHeader title="Todos" />
+      <div className="w-full p-6 md:px-10">
+        <TodosGate />
+      </div>
+    </>
   );
 }

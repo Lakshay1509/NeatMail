@@ -5,6 +5,7 @@ import { db } from "@/lib/prisma";
 import Dashboard from "@/components/Dashboard";
 import UserLabel from "@/components/UserLabel";
 import OnboardingScanToast from "@/components/OnboardingScanToast";
+import { PageHeader } from "@/components/PageHeader";
 
 // No labels means onboarding was never finished, so the dashboard must not
 // render for that user — not even for a frame. This ran on the client before,
@@ -40,13 +41,17 @@ export default async function Home() {
   });
 
   return (
-    <main className="flex-1 overflow-auto">
+    // No <main> here — SidebarInset already renders one, and its `overflow-auto`
+    // used to make itself the scrollport, which would strand the sticky header.
+    <>
       <OnboardingScanToast />
+      {/* The dashboard is the one page without a title — the bar exists only to
+          keep the sidebar reachable on mobile. */}
+      <PageHeader />
       <div className="w-full p-6 md:px-10">
         <UserLabel />
         <Dashboard initialHasLabels={taggedInDefaultRange !== null} />
       </div>
-
-    </main>
+    </>
   );
 }

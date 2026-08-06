@@ -1,10 +1,14 @@
 import FollowUps from "@/components/FollowUps";
+import { PageHeader } from "@/components/PageHeader";
 
 const Page = () => {
   return (
-    <div className="w-full p-4">
-      <FollowUps />
-    </div>
+    <>
+      <PageHeader title="Follow-ups" />
+      <div className="w-full p-4">
+        <FollowUps />
+      </div>
+    </>
   );
 };
 
