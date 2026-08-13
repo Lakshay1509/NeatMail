@@ -1,4 +1,11 @@
 import posthog from "posthog-js"
+import { installTranslateGuard } from "@/lib/translate-guard"
+
+// Before anything renders: Next runs this file ahead of all frontend code, and the
+// guard has to be in place before React's first commit to be worth anything.
+// Installed in every environment, dev included, so the behaviour under an
+// auto-translating browser is the same one users get.
+installTranslateGuard()
 
 if (process.env.NODE_ENV !== "development") {
   posthog.init(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN!, {

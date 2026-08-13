@@ -177,8 +177,12 @@ function ProgressTrack({
           />
         ))}
       </div>
+      {/* One interpolation, one TextNode. Written as four bare nodes this line
+          re-rendered on every step change, and in-browser translation re-parents
+          those nodes into <font> wrappers between renders — the removeChild
+          crash. A single pre-built string gives React one node to swap. */}
       <p className="text-[11px] font-medium tabular-nums text-neutral-500">
-        Step {step + 1} of {TOTAL_STEPS} · {progressPct(step)}%
+        {`Step ${step + 1} of ${TOTAL_STEPS} · ${progressPct(step)}%`}
       </p>
     </div>
   );
@@ -873,6 +877,13 @@ export default function OnboardingPage() {
                                   </span>
                                   <span className="text-sm text-neutral-500">/mo</span>
                                 </div>
+                                {/* Both branches must resolve to a single string.
+                                    A ternary whose arms produce different TextNode
+                                    counts is the canonical translation-crash shape:
+                                    the translator wraps the nodes, then React tries
+                                    to swap a count that no longer matches. `prices`
+                                    also changes after first paint when useGeo
+                                    resolves, so this line genuinely does re-render. */}
                                 <p className="text-[11px] text-neutral-400 mt-0.5 h-4">
                                   {billingInterval === "annual"
                                     ? `${prices[plan.tier].symbol}${prices[plan.tier].annual} billed yearly · save ${prices[plan.tier].symbol}${annualSavings}`
