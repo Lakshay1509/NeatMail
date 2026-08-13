@@ -161,7 +161,13 @@ function Beat({
         data-waiting={waiting ? "true" : undefined}
         className="neat-beat-line font-medium leading-tight tracking-tight text-neutral-900"
       >
-        {typed}
+        {/* Wrapped, not bare: a raw TextNode here is rewritten every
+            TYPE_MS_PER_CHAR and sits next to an element sibling, which is the
+            exact shape in-browser translation turns into a removeChild crash
+            (it re-parents the TextNode into a <font> React doesn't know about).
+            Owning an element means React mutates this span's contents instead of
+            a node the translator may have moved. */}
+        <span>{typed}</span>
         {waiting ? (
           <span className="text-neutral-900">
             {".".repeat(reduced ? 3 : dots)}
