@@ -9,6 +9,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { ConditionalSidebar } from "@/components/ConditionalSidebar";
 import PageTransition from "@/components/PageTransition";
 import { PostHogIdentify } from "@/components/PostHogIdentify";
+import { FeedbackSurveyPrompt } from "@/components/FeedbackSurveyPrompt";
 
 
 const geistSans = Geist({
@@ -92,6 +93,7 @@ export default async function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
           <PostHogIdentify />
+          <FeedbackSurveyPrompt />
           <QueryProviders>
             <SidebarProvider defaultOpen={sidebarOpen}>
               <ConditionalSidebar />
