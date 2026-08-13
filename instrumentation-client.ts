@@ -14,5 +14,10 @@ if (process.env.NODE_ENV !== "development") {
     defaults: '2026-01-30',
     capture_exceptions: true,
     debug: false,
+    // Surveys are still fetched and can still be opened by us, but PostHog
+    // never pops one on its own. Its dashboard targeting fired the feedback
+    // popover during onboarding — see lib/feedback-survey.ts. Timing now lives
+    // in components/FeedbackSurveyPrompt.tsx and the sidebar's Feedback item.
+    disable_surveys_automatic_display: true,
   })
 }

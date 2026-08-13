@@ -57,7 +57,7 @@ import ReferralCard from "@/components/ReferralCard"
 import { useTierAccess } from "@/features/user/use-tier-access"
 import { useGetTeam } from "@/features/organization/use-get-team"
 import type { Tier } from "@/lib/tiers"
-import posthog, { DisplaySurveyType } from "posthog-js"
+import { openFeedbackSurvey } from "@/lib/feedback-survey"
 
 const TIER_LABELS: Record<Tier, string> = {
   FREE: "Free",
@@ -69,28 +69,6 @@ const TIER_COLORS: Record<Tier, string> = {
   FREE: "#6B7280",
   PRO: "#2563EB",
   MAX: "#D97706",
-}
-
-// Feedback is collected through a PostHog survey instead of a third-party form.
-// Create a *popover* survey in the PostHog dashboard and set its ID in
-// NEXT_PUBLIC_POSTHOG_FEEDBACK_SURVEY_ID. displaySurvey renders PostHog's own
-// styled popover and captures the "survey sent" response automatically;
-// ignoreConditions/ignoreDelay force it open on click, bypassing the survey's
-// targeting rules and configured delay.
-const FEEDBACK_SURVEY_ID = process.env.NEXT_PUBLIC_POSTHOG_FEEDBACK_SURVEY_ID
-
-function openFeedbackSurvey() {
-  if (!FEEDBACK_SURVEY_ID) {
-    console.warn(
-      "[feedback] NEXT_PUBLIC_POSTHOG_FEEDBACK_SURVEY_ID is not set — cannot open feedback survey",
-    )
-    return
-  }
-  posthog.displaySurvey(FEEDBACK_SURVEY_ID, {
-    displayType: DisplaySurveyType.Popover,
-    ignoreConditions: true,
-    ignoreDelay: true,
-  })
 }
 
 type SidebarItem = {
