@@ -8,10 +8,12 @@ export interface TierAccess {
   isFree: boolean;
   isPro: boolean;
   isMax: boolean;
+  /** True once the server has confirmed the tier. `tier` defaults to FREE while loading/erroring — fine for withholding a feature, wrong for claiming the user is unsubscribed. Gate any such claim on this, not isFree. */
+  isResolved: boolean;
 }
 
 export function useTierAccess(): TierAccess {
-  const { data, isLoading } = useGetUserSubscribed();
+  const { data, isLoading, isError } = useGetUserSubscribed();
   const tier: Tier = (data?.tier as Tier) ?? "FREE";
 
   return {
@@ -21,5 +23,6 @@ export function useTierAccess(): TierAccess {
     isFree: tier === "FREE",
     isPro: tier === "PRO",
     isMax: tier === "MAX",
+    isResolved: !isLoading && !isError && !!data,
   };
 }

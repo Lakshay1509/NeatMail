@@ -7,6 +7,8 @@ import { QueryProviders } from "@/providers/QueryProvider";
 import { Toaster } from "sonner";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { ConditionalSidebar } from "@/components/ConditionalSidebar";
+import { FreeTierBanner } from "@/components/FreeTierBanner";
+import { UpsellProvider } from "@/providers/UpsellProvider";
 import PageTransition from "@/components/PageTransition";
 import { PostHogIdentify } from "@/components/PostHogIdentify";
 import { FeedbackSurveyPrompt } from "@/components/FeedbackSurveyPrompt";
@@ -95,6 +97,8 @@ export default async function RootLayout({
           <PostHogIdentify />
           <FeedbackSurveyPrompt />
           <QueryProviders>
+            {/* Inside QueryProviders (reads tier); wraps everything so any gated page or refused write reaches the same upsell modal. */}
+            <UpsellProvider>
             <SidebarProvider defaultOpen={sidebarOpen}>
               <ConditionalSidebar />
               {/* SidebarInset (not a bare <main>) so the content column shrinks
@@ -106,9 +110,12 @@ export default async function RootLayout({
                   this box. Long content still scrolls — inside here. */}
               <SidebarInset className="h-svh min-w-0 overflow-y-auto">
                 <Toaster richColors theme="light" />
+                {/* Outside PageTransition: it's an account-level banner, not per-page, so it shouldn't animate on navigation. */}
+                <FreeTierBanner />
                 <PageTransition>{children}</PageTransition>
               </SidebarInset>
             </SidebarProvider>
+            </UpsellProvider>
           </QueryProviders>
         </body>
       </html>
