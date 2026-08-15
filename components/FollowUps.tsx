@@ -30,7 +30,7 @@ import { useGetLastMessage } from "@/features/email/use-get-last-message";
 import { useReplyMutation } from "@/features/email/use-post-reply";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
-import { NotSubscribedState } from "./NotSubscribedState";
+import { GatedNotice } from "./GatedNotice";
 import { useTierAccess } from "@/features/user/use-tier-access";
 
 type SentEmailRow = {
@@ -274,14 +274,13 @@ const FollowUps = () => {
     );
   }
 
+  // An empty list here would misread as "nobody owes you a reply" rather than "not tracked" — so say why it's blank.
   if (isFree) {
     return (
-      <NotSubscribedState
-        tier="FREE"
-        title="Follow-ups require Pro"
-        description="Upgrade to NeatMail Pro to track replies and send follow-up reminders."
-        width={300}
-        height={300}
+      <GatedNotice
+        source="follow-ups"
+        title="Nothing tracked yet"
+        description="Ray watches what you send and flags the threads nobody answered. Adding a card starts the tracking."
       />
     );
   }

@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/select";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
-import { NotSubscribedState } from "./NotSubscribedState";
+import { GatedNotice } from "./GatedNotice";
 import { useTierAccess } from "@/features/user/use-tier-access";
 
 type EmailRow = {
@@ -309,14 +309,13 @@ const StorageAnalysis = () => {
     );
   }
 
+  // An empty table here would misread as "no large mail" rather than "not scanned" — so say why it's blank.
   if (isFree) {
     return (
-      <NotSubscribedState
-        tier="FREE"
-        title="Storage cleanup requires Pro"
-        description="Upgrade to NeatMail Pro to find and delete large emails and free up storage."
-        width={300}
-        height={300}
+      <GatedNotice
+        source="storage"
+        title="Nothing scanned yet"
+        description="Ray finds the attachments quietly eating your storage so you can clear them in bulk. Adding a card lets it scan your mailbox."
       />
     );
   }

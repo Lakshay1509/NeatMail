@@ -18,7 +18,7 @@ export async function processFirstSweep(job: Job<FirstSweepJob>) {
 
   const token = await db.user_tokens.findUnique({
     where: { clerk_user_id: userId },
-    select: { deleted_flag: true, is_gmail: true },
+    select: { deleted_flag: true, is_gmail: true, first_sweep_at: true },
   });
 
   if (!token || token.deleted_flag) return;
@@ -26,6 +26,9 @@ export async function processFirstSweep(job: Job<FirstSweepJob>) {
   if (!token.is_gmail) return;
 
   if (action === "undo") {
+    // No tier gate on this route, so bail if there's nothing to undo — otherwise a never-swept account could queue unlimited undo jobs.
+    if (!token.first_sweep_at) return;
+
     await undoFirstRunSweep(userId);
     // Reset the stamp so the banner can offer the sweep again.
     await db.user_tokens.update({

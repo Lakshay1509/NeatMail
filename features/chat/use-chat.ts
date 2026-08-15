@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { InferRequestType } from "hono";
 import { useMutation } from "@tanstack/react-query";
 import { client } from "@/lib/hono";
+import { notifyTierGate } from "@/lib/tier-gate-event";
 import { toast } from "sonner";
 
 export interface ChatAttachment {
@@ -92,6 +93,9 @@ async function streamChat(
 
   // auth/tier/rate-limit failures come back as plain JSON, not SSE
   if (!res.ok || !res.body) {
+    // SSE bypasses the hono client, so report the plan refusal ourselves.
+    notifyTierGate(res.status, "/api/chat/stream");
+
     let message = "Failed to process chat query";
     try {
       const data = (await res.json()) as { message?: string };

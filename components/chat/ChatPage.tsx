@@ -16,6 +16,7 @@ import { ChatMessage, type ChatMessageData } from "./ChatMessage"
 import { ChatThinking } from "./ChatThinking"
 import { ChatInput } from "./ChatInput"
 import { ChatHistoryOverlay } from "./ChatHistoryOverlay"
+import { useTierAccess } from "@/features/user/use-tier-access"
 
 let msgCounter = 0
 function nextId() {
@@ -37,7 +38,9 @@ export function ChatPage() {
   const confirmAction = useConfirmAction()
   const queryClient = useQueryClient()
 
-  const sessionsQuery = useChatSessions()
+  // Disabled for FREE: /sessions 402s server-side, and refetchOnWindowFocus would retrigger the error toast on every tab switch.
+  const { isFree } = useTierAccess()
+  const sessionsQuery = useChatSessions(20, !isFree)
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
   // which session is currently mirrored in `messages` — lets a background
   // refetch happen without stomping on the thread that's on screen
@@ -50,7 +53,7 @@ export function ChatPage() {
   const messagesQuery = useChatMessages(
     activeSessionId ?? undefined,
     50,
-    loadedRef.current !== activeSessionId,
+    loadedRef.current !== activeSessionId && !isFree,
   )
   // how many pages of messagesQuery are already folded into `messages` —
   // page 0 is handled by the load effect, older pages by the scroll-up effect
@@ -356,7 +359,7 @@ export function ChatPage() {
                     onChange={setInput}
                     onSend={handleSend}
                     onNewChat={handleNewChat}
-                    disabled={chat.isPending}
+                    disabled={chat.isPending || isFree}
                     showNewChat={false}
                   />
                 </ChatEmptyState>
@@ -414,7 +417,7 @@ export function ChatPage() {
               onChange={setInput}
               onSend={handleSend}
               onNewChat={handleNewChat}
-              disabled={chat.isPending}
+              disabled={chat.isPending || isFree}
             />
           </>
         )}

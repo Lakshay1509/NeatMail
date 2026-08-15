@@ -39,7 +39,7 @@ import { subDays } from "date-fns";
 import { DatePickerWithRange } from "./DatePickerWithRange";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
-import { NotSubscribedState } from "./NotSubscribedState";
+import { GatedNotice } from "./GatedNotice";
 import { useTierAccess } from "@/features/user/use-tier-access";
 
 type EmailStatsRow = {
@@ -391,14 +391,13 @@ const EmailStats = () => {
     );
   }
 
+  // Unlike the settings pages, an empty grid here would misread as "no subscriptions found" rather than "not scanned" — so say why it's blank.
   if (isFree) {
     return (
-      <NotSubscribedState
-        tier="FREE"
-        title="Email analytics require Pro"
-        description="Upgrade to NeatMail Pro to track email stats and manage subscriptions."
-        width={300}
-        height={300}
+      <GatedNotice
+        source="unsubscribe"
+        title="Nothing scanned yet"
+        description="This list is built from your own mail — who sends you the most and how little of it you open. Adding a card lets Ray scan your inbox and fill it in."
       />
     );
   }

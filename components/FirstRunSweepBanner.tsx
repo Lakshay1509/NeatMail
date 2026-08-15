@@ -6,10 +6,18 @@ import { Button } from "@/components/ui/button";
 import { useFirstSweepPreview } from "@/features/first-sweep/use-first-sweep-preview";
 import { useRunFirstSweep } from "@/features/first-sweep/use-run-first-sweep";
 import { useUndoFirstSweep } from "@/features/first-sweep/use-undo-first-sweep";
+import { useTierAccess } from "@/features/user/use-tier-access";
 
 type Phase = "idle" | "done";
 
+// Split so useFirstSweepPreview (paginates threads.list, up to ~400 Gmail quota units) never runs for FREE users.
 const FirstRunSweepBanner = () => {
+  const { isFree } = useTierAccess();
+  if (isFree) return null;
+  return <FirstRunSweepBannerContent />;
+};
+
+const FirstRunSweepBannerContent = () => {
   const { data, isLoading } = useFirstSweepPreview();
   const run = useRunFirstSweep();
   const undo = useUndoFirstSweep();
