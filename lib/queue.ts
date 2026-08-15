@@ -147,6 +147,21 @@ export const engagementScanQueue = new Queue("engagement-scan", {
   },
 });
 
+// Ids must match /api/onboard/reveal's lookup, and use hyphens — BullMQ rejects a lone colon in job ids.
+export const activationJobId = (userId: string) => `activate-${userId}`;
+export const onboardScanJobId = (userId: string) => `onboard-scan-${userId}`;
+
+export const mailboxActivationQueue = new Queue("mailbox-activation", {
+  connection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: "exponential", delay: 10_000 },
+    // 1h retention keeps activationJobId deduping and lets /api/onboard/reveal find in-progress jobs.
+    removeOnComplete: { age: 3600, count: 1000 },
+    removeOnFail: 100,
+  },
+});
+
 // Periodic sweep that finds overdue, still-open inbound promises ("they owe
 // me") and resurfaces each with a nudge draft. Fired by a repeatable job (see
 // bullmq/workers/index.ts); fulfillment is handled per-arrival in the mail
@@ -190,6 +205,7 @@ export const queueAdapters = [
   new BullMQAdapter(archiveBacklogQueue),
   new BullMQAdapter(firstSweepQueue),
   new BullMQAdapter(engagementScanQueue),
+  new BullMQAdapter(mailboxActivationQueue),
   new BullMQAdapter(promiseSweepQueue),
   new BullMQAdapter(promiseNudgeQueue),
 ];

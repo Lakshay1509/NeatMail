@@ -32,8 +32,11 @@ export const useOnboard = () => {
           error?: string;
           code?: string;
         };
+        // A zod validation error makes `errorData.error` a truthy object, so `|| fallback` used to render "[object Object]" here.
         throw new OnboardError(
-          errorData.error || "Onboarding failed",
+          typeof errorData.error === "string"
+            ? errorData.error
+            : "Onboarding failed",
           errorData.code,
         );
       }

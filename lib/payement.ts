@@ -11,6 +11,7 @@ import {
   deleteOutlookSubscription,
 } from "./outlook";
 import { activeFolder, getUserIsGmail } from "./supabase";
+import { activationJobId, mailboxActivationQueue } from "./queue";
 import {
   sendSubExpiredEmail,
   sendSeatCapAlertEmail,
@@ -110,6 +111,15 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
     const clerkUserId = data.metadata?.clerk_user_id;
     const metadata = data.metadata as { clerk_user_id?: string; tier?: string } | undefined;
 
+    // Undefined clerk_user_id would make the Prisma filter below match any org — fail closed.
+    if (!clerkUserId) {
+      console.error(
+        "[dodo-webhook] subscription %s has no clerk_user_id in metadata — refusing to fan out",
+        data.subscription_id,
+      );
+      return subscription;
+    }
+
     if (data.status === "active") {
       const tier = getTierFromProductId(data.product_id)
         ?? (metadata?.tier as "PRO" | "MAX" | undefined)
@@ -121,9 +131,7 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
       // net for already-charged webhooks, and must run before the fan-out below.
       await enforceSeatCap(clerkUserId, tier, extraMailboxes);
 
-      // Admin's payment covers the whole team: activate watch and set tier for
-      // owner + every member. handleWatchActivation swallows its own errors, so
-      // one broken mailbox can't block the rest.
+      // Admin's payment covers the whole team: tier + activation queued for owner and every member.
       const targets = await getBillingTeamIds(clerkUserId);
 
       // Skip re-arming watch for paused members (seat + tier stay, watch stays
@@ -145,18 +153,34 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
         ...deletingUsers.map((u) => u.clerk_user_id),
       ]);
 
-      for (const memberId of targets) {
-        if (skipIds.has(memberId)) continue;
-        await handleWatchActivation(memberId);
-      }
-
       // Materialize tier onto every member, including paused ones (pause stops
       // the watch, not the plan), so tier-column readers like the free-tier
       // reaper cron stay correct without resolving the admin.
+      //
+      // Runs before the enqueue loop so the tier is live as soon as the webhook returns.
       await db.user_tokens.updateMany({
         where: { clerk_user_id: { in: targets } },
         data: { tier },
       });
+
+      // jobId doubles as the single-flight guard against /onboard-complete enqueuing the same activation.
+      for (const memberId of targets) {
+        if (skipIds.has(memberId)) continue;
+        try {
+          await mailboxActivationQueue.add(
+            "activate",
+            { userId: memberId },
+            { jobId: activationJobId(memberId) },
+          );
+        } catch (err) {
+          // Swallow enqueue errors so a Redis hiccup doesn't fail the paid subscription; next webhook re-enqueues.
+          console.error(
+            "[payment] failed to enqueue mailbox activation for",
+            memberId,
+            err,
+          );
+        }
+      }
     }
 
     if (

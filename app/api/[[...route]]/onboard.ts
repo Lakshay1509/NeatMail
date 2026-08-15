@@ -3,16 +3,31 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import z from "zod";
-import { handleWatchActivation } from "@/lib/payement";
-import { getPreviousMails } from "@/lib/gmail";
-import { getPreviousOutlookMails } from "@/lib/outlook";
-import { encryptDomain } from "@/lib/encode";
-import { getUserIsGmail, getUserSubscribed } from "@/lib/supabase";
+import { isMemberAccessPaused } from "@/lib/organization";
+import { getUserSubscribed } from "@/lib/supabase";
 import { getPostHogClient } from "@/lib/posthog-server";
 import { ensureResolvedTag } from "@/lib/tags";
 import { ARCHIVE_DEFAULTS } from "@/lib/archive-defaults";
-import { engagementScanQueue } from "@/lib/queue";
+import {
+  activationJobId,
+  engagementScanQueue,
+  mailboxActivationQueue,
+  onboardScanJobId,
+} from "@/lib/queue";
 import { ENGAGEMENT_CONFIG } from "@/lib/engagement";
+import type { Job } from "bullmq";
+
+// completed/failed excluded on purpose: rules are committed before the job completes, so the caller can safely fall through to the DB.
+async function isJobInProgress(job: Job): Promise<boolean> {
+  const state = await job.getState();
+  return (
+    state === "waiting" ||
+    state === "active" ||
+    state === "delayed" ||
+    state === "prioritized" ||
+    state === "waiting-children"
+  );
+}
 
 const app = new Hono().post(
   "/",
@@ -39,6 +54,8 @@ const app = new Hono().post(
         days: z.number().int().min(1).max(30),
         ai_drafts:z.boolean()
       }).optional(),
+      // Only /onboard-complete (post-checkout) sets this; turns a missing subscription into a retryable 402 instead of a silent no-op.
+      expectActivation: z.boolean().optional(),
     }),
   ),
   async (ctx) => {
@@ -53,77 +70,30 @@ const app = new Hono().post(
     const body = ctx.req.valid("json");
 
     try {
-      // Only complete once billing is live. getUserSubscribed resolves an
-      // invited member to their org admin's coverage; client retries until the webhook lands.
+      // Only mailbox activation is billing-gated, not preference saving — gating prefs too would strand paywall-decliners in the /onboarding redirect loop (app/page.tsx bounces any user with no user_tags row).
+      // getUserSubscribed resolves an invited member to their org admin's coverage.
       const coverage = await getUserSubscribed(userId);
 
-      if (!coverage.subscribed) {
-        return ctx.json(
-          {
-            error: "We're finalizing your subscription. This will only take a moment.",
-            code: "SUBSCRIPTION_PENDING",
-          },
-          402,
-        );
-      }
+      // coverage.subscribed is true for paused members too (inherited tier), so this guard stops a paused member from re-arming their own watch via re-onboarding; same guard as activate-watch.ts.
+      const accessPaused = await isMemberAccessPaused(userId);
 
-      const isGmailData = await getUserIsGmail(userId);
-
-      // Re-check watch activation in case the subscription webhook hasn't run yet.
-      const watchToken = await db.user_tokens.findUnique({
-        where: { clerk_user_id: userId },
-        select: { watch_activated: true },
-      });
-      if (!watchToken?.watch_activated) {
-        await handleWatchActivation(userId);
-      }
-
-      // Sync history (idempotent)
-      try {
-        const { isGmail } = isGmailData;
-        if (isGmail) {
-          const mails = await getPreviousMails(userId);
-          if (mails && mails.length > 0) {
-            const insertData = await Promise.all(
-              mails.map(async (mail: any) => {
-                const domain = await encryptDomain(mail.senderEmail);
-                return {
-                  user_id: userId,
-                  message_id: mail.messageId,
-                  domain,
-                  is_read: mail.is_read,
-                  created_at: new Date(mail.date),
-                };
-              }),
-            );
-            await db.email_tracked.createMany({
-              data: insertData,
-              skipDuplicates: true,
-            });
-          }
-        } else {
-          const mails = await getPreviousOutlookMails(userId);
-          if (mails && mails.length > 0) {
-            const insertData = await Promise.all(
-              mails.map(async (mail: any) => {
-                const domain = await encryptDomain(mail.fullemail);
-                return {
-                  user_id: userId,
-                  message_id: mail.messageId,
-                  domain,
-                  is_read: mail.is_Read,
-                  created_at: new Date(mail.created_at),
-                };
-              }),
-            );
-            await db.email_tracked.createMany({
-              data: insertData,
-              skipDuplicates: true,
-            });
-          }
+      // Requires expectActivation, not just subscribed — otherwise an already-covered user's pre-paywall step-2 save would trigger the full backfill inline and risk a proxy timeout.
+      if (body.expectActivation && coverage.subscribed && !accessPaused) {
+        // Queued, not awaited: inline execution could outlast the proxy timeout, and useOnboard only retries SUBSCRIPTION_PENDING, so a timeout showed as a hard failure.
+        // Dedupe is the shared jobId (activationJobId), not a DB read — email_tracked rows only land after the full backfill, so during the webhook/here race both callers would read zero and double-run.
+        try {
+          await mailboxActivationQueue.add(
+            "activate",
+            { userId },
+            { jobId: activationJobId(userId) },
+          );
+        } catch (err) {
+          // Non-fatal: webhook re-enqueues later; GET /reveal finds no job and falls through to the DB.
+          console.error(
+            "Failed to enqueue mailbox activation (non-fatal):",
+            err,
+          );
         }
-      } catch (err) {
-        console.error("History sync error (non-fatal):", err);
       }
 
       // Trial activation and tier assignment happen in the subscription
@@ -259,20 +229,18 @@ const app = new Hono().post(
         }
       });
 
-      // Dedicated engagement scan for this brand-new user. The history sync
-      // above just backfilled email_tracked, so the scan has data to judge
-      // noisy senders against right away instead of waiting up to 6h for the
-      // periodic run. notify:true → the worker emails the auto-mute count when
-      // it finds anything. jobId dedupes retries/re-onboards; enqueue failures
-      // are non-fatal so a Redis hiccup can't fail an otherwise-complete onboard.
-      try {
-        await engagementScanQueue.add(
-          "scan-user",
-          { userId, notify: true },
-          { jobId: `onboard-scan:${userId}` },
+      // Placed after the transaction: preferences commit first, so this 402 never costs the user their saved setup.
+      // expectActivation drives this (not a server-side check) because paymentProcessing is derived from a webhook-written row that's false during exactly this race window; use-onboard.ts retries ~30s and every write above is idempotent.
+      if (body.expectActivation && !coverage.subscribed) {
+        return ctx.json(
+          {
+            error: "We're finalizing your subscription. This will only take a moment.",
+            code: "SUBSCRIPTION_PENDING",
+          },
+          402,
+          // Distinguishes this from plan-refusal 402s (lib/hono opens an upsell on those); sent as a header, not the body, since the client wrapper must not consume the response stream.
+          { "X-Billing-Pending": "1" },
         );
-      } catch (err) {
-        console.error("Failed to enqueue onboarding engagement scan (non-fatal):", err);
       }
 
       const posthog = getPostHogClient();
@@ -284,11 +252,13 @@ const app = new Hono().post(
           draftEnabled: body.draftPrefs.enabled,
           digestEnabled: body.digestPrefs.enabled,
           followUpEnabled: body.followUpPrefs?.enabled ?? false,
+          activated: coverage.subscribed,
         },
       });
       await posthog.shutdown();
 
-      return ctx.json({ success: true }, 200);
+      // activated tells /onboard-complete whether to play the scan reveal (true) or go straight to the gated dashboard (false).
+      return ctx.json({ success: true, activated: coverage.subscribed }, 200);
     } catch (error) {
       console.error("Onboarding error:", error);
       const posthog = getPostHogClient();
@@ -321,20 +291,19 @@ const app = new Hono().post(
     }
 
     try {
+      // Must check this before the scan job: activateMailbox enqueues the scan last (after backfill), so during the 10-20s ingestion window there's no scan job yet — checking only that would fall through to the DB and report "done" with zero rules, which /onboard-complete renders as "already tidy" prematurely.
+      const activation = await mailboxActivationQueue.getJob(
+        activationJobId(userId),
+      );
+      if (activation && (await isJobInProgress(activation))) {
+        return ctx.json({ status: "pending" as const });
+      }
+
       // Job is only a "still running?" signal; once it's gone or terminal we
       // trust the DB, since rules are committed before the job completes.
-      const job = await engagementScanQueue.getJob(`onboard-scan:${userId}`);
-      if (job) {
-        const state = await job.getState();
-        const inProgress =
-          state === "waiting" ||
-          state === "active" ||
-          state === "delayed" ||
-          state === "prioritized" ||
-          state === "waiting-children";
-        if (inProgress) {
-          return ctx.json({ status: "pending" as const });
-        }
+      const job = await engagementScanQueue.getJob(onboardScanJobId(userId));
+      if (job && (await isJobInProgress(job))) {
+        return ctx.json({ status: "pending" as const });
       }
 
       // AUTO rules written in the last 15 min == this scan's output.

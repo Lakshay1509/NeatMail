@@ -13,6 +13,7 @@ import { processTrialReminder } from "./trial-reminder";
 import { processArchiveBacklog } from "./archive-tag-backlog";
 import { processFirstSweep } from "./first-sweep";
 import { processEngagementScan } from "./engagement-scan";
+import { processMailboxActivation } from "./mailbox-activation";
 import { processPromiseSweep } from "./promise-sweep";
 import { processPromiseNudge } from "./promise-nudge";
 import {
@@ -147,6 +148,18 @@ export async function startWorkers() {
     lockDuration: 120_000,
   });
 
+  // Concurrency 3 caps parallel Gmail backfills; long lock covers a slow one without it being handed to a second worker mid-run.
+  const mailboxActivationWorker = new Worker(
+    "mailbox-activation",
+    processMailboxActivation,
+    {
+      connection,
+      concurrency: 3,
+      limiter: MAIL_API_LIMITER,
+      lockDuration: 600_000,
+    },
+  );
+
   workers = [
     outlookMailWorker,
     outlookMailUpdateWorker,
@@ -161,6 +174,7 @@ export async function startWorkers() {
     archiveBacklogWorker,
     firstSweepWorker,
     engagementScanWorker,
+    mailboxActivationWorker,
     promiseSweepWorker,
     promiseNudgeWorker,
   ];
