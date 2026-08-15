@@ -143,7 +143,9 @@ const nextConfig: NextConfig = {
           {
             key: "Permissions-Policy",
 
-            value: "camera=(), microphone=(), geolocation=(self)",
+            // payment must allow the Dodo checkout origins or Apple/Google Pay silently disappear from the iframe.
+            value:
+              'camera=(), microphone=(), geolocation=(self), payment=(self "https://checkout.dodopayments.com" "https://test.checkout.dodopayments.com")',
           },
         ],
       },
