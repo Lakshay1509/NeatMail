@@ -4,9 +4,9 @@
 - **Package manager:** Bun. Use `bun install`, `bun run dev`, `bun run build`. Do not use npm/pnpm.
 - **Dev server:** `bun run dev` → http://localhost:3000
 - **Lint:** `bun run lint` (ESLint, Next.js vitals + TS configs)
-- **Type check:** `bun run type-check` (`tsc --noEmit`)
+- **Type check:** `bun run type-check` — two passes: the app config, then `tests/tsconfig.json`. Tests are excluded from the root config so `@types/bun`'s globals stay out of the app build (its `fetch` has a `preconnect` the DOM's lacks, which breaks `lib/hono.ts`).
 - **Build:** `bun run build` runs `prisma generate && next build` automatically.
-- **No tests exist** in this repo. Do not look for test commands.
+- **Tests:** `bun run test` (`bun test`). Also `test:watch`, `test:coverage`. Suite lives in `tests/` — see `tests/README.md` for the mocking model and how to add cases. Nothing hits Postgres, Redis, Clerk, DodoPay, Gmail or Outlook; `tests/setup.ts` is preloaded via `bunfig.toml` and mocks them all before any `lib/` module can dial out.
 
 ## Architecture
 - **Next.js 16.1** + React 19 app router. Frontend pages in `app/`. API is **Hono** mounted via `app/api/[[...route]]/route.ts` with `basePath("/api")`.

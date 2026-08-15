@@ -1,0 +1,41 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    name: Unit & API Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+
+      - run: bun install --frozen-lockfile
+
+      # lib/prisma.ts imports the generated client, so it must exist even though no
+      # test opens a connection — the client is mocked, not the module resolution.
+      - name: Generate Prisma Client
+        run: bunx prisma generate
+
+      # No DATABASE_URL / REDIS_URL / API keys are set on purpose: the suite mocks every
+      # external dependency and provides its own fake env in tests/setup.ts. If a test
+      # ever needs a real secret, it has stopped being a unit test.
+      - name: Run tests
+        run: bun test
+
+      - name: Type check tests
+        run: bunx tsc --noEmit -p tests/tsconfig.json

@@ -44,6 +44,8 @@ coverage
 *.test.ts
 *.spec.ts
 __tests__
+tests
+bunfig.toml
 
 # Build context bloat
 node_modules/.cache
