@@ -234,10 +234,11 @@ const UserLabelSettings = () => {
 					<span className="text-sm font-medium text-foreground tabular-nums">
 						{watchData?.paused ? 'Paused by admin' : watch ? 'Active' : 'Inactive'}
 					</span>
+					{/* isFree defaults true while the tier query loads, which fails closed here. */}
 					<Switch
 						checked={!!watch && !watchData?.paused}
 						onCheckedChange={handleWatchToggle}
-						disabled={watchLoading || !!watchData?.paused}
+						disabled={watchLoading || !!watchData?.paused || isFree}
 						aria-label="Monitor inbox"
 					/>
 				</div>

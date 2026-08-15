@@ -1,32 +1,17 @@
 "use client";
 
 import UserLabelSettings from "@/components/UserLabelSettings"
-import { useTierAccess } from "@/features/user/use-tier-access";
-import { NotSubscribedState } from "@/components/NotSubscribedState";
 import { PageHeader } from "@/components/PageHeader";
 
-function LabelsGate() {
-  const { isFree } = useTierAccess();
-
-  if (isFree) {
-    return (
-      <NotSubscribedState
-        tier="FREE"
-        title="Labels & watch require Pro"
-        description="Upgrade to Pro to set up inbox watch and customize your email categories."
-      />
-    );
-  }
-
-  return <UserLabelSettings />;
-}
-
+// FREE users get the real page; only writes are gated. The API refuses them and lib/hono routes that into the upsell modal via UpsellProvider.
 const page = () => {
   return (
     <>
       <PageHeader title="Labels" />
       <div className="w-full flex justify-center p-6 md:px-10">
-        <LabelsGate />
+        <div className="w-full">
+          <UserLabelSettings />
+        </div>
       </div>
     </>
   )

@@ -110,17 +110,7 @@ const cleanupItems: SidebarItem[] = [
   { title: "Large emails", url: "/storage", icon: Inbox },
 ]
 
-const FREE_GATED_TITLES = new Set([
-  "AI Chat",
-  "Labels",
-  "Draft preference",
-  "Daily Digest",
-  "Integrations",
-  "Follow-up",
-  "Unsubscribe",
-  "Large emails",
-  "Todos"
-])
+// Nav is never tier-gated here; access is enforced server-side per endpoint.
 
 // Desktop-only. On mobile the sidebar is a sheet, so its toggle belongs in the
 // page header where it stays reachable once the sheet is shut.
@@ -200,7 +190,6 @@ export function AppSidebar() {
       const isActive = item.url
         ? pathname === item.url || (item.url !== "/" && pathname.startsWith(item.url))
         : false
-      const isDisabled = isFree && FREE_GATED_TITLES.has(item.title)
       const Icon = item.icon
 
       const content = (
@@ -225,7 +214,6 @@ export function AppSidebar() {
       const buttonClassName = cn(
         "group/menu-button relative",
         item.danger && "text-red-600 hover:text-red-700",
-        isDisabled && "opacity-40 pointer-events-none",
       )
 
       return (
@@ -254,16 +242,14 @@ export function AppSidebar() {
     })
 
   // Shared by the dropdown's link and action rows so both keep the same
-  // tier-gating and mobile-sheet-dismiss behaviour as the main nav.
+  // mobile-sheet-dismiss behaviour as the main nav.
   const renderSettingsItem = (item: SidebarItem) => {
     const Icon = item.icon
-    const isDisabled = isFree && FREE_GATED_TITLES.has(item.title)
 
     if (item.onClick) {
       return (
         <DropdownMenuItem
           key={item.title}
-          disabled={isDisabled}
           onSelect={() => {
             item.onClick?.()
             handleLinkClick()
@@ -276,7 +262,7 @@ export function AppSidebar() {
     }
 
     return (
-      <DropdownMenuItem key={item.title} asChild disabled={isDisabled}>
+      <DropdownMenuItem key={item.title} asChild>
         <Link href={item.url!} onClick={handleLinkClick}>
           <Icon aria-hidden="true" />
           {item.title}

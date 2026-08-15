@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useGetDigestPreferences } from "@/features/digest/use-get-digest-preferences";
 import { usePostDigestPreferences } from "@/features/digest/use-post-digest-preferences";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import {
   Select,
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { notifyTierGate } from "@/lib/tier-gate-event";
 
 function generateTimeSlots() {
   const slots: { value: string; label: string }[] = [];
@@ -68,6 +69,8 @@ export default function DigestSettings() {
       if (response.ok) {
         toast.success("Test digest sent to your email");
       } else {
+        // Raw fetch bypasses lib/hono's upsell wrapper, so trigger it manually.
+        notifyTierGate(response.status, "/api/digest/test");
         toast.error("Failed to send test digest");
       }
     } catch {
@@ -97,28 +100,26 @@ export default function DigestSettings() {
 
   return (
     <div className="">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold">Daily Digest</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Your morning briefing, delivered on your terms
-        </p>
-      </div>
-
-      <Separator />
-
-      <div className="flex items-start justify-between py-6">
+      {/* No title here — PageHeader already renders "Daily Digest" above this. */}
+      <div className="flex items-start justify-between gap-4 pb-6">
         <div className="space-y-1">
           <p className="text-base font-semibold">Enable daily digest</p>
           <p className="text-sm text-muted-foreground">
             Receive a curated morning briefing
           </p>
         </div>
-        <Checkbox
-          id="enable-digest"
-          checked={enabled}
-          onCheckedChange={(v) => onFieldChange(() => setEnabled(!!v))}
-          className="mt-1"
-        />
+        <div className="flex items-center gap-2.5 pt-1 shrink-0">
+          {enabled && <span className="h-1.5 w-1.5 rounded-full bg-foreground animate-in zoom-in-50 fade-in duration-200 motion-reduce:animate-none" aria-hidden="true" />}
+          <span className="text-sm font-medium text-foreground">
+            {enabled ? "Active" : "Inactive"}
+          </span>
+          <Switch
+            id="enable-digest"
+            checked={enabled}
+            onCheckedChange={(v) => onFieldChange(() => setEnabled(v))}
+            aria-label="Enable daily digest"
+          />
+        </div>
       </div>
 
       <Separator />

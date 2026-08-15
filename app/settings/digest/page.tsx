@@ -1,32 +1,18 @@
 "use client";
 
 import DigestSettings from "@/components/DigestSettings";
-import { useTierAccess } from "@/features/user/use-tier-access";
-import { NotSubscribedState } from "@/components/NotSubscribedState";
 import { PageHeader } from "@/components/PageHeader";
 
-function DigestGate() {
-  const { isFree } = useTierAccess();
-
-  if (isFree) {
-    return (
-      <NotSubscribedState
-        tier="FREE"
-        title="Daily digest requires Pro"
-        description="Upgrade to Pro to receive a curated morning briefing of your most important emails."
-      />
-    );
-  }
-
-  return <DigestSettings />;
-}
-
+// Real form for everyone; the API refuses only the write — see app/settings/labels/page.tsx.
 export default function DigestSettingsPage() {
   return (
     <>
-      <PageHeader title="Daily digest" />
+      {/* Sole h1 for this page; DigestSettings no longer renders its own. */}
+      <PageHeader title="Daily Digest" />
       <div className="w-full p-6 md:px-10">
-        <DigestGate />
+        <div className="w-full">
+          <DigestSettings />
+        </div>
       </div>
     </>
   );
