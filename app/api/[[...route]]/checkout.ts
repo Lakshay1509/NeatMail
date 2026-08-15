@@ -236,7 +236,7 @@ const app = new Hono()
       }
 
       // priorCharge catches accounts with no trial row at all (pre-trial signups, direct subscribers) — without it they'd get a free week on every re-subscribe.
-      // priorPayment below has no status filter and is deliberately separate — merging it in would let one declined attempt permanently deny the trial.
+      // Both filter on "succeeded" so one declined attempt can't permanently deny the trial.
       // Mirror any change here in trialEligible (lib/subscription.ts) — GET /api/user/subscription depends on these staying in sync.
       const [priorTrial, priorCharge, tokenRow] = await Promise.all([
         db.paymentHistory.findFirst({
@@ -256,11 +256,13 @@ const app = new Hono()
         trialPeriodDays = 7;
       }
 
-      // Referral redemption requires no prior payment ever, regardless of whether a trial was requested.
-      const priorPayment = await db.paymentHistory.findFirst({
-        where: { clerkUserId: userId },
-        select: { id: true },
-      });
+      // Referral redemption requires no prior *successful* payment, regardless of whether a trial was requested.
+      // Must stay status-filtered: payment.failed/cancelled/processing all write PaymentHistory rows
+      // (dodo-webhook.ts -> addPaymenttoDb), so an unfiltered "any row" check would let one declined
+      // card forfeit the referral and skip the /onboard-complete reveal below on the successful retry.
+      // priorTrial ∪ priorCharge is exactly {status: "succeeded"} (amount is never negative; refunds
+      // live in Refund), so this needs no extra query.
+      const priorPayment = priorTrial ?? priorCharge;
 
       if (!priorPayment) {
         const refCode = getCookie(ctx, "nm_ref");

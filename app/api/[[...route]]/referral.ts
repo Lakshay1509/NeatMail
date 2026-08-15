@@ -61,8 +61,10 @@ const app = new Hono()
 
     // Same "first checkout ever" gate checkout.ts uses, so a returning or
     // churned user browsing onboarding again doesn't see a promise it won't honor.
+    // Status-filtered to match: failed/cancelled/processing attempts also write
+    // PaymentHistory rows, and a declined card must not retract the 14-day messaging.
     const priorPayment = await db.paymentHistory.findFirst({
-      where: { clerkUserId: userId },
+      where: { clerkUserId: userId, status: "succeeded" },
       select: { id: true },
     });
     if (priorPayment) return ctx.json({ referred: false }, 200);
