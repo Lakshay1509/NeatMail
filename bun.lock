@@ -45,6 +45,7 @@
         "date-fns": "^4.1.0",
         "date-fns-tz": "^3.2.0",
         "dodopayments": "^2.14.1",
+        "dodopayments-checkout": "^1.9.8",
         "framer-motion": "^12.38.0",
         "google-auth-library": "^10.5.0",
         "googleapis": "^169.0.0",
@@ -962,6 +963,8 @@
     "doctrine": ["doctrine@2.1.0", "", { "dependencies": { "esutils": "^2.0.2" } }, "sha512-35mSku4ZXK0vfCuHEDAwt55dg2jNajHZ1odvF+8SSr82EsZY4QmXfuWso8oEd8zRhVObSN18aM0CjSdoBX7zIw=="],
 
     "dodopayments": ["dodopayments@2.14.1", "", { "dependencies": { "standardwebhooks": "^1.0.0" }, "bin": { "dodopayments": "bin/cli" } }, "sha512-Zxi4eDgZHg7Ciq2qMxO6LhgBKTyUPOtRcgfbDjaIMlmBuqQ/AauNDvSUC3G7OIl4BnEZG6iW5iINQBgy3u2x/A=="],
+
+    "dodopayments-checkout": ["dodopayments-checkout@1.9.8", "", {}, "sha512-MLMQddKLifKgEIjo9dZnds+Altuof8IJfioGkMhP99tqG+oDKUe7lCWUjSJt5rVkPqwiDjaRryTY0120SitHMg=="],
 
     "dom-serializer": ["dom-serializer@2.0.0", "", { "dependencies": { "domelementtype": "^2.3.0", "domhandler": "^5.0.2", "entities": "^4.2.0" } }, "sha512-wIkAryiqt/nV5EQKqQpo3SToSOV9J0DnbJqwK7Wv/Trc92zIAYZ4FlMu+JPFW1DfGFt81ZTCGgDEabffXeLyJg=="],
 
