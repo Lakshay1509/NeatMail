@@ -1,0 +1,4 @@
+[test]
+# Loaded before any test file, so module mocks (prisma, redis, clerk, bullmq)
+# are installed before the modules under test are ever imported.
+preload = ["./tests/setup.ts"]

@@ -1,0 +1,17 @@
+{
+  // Test-only type-check pass. Separate from the root config so @types/bun's globals
+  // (notably its `fetch`, which carries a `preconnect` the DOM's does not) stay out of
+  // the app build. Run via `bun run type-check`, which does both passes.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["bun", "node"],
+    "noEmit": true,
+    "incremental": false,
+    "baseUrl": "..",
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["**/*.ts"],
+  "exclude": []
+}

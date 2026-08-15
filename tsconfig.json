@@ -13,6 +13,10 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    // Pinned so @types/bun is not auto-included here. Its global `fetch` carries a
+    // `preconnect` property that the DOM's does not, which breaks lib/hono.ts's
+    // `typeof fetch` annotation. Bun's types are scoped to tests/tsconfig.json instead.
+    "types": ["node"],
     "plugins": [
       {
         "name": "next"
@@ -30,5 +34,7 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  // tests/ is type-checked separately (tests/tsconfig.json) so it can pull in Bun's
+  // globals without leaking them into the app build.
+  "exclude": ["node_modules", "tests"]
 }
