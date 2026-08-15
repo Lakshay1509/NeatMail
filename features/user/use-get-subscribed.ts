@@ -17,6 +17,8 @@ export interface UserSubscriptionResponse {
   freeTrial: boolean;
   extraMailboxes: number;
   paymentProcessing: boolean;
+  /** True when checking out now would include a free trial. Label CTAs from this. */
+  trialEligible: boolean;
 }
 
 export const useGetUserSubscribed = () => {

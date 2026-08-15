@@ -22,6 +22,7 @@ import {
 import { SUPPORT_EMAIL } from "@/lib/support";
 import { useGeo } from "@/features/geo/use-geo";
 import posthog from "posthog-js";
+import { openDodoCheckout } from "@/lib/dodo-checkout";
 
 const TIER_RANK: Record<Tier, number> = { FREE: 0, PRO: 1, MAX: 2 };
 
@@ -327,7 +328,8 @@ const Billing = () => {
       const resData = await response.json();
 
       if (response.ok) {
-        window.location.href = resData.url;
+        // The billing portal below stays a plain redirect — it's not a checkout session, so the SDK can't wrap it.
+        openDodoCheckout(resData.url, "billing_page");
       } else {
         setError(resData.error || "Something went wrong");
       }

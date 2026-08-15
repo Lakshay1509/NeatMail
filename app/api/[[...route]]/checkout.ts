@@ -1,6 +1,7 @@
 import { db } from "@/lib/prisma";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import DodoPayments from "dodopayments";
+import { hasSyncedHistory } from "@/lib/mailbox-activation";
 import {
   getProductId,
   getMailboxAddonId,
@@ -160,9 +161,8 @@ const app = new Hono()
       const body = await ctx.req.json().catch(() => ({}));
       const tier: Tier = body.tier === "PRO" || body.tier === "MAX" ? body.tier : "PRO";
       const interval: "monthly" | "annual" = body.interval === "annual" ? "annual" : "monthly";
-      // Card required now via DodoPay; first charge after 7 days (bumped to 14 on valid referral redemption).
-      let trialPeriodDays = body.trial === true ? 7 : 0;
-      const isOnboarding = body.onboard === true;
+      // Resolved from eligibility below, not body.trial — callers like the upsell modal never send that flag.
+      let trialPeriodDays = 0;
 
       const subscription = await db.subscription.findFirst({
         where: {
@@ -235,26 +235,25 @@ const app = new Hono()
         return ctx.json({ success: true, resumed: true }, 200);
       }
 
-      // Trial eligibility: block on a prior $0 succeeded payment (own past trial), or
-      // trial_used (latched flag for MAX access inherited as a since-removed org member,
-      // since the OrganizationMember row is gone after detach).
-      if (trialPeriodDays > 0) {
-        const [priorTrial, tokenRow] = await Promise.all([
-          db.paymentHistory.findFirst({
-            where: { clerkUserId: userId, amount: 0, status: "succeeded" },
-            select: { id: true },
-          }),
-          db.user_tokens.findUnique({
-            where: { clerk_user_id: userId },
-            select: { trial_used: true },
-          }),
-        ]);
-        if (priorTrial || tokenRow?.trial_used) {
-          return ctx.json(
-            { error: "You've already used your free trial." },
-            409,
-          );
-        }
+      // priorCharge catches accounts with no trial row at all (pre-trial signups, direct subscribers) — without it they'd get a free week on every re-subscribe.
+      // priorPayment below has no status filter and is deliberately separate — merging it in would let one declined attempt permanently deny the trial.
+      // Mirror any change here in trialEligible (lib/subscription.ts) — GET /api/user/subscription depends on these staying in sync.
+      const [priorTrial, priorCharge, tokenRow] = await Promise.all([
+        db.paymentHistory.findFirst({
+          where: { clerkUserId: userId, amount: 0, status: "succeeded" },
+          select: { id: true },
+        }),
+        db.paymentHistory.findFirst({
+          where: { clerkUserId: userId, amount: { gt: 0 }, status: "succeeded" },
+          select: { id: true },
+        }),
+        db.user_tokens.findUnique({
+          where: { clerk_user_id: userId },
+          select: { trial_used: true },
+        }),
+      ]);
+      if (!priorTrial && !priorCharge && !tokenRow?.trial_used) {
+        trialPeriodDays = 7;
       }
 
       // Referral redemption requires no prior payment ever, regardless of whether a trial was requested.
@@ -321,6 +320,14 @@ const app = new Hono()
         return ctx.json({ error: "Payment configuration error" }, 500);
       }
 
+      // Needs BOTH checks: a dormant mailbox, a failed Outlook backfill, or an admin who never connected their own mailbox can have zero email_tracked rows without being a new signup.
+      // Routing a returning customer to /onboard-complete isn't cosmetic — that page re-POSTs onboarding answers, wiping user_tags/digest/draft prefs and deactivating rules for dropped tags.
+      const everSynced = await hasSyncedHistory(userId);
+      const isFirstActivation = !everSynced && !priorPayment;
+      const returnUrl = isFirstActivation
+        ? `${process.env.NEXT_PUBLIC_API_URL!}/onboard-complete`
+        : process.env.NEXT_PUBLIC_API_URL!;
+
       const checkout = await dodopayments.checkoutSessions.create({
         product_cart: [
           {
@@ -340,9 +347,7 @@ const app = new Hono()
           tier,
           interval,
         },
-        return_url: isOnboarding
-          ? `${process.env.NEXT_PUBLIC_API_URL!}/onboard-complete`
-          : `${process.env.NEXT_PUBLIC_API_URL!}`,
+        return_url: returnUrl,
       });
 
       return ctx.json({ url: checkout.checkout_url }, 200);

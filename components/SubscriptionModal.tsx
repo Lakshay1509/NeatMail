@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { TIER_LIMITS, getTierPrices, annualSavingsPct, type TierLimits, type BillingRegion } from "@/lib/tiers";
 import { useGeo } from "@/features/geo/use-geo";
+import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
+import { openDodoCheckout } from "@/lib/dodo-checkout";
 import posthog from "posthog-js";
 
 interface SubscriptionModalProps {
@@ -105,6 +107,10 @@ export const SubscriptionModal = ({
   const [interval, setInterval] = useState<BillingInterval>("monthly");
   const { region } = useGeo();
 
+  // `=== true`, not truthy: while loading/erroring this is undefined, and defaulting to "eligible" would promise a trial we then charge for.
+  const { data: subscription } = useGetUserSubscribed();
+  const trialEligible = subscription?.trialEligible === true;
+
   useEffect(() => {
     if (open) {
       posthog.capture("upsell_modal_viewed");
@@ -126,7 +132,9 @@ export const SubscriptionModal = ({
       const data = await response.json();
 
       if (response.ok) {
-        window.location.href = data.url;
+        // Close first — two stacked overlays trap focus in the wrong one.
+        onOpenChange(false);
+        openDodoCheckout(data.url, "upsell_modal");
       } else {
         setError(data.error || "Something went wrong");
       }
@@ -190,6 +198,13 @@ export const SubscriptionModal = ({
             <p className="text-center text-xs font-medium text-destructive">
               {error}
             </p>
+          )}
+
+          {trialEligible && (
+            <div className="flex items-center justify-center gap-1.5 rounded-lg bg-emerald-50 py-2 text-xs font-medium text-emerald-700">
+              <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              All plans ship with a 7-day free trial
+            </div>
           )}
 
           <div className="flex flex-col sm:flex-row gap-2">

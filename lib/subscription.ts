@@ -22,6 +22,8 @@ export interface SubscriptionStatus {
   extraMailboxes: number;
   /** A payment is mid-flight (DodoPay "processing") — plan will update once it settles. */
   paymentProcessing: boolean;
+  /** Whether a checkout now would include a free trial; must mirror the eligibility check in POST /api/checkout. */
+  trialEligible: boolean;
 }
 
 /**
@@ -61,7 +63,7 @@ export async function resolveSubscriptionStatus(
       }),
       db.user_tokens.findUnique({
         where: { clerk_user_id: ownerId },
-        select: { tier: true },
+        select: { tier: true, trial_used: true },
       }),
       db.paymentHistory.findFirst({
         where: { clerkUserId: ownerId, status: "processing" },
@@ -81,6 +83,9 @@ export async function resolveSubscriptionStatus(
   const paymentProcessing = !!processingPayment;
 
   const tier = (owner?.tier as Tier) ?? "FREE";
+
+  // paid_charge is required too: zero_payment alone misses direct subscribers and pre-trial signups, who'd otherwise look trial-eligible again after canceling.
+  const trialEligible = !zero_payment && !paid_charge && !owner?.trial_used;
 
   const hasActiveTrial =
     !!freeTrial &&
@@ -105,6 +110,7 @@ export async function resolveSubscriptionStatus(
         freeTrial: true,
         extraMailboxes: 0,
         paymentProcessing,
+        trialEligible,
       };
     }
     return {
@@ -114,6 +120,7 @@ export async function resolveSubscriptionStatus(
       freeTrial: false,
       extraMailboxes: 0,
       paymentProcessing,
+      trialEligible,
     };
   }
 
@@ -129,6 +136,7 @@ export async function resolveSubscriptionStatus(
       freeTrial: true,
       extraMailboxes: data.extraMailboxes ?? 0,
       paymentProcessing,
+      trialEligible,
     };
   }
 
@@ -150,5 +158,6 @@ export async function resolveSubscriptionStatus(
     freeTrial: paidFreeTrial,
     extraMailboxes: data.extraMailboxes ?? 0,
     paymentProcessing,
+    trialEligible,
   };
 }
