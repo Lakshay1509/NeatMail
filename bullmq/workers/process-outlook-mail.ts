@@ -7,7 +7,7 @@ import {
   extractInboundPromise,
   isOutboundPromiseCandidate,
   extractOutboundPromise,
-  NUDGE_LEAD_MS,
+  promiseNudgeDelayMs,
 } from "@/lib/promise";
 import { fetchUpcomingOutlookEvents } from "@/lib/promise-calendar";
 import { markBufferedEmailArchived } from "@/lib/batch-insert";
@@ -238,10 +238,7 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
               },
               select: { id: true },
             });
-            const delay = Math.max(
-              0,
-              promise.dueAt.getTime() - NUDGE_LEAD_MS - Date.now(),
-            );
+            const delay = promiseNudgeDelayMs(promise.dueAt);
             await promiseNudgeQueue.add(
               "nudge",
               { promiseId: row.id },

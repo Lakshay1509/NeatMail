@@ -36,9 +36,22 @@ const COMMITMENT_CUE =
   /\b(?:i(?:['’]?m| am) going to|i['’]?ll|i will|i shall|we['’]?ll|we will|let me (?:send|share|get|forward|pull)|i can (?:send|share|get|have)|i (?:should|hope to|expect to|plan to) (?:be able to )?(?:send|share|get|have|deliver|provide)|(?:will|i['’]?ll|we['’]?ll) (?:send|share|forward|deliver|provide|revert|update|get back to you|circle back|follow up)|sending (?:it|this|that|them|the|over|you)|send (?:it|this|that|them|the)? ?over to you|get back to you|revert(?:ing)? (?:back )?to you|circle back|follow up with you|will (?:be )?(?:sent|shared|ready|delivered|provided|done|completed|forwarded)|you['’]?ll (?:have|get|receive)|(?:get|have) (?:it|this|that|them|the .{0,20}?) (?:to|for) you)\b/i;
 
 // A deadline-ish expression. Month names only count when paired with a day
-// number, so common modal words ("may") don't trip it.
+// number, so common modal words ("may") don't trip it. Duration deadlines accept
+// a written quantity ("in a few days", "within an hour") EXCEPT for minutes,
+// which require a digit: "in a minute" is an idiom, not a deadline, and would
+// otherwise mint a promise due immediately (the nudge lead is 30 min, so any
+// sub-30-minute deadline fires the moment it's tracked).
 const TEMPORAL_CUE =
-  /\b(?:today|tonight|tomorrow|tmrw|tmw|eod|cob|asap|end of (?:the )?(?:day|week|month|business day)|by (?:the )?end of|this (?:week|month|afternoon|evening|morning)|next (?:week|month|business day)|(?:by |on |this |next |before )?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tues|tue|wed|thurs|thu|fri|sat|sun)|in \d+ (?:days?|weeks?|hours?|business days?)|\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}(?:\/\d{2,4})?|\d{1,2}(?:st|nd|rd|th)|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{1,2}|\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec))\b/i;
+  /\b(?:today|tonight|tomorrow|tmrw|tmw|eod|eow|eom|eob|cob|asap|end of (?:the )?(?:day|week|month|business day)|by (?:the )?end of|this (?:week|month|afternoon|evening|morning)|next (?:week|month|business day)|(?:by |on |this |next |before )?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tues|tue|wed|thurs|thu|fri|sat|sun)|(?:with)?in (?:\d+|a few|a couple of|an|a) (?:days?|weeks?|hours?|business days?)|(?:with)?in \d+ min(?:ute)?s?|\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}(?:\/\d{2,4})?|\d{1,2}(?:st|nd|rd|th)|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+\d{1,2}|\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec))\b/i;
+
+// A bare clock time with no day attached ("by 2pm", "before 14:30", "by noon").
+// Kept SEPARATE from TEMPORAL_CUE because it carries no date: it's enough to gate
+// a candidate in (the extractor anchors it on the received/sent day), but it must
+// NOT suppress the calendar lookup the way a real date does — see
+// needsCalendarLookup. The 24-hour form requires an explicit "by/at/before"-style
+// preposition and a colon so stray numbers ("version 2 30") can't trip it.
+const CLOCK_CUE =
+  /\b(?:\d{1,2}(?::\d{2})?\s*(?:a\.?m\.?|p\.?m\.?)|(?:by|at|before|around|until|til{1,2})\s+\d{1,2}:\d{2}|noon|midday|midnight)\b/i;
 
 // A deadline anchored to a named meeting/event rather than a literal date
 // ("before the sprint review", "after our sync") — TEMPORAL_CUE never matches
@@ -63,7 +76,9 @@ export function isPromiseCandidate(input: {
   const haystack = `${input.subject}\n${input.body}`.slice(0, 6000);
   return (
     COMMITMENT_CUE.test(haystack) &&
-    (TEMPORAL_CUE.test(haystack) || EVENT_CUE.test(haystack))
+    (TEMPORAL_CUE.test(haystack) ||
+      CLOCK_CUE.test(haystack) ||
+      EVENT_CUE.test(haystack))
   );
 }
 
@@ -98,7 +113,9 @@ ${lines.join("\n")}`;
 /**
  * Decides whether a gated-in candidate needs calendar grounding: true only
  * when EVENT_CUE matched but TEMPORAL_CUE did not (a literal date always wins
- * — no need to spend a calendar API call resolving it).
+ * — no need to spend a calendar API call resolving it). CLOCK_CUE deliberately
+ * does NOT count as a date here: "before our sync at 2pm" still needs the
+ * calendar to learn WHICH day the sync is on.
  */
 function needsCalendarLookup(subject: string, body: string): boolean {
   const haystack = `${subject}\n${body}`.slice(0, 6000);
@@ -164,7 +181,9 @@ Only count a promise where the SENDER is the one who will deliver. Do NOT count:
 Resolve relative dates against the received time: ${receivedLabel} (timezone ${tz}).
 - Return "dueLocal" as a local wall-clock time in that timezone, format "YYYY-MM-DD" (date only) or "YYYY-MM-DDTHH:mm" (with an explicit clock time). Do NOT include a timezone offset.
 - If only a day is given (e.g. "by Friday", "the 18th"), return date only and set hasTime=false.
-- Treat the work week as Monday-Friday: "end of week"/"by end of week"/"this week" means the coming Friday, and "next week" starts the following Monday.
+- If only a clock time is given with no day (e.g. "by 2pm", "by noon", "before 14:30"), it means that time on the anchor date above — return the full "YYYY-MM-DDTHH:mm" and set hasTime=true.
+- A part of the day IS a clock time, so return it as one with hasTime=true, never as a bare date: morning / "first thing" = 09:00, afternoon = 15:00, evening / "tonight" = 21:00. (Plain "end of day" / EOD / COB / EOB is the exception — return it as a bare date.)
+- Treat the work week as Monday-Friday: "end of week"/"by end of week"/"this week" means the coming Friday, and "next week" starts the following Monday. Common abbreviations: EOD/COB/EOB mean the end of that business day, EOW the coming Friday, EOM the last day of the month.
 - "item" is a short noun phrase for what's owed (e.g. "the design deck", "the signed contract").
 - confidence 0-1: how sure you are this is a real dated commitment by the sender.
 - If there is no such promise, set hasPromise=false and leave other fields empty.
@@ -289,18 +308,46 @@ ${input.body.slice(0, 6000)}`;
 // scheduled at due_at - this (see the sent-mail workers).
 export const NUDGE_LEAD_MS = 30 * 60 * 1000;
 
+// Floor for the delay, used ONLY when there is no lead time left to schedule —
+// the deadline is already past at send time ("by EOD" mailed at 18:30) or lands
+// inside the 30-minute lead window. Firing at delay 0 would email the user a
+// reminder seconds after they wrote the promise; this gives them a grace period
+// to just do the thing first, and the job is cancelled the moment they send.
+export const MIN_NUDGE_DELAY_MS = 30 * 60 * 1000;
+
+/**
+ * When to fire the nudge for an outbound promise: NUDGE_LEAD_MS before the
+ * deadline, or — when that moment has already passed — MIN_NUDGE_DELAY_MS from
+ * now. Never 0, so a promise made after its own deadline still gets a usable
+ * reminder instead of an instant one.
+ */
+export function promiseNudgeDelayMs(dueAt: Date, nowMs = Date.now()): number {
+  const lead = dueAt.getTime() - NUDGE_LEAD_MS - nowMs;
+  return lead > 0 ? lead : MIN_NUDGE_DELAY_MS;
+}
+
 /**
  * Outbound counterpart of {@link isPromiseCandidate}. The mail was SENT by the
  * user, so there is no untrusted sender to screen (no AUTOMATED_FROM gate) — a
- * real "I owe them" promise still needs BOTH a first-person commitment cue and a
- * temporal cue, which the shared regexes already capture.
+ * real "I owe them" promise still needs a first-person commitment cue plus some
+ * deadline cue, which the shared regexes already capture. The deadline half must
+ * accept the same three shapes as inbound: a literal date, a bare clock time, or
+ * a named meeting resolved off the calendar. (EVENT_CUE was previously missing
+ * here, which made the calendar-grounding path in extractOutboundPromise
+ * unreachable — needsCalendarLookup requires !TEMPORAL_CUE, so a gate demanding
+ * TEMPORAL_CUE could never satisfy it.)
  */
 export function isOutboundPromiseCandidate(input: {
   subject: string;
   body: string;
 }): boolean {
   const haystack = `${input.subject}\n${input.body}`.slice(0, 6000);
-  return COMMITMENT_CUE.test(haystack) && TEMPORAL_CUE.test(haystack);
+  return (
+    COMMITMENT_CUE.test(haystack) &&
+    (TEMPORAL_CUE.test(haystack) ||
+      CLOCK_CUE.test(haystack) ||
+      EVENT_CUE.test(haystack))
+  );
 }
 
 // A date-only OUTBOUND deadline ("by Friday", "by end of day") carries no clock
@@ -313,9 +360,16 @@ const OUTBOUND_END_OF_BUSINESS_HOUR = 17; // 5pm local, in the user's timezone
 
 // Shared local-wall-clock → UTC normalization for OUTBOUND promises, tolerant of
 // non-padded month/day/hour and any stray offset the model added. Anchors "date
-// only" to end of the business day (above). Returns null on an unparseable, past,
-// or absurdly-far-out (wrong-year) result — including a same-day date-only promise
-// created after business hours, where a "before end of business" nudge is moot.
+// only" to end of the business day (above). Returns null on an unparseable or
+// absurdly-far-out (wrong-year) result.
+//
+// A deadline that is ALREADY PAST at send time is kept, not dropped, as long as it
+// still falls on the send day in the user's timezone — mailing "I'll get this to
+// you by EOD" at 18:30, or "by 2pm" at 15:00, is a real commitment that used to
+// vanish silently precisely because there was no "30 min before" left to schedule.
+// The sent-mail workers give those a short grace instead (MIN_NUDGE_DELAY_MS).
+// A deadline landing on an EARLIER day is still dropped: that's a mis-parse
+// (wrong month, wrong year), not a late promise.
 function resolveDueAt(
   dueLocal: string,
   tz: string,
@@ -335,8 +389,11 @@ function resolveDueAt(
   const dueAt = fromZonedTime(local, tz);
   if (isNaN(dueAt.getTime())) return null;
   const deltaMs = dueAt.getTime() - anchorMs;
-  if (deltaMs <= 0) return null;
   if (deltaMs > MAX_HORIZON_DAYS * 86_400_000) return null;
+  if (deltaMs <= 0) {
+    const sendDay = formatInTimeZone(new Date(anchorMs), tz, "yyyy-MM-dd");
+    if (sendDay !== datePart) return null;
+  }
   return dueAt;
 }
 
@@ -394,7 +451,9 @@ Only count a promise where the SENDER is the one who will deliver. Do NOT count:
 Resolve relative dates against the sent time: ${sentLabel} (timezone ${tz}).
 - Return "dueLocal" as a local wall-clock time in that timezone, format "YYYY-MM-DD" (date only) or "YYYY-MM-DDTHH:mm" (with an explicit clock time). Do NOT include a timezone offset.
 - If only a day is given (e.g. "by Friday", "the 18th"), return date only and set hasTime=false.
-- Treat the work week as Monday-Friday: "end of week"/"by end of week"/"this week" means the coming Friday, and "next week" starts the following Monday.
+- If only a clock time is given with no day (e.g. "by 2pm", "by noon", "before 14:30"), it means that time on the anchor date above — return the full "YYYY-MM-DDTHH:mm" and set hasTime=true.
+- A part of the day IS a clock time, so return it as one with hasTime=true, never as a bare date: morning / "first thing" = 09:00, afternoon = 15:00, evening / "tonight" = 21:00. (Plain "end of day" / EOD / COB / EOB is the exception — return it as a bare date.)
+- Treat the work week as Monday-Friday: "end of week"/"by end of week"/"this week" means the coming Friday, and "next week" starts the following Monday. Common abbreviations: EOD/COB/EOB mean the end of that business day, EOW the coming Friday, EOM the last day of the month.
 - "item" is a short noun phrase for what the sender owes (e.g. "the design deck", "the signed contract").
 - confidence 0-1: how sure you are this is a real dated commitment by the sender.
 - If there is no such promise, set hasPromise=false and leave other fields empty.

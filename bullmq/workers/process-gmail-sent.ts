@@ -15,7 +15,7 @@ import { checkSentRequiresFollowUp } from "@/lib/sent-followup";
 import {
   isOutboundPromiseCandidate,
   extractOutboundPromise,
-  NUDGE_LEAD_MS,
+  promiseNudgeDelayMs,
 } from "@/lib/promise";
 import { fetchUpcomingGoogleEvents } from "@/lib/promise-calendar";
 import { encrypt, encryptDomain } from "@/lib/encode";
@@ -156,10 +156,7 @@ export async function processGmailSent(
               },
               select: { id: true },
             });
-            const delay = Math.max(
-              0,
-              promise.dueAt.getTime() - NUDGE_LEAD_MS - Date.now(),
-            );
+            const delay = promiseNudgeDelayMs(promise.dueAt);
             await promiseNudgeQueue.add(
               "nudge",
               { promiseId: row.id },
