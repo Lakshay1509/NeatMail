@@ -3,15 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
-import { Check, Sparkles } from "lucide-react";
 import { useOnboard } from "@/features/onboard/use-onboard";
 import { useOnboardReveal } from "@/features/onboard/use-onboard-reveal";
+import { buildOnboardPayload, type OnboardAnswers } from "@/lib/onboard-payload";
 import { cn } from "@/lib/utils";
 
 // The setup finale reads like real work happening: an opening line, then one
 // beat per stage of the scan, each typed out and held before the next. The
 // final beat is the sync point — it blinks until the real inbox scan reports
-// done (or times out), then hands off to the reveal.
+// done (or times out), then the screen fades and hands off to the dashboard.
 const SETUP_BEATS = [
   "Let's get your account setup",
   "Setting up your workspace",
@@ -27,31 +27,16 @@ const LAST_BEAT = SETUP_BEATS.length - 1;
 const BEAT_MIN_MS = 2000;
 const TYPE_MS_PER_CHAR = 30;
 const FADE_MS = 260;
-
-const ROLES = [
-  { value: "founder", label: "Founder" },
-  { value: "sales-manager", label: "Sales Manager" },
-  { value: "account-executive", label: "Account Executive" },
-  { value: "marketing-manager", label: "Marketing Manager" },
-  { value: "product-manager", label: "Product Manager" },
-  { value: "customer-success", label: "Customer Success" },
-  { value: "operations", label: "Operations" },
-  { value: "hr-recruiter", label: "HR / Recruiter" },
-  { value: "engineer", label: "Engineer" },
-  { value: "executive-assistant", label: "Executive Assistant" },
-  { value: "consultant", label: "Consultant" },
-  { value: "personal-use", label: "Personal use" },
-  { value: "other", label: "Other" },
-];
+// Must match .neat-exit's animation duration in globals.css.
+const EXIT_FADE_MS = 420;
 
 // Fallback if the scan never reports "done" (no worker in dev, stuck job).
 const REVEAL_TIMEOUT_MS = 15_000;
 
 // `?demo=true` plays the whole finale with mock data — no auth, checkout, or
 // scan — so the choreography can be previewed end to end. The "scan" finishes
-// after DEMO_SCAN_MS, chosen so the final beat visibly blinks before the reveal.
+// after DEMO_SCAN_MS, chosen so the final beat visibly blinks first.
 const DEMO_SCAN_MS = 17_000;
-const DEMO_REVEAL = { sendersMuted: 23, emailsSilenced: 1487 };
 
 function DemoBadge() {
   return (
@@ -100,34 +85,6 @@ function useTypewriter(text: string, reduced: boolean) {
     return () => cancelAnimationFrame(raf);
   }, [text, reduced]);
   return { typed: text.slice(0, count), done: count >= text.length };
-}
-
-// Animates 0 -> target; jumps straight there under prefers-reduced-motion.
-function useCountUp(target: number, active: boolean, duration = 1400) {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    if (!active) return;
-    const reduced =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    let raf = 0;
-    if (reduced || target <= 0) {
-      // Defer to next frame: no synchronous setState in the effect body (React 19).
-      raf = requestAnimationFrame(() => setValue(target));
-      return () => cancelAnimationFrame(raf);
-    }
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - t, 3);
-      setValue(Math.round(target * eased));
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target, active, duration]);
-  return value;
 }
 
 // A single beat: typewriter in, a caret while it settles, or a pulsing line
@@ -273,57 +230,16 @@ export default function OnboardCompletePage() {
   const buildPayload = () => {
     if (!user) return null;
     const meta = user.unsafeMetadata as
-      | {
-          onboarding?: {
-            role?: string;
-            tags?: string[];
-            followUpEnabled?: boolean;
-            followUpDays?: number;
-          };
-        }
+      | { onboarding?: OnboardAnswers }
       | undefined;
-    const onboarding = meta?.onboarding ?? {};
-    const userTimezone =
-      Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-    const email = user.primaryEmailAddress?.emailAddress ?? "";
-    const domain = email.split("@")[1]?.toLowerCase() ?? "";
-
-    let draftPrompt: string | undefined;
-    const role = onboarding.role;
-    if (role && role !== "personal-use" && role !== "other") {
-      const skipDomains = [
-        "gmail.com",
-        "outlook.com",
-        "hotmail.com",
-        "outlook.fr",
-        "outlook.de",
-        "outlook.co.uk",
-      ];
-      if (!skipDomains.includes(domain) && domain) {
-        const roleLabel = ROLES.find((r) => r.value === role)?.label ?? role;
-        draftPrompt = `I'm a ${roleLabel} at ${domain}.`;
-      }
-    }
 
     return {
-      tags: onboarding.tags ?? [],
-      draftPrefs: {
-        enabled: true,
-        fontColor: "#000000",
-        fontSize: 14,
-        timezone: userTimezone,
-        ...(draftPrompt && { draftPrompt }),
-      },
-      digestPrefs: {
-        enabled: true,
-        deliveryTime: "10:00",
-        timezone: userTimezone,
-      },
-      followUpPrefs: {
-        enabled: onboarding.followUpEnabled ?? true,
-        days: onboarding.followUpDays ?? 3,
-        ai_drafts: true,
-      },
+      ...buildOnboardPayload(
+        meta?.onboarding ?? {},
+        user.primaryEmailAddress?.emailAddress ?? "",
+      ),
+      // Missing subscription means the webhook hasn't landed yet — flag as retryable (see POST /api/onboard).
+      expectActivation: true,
     };
   };
 
@@ -366,45 +282,72 @@ export default function OnboardCompletePage() {
     : onboardMutation.isSuccess &&
       (reveal.data?.status === "done" || timedOut);
 
-  const done = demo
-    ? DEMO_REVEAL
-    : reveal.data?.status === "done"
-      ? reveal.data
-      : null;
-  const emailsSilenced = done?.emailsSilenced ?? 0;
-  const sendersMuted = done?.sendersMuted ?? 0;
-  const showCount = !!done && emailsSilenced > 0;
-
-  // Hold the count-up until the reveal is actually on screen so it animates.
-  const count = useCountUp(emailsSilenced, setupComplete && showCount);
-
   const onSetupDone = useCallback(() => setSetupComplete(true), []);
-  const goToInbox = () => router.push("/");
+  const goToInbox = useCallback(() => router.push("/"), [router]);
 
-  // Demo CTA: restart the finale instead of leaving for the inbox.
-  const replayDemo = () => {
-    setDemoReady(false);
-    setSetupComplete(false);
-    setRunId((r) => r + 1);
-  };
+  // Prefetch the dashboard while the beats play, so the fade lands on a rendered page.
+  useEffect(() => {
+    if (demo) return;
+    router.prefetch("/");
+  }, [demo, router]);
+
+  // Demo loops back instead of navigating, so the finale stays previewable without auth or checkout.
+  useEffect(() => {
+    if (!setupComplete) return;
+
+    const t = setTimeout(
+      () => {
+        if (demo) {
+          setDemoReady(false);
+          setSetupComplete(false);
+          setRunId((r) => r + 1);
+          return;
+        }
+        goToInbox();
+      },
+      reduced ? 0 : EXIT_FADE_MS,
+    );
+    return () => clearTimeout(t);
+  }, [setupComplete, demo, reduced, goToInbox]);
 
   if (onboardMutation.isError) {
+    // SUBSCRIPTION_PENDING means payment succeeded but the webhook hasn't landed yet — not a failed charge.
+    const pending = onboardMutation.error?.code === "SUBSCRIPTION_PENDING";
+
     return (
-      <div className="min-h-svh flex items-center justify-center bg-white">
-        <div className="flex flex-col items-center gap-4">
-          <p className="text-sm text-red-600">
-            {onboardMutation.error?.message}
-          </p>
-          <button
-            disabled={onboardMutation.isPending}
-            onClick={() => {
-              const payload = buildPayload();
-              if (payload) onboardMutation.mutate(payload);
-            }}
-            className="px-6 py-2 rounded-full bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors disabled:opacity-40"
+      <div className="min-h-svh flex items-center justify-center bg-white px-6">
+        <div className="flex max-w-sm flex-col items-center gap-5 text-center">
+          <p
+            className={cn(
+              "text-sm leading-relaxed",
+              pending ? "text-neutral-600" : "text-red-600",
+            )}
           >
-            {onboardMutation.isPending ? "Retrying…" : "Try again"}
-          </button>
+            {pending
+              ? "Your payment went through — we're still finalising it on our side. This usually takes a few seconds."
+              : onboardMutation.error?.message}
+          </p>
+
+          <div className="flex flex-col items-center gap-3">
+            <button
+              disabled={onboardMutation.isPending}
+              onClick={() => {
+                const payload = buildPayload();
+                if (payload) onboardMutation.mutate(payload);
+              }}
+              className="px-6 py-2 rounded-full bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 transition-colors disabled:opacity-40"
+            >
+              {onboardMutation.isPending ? "Retrying…" : "Try again"}
+            </button>
+
+            {/* Escape hatch: prefs are already saved by step 2, so the account works even if this failed. */}
+            <button
+              onClick={goToInbox}
+              className="text-xs font-medium text-neutral-500 underline-offset-2 transition-colors hover:text-neutral-900 hover:underline"
+            >
+              Go to my dashboard
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -426,76 +369,14 @@ export default function OnboardCompletePage() {
     );
   }
 
+  // No summary screen on purpose; white bg is shared with the beats above and the dashboard for one continuous fade.
   return (
     <>
       {demo && mounted && <DemoBadge />}
-      <div className="min-h-svh flex items-center justify-center bg-white px-6">
       <div
-        role="status"
-        aria-live="polite"
-        className="neat-reveal flex w-full max-w-md flex-col items-center gap-8 text-center"
-      >
-        {showCount ? (
-          <>
-            {/* Visible number animates and is aria-hidden to avoid tick-by-tick announcements. */}
-            <p className="sr-only">
-              Silenced {emailsSilenced.toLocaleString()} emails from{" "}
-              {sendersMuted} sender{sendersMuted === 1 ? "" : "s"} you never
-              open.
-            </p>
-            <div className="flex flex-col items-center gap-3" aria-hidden="true">
-              <span className="font-display text-6xl font-extrabold tabular-nums tracking-[-0.02em] text-neutral-900 sm:text-7xl">
-                {count.toLocaleString()}
-              </span>
-              <p className="max-w-xs text-sm leading-snug text-neutral-500">
-                emails from{" "}
-                <span className="font-medium text-neutral-700">
-                  {sendersMuted} sender{sendersMuted === 1 ? "" : "s"}
-                </span>{" "}
-                you never open
-              </p>
-            </div>
-
-            <div className="flex flex-col items-center gap-5">
-              <h1 className="flex items-center gap-2 text-base font-semibold text-neutral-900">
-                <span className="flex size-6 items-center justify-center rounded-full bg-neutral-900">
-                  <Check aria-hidden="true" className="size-4 text-white" />
-                </span>
-                Silenced — your inbox just got quieter
-              </h1>
-              <button
-                onClick={demo ? replayDemo : goToInbox}
-                className="rounded-full bg-neutral-900 px-7 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2"
-              >
-                {demo ? "Replay demo ↻" : "See my quiet inbox →"}
-              </button>
-            </div>
-          </>
-        ) : (
-          // Frame a 0 (or a still-running scan) as a clean inbox, not a null state.
-          <>
-            <div className="flex size-14 items-center justify-center rounded-2xl bg-neutral-900">
-              <Sparkles aria-hidden="true" className="size-7 text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold text-neutral-900">
-                Your inbox is already tidy
-              </h1>
-              <p className="mx-auto mt-1 max-w-xs text-sm leading-snug text-neutral-500">
-                Nothing noisy to silence right now. Ray will keep watching and
-                mute the loud ones automatically.
-              </p>
-            </div>
-            <button
-              onClick={demo ? replayDemo : goToInbox}
-              className="rounded-full bg-neutral-900 px-7 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2"
-            >
-              {demo ? "Replay demo ↻" : "Go to my inbox →"}
-            </button>
-          </>
-        )}
-      </div>
-      </div>
+        aria-hidden="true"
+        className="neat-exit min-h-svh bg-white"
+      />
     </>
   );
 }

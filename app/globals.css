@@ -325,8 +325,14 @@
   animation: neat-blink 1.15s ease-in-out infinite;
 }
 
-.neat-reveal {
-  animation: neat-rise-in 440ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+/* `forwards` holds opacity at 0 after the animation ends, until the route swaps — otherwise it flashes back to white. */
+@keyframes neat-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.neat-exit {
+  animation: neat-fade-out 420ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .neat-caret {
@@ -334,8 +340,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Reduced motion navigates immediately, so .neat-exit has nothing to fade. */
   .neat-beat,
-  .neat-reveal {
+  .neat-exit {
     animation: none;
     transition: none;
   }

@@ -16,7 +16,7 @@ import {
   Loader2,
   Archive,
 } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 
 import { Separator } from "@/components/ui/separator"
 import { useOnboarding } from "@/hooks/useOnboarding";
@@ -25,6 +25,7 @@ import { useIncomingReferral } from "@/features/referral/use-referral";
 import { useFirstSweepPreview } from "@/features/first-sweep/use-first-sweep-preview";
 import { cn } from "@/lib/utils";
 import { useGeo } from "@/features/geo/use-geo";
+import { ROLES, buildOnboardPayload } from "@/lib/onboard-payload";
 import {
   getTierPrices,
   planFeatures,
@@ -34,6 +35,8 @@ import {
   TIER_DESCRIPTIONS,
 } from "@/lib/tiers";
 import { toast } from "sonner";
+import posthog from "posthog-js";
+import { openDodoCheckout } from "@/lib/dodo-checkout";
 import { InviteConfirm } from "@/components/InviteConfirm";
 
 const CATEGORIES = [
@@ -87,22 +90,6 @@ const CATEGORIES = [
   },
 ];
 
-const ROLES = [
-  { value: "founder", label: "Founder" },
-  { value: "sales-manager", label: "Sales Manager" },
-  { value: "account-executive", label: "Account Executive" },
-  { value: "marketing-manager", label: "Marketing Manager" },
-  { value: "product-manager", label: "Product Manager" },
-  { value: "customer-success", label: "Customer Success" },
-  { value: "operations", label: "Operations" },
-  { value: "hr-recruiter", label: "HR / Recruiter" },
-  { value: "engineer", label: "Engineer" },
-  { value: "executive-assistant", label: "Executive Assistant" },
-  { value: "consultant", label: "Consultant" },
-  { value: "personal-use", label: "Personal use" },
-  { value: "other", label: "Other" },
-];
-
 // Free-mail domains read as personal use; anything else is almost certainly a
 // company address, where Founder is the modal answer for an inbox tool. The
 // guess exists only to remove the dead Continue button on step 0 — it is
@@ -152,6 +139,10 @@ const TOTAL_STEPS = 4;
 // visible momentum is measurably less likely to abandon (goal-gradient effect).
 const progressPct = (step: number) => 40 + step * 20;
 
+// Expands the tap target to 44px via an invisible pseudo-element, without resizing the control (Apple HIG / Material minimum).
+const TAP_44 =
+  "relative after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-['']";
+
 function ProgressTrack({
   step,
   align = "center",
@@ -171,7 +162,8 @@ function ProgressTrack({
           <div
             key={i}
             className={cn(
-              "h-1.5 rounded-full transition-all duration-500",
+              // transition-[width], not transition-all — `all` would re-animate the background-color swap too.
+              "h-1.5 rounded-full transition-[width] duration-300 motion-reduce:transition-none",
               i <= step ? "bg-neutral-900 w-8" : "bg-neutral-200 w-6",
             )}
           />
@@ -181,7 +173,7 @@ function ProgressTrack({
           re-rendered on every step change, and in-browser translation re-parents
           those nodes into <font> wrappers between renders — the removeChild
           crash. A single pre-built string gives React one node to swap. */}
-      <p className="text-[11px] font-medium tabular-nums text-neutral-500">
+      <p className="text-xs font-medium tabular-nums text-neutral-500">
         {`Step ${step + 1} of ${TOTAL_STEPS} · ${progressPct(step)}%`}
       </p>
     </div>
@@ -263,11 +255,30 @@ export default function OnboardingPage() {
   const trialDays = referred ? 14 : 7;
   const dirRef = useRef(1);
   const [step, setStep] = useState(0);
-  const [selectedTier, setSelectedTier] = useState<TrialTier>("MAX");
-  // Annual is the interval carrying the savings badge, so it is also the
-  // default — a default that contradicts the recommendation wastes the ~70-90%
-  // of users who simply accept whatever is pre-selected.
-  const [billingInterval, setBillingInterval] = useState<BillingInterval>("annual");
+  // Defaults to PRO + monthly, the cheapest combo — MAX + annual made an
+  // unwatched trial's accidental charge $372/₹12,470 instead of $19. The
+  // "Most popular" badge and savings pill still point to MAX/annual.
+  const [selectedTier, setSelectedTier] = useState<TrialTier>("PRO");
+
+  const planRefs = useRef<Partial<Record<TrialTier, HTMLButtonElement | null>>>(
+    {},
+  );
+  const handlePlanKeyDown = (
+    e: React.KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    const forward = e.key === "ArrowRight" || e.key === "ArrowDown";
+    const back = e.key === "ArrowLeft" || e.key === "ArrowUp";
+    if (!forward && !back) return;
+    e.preventDefault();
+    const next =
+      TRIAL_PLANS[
+        (index + (forward ? 1 : -1) + TRIAL_PLANS.length) % TRIAL_PLANS.length
+      ];
+    setSelectedTier(next.tier);
+    planRefs.current[next.tier]?.focus();
+  };
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
   const [data, setData] = useState<OnboardingData>({
     role: null,
     activeLabels: CATEGORIES.map((c) => c.name),
@@ -305,6 +316,48 @@ export default function OnboardingPage() {
     return `${p.symbol}${(yearly / 365).toFixed(2)}`;
   };
   const currentSubtitles = stepSubtitles(trialDays);
+
+  // `=== true`, not `!== false` — an unresolved subscription query must not
+  // read as trial-eligible, or someone about to be charged sees "$0 today".
+  const trialEligible = subData?.trialEligible === true;
+  const symbol = prices[selectedTier].symbol;
+
+  // Built as whole strings, not interpolated into JSX — avoids the
+  // in-browser-translate removeChild crash from a bare TextNode beside a sibling.
+  const headline = trialEligible ? "Start your free trial" : "Choose your plan";
+  const headlineSub = trialEligible
+    ? `Full access to every feature, free for ${trialDays} days. ${symbol}0 today — cancel anytime.`
+    : "Full access to every feature. Cancel anytime.";
+
+  const cardReason =
+    "We ask for a card to confirm you're a real person before NeatMail connects to your mailbox.";
+  const cardTerms = trialEligible
+    ? `${symbol}0 today — we'll remind you two days before your ${trialDays}-day trial ends, and cancelling takes one click. Your card is encrypted, never stored.`
+    : "You've already used your free trial, so this starts your subscription today. Cancel anytime. Your card is encrypted, never stored.";
+
+  const sweepBuckets = sweepPreview?.eligible ? sweepPreview.buckets : [];
+  const sweepDetail = `Clearing them by hand is about ${formatTriageTime(sweepTotal)} of clicking. Your trial does it in one — reversible, nothing deleted.`;
+
+  const followUpSummary = data.followUpEnabled
+    ? `, and follow-ups flagged after ${data.followUpDays} ${data.followUpDays === 1 ? "day" : "days"}`
+    : "";
+  const setupSummary = `${data.activeLabels.length} labels ready to sort your inbox${followUpSummary}.`;
+
+  const ctaLong = !trialEligible
+    ? "Subscribe"
+    : sweepTotal > 0
+      ? `Start trial & clear ${sweepTotal.toLocaleString()} emails`
+      : `Start ${trialDays}-day free trial`;
+  const ctaShort = !trialEligible
+    ? "Subscribe"
+    : sweepTotal > 0
+      ? `Start trial · clear ${sweepTotal.toLocaleString()}`
+      : `Start ${trialDays}-day free trial`;
+  const footerNote = !trialEligible
+    ? "Cancel anytime"
+    : sweepTotal > 0
+      ? "Skip and these stay in your inbox · No charge today"
+      : "No charge today · Cancel anytime";
 
   // Idempotent. Called for non-invited users and invite decliners so no one lands in the wizard org-less.
   const ensureSoloOrg = () => {
@@ -385,7 +438,10 @@ export default function OnboardingPage() {
         });
         const resData = await res.json();
         if (res.ok && resData.url) {
-          window.location.href = resData.url;
+          // Overlay, not a redirect — keeps the user on this page through
+          // checkout instead of bouncing to checkout.dodopayments.com.
+          openDodoCheckout(resData.url, "onboarding_paywall");
+          setSaving(false);
           return;
         }
         toast.error(resData.error || "Couldn't start checkout. Please try again.");
@@ -407,6 +463,29 @@ export default function OnboardingPage() {
     setSaving(true);
     try {
       await saveStep(payload);
+
+      // Persists before the paywall shows — without a user_tags row here, `/`
+      // loops the user back to onboarding if they decline (see app/page.tsx).
+      if (step === 2) {
+        const res = await fetch("/api/onboard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            buildOnboardPayload(
+              {
+                role: data.role,
+                tags: data.activeLabels,
+                followUpEnabled: data.followUpEnabled,
+                followUpDays: data.followUpDays,
+              },
+              user?.primaryEmailAddress?.emailAddress ?? "",
+            ),
+          ),
+        });
+        // Blocks on failure so no one reaches the paywall unsaved.
+        if (!res.ok) throw new Error("Failed to save your preferences");
+      }
+
       // After the last prefs step, skip the paywall for already-subscribed users.
       if (step === 2 && alreadySubscribed) {
         router.push("/onboard-complete");
@@ -424,6 +503,19 @@ export default function OnboardingPage() {
   const goBack = () => {
     dirRef.current = -1;
     setStep((s) => s - 1);
+  };
+
+  // Safe only because step 2 already persisted the user's answers above —
+  // otherwise `/` would bounce them right back here.
+  const skipToDashboard = () => {
+    posthog.capture("paywall_declined", {
+      tier: selectedTier,
+      interval: billingInterval,
+      sweepTotal,
+      referred,
+    });
+    setSaving(true);
+    router.push("/");
   };
 
 
@@ -448,9 +540,12 @@ export default function OnboardingPage() {
   }
 
   return (
-    // h-svh, not min-h-svh: the wizard is a fixed frame. A minimum lets the
-    // column grow past the viewport, which un-pins the footer and puts the
-    // scrollbar on the page instead of on the form.
+    // reducedMotion="user" covers every animation below — framer doesn't
+    // honor prefers-reduced-motion on its own, and PRODUCT.md commits us to it.
+    <MotionConfig reducedMotion="user">
+    {/* h-svh, not min-h-svh: the wizard is a fixed frame. A minimum lets the
+        column grow past the viewport, which un-pins the footer and puts the
+        scrollbar on the page instead of on the form. */}
     <div className="h-svh flex flex-col md:flex-row bg-white overflow-hidden">
       {step !== 3 && (
         <div className="hidden md:flex w-[38%] bg-[#f6f5f4] flex-col relative overflow-hidden">
@@ -560,10 +655,10 @@ export default function OnboardingPage() {
               >
                 {step !== 3 && (
                   <>
-                    <h1 className="hidden md:block text-[22px] font-bold tracking-tight text-neutral-900 leading-tight">
+                    <h2 className="hidden md:block text-xl font-bold tracking-tight text-neutral-900 leading-tight">
                       {STEP_TITLES[step]}
-                    </h1>
-                    <p className="hidden md:block text-[14px] text-neutral-500 mt-1.5 leading-relaxed">
+                    </h2>
+                    <p className="hidden md:block text-sm text-neutral-500 mt-1.5 leading-relaxed">
                       {currentSubtitles[step]}
                     </p>
                     <Separator className="mt-4 hidden md:block" />
@@ -640,7 +735,7 @@ export default function OnboardingPage() {
                         </div>
                       )}
                       <div className="flex items-center justify-between pb-2">
-                        <span className="text-xs text-neutral-400">
+                        <span className="text-xs text-neutral-500">
                           {data.activeLabels.length} of {CATEGORIES.length} selected
                         </span>
                         {data.activeLabels.length < 3 && (
@@ -719,7 +814,7 @@ export default function OnboardingPage() {
                             max={14}
                             step={1}
                           />
-                          <div className="flex justify-between text-xs text-neutral-400">
+                          <div className="flex justify-between text-xs text-neutral-500">
                             <span>1 day</span>
                             <span>14 days</span>
                           </div>
@@ -736,47 +831,62 @@ export default function OnboardingPage() {
                       {/* Header */}
                       <div>
                         <h1 className="text-2xl font-bold tracking-tight text-neutral-900 leading-tight">
-                          Start your free trial
+                          {headline}
                         </h1>
                         <p className="mt-1.5 text-sm leading-relaxed text-neutral-500">
-                          Full access to every feature, free for {trialDays} days.{" "}
-                          <span className="font-medium text-neutral-700">
-                            {prices[selectedTier].symbol}0 today
-                          </span>{" "}
-                          — cancel anytime.
+                          <span>{headlineSub}</span>
                         </p>
                       </div>
 
                       {referred && (
-                        <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                          <PartyPopper className="h-4 w-4 shrink-0 text-emerald-700" />
-                          <p className="text-sm font-medium text-emerald-800">
+                        <div className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+                          <PartyPopper className="h-4 w-4 shrink-0 text-neutral-700" />
+                          <p className="text-sm font-medium text-neutral-900">
                             You&apos;ve been referred — your trial is {trialDays} days
                             instead of 7.
                           </p>
                         </div>
                       )}
 
-                      {sweepTotal > 0 && (
-                        <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                      {sweepTotal > 0 ? (
+                        <div className="rounded-xl bg-neutral-50 p-4">
+                          <p className="text-base leading-snug text-neutral-900">
+                            We can clear{" "}
+                            <span className="font-display text-2xl font-bold tabular-nums tracking-[-0.02em]">
+                              {sweepTotal.toLocaleString()}
+                            </span>{" "}
+                            emails today.
+                          </p>
+                          <p className="mt-2 text-xs leading-relaxed text-neutral-600">
+                            {sweepDetail}
+                          </p>
+                          {sweepBuckets.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-1.5">
+                              {sweepBuckets
+                                .filter((b) => b.count > 0)
+                                .map((b) => (
+                                  <span
+                                    key={b.key}
+                                    className="rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium tabular-nums text-neutral-700"
+                                  >
+                                    {`${b.label} · ${b.count.toLocaleString()}`}
+                                  </span>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="rounded-xl bg-neutral-50 p-4">
                           <div className="flex items-center gap-3">
                             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white">
                               <Archive className="size-[18px] text-neutral-900" />
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm font-semibold text-neutral-900">
-                                <span className="tabular-nums">
-                                  {sweepTotal.toLocaleString()}
-                                </span>{" "}
-                                emails are cluttering your inbox right now
+                                Your setup is ready
                               </p>
                               <p className="mt-0.5 text-xs leading-relaxed text-neutral-600">
-                                Clearing them by hand is about{" "}
-                                <span className="font-medium text-neutral-900">
-                                  {formatTriageTime(sweepTotal)}
-                                </span>{" "}
-                                of clicking. Your trial does it in one — reversible,
-                                nothing deleted.
+                                {setupSummary}
                               </p>
                             </div>
                           </div>
@@ -786,16 +896,21 @@ export default function OnboardingPage() {
                       {/* Plan chooser */}
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold text-neutral-700">
+                          <h2
+                            id="plan-chooser-label"
+                            className="text-sm font-semibold text-neutral-700"
+                          >
                             Choose a plan
-                          </span>
+                          </h2>
                           <div className="inline-flex rounded-full border border-neutral-200 p-0.5">
                             {(["monthly", "annual"] as const).map((opt) => (
                               <button
                                 key={opt}
                                 type="button"
+                                aria-pressed={billingInterval === opt}
                                 onClick={() => setBillingInterval(opt)}
                                 className={cn(
+                                  TAP_44,
                                   "px-3 py-1.5 text-xs font-medium rounded-full transition-colors flex items-center gap-1.5",
                                   billingInterval === opt
                                     ? "bg-neutral-900 text-white"
@@ -806,10 +921,10 @@ export default function OnboardingPage() {
                                 {opt === "annual" && (
                                   <span
                                     className={cn(
-                                      "text-[10px] font-semibold rounded px-1",
+                                      "text-xs font-semibold rounded px-1",
                                       billingInterval === "annual"
                                         ? "bg-white/20"
-                                        : "bg-emerald-100 text-emerald-700",
+                                        : "bg-neutral-200 text-neutral-700",
                                     )}
                                   >
                                     Save {annualSavingsPct(region)}%
@@ -820,8 +935,17 @@ export default function OnboardingPage() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {TRIAL_PLANS.map((plan) => {
+                        {/* Radiogroup wrapper — without it, screen readers skip
+                            the group name and Tab walks through both cards
+                            instead of arrowing within one. */}
+                        <div
+                          role="radiogroup"
+                          aria-labelledby="plan-chooser-label"
+                          // gap-y-4, not gap-3 — tighter and the "Most popular"
+                          // badge overlaps the card above when stacked to one column.
+                          className="grid grid-cols-1 gap-x-3 gap-y-4 sm:grid-cols-2"
+                        >
+                          {TRIAL_PLANS.map((plan, planIndex) => {
                             const isSelected = selectedTier === plan.tier;
                             const annualSavings =
                               prices[plan.tier].monthly * 12 -
@@ -832,16 +956,22 @@ export default function OnboardingPage() {
                                 type="button"
                                 role="radio"
                                 aria-checked={isSelected}
+                                // Roving tabindex — without it, Tab lands on both cards and arrow keys do nothing.
+                                tabIndex={isSelected ? 0 : -1}
+                                ref={(el) => {
+                                  planRefs.current[plan.tier] = el;
+                                }}
+                                onKeyDown={(e) => handlePlanKeyDown(e, planIndex)}
                                 onClick={() => setSelectedTier(plan.tier)}
                                 className={cn(
                                   "relative flex flex-col text-left rounded-2xl border p-5 cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2",
                                   isSelected
-                                    ? "border-neutral-900 bg-neutral-50 ring-1 ring-neutral-900"
-                                    : "border-neutral-200 hover:border-neutral-300",
+                                    ? "border-neutral-900 bg-white ring-1 ring-neutral-900 shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
+                                    : "border-neutral-200 bg-white hover:border-neutral-300",
                                 )}
                               >
                                 {plan.popular && (
-                                  <span className="absolute -top-2.5 right-4 rounded-full bg-neutral-900 px-2.5 py-0.5 text-[10px] font-semibold text-white">
+                                  <span className="absolute -top-2.5 right-4 rounded-full bg-neutral-900 px-2.5 py-0.5 text-xs font-semibold text-white">
                                     Most popular
                                   </span>
                                 )}
@@ -884,7 +1014,7 @@ export default function OnboardingPage() {
                                     to swap a count that no longer matches. `prices`
                                     also changes after first paint when useGeo
                                     resolves, so this line genuinely does re-render. */}
-                                <p className="text-[11px] text-neutral-400 mt-0.5 h-4">
+                                <p className="text-xs text-neutral-500 mt-0.5 h-4">
                                   {billingInterval === "annual"
                                     ? `${prices[plan.tier].symbol}${prices[plan.tier].annual} billed yearly · save ${prices[plan.tier].symbol}${annualSavings}`
                                     : "billed monthly"}
@@ -904,9 +1034,9 @@ export default function OnboardingPage() {
                                   {plan.features.map((feature) => (
                                     <li
                                       key={feature}
-                                      className="flex items-start gap-2 text-[13px] text-neutral-700"
+                                      className="flex items-start gap-2 text-sm text-neutral-700"
                                     >
-                                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-500" />
                                       <span>{feature}</span>
                                     </li>
                                   ))}
@@ -928,17 +1058,25 @@ export default function OnboardingPage() {
                         </p>
                       </div>
 
-                      {/* One compact reassurance line, adjacent to the CTA */}
                       <div className="flex items-start gap-2 text-xs leading-relaxed text-neutral-500">
-                        <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-400" />
+                        <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-neutral-500" />
                         <p>
                           <span className="font-medium text-neutral-700">
-                            {prices[selectedTier].symbol}0 today.
+                            {cardReason}
                           </span>{" "}
-                          We&apos;ll remind you two days before your {trialDays}-day trial
-                          ends — cancel in one click and pay nothing. Your card is
-                          encrypted, never stored.
+                          <span>{cardTerms}</span>
                         </p>
+                      </div>
+
+                      <div className="flex justify-center pt-1">
+                        <button
+                          type="button"
+                          onClick={skipToDashboard}
+                          disabled={saving}
+                          className={cn(TAP_44, "text-xs text-neutral-500 underline underline-offset-4 transition-colors hover:text-neutral-900 disabled:opacity-40")}
+                        >
+                          I&apos;ll add my card later
+                        </button>
                       </div>
                     </div>
                   )}
@@ -950,10 +1088,7 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        {/* Fixed h-20 with the row centred, so Back/Continue land on the same
-            baseline for every step. The step-3 caption is positioned out of
-            flow — in flow it grew the footer and shifted the buttons up. */}
-        <div className="relative flex h-20 shrink-0 items-center justify-between gap-4 border-t border-neutral-100 px-5 md:px-10">
+        <div className="flex h-20 shrink-0 items-center justify-between gap-4 border-t border-neutral-100 px-5 md:px-10">
           <Button
             variant="ghost"
             onClick={goBack}
@@ -963,7 +1098,8 @@ export default function OnboardingPage() {
             <ChevronLeft className="w-4 h-4" />
             Back
           </Button>
-          <Button
+          <div className="flex flex-col items-end gap-1.5">
+            <Button
               onClick={goNext}
               disabled={!canContinue() || saving}
               className="gap-1.5 bg-neutral-900 text-white hover:bg-neutral-800 rounded-full px-7 disabled:opacity-40"
@@ -977,18 +1113,8 @@ export default function OnboardingPage() {
                 ) : (
                   <>
                     <ShieldCheck className="w-4 h-4" />
-                    {sweepTotal > 0 ? (
-                      <>
-                        <span className="hidden sm:inline">
-                          Start trial &amp; clear {sweepTotal.toLocaleString()} emails
-                        </span>
-                        <span className="sm:hidden">
-                          Start trial · clear {sweepTotal.toLocaleString()}
-                        </span>
-                      </>
-                    ) : (
-                      <>Start {trialDays}-day free trial</>
-                    )}
+                    <span className="hidden sm:inline">{ctaLong}</span>
+                    <span className="sm:hidden">{ctaShort}</span>
                   </>
                 )
               ) : (
@@ -997,18 +1123,16 @@ export default function OnboardingPage() {
                   <ChevronRight className="w-4 h-4" />
                 </>
               )}
-          </Button>
-          {step === 3 && (
-            // Loss aversion: name what stays broken if they walk, not just
-            // what they gain if they don't.
-            <p className="pointer-events-none absolute inset-x-5 bottom-2 text-right text-[11px] text-neutral-400 md:inset-x-10">
-              {sweepTotal > 0
-                ? "Skip and these stay in your inbox · No charge today"
-                : "No charge today · Cancel anytime"}
-            </p>
-          )}
+            </Button>
+            {/* Loss aversion: name what stays broken if they walk, not just
+                what they gain if they don't. */}
+            {step === 3 && (
+              <p className="text-right text-xs text-neutral-500">{footerNote}</p>
+            )}
+          </div>
         </div>
       </div>
     </div>
+    </MotionConfig>
   );
 }
