@@ -29,11 +29,21 @@ const TIER_RANK: Record<Tier, number> = { FREE: 0, PRO: 1, MAX: 2 };
 type PaidTier = "PRO" | "MAX";
 type BillingInterval = "monthly" | "annual";
 
-/** Per-month price (annual shown as its monthly equivalent), rounded for display. */
+/**
+ * Headline per-month price — annual shown as its monthly equivalent, to two decimals.
+ * NOT rounded: an annual total needn't divide evenly, so $90/yr is $7.50/mo and
+ * rounding it to $8 quotes a year the customer is never charged ($96). Matches the
+ * paywall (app/onboarding) and the upsell modal, which format the same way.
+ */
 function perMonthPrice(tier: PaidTier, interval: BillingInterval, region: BillingRegion) {
   const p = getTierPrices(region)[tier];
-  const monthly = interval === "annual" ? p.annual / 12 : p.monthly;
-  return { symbol: p.symbol, amount: Math.round(monthly) };
+  return {
+    symbol: p.symbol,
+    text:
+      interval === "annual"
+        ? (p.annual / 12).toFixed(2)
+        : p.monthly.toLocaleString("en-US"),
+  };
 }
 
 function annualTotal(tier: PaidTier, region: BillingRegion) {
@@ -162,7 +172,7 @@ function TierCard({
       <div className="mt-5">
         <div className="flex items-baseline gap-1">
           <span className="text-3xl font-semibold leading-none tracking-tight tabular-nums text-foreground">
-            {money(pm.symbol, pm.amount)}
+            {`${pm.symbol}${pm.text}`}
           </span>
           <span className="text-sm text-muted-foreground">/mo</span>
         </div>
