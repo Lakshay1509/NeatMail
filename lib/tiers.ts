@@ -12,8 +12,8 @@ export interface TierPrices {
 }
 
 export const TIER_PRICES: Record<Exclude<Tier, "FREE">, TierPrices> = {
-  PRO:  { monthly: 19,   annual: 180,  currency: "USD", symbol: "$" },
-  MAX:  { monthly: 39,   annual: 372,  currency: "USD", symbol: "$" },
+  PRO:  { monthly: 9,    annual: 90,   currency: "USD", symbol: "$" },
+  MAX:  { monthly: 19,   annual: 190,  currency: "USD", symbol: "$" },
 };
 
 export const TIER_PRICES_INR: Record<Exclude<Tier, "FREE">, TierPrices> = {

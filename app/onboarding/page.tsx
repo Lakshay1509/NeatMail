@@ -256,7 +256,7 @@ export default function OnboardingPage() {
   const dirRef = useRef(1);
   const [step, setStep] = useState(0);
   // Defaults to PRO + monthly, the cheapest combo — MAX + annual made an
-  // unwatched trial's accidental charge $372/₹12,470 instead of $19. The
+  // unwatched trial's accidental charge $190/₹12,470 instead of $9. The
   // "Most popular" badge and savings pill still point to MAX/annual.
   const [selectedTier, setSelectedTier] = useState<TrialTier>("PRO");
 

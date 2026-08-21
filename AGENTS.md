@@ -44,8 +44,8 @@
 
 | Tier | Monthly | Annual | Features |
 |---|---|---|---|
-| **Pro** | $19 / ₹599 | $180 / ₹5,749 | Unlimited emails/labels, 100 AI drafts/mo, 25 archive rules, digest, follow-ups, Telegram & Slack |
-| **Max** | $39 / ₹1,299 | $372 / ₹12,470 | Unlimited everything, advanced analytics, priority support |
+| **Pro** | $9 / ₹599 | $90 / ₹5,749 | Unlimited emails/labels, 100 AI drafts/mo, 25 archive rules, digest, follow-ups, Telegram & Slack |
+| **Max** | $19 / ₹1,299 | $190 / ₹12,470 | Unlimited everything, advanced analytics, priority support |
 
 > **No free tier.** New users must start a trial (7 days of MAX-tier features) or subscribe. `FREE` still exists in code (`TIERS`, `TIER_LIMITS.FREE`) as the internal "no active subscription" state — every limit is `0`, so it grants no access and is never sold as a plan.
 
