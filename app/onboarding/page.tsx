@@ -399,6 +399,22 @@ export default function OnboardingPage() {
     }
   }, [step, alreadySubscribed, router]);
 
+  // The denominator for the only funnel number that matters here: paywall views
+  // vs trial starts. Ref-guarded so Back/Continue between steps 2 and 3 counts
+  // one view, not three.
+  const paywallSeenRef = useRef(false);
+  useEffect(() => {
+    if (step !== 3 || paywallSeenRef.current) return;
+    paywallSeenRef.current = true;
+    posthog.capture("paywall_viewed", {
+      tier: selectedTier,
+      interval: billingInterval,
+      sweepTotal,
+      referred,
+      trialEligible,
+    });
+  }, [step, selectedTier, billingInterval, sweepTotal, referred, trialEligible]);
+
   const toggleLabel = (name: string) => {
     setData((prev) => ({
       ...prev,
@@ -425,6 +441,16 @@ export default function OnboardingPage() {
         router.push("/onboard-complete");
         return;
       }
+      // The paywall had no funnel event of its own, so a broken checkout and a
+      // user who never clicked produced identical data — nothing at all between
+      // the click and Dodo's own overlay events.
+      posthog.capture("checkout_started", {
+        tier: selectedTier,
+        interval: billingInterval,
+        source: "onboarding_paywall",
+        trial: true,
+        sweepTotal,
+      });
       try {
         const res = await fetch("/api/checkout", {
           method: "POST",
@@ -444,8 +470,18 @@ export default function OnboardingPage() {
           setSaving(false);
           return;
         }
+        posthog.capture("checkout_failed", {
+          source: "onboarding_paywall",
+          status: res.status,
+          reason: resData.code ?? resData.error ?? "no_url_returned",
+        });
         toast.error(resData.error || "Couldn't start checkout. Please try again.");
       } catch {
+        // Also catches a non-JSON body, hence the broader name.
+        posthog.capture("checkout_failed", {
+          source: "onboarding_paywall",
+          reason: "request_failed",
+        });
         toast.error("Network error. Please try again.");
       }
       setSaving(false);
@@ -485,6 +521,10 @@ export default function OnboardingPage() {
         // Blocks on failure so no one reaches the paywall unsaved.
         if (!res.ok) throw new Error("Failed to save your preferences");
       }
+
+      // Step-level drop-off: `onboarding_completed` is server-side and fires
+      // once, at step 2, so it can't say which step anyone left on.
+      posthog.capture("onboarding_step_completed", { step });
 
       // After the last prefs step, skip the paywall for already-subscribed users.
       if (step === 2 && alreadySubscribed) {
