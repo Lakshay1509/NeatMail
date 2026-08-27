@@ -177,6 +177,30 @@ const PRODUCT_MAP: Record<
   },
 };
 
+/**
+ * Every product id we recognise for a tier × interval × region, newest first.
+ * Comma-separated so a retired id can be kept alongside its replacement: a DodoPay
+ * subscription is welded to the product it was bought with, so a repriced plan means a
+ * NEW product while existing customers keep billing the old one forever. Dropping the
+ * old id here makes those customers unrecognisable to getPlanFromProductId, and their
+ * next renewal falls back to checkout metadata — which changePlan never rewrites, so
+ * anyone who ever switched plans lands on the wrong tier silently.
+ *
+ * Rotation is ADDITIVE — prepend the new id, never delete the old one. Same contract as
+ * mailboxAddonIds below, for the same reason.
+ */
+function productIds(
+  tier: Exclude<Tier, "FREE">,
+  interval: Interval,
+  region: Region,
+): string[] {
+  return (process.env[PRODUCT_MAP[tier][interval][region]] ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+}
+
+/** Canonical product id for this tier × interval × region — the one NEW checkouts buy. */
 export function getProductId(
   tier: Tier,
   country: string,
@@ -184,8 +208,7 @@ export function getProductId(
 ): string | null {
   if (tier === "FREE") return null;
   const region: Region = country === "IN" ? "IN" : "GLOBAL";
-  const envVar = PRODUCT_MAP[tier][interval][region];
-  return process.env[envVar] ?? null;
+  return productIds(tier, interval, region)[0] ?? null;
 }
 
 export interface PlanIdentity {
@@ -201,20 +224,21 @@ export interface PlanIdentity {
  * subscription.currency, cadence from payment_frequency_*) can disagree with the
  * product actually attached. The product id is the ground truth for both.
  *
- * Returns null for a product id not in PRODUCT_MAP — e.g. a grandfathered or
- * dashboard-created product. Callers fall back to inference there.
+ * Matches any id in a slot's rotation list, not just the canonical one, so a customer
+ * grandfathered on a retired product still resolves to the tier they actually bought.
+ *
+ * Returns null for a product id in no slot — e.g. a dashboard-created product, or one
+ * retired before this list existed. Callers fall back to inference there.
  */
 export function getPlanFromProductId(productId: string): PlanIdentity | null {
-  for (const [tier, intervals] of Object.entries(PRODUCT_MAP)) {
-    for (const [interval, regions] of Object.entries(intervals)) {
-      for (const [region, envVar] of Object.entries(regions)) {
-        const configured = process.env[envVar];
-        if (configured && configured === productId) {
-          return {
-            tier: tier as Exclude<Tier, "FREE">,
-            interval: interval as Interval,
-            region: region as Region,
-          };
+  const tiers: Exclude<Tier, "FREE">[] = ["PRO", "MAX"];
+  const intervals: Interval[] = ["monthly", "annual"];
+  const regions: Region[] = ["IN", "GLOBAL"];
+  for (const tier of tiers) {
+    for (const interval of intervals) {
+      for (const region of regions) {
+        if (productIds(tier, interval, region).includes(productId)) {
+          return { tier, interval, region };
         }
       }
     }
