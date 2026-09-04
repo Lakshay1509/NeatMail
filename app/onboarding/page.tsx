@@ -124,6 +124,14 @@ const guessRole = (email: string | undefined): string => {
 // price the manual alternative in front of the plan cards.
 const SECONDS_PER_EMAIL = 3;
 
+// Below this the personalized numbers argue against us. A user with 4 sweepable
+// emails saw "Start trial & clear 4 emails" over "about 0 min of clicking" —
+// formatTriageTime rounds to whole minutes, so anything under 10 renders "0 min"
+// — directly above the card form. Under the floor we fall back to the generic
+// copy, which sells the trial on the feature set instead of a number that
+// undersells it. Analytics still record the raw sweepTotal either way.
+const SWEEP_MIN_TO_SHOW = 100;
+
 const formatTriageTime = (count: number) => {
   const mins = Math.round((count * SECONDS_PER_EMAIL) / 60);
   if (mins < 60) return `${mins} min`;
@@ -252,6 +260,9 @@ export default function OnboardingPage() {
   // ready by the paywall. Hidden when 0 / not eligible / not Gmail.
   const { data: sweepPreview } = useFirstSweepPreview();
   const sweepTotal = sweepPreview?.eligible ? sweepPreview.total : 0;
+  // Gates every piece of sweep-personalized copy — the step 1 reciprocity card,
+  // the paywall figure, the CTA and the footer note — so they can't disagree.
+  const showSweep = sweepTotal >= SWEEP_MIN_TO_SHOW;
   const trialDays = referred ? 14 : 7;
   const dirRef = useRef(1);
   const [step, setStep] = useState(0);
@@ -345,17 +356,17 @@ export default function OnboardingPage() {
 
   const ctaLong = !trialEligible
     ? "Subscribe"
-    : sweepTotal > 0
+    : showSweep
       ? `Start trial & clear ${sweepTotal.toLocaleString()} emails`
       : `Start ${trialDays}-day free trial`;
   const ctaShort = !trialEligible
     ? "Subscribe"
-    : sweepTotal > 0
+    : showSweep
       ? `Start trial · clear ${sweepTotal.toLocaleString()}`
       : `Start ${trialDays}-day free trial`;
   const footerNote = !trialEligible
     ? "Cancel anytime"
-    : sweepTotal > 0
+    : showSweep
       ? "Skip and these stay in your inbox · No charge today"
       : "No charge today · Cancel anytime";
 
@@ -759,7 +770,7 @@ export default function OnboardingPage() {
                       {/* Reciprocity: a real finding about their own inbox,
                           surfaced before anything is asked of them. Already in
                           flight since step 0, so it costs nothing extra here. */}
-                      {sweepTotal > 0 && (
+                      {showSweep && (
                         <div className="mb-5 flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
                           <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white">
                             <Archive className="size-[18px] text-neutral-900" />
@@ -888,7 +899,7 @@ export default function OnboardingPage() {
                         </div>
                       )}
 
-                      {sweepTotal > 0 ? (
+                      {showSweep ? (
                         <div className="rounded-xl bg-neutral-50 p-4">
                           <p className="text-base leading-snug text-neutral-900">
                             We can clear{" "}
