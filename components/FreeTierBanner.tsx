@@ -9,6 +9,10 @@ import { useGetUserSubscribed } from "@/features/user/use-get-subscribed";
 import { useGetTeam } from "@/features/organization/use-get-team";
 import { useFirstSweepPreview } from "@/features/first-sweep/use-first-sweep-preview";
 
+// The dashboard carries <AddCardBanner/> inline, which makes the same ask with
+// more room to explain it. Two nags on one screen is one too many.
+const HIDDEN_EXACT = ["/"];
+
 // Hidden on auth/onboarding routes (own the viewport) and /billing (plan cards are the page).
 const HIDDEN_PREFIXES = [
   "/sign-in",
@@ -37,6 +41,7 @@ export function FreeTierBanner() {
 
   // Unresolved tier reads as FREE — gate on isResolved or this flashes to paying users.
   if (!isResolved || !isFree) return null;
+  if (HIDDEN_EXACT.includes(pathname ?? "")) return null;
   if (HIDDEN_PREFIXES.some((p) => pathname?.startsWith(p))) return null;
 
   return <FreeTierBannerContent pathname={pathname ?? ""} />;

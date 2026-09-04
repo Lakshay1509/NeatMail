@@ -19,6 +19,7 @@ import { useAddUserDraftPrefernce } from "@/features/draftPreference/use-add-use
 import { useTierAccess } from "@/features/user/use-tier-access"
 import { useGetUserIsGmail } from "@/features/user/use-get-user-isGmail"
 import SignatureEditor from "./signature/SignatureEditor"
+import { cn } from "@/lib/utils"
 
 
 const SENSITIVITY_OPTIONS = [
@@ -50,7 +51,12 @@ const LANGUAGE_OPTIONS = [
 
 const UserDraftPreference = () => {
   const { data, isLoading, isError } = useGetUserDraftPreference();
-  const { isFree, isPro, limits } = useTierAccess();
+  const { isFree, isPro, isResolved, limits } = useTierAccess();
+
+  // Saving here would 403 at the API anyway, and the draft pipeline that reads
+  // these rows never runs without a plan. Gate on isResolved: an unresolved tier
+  // reads as FREE and would grey the form out under a paying user mid-load.
+  const locked = isResolved && isFree;
   const { data: isGmailData } = useGetUserIsGmail();
   const muation = useAddUserDraftPrefernce();
 
@@ -110,7 +116,6 @@ const UserDraftPreference = () => {
 
   return (
     <div className="space-y-6 w-full max-w-full">
-
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground mb-1">Enable Drafts</h2>
@@ -127,14 +132,13 @@ const UserDraftPreference = () => {
             <Switch
               checked={enabled}
               onCheckedChange={(checked) => setEnabled(checked)}
+              disabled={locked}
               aria-label="Enable drafts"
             />
           </div>
-          {isFree && (
-            <p className="text-xs text-muted-foreground">
-              {limits.maxAiDraftsPerMonth} drafts/mo · Upgrade to Pro for more
-            </p>
-          )}
+          {/* FREE's maxAiDraftsPerMonth is 0, so this line read "0 drafts/mo ·
+              Upgrade to Pro for more" — a quota framing for a state that has no
+              quota. The notice above already says why, and says it once. */}
           {isPro && (
             <p className="text-xs text-muted-foreground">
               {limits.maxAiDraftsPerMonth} drafts/mo · Upgrade to Max for unlimited
@@ -153,6 +157,7 @@ const UserDraftPreference = () => {
           placeholder="Reply in a friendly manner"
           value={draftPrompt}
           onChange={(e) => setDraftPrompt(e.target.value)}
+          disabled={locked}
           maxLength={1000}
           rows={4}
           className="resize-none w-full"
@@ -177,6 +182,7 @@ const UserDraftPreference = () => {
           value={signature}
           onChange={setSignature}
           isGmail={isGmail}
+          disabled={locked}
         />
       </div>
 
@@ -185,7 +191,7 @@ const UserDraftPreference = () => {
         <Label htmlFor="sensitivity-select" className="text-lg font-semibold">
           Draft Sensitivity
         </Label>
-        <Select value={senstivity} onValueChange={setSenstivity}>
+        <Select value={senstivity} onValueChange={setSenstivity} disabled={locked}>
           <SelectTrigger id="sensitivity-select" className="w-full">
             <SelectValue placeholder="Select sensitivity level" />
           </SelectTrigger>
@@ -207,7 +213,7 @@ const UserDraftPreference = () => {
         <p className="text-xs text-muted-foreground">
           The language in which the AI should write your drafts.
         </p>
-        <Select value={language} onValueChange={setLanguage}>
+        <Select value={language} onValueChange={setLanguage} disabled={locked}>
           <SelectTrigger id="language-select" className="w-full">
             <SelectValue placeholder="Select language" />
           </SelectTrigger>
@@ -233,6 +239,7 @@ const UserDraftPreference = () => {
           max={72}
           value={fontSize}
           onChange={(e) => setFontSize(Number(e.target.value))}
+          disabled={locked}
           className="w-full"
         />
       </div>
@@ -244,7 +251,10 @@ const UserDraftPreference = () => {
         </Label>
         <div className="flex items-center gap-2">
           <div
-            className="relative h-8 w-8 flex-shrink-0 cursor-pointer overflow-hidden rounded-md border border-input shadow-xs"
+            className={cn(
+              "relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-md border border-input shadow-xs",
+              locked ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+            )}
             style={{ backgroundColor: fontColor }}
           >
             <input
@@ -252,7 +262,8 @@ const UserDraftPreference = () => {
               type="color"
               value={fontColor}
               onChange={(e) => setFontColor(e.target.value)}
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              disabled={locked}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
               aria-label="Pick font color"
             />
           </div>
@@ -266,6 +277,7 @@ const UserDraftPreference = () => {
                 setFontColor(val)
               }
             }}
+            disabled={locked}
             className="flex-1"
             placeholder="#000000"
           />
@@ -278,7 +290,7 @@ const UserDraftPreference = () => {
           size="sm"
           className="min-w-[150px]"
           onClick={handleSubmit}
-          disabled={muation.isPending}
+          disabled={locked || muation.isPending}
         >
           {muation.isPending ? 'Saving…' : 'Update preferences'}
         </Button>

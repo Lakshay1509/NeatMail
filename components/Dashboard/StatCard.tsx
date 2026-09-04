@@ -21,6 +21,12 @@ type StatCardProps = {
   icon: LucideIcon;
   trend?: StatTrend | null;
   isLoading?: boolean;
+  /**
+   * Nothing has been measured yet — the mailbox was never activated, so the
+   * query honestly returns 0. Rendering that 0 with "No change" beside it
+   * claims we looked and found nothing, when we haven't looked at all.
+   */
+  dormant?: boolean;
 };
 
 export function StatCard({
@@ -29,7 +35,29 @@ export function StatCard({
   icon: Icon,
   trend,
   isLoading,
+  dormant,
 }: StatCardProps) {
+  // Checked before isLoading: once the tier resolves there is no data coming,
+  // so a skeleton would be promising an arrival that never happens.
+  if (dormant) {
+    return (
+      <div className="@container bg-card rounded-lg border p-4">
+        <div className="flex h-4 items-center gap-1.5 text-muted-foreground">
+          <Icon className="w-3.5 h-3.5 shrink-0" />
+          <p className="min-w-0 truncate text-xs font-medium">{title}</p>
+        </div>
+        <div className="mt-2 flex items-end gap-2">
+          <p
+            className="text-xl @3xs:text-2xl font-semibold leading-none text-muted-foreground/50"
+            aria-label="No data yet"
+          >
+            &mdash;
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Same two bands as the loaded card, so nothing shifts when data lands.
   if (isLoading) {
     return (

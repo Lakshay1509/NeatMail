@@ -16,6 +16,8 @@ import ReadVsUnread from "./Dashboard/ReadVsUnread";
 import EmailStatusBreakdown from "./Dashboard/EmailStatusBreakdown";
 import { StatCard, type StatTrend } from "./Dashboard/StatCard";
 import FirstRunSweepBanner from "./FirstRunSweepBanner";
+import AddCardBanner from "./AddCardBanner";
+import { useTierAccess } from "@/features/user/use-tier-access";
 
 const subtitles = {
   morning: [
@@ -116,6 +118,12 @@ const Dashboard = ({
 
   const { data: overview, isLoading } = useGetOverview(from, to);
 
+  // No card on file means activateMailbox never ran, so every stat below is a
+  // structural zero rather than a measurement. Gate on isResolved: an
+  // unresolved tier reads as FREE and would blank the cards for paying users.
+  const { isFree, isResolved } = useTierAccess();
+  const dormant = isResolved && isFree;
+
   // The two label-based cards (Unread Breakdown + Label Distribution) are hidden
   // entirely when there's no AI label data yet, instead of showing an empty
   // state. Shares its query key with <LabelDistribution/>, so React Query dedupes
@@ -176,6 +184,11 @@ const Dashboard = ({
 
   return (
     <div className="max-w-7xl mx-auto space-y-5 md:space-y-6">
+      {/* Above the greeting on purpose: it is a precondition for everything
+          under it, including the date picker, which otherwise offers to filter
+          a range that holds no data. Self-gates to unsubscribed users. */}
+      <AddCardBanner />
+
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-3">
         <div className="flex-1 min-w-0">
@@ -204,6 +217,7 @@ const Dashboard = ({
           icon={Mail}
           trend={pctTrend(overview?.current, overview?.previous, true)}
           isLoading={isLoading}
+          dormant={dormant}
         />
         <StatCard
           title="Read rate"
@@ -211,6 +225,7 @@ const Dashboard = ({
           icon={MailOpen}
           trend={pointsTrend(overview?.readRate, overview?.previousReadRate)}
           isLoading={isLoading}
+          dormant={dormant}
         />
         <StatCard
           title="Unread"
@@ -218,6 +233,7 @@ const Dashboard = ({
           icon={MailWarning}
           trend={pctTrend(overview?.unread, overview?.previousUnread, false)}
           isLoading={isLoading}
+          dormant={dormant}
         />
         {/* Short label so it stays on one line even in a narrow card */}
         <StatCard
@@ -226,6 +242,7 @@ const Dashboard = ({
           icon={CalendarClock}
           trend={pctTrend(avgPerDay, prevAvgPerDay, true)}
           isLoading={isLoading}
+          dormant={dormant}
         />
       </div>
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useGetFollowUpPreferences } from "@/features/follow-up/use-get-follow-up-preferences";
 import { usePostFollowUpPreferences } from "@/features/follow-up/use-post-follow-up-preferences";
+import { useTierAccess } from "@/features/user/use-tier-access";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
@@ -20,6 +21,12 @@ import {
 const FollowUpPreference = () => {
   const { data, isLoading, isError } = useGetFollowUpPreferences();
   const mutation = usePostFollowUpPreferences();
+
+  // Saving here would 403 at the API anyway, and the worker that reads these
+  // rows never runs without a plan. Gate on isResolved: an unresolved tier reads
+  // as FREE and would grey the form out under a paying user mid-load.
+  const { isFree, isResolved } = useTierAccess();
+  const locked = isResolved && isFree;
 
   const [enabled, setEnabled] = useState(false);
   const [aiDrafts, setAiDrafts] = useState(true);
@@ -86,6 +93,7 @@ const FollowUpPreference = () => {
           <Switch
             checked={enabled}
             onCheckedChange={(checked) => setEnabled(checked)}
+            disabled={locked}
             aria-label="Enable follow-ups"
           />
         </div>
@@ -109,6 +117,7 @@ const FollowUpPreference = () => {
           <Switch
             checked={aiDrafts}
             onCheckedChange={(checked) => setAiDrafts(checked)}
+            disabled={locked}
             aria-label="Create AI drafts for follow-ups"
           />
         </div>
@@ -168,6 +177,7 @@ const FollowUpPreference = () => {
           <Switch
             checked={trackPromises}
             onCheckedChange={(checked) => setTrackPromises(checked)}
+            disabled={locked}
             aria-label="Track promises made to you"
           />
         </div>
@@ -188,6 +198,7 @@ const FollowUpPreference = () => {
           max={30}
           value={days}
           onChange={(e) => setDays(Number(e.target.value))}
+          disabled={locked}
           className="w-full"
         />
       </div>
@@ -205,6 +216,7 @@ const FollowUpPreference = () => {
           placeholder="support@example.com&#10;noreply@example.com"
           value={skipEmails}
           onChange={(e) => setSkipEmails(e.target.value)}
+          disabled={locked}
           rows={4}
           className="resize-none w-full"
         />
@@ -216,7 +228,7 @@ const FollowUpPreference = () => {
           size="sm"
           className="min-w-[150px]"
           onClick={handleSubmit}
-          disabled={mutation.isPending}
+          disabled={locked || mutation.isPending}
         >
           {mutation.isPending ? "Saving…" : "Update preferences"}
         </Button>
