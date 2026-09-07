@@ -9,7 +9,7 @@ import {
 import {
   addMailtoDB,
   getTagsUser,
-  getUserByEmail,
+  getUserByMailboxAddress,
   labelColor,
   useGetUserDraftPreference,
 } from "@/lib/supabase";
@@ -92,10 +92,20 @@ export async function processGmailMail(
   try {
     // Defense-in-depth: re-check deletion/tier status at process time, since
     // a job may sit in the queue for a while behind a rate limiter.
-    const user = await getUserByEmail(emailAddress);
+    const user = await getUserByMailboxAddress(emailAddress);
     if (!user || user.deleted_flag) {
       return { skipped: true, reason: "user deleted" };
     }
+
+    // Every address this mailbox answers to: the notification address (Gmail's
+    // canonical primary), the Clerk sign-in email, and the stamped
+    // gmail_address. Workspace aliases mean mail can be addressed to any of
+    // them, so "direct to me" / "sent by me" checks must consider all three.
+    const ownAddresses = new Set(
+      [emailAddress, user.email, user.gmail_address]
+        .filter((a): a is string => typeof a === "string" && a.length > 0)
+        .map((a) => a.trim().toLowerCase()),
+    );
 
     const tier = await getUserTier(clerkUserId);
     if (tier === "FREE") {
@@ -132,7 +142,7 @@ export async function processGmailMail(
     const toHeader =
       email.data.payload?.headers?.find((h) => h.name === "To")?.value || "";
     const toEmails = extractEmailsFromHeader(toHeader);
-    const isDirectTo = toEmails.includes(emailAddress.toLowerCase());
+    const isDirectTo = toEmails.some((a) => ownAddresses.has(a.toLowerCase()));
 
     if (emailData.threadId) {
       await followUpQueue.remove(`follow-up:gmail:${emailData.threadId}`);
@@ -304,7 +314,7 @@ export async function processGmailMail(
     if (
       isDirectTo &&
       emailData.threadId &&
-      fromEmail.toLowerCase() !== emailAddress.toLowerCase()
+      !ownAddresses.has(fromEmail.toLowerCase())
     ) {
       try {
         const followUpPref = await db.follow_up_preference.findUnique({

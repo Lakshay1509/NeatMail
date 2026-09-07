@@ -47,6 +47,12 @@ model user_tokens {
   updated_at              DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
   last_history_id         String?
   watch_activated         Boolean                @default(false)
+  // Canonical mailbox address as Gmail itself reports it (users.getProfile).
+  // Pub/Sub watch notifications carry THIS address, which differs from `email`
+  // (the Clerk sign-in address) for Workspace aliases or renamed accounts.
+  // Stamped on every watch activation; null until the first activation after
+  // this column shipped. Webhook lookups try this first, then `email`.
+  gmail_address           String?
   delete_at               DateTime?
   deleted_flag            Boolean                @default(false)
   is_gmail                Boolean                @default(true)
@@ -82,6 +88,7 @@ model user_tokens {
   organization_membership OrganizationMember?
   organization_created    Organization?
 
+  @@index([gmail_address])
   @@schema("public")
 }
 

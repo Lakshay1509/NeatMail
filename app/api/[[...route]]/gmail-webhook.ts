@@ -7,7 +7,7 @@ import {
 import { sendReconnectEmail } from "@/lib/resend";
 import {
   getLastHistoryId,
-  getUserByEmail,
+  getUserByMailboxAddress,
   updateHistoryId,
   updateMessageStatus,
 } from "@/lib/supabase";
@@ -62,12 +62,22 @@ const app = new Hono().post("/", async (ctx) => {
       return ctx.json({ success: true }, 200);
     }
 
-    const user = await getUserByEmail(emailAddress);
+    // Gmail names the mailbox by its canonical primary address, which may not be
+    // the Clerk sign-in email stored in `email` (Workspace alias / renamed
+    // account). Lookup tries the stamped `gmail_address` first, then `email`.
+    const user = await getUserByMailboxAddress(emailAddress);
 
     if (!user) {
-      console.log("No user found");
+      console.log(
+        `[webhook] No user_tokens row matches Gmail address ${emailAddress} ` +
+          `(neither gmail_address nor email) — acking`,
+      );
       return ctx.json({ success: true }, 200);
     }
+
+    // History-id helpers are keyed on the sign-in `email` column, so use the
+    // resolved row's value rather than whatever address Gmail sent us.
+    const dbEmail = user.email;
 
     // Skip users scheduled for deletion. Watch is deactivated at delete-request time,
     // but this catches a lingering watch that hasn't expired yet. Ack so Gmail doesn't retry.
@@ -129,10 +139,10 @@ const app = new Hono().post("/", async (ctx) => {
       return ctx.json({ success: true }, 200);
     }
 
-    const lastHistoryId = await getLastHistoryId(emailAddress);
+    const lastHistoryId = await getLastHistoryId(dbEmail);
 
     if (!lastHistoryId || !lastHistoryId.last_history_id) {
-      await updateHistoryId(emailAddress, String(newHistoryId), true);
+      await updateHistoryId(dbEmail, String(newHistoryId), true);
       return ctx.json({ success: true }, 200);
     }
 
@@ -142,7 +152,7 @@ const app = new Hono().post("/", async (ctx) => {
     } catch (err: any) {
       if (err instanceof OAuthError) {
         console.log(`[webhook] Gmail client OAuth error for ${emailAddress}`);
-        await updateHistoryId(emailAddress, String(newHistoryId), true);
+        await updateHistoryId(dbEmail, String(newHistoryId), true);
         return ctx.json({ success: true }, 200);
       }
       throw err;
@@ -161,7 +171,7 @@ const app = new Hono().post("/", async (ctx) => {
         console.log(
           `historyId ${lastHistoryId.last_history_id} expired for ${emailAddress}, resetting.`,
         );
-        await updateHistoryId(emailAddress, String(newHistoryId), true);
+        await updateHistoryId(dbEmail, String(newHistoryId), true);
         return ctx.json({ success: true }, 200);
       }
       throw err;
@@ -239,7 +249,7 @@ const app = new Hono().post("/", async (ctx) => {
       );
     }
 
-    await updateHistoryId(emailAddress, String(newHistoryId), true);
+    await updateHistoryId(dbEmail, String(newHistoryId), true);
 
     return ctx.json({ success: true }, 200);
   } catch (error: any) {

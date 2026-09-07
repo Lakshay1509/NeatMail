@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 import { clerkClient } from "@clerk/nextjs/server";
+import { db } from "./prisma";
 import { extractUnsubscribeLinkFromBodyGmail } from "./unsubscribe";
 import { applyCorrectionsToText } from "./openai";
 import { toEditorHtml } from "./signature-html";
@@ -384,6 +385,29 @@ export async function activateWatch(userId: string) {
     oauth2Client.setCredentials({ access_token: accessToken });
     const gmail = google.gmail({ version: "v1", auth: oauth2Client });
 
+    // Pub/Sub notifications name the mailbox by the address Gmail itself
+    // reports (users.getProfile), NOT the Clerk sign-in email. For Workspace
+    // aliases or renamed accounts those differ, so stamp the canonical address
+    // BEFORE arming the watch — watch() fires an immediate notification and the
+    // webhook must already be able to resolve it. Best-effort: a getProfile
+    // failure must not block activation (the `email` fallback still applies).
+    let gmailAddress: string | null = null;
+    try {
+      const profile = await gmail.users.getProfile({ userId: "me" });
+      gmailAddress = profile.data.emailAddress?.trim().toLowerCase() || null;
+      if (gmailAddress) {
+        await db.user_tokens.update({
+          where: { clerk_user_id: userId },
+          data: { gmail_address: gmailAddress },
+        });
+      }
+    } catch (err) {
+      console.error(
+        `[watch] getProfile/stamp failed for ${userId}, continuing:`,
+        err,
+      );
+    }
+
     const response = await gmail.users.watch({
       userId: "me",
       requestBody: {
@@ -405,6 +429,7 @@ export async function activateWatch(userId: string) {
       success: true,
       history_id: historyId,
       userId: userId,
+      gmail_address: gmailAddress,
     };
   } catch (error) {
     console.error(error);

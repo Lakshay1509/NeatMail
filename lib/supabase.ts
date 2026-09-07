@@ -22,6 +22,30 @@ export async function getUserByEmail(email: string) {
   }
 }
 
+/**
+ * Resolve the user_tokens row for an address reported BY GMAIL (the Pub/Sub
+ * watch notification's `emailAddress`, or users.getProfile). Gmail reports the
+ * account's canonical primary address, which differs from `email` (the Clerk
+ * sign-in address) for Workspace aliases or renamed accounts. Try the stamped
+ * `gmail_address` first, then fall back to the sign-in email. Returns null
+ * (never throws) when nothing matches so callers can ack + log instead of
+ * blowing up in a catch block.
+ */
+export async function getUserByMailboxAddress(address: string) {
+  const normalized = address.trim().toLowerCase();
+  if (!normalized) return null;
+
+  const byGmailAddress = await db.user_tokens.findFirst({
+    where: { gmail_address: normalized },
+    orderBy: { updated_at: "desc" },
+  });
+  if (byGmailAddress) return byGmailAddress;
+
+  return db.user_tokens.findFirst({
+    where: { email: { equals: normalized, mode: "insensitive" } },
+  });
+}
+
 export async function getLastHistoryId(email: string) {
   try {
     const data = await db.user_tokens.findUnique({
