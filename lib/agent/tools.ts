@@ -102,6 +102,30 @@ function blockCrossPartyAttachment(
   );
 }
 
+/**
+ * Gmail's `updates` category is where security alerts, bank and payment
+ * notices, receipts and shipping mail live. Sweeping it wholesale is how
+ * "archive the noise" silently buries something the user needed — and the
+ * confirmation preview only shows 10 targets, so the rest go unseen. A named
+ * sender or keyword makes it a deliberate, inspectable choice again.
+ *
+ * ponytail: category-level guard. promotions/social/forums stay sweepable;
+ * widen to a per-message check only if real bulk mail turns up inside updates.
+ */
+export function refuseUnsafeSweep(
+  category: string | undefined,
+  query: string | undefined,
+  from: string | undefined,
+): string | null {
+  if (category !== "updates" || query || from) return null;
+  return (
+    "Refused: the Updates category holds security alerts, bank and payment notices, receipts " +
+    "and shipping mail, so archiving it wholesale would bury mail the user needs. Do NOT retry " +
+    "this as a broad sweep. Tell the user you cannot bulk-clean Updates, and offer to do it for " +
+    "one named sender, a specific keyword, or the promotions category instead."
+  );
+}
+
 function fn(
   name: string,
   description: string,
@@ -719,6 +743,8 @@ export function buildTools(kind: ProviderKind): AgentTool[] {
           return "Error: narrow the cleanup with at least a query, sender, or category.";
         if (ctx.provider.kind === "outlook" && category && !query && !from)
           return "Outlook has no category concept — provide a keyword query or sender instead.";
+        const unsafe = refuseUnsafeSweep(category, query, from);
+        if (unsafe) return unsafe;
         const spec: SearchFilterSpec = {
           query,
           from,

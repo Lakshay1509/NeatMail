@@ -1,12 +1,15 @@
 /**
- * Self-check for the streamed-turn reassembly in lib/agent/orchestrator.ts.
- * Pure: feeds fake OpenAI chunks through collectTurn, no network, no API cost.
+ * Offline self-checks for the pure logic in lib/agent/. No network, no API
+ * cost — the paid end-to-end run is `bun run agent:eval`.
  *
- *   bun scripts/stream-turn-check.ts
+ *   bun scripts/agent-check.ts
  */
 import assert from "node:assert/strict";
 import type OpenAI from "openai";
 import { collectTurn } from "@/lib/agent/orchestrator";
+import { refuseUnsafeSweep } from "@/lib/agent/tools";
+import { reduceSteps, closeAll } from "@/features/chat/use-chat";
+import type { AgentStep } from "@/features/chat/use-chat";
 
 type Delta = OpenAI.Chat.ChatCompletionChunk.Choice.Delta;
 
@@ -63,7 +66,43 @@ async function main() {
   assert.equal(empty.content, null);
   assert.equal(empty.tool_calls, undefined);
 
-  console.log("stream-turn-check: 4/4 passed");
+  // 5. bulk_cleanup must not sweep Gmail's Updates category wholesale — that
+  //    is where security alerts and bank notices live.
+  assert.ok(refuseUnsafeSweep("updates", undefined, undefined));
+  // narrowed by a sender or keyword it is a deliberate choice again
+  assert.equal(refuseUnsafeSweep("updates", undefined, "noreply@icicibank.com"), null);
+  assert.equal(refuseUnsafeSweep("updates", "shipping", undefined), null);
+  // the other categories are ordinary bulk mail
+  assert.equal(refuseUnsafeSweep("promotions", undefined, undefined), null);
+  assert.equal(refuseUnsafeSweep("social", undefined, undefined), null);
+  assert.equal(refuseUnsafeSweep("forums", undefined, undefined), null);
+  assert.equal(refuseUnsafeSweep(undefined, "newsletter", undefined), null);
+
+  // 6. the live trace accumulates instead of overwriting: parallel tool calls
+  //    stay concurrently active, plain statuses close everything behind them.
+  const status = (label: string, tool?: string) =>
+    ({ type: "status" as const, label, doneLabel: `${label}-done`, tool });
+
+  let t: AgentStep[] = [];
+  t = reduceSteps(t, status("Reading your request…"));
+  t = reduceSteps(t, status("Searching your inbox…", "search_mail"));
+  t = reduceSteps(t, status("Checking open promises…", "list_commitments"));
+  assert.deepEqual(t.map((s) => s.state), ["done", "active", "active"]);
+  assert.deepEqual(t.map((s) => s.id), [0, 1, 2]);
+
+  // the same tool twice in one batch is one line, not two
+  assert.equal(reduceSteps(t, status("Searching your inbox…", "search_mail")).length, 3);
+
+  // a plain status closes the whole batch behind it
+  t = reduceSteps(t, status("Working out what matters…"));
+  assert.deepEqual(t.map((s) => s.state), ["done", "done", "done", "active"]);
+
+  // closeAll returns the SAME array once nothing is active — no wasted render
+  const settled = closeAll(t);
+  assert.ok(settled.every((s) => s.state === "done"));
+  assert.equal(closeAll(settled), settled);
+
+  console.log("agent-check: 6/6 passed");
   // importing the orchestrator opens the redis/prisma clients, which hold the
   // event loop open — nothing to drain here, so just leave.
   process.exit(0);

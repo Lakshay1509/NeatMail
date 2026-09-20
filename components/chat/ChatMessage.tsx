@@ -4,7 +4,9 @@ import { memo } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { motion } from "framer-motion"
-import { Download, Check, X, Loader2, Trash2, Archive, MailX } from "lucide-react"
+import { Download, Check, X, Loader2, Trash2, Archive, MailX, ChevronRight } from "lucide-react"
+import { formatElapsed, stepText } from "./ChatActivity"
+import type { AgentStep } from "@/features/chat/use-chat"
 
 export interface ChatAttachment {
   key: string
@@ -36,6 +38,9 @@ export interface ChatMessageData {
   pendingConfirmation?: PendingConfirmation
   confirmationStatus?: ConfirmationStatus
   confirmationResult?: string
+  /** What the agent did to produce this answer; collapsed by default. */
+  steps?: AgentStep[]
+  durationMs?: number
 }
 
 interface ChatMessageProps {
@@ -204,6 +209,31 @@ function ChatMessageComponent({ message, onConfirm, onCancel }: ChatMessageProps
       <span className="block text-[11px] font-semibold tracking-[0.3px] uppercase text-[#a39e98] mb-1.5">
         Ray
       </span>
+
+      {message.steps && message.steps.length > 0 && (
+        <details className="group mb-2.5">
+          <summary
+            className="inline-flex items-center gap-1 text-[12px] text-[#a39e98] cursor-pointer list-none
+              hover:text-[#615d59] transition-colors duration-150 rounded
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ababab]"
+          >
+            <ChevronRight
+              size={12}
+              strokeWidth={2.5}
+              className="transition-transform duration-200 group-open:rotate-90 motion-reduce:transition-none"
+            />
+            {message.steps.length} step{message.steps.length === 1 ? "" : "s"}
+            {message.durationMs ? ` · ${formatElapsed(message.durationMs)}` : ""}
+          </summary>
+          <ul className="mt-2 ml-[5px] pl-3.5 border-l border-[#e6e6e6] flex flex-col gap-1">
+            {message.steps.map((step) => (
+              <li key={step.id} className="text-[12px] leading-[1.5] text-[#615d59]">
+                {stepText(step)}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       <div className="chat-markdown prose-sm">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>

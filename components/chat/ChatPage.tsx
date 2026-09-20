@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils"
 import { ChatEmptyState } from "./ChatEmptyState"
 import { ChatMessage, type ChatMessageData } from "./ChatMessage"
-import { ChatThinking } from "./ChatThinking"
+import { ChatActivity } from "./ChatActivity"
 import { ChatInput } from "./ChatInput"
 import { ChatHistoryOverlay } from "./ChatHistoryOverlay"
 import { useTierAccess } from "@/features/user/use-tier-access"
@@ -175,7 +175,7 @@ export function ChatPage() {
         el.scrollTo({ top: el.scrollHeight, behavior: "smooth" })
       })
     }
-  }, [messages, chat.isPending, chat.status, chat.partial])
+  }, [messages, chat.isPending, chat.steps, chat.partial])
 
   const handleSend = useCallback(async () => {
     const query = input.trim()
@@ -220,6 +220,8 @@ export function ChatPage() {
         attachments: data.attachments?.length ? data.attachments : undefined,
         pendingConfirmation: data.pendingConfirmation,
         confirmationStatus: data.pendingConfirmation ? "pending" : undefined,
+        steps: data.steps.length ? data.steps : undefined,
+        durationMs: data.durationMs,
       }
       setMessages((prev) => [...prev, assistantMsg])
     } catch (err) {
@@ -408,9 +410,10 @@ export function ChatPage() {
                     ))}
                     <AnimatePresence>
                       {chat.isPending && (
-                        <ChatThinking
-                          status={chat.status ?? undefined}
+                        <ChatActivity
+                          steps={chat.steps}
                           partial={chat.partial}
+                          startedAt={chat.startedAt}
                         />
                       )}
                     </AnimatePresence>

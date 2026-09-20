@@ -4,7 +4,13 @@ import { db } from "@/lib/prisma";
 import { redis } from "../redis";
 import { buildSystemPrompt } from "./prompt";
 import { buildTools } from "./tools";
-import { statusForTool, START_STATUS, THINKING_STATUS } from "./progress";
+import {
+  statusForTool,
+  START_STATUS,
+  START_STATUS_DONE,
+  THINKING_STATUS,
+  THINKING_STATUS_DONE,
+} from "./progress";
 import type { AgentEvent } from "./progress";
 import { GmailProvider } from "./providers/gmail";
 import { OutlookProvider } from "./providers/outlook";
@@ -142,12 +148,12 @@ export async function runAgent(
   // (prompt, tools, guardrails) can be exercised without touching a mailbox
   providerOverride?: MailProvider,
 ): Promise<AgentResult> {
-  const emit = (label: string, tool?: string) =>
-    onEvent?.({ type: "status", label, tool });
+  const emit = (label: string, doneLabel?: string, tool?: string) =>
+    onEvent?.({ type: "status", label, doneLabel, tool });
   const emitDelta = onEvent
     ? (text: string) => onEvent({ type: "delta", text })
     : undefined;
-  emit(START_STATUS);
+  emit(START_STATUS, START_STATUS_DONE);
 
   const provider: MailProvider =
     providerOverride ??
@@ -305,7 +311,9 @@ export async function runAgent(
     // Surface what's about to run. When the model batches several tools, the
     // last label wins on screen — fine, they fire near-simultaneously.
     for (const tc of message.tool_calls) {
-      if (tc.type === "function") emit(statusForTool(tc.function.name), tc.function.name);
+      if (tc.type !== "function") continue;
+      const [running, done] = statusForTool(tc.function.name);
+      emit(running, done, tc.function.name);
     }
 
     const toolResults = await Promise.all(
@@ -338,7 +346,7 @@ export async function runAgent(
     );
     messages.push(...toolResults);
     if (fatal) break;
-    emit(THINKING_STATUS);
+    emit(THINKING_STATUS, THINKING_STATUS_DONE);
   }
 
   if (fatal) {
@@ -346,7 +354,7 @@ export async function runAgent(
   } else if (finalAnswer === null) {
     // Out of tool steps (or the last reply came back empty): answer from
     // everything gathered so far instead of a canned "ran out of steps".
-    emit(THINKING_STATUS);
+    emit(THINKING_STATUS, THINKING_STATUS_DONE);
     const wrapUp = await streamTurn(
       {
         model: MODEL,

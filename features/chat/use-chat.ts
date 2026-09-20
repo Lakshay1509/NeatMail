@@ -71,11 +71,53 @@ export const useChat = () => {
 
 // streaming variant, gives live progress over SSE instead of one big response
 
-interface AgentStatusEvent {
+export interface AgentStatusEvent {
   type: "status";
   label: string;
+  doneLabel?: string;
   tool?: string;
 }
+
+/** One line in the agent's live trace. */
+export interface AgentStep {
+  id: number;
+  label: string;
+  /** Past-tense wording swapped in once the step finishes. */
+  doneLabel?: string;
+  tool?: string;
+  state: "active" | "done";
+}
+
+/**
+ * Accumulate steps instead of overwriting, so a 30s run reads as visible
+ * progress. START/THINKING carry no `tool`; real tool steps do. A no-tool
+ * status closes everything before it. A tool status closes only the no-tool
+ * ones, because the model fires tools in parallel batches that should read as
+ * running concurrently, not as a queue.
+ */
+export function reduceSteps(prev: AgentStep[], e: AgentStatusEvent): AgentStep[] {
+  const isTool = Boolean(e.tool);
+  const closed: AgentStep[] = prev.map((s) =>
+    !isTool || !s.tool ? { ...s, state: "done" } : s,
+  );
+  // the same tool twice in one batch is one line, not two
+  if (closed.some((s) => s.state === "active" && s.label === e.label)) return closed;
+  return [
+    ...closed,
+    {
+      id: (prev[prev.length - 1]?.id ?? -1) + 1,
+      label: e.label,
+      doneLabel: e.doneLabel,
+      tool: e.tool,
+      state: "active",
+    },
+  ];
+}
+
+export const closeAll = (prev: AgentStep[]): AgentStep[] =>
+  prev.some((s) => s.state === "active")
+    ? prev.map((s) => ({ ...s, state: "done" as const }))
+    : prev; // same array — no re-render
 
 const LOST_CONNECTION =
   "I lost the connection before the answer arrived. Check your internet and send it again.";
@@ -86,7 +128,7 @@ const TOO_SLOW =
 // "network error", TimeoutError) get mapped to plain language here
 async function streamChat(
   query: string,
-  onStatus: (label: string) => void,
+  onStatus: (e: AgentStatusEvent) => void,
   onDelta: (text: string) => void,
   sessionId?: string,
   onSession?: (info: SessionInfo) => void,
@@ -105,7 +147,7 @@ async function streamChat(
 // we need POST with a body). resolves once the `done` frame comes through.
 async function streamChatRaw(
   query: string,
-  onStatus: (label: string) => void,
+  onStatus: (e: AgentStatusEvent) => void,
   onDelta: (text: string) => void,
   sessionId?: string,
   onSession?: (info: SessionInfo) => void,
@@ -155,8 +197,8 @@ async function streamChatRaw(
       return;
     }
     if (event === "status") {
-      const label = (payload as AgentStatusEvent).label;
-      if (label) onStatus(label);
+      const e = payload as AgentStatusEvent;
+      if (e.label) onStatus(e);
       // anything streamed before a tool step was a preamble, not the answer
       onDelta("");
     } else if (event === "delta") {
@@ -194,7 +236,9 @@ async function streamChatRaw(
 
 export const useChatStream = () => {
   const [isPending, setIsPending] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
+  // the agent's trace for the current (or most recent) run
+  const [steps, setSteps] = useState<AgentStep[]>([]);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
   // the answer as it is being written; "" from onDelta resets it
   const [partial, setPartial] = useState("");
 
@@ -203,9 +247,15 @@ export const useChatStream = () => {
       query: string,
       sessionId?: string,
       onSession?: (info: SessionInfo) => void,
-    ): Promise<ChatResponse> => {
+    ): Promise<ChatResponse & { steps: AgentStep[]; durationMs: number }> => {
       setIsPending(true);
-      setStatus(null);
+      // the trace is accumulated locally (same pattern as the delta buffer)
+      // and mirrored into state for rendering, so `send` can hand the caller
+      // the finished trace without reading back through a stale closure
+      let trace: AgentStep[] = [];
+      const began = Date.now();
+      setSteps(trace);
+      setStartedAt(began);
       setPartial("");
 
       // Flush at ~20fps instead of once per token — a state update per token
@@ -221,26 +271,42 @@ export const useChatStream = () => {
           return;
         }
         buffer += text;
+        // the answer has started, so every step behind it is finished
+        const closed = closeAll(trace);
+        if (closed !== trace) {
+          trace = closed;
+          setSteps(trace);
+        }
         flush = setTimeout(() => setPartial(buffer), 50);
       };
 
+      const onStatus = (e: AgentStatusEvent) => {
+        trace = reduceSteps(trace, e);
+        setSteps(trace);
+      };
+
       try {
-        return await streamChat(query, setStatus, onDelta, sessionId, onSession);
+        const res = await streamChat(query, onStatus, onDelta, sessionId, onSession);
+        return {
+          ...res,
+          steps: trace.map((s) => ({ ...s, state: "done" as const })),
+          durationMs: Date.now() - began,
+        };
       } catch (err) {
         // no toast: the page puts err.message in the reply bubble
         console.error("[useChatStream]", err);
         throw err instanceof Error ? err : new Error(LOST_CONNECTION);
       } finally {
         if (flush) clearTimeout(flush);
+        setSteps(closeAll(trace));
         setIsPending(false);
-        setStatus(null);
         setPartial("");
       }
     },
     [],
   );
 
-  return { send, isPending, status, partial };
+  return { send, isPending, steps, startedAt, partial };
 };
 
 export const useConfirmAction = () => {
