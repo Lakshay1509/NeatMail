@@ -76,13 +76,15 @@ export function ChatActivity({
       transition={t}
       className="px-2 sm:px-4 py-3 max-w-[720px]"
     >
-      <div className="flex items-baseline justify-between gap-4 mb-2.5">
+      {/* The timer sits with the name, not across the column — at 720px wide,
+          justify-between stranded it on the far edge. */}
+      <div className="flex items-baseline gap-2 mb-2.5">
         <span className="text-[11px] font-semibold tracking-[0.3px] uppercase text-[#a39e98]">
           Ray
         </span>
         {startedAt !== null && (
           <span
-            className="font-mono text-[11px] tabular-nums text-[#a39e98]"
+            className="font-mono text-[11px] tabular-nums text-[#c8c5c0]"
             aria-label={`${formatElapsed(elapsed)} elapsed`}
           >
             {formatElapsed(elapsed)}
