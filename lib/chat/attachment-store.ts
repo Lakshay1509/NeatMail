@@ -41,9 +41,3 @@ export function getAttachment(key: string): StoredAttachment | null {
   }
   return entry
 }
-
-export function consumeAttachment(key: string): StoredAttachment | null {
-  const entry = getAttachment(key)
-  if (entry) store.delete(key)
-  return entry
-}

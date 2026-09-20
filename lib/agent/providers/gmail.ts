@@ -184,11 +184,12 @@ export class GmailProvider implements MailProvider {
   }
 
   async getSentAwaitingReply(
-    olderThanDays: number,
+    newerThanDays: number,
     maxResults: number,
   ): Promise<SentAwaitingReply[]> {
     const res = await getSentEmails(this.userId, {
-      olderThan: olderThanDays,
+      olderThan: 0,
+      newerThan: newerThanDays,
       maxResults,
     });
     return res.data
@@ -199,6 +200,7 @@ export class GmailProvider implements MailProvider {
         subject: m.subject,
         to: m.to,
         date: m.date,
+        snippet: m.snippet,
       }));
   }
 }

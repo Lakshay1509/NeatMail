@@ -763,7 +763,7 @@ const app = new Hono()
     }
 
     if (userData.is_gmail) {
-      const result = await getSentEmails(userId, { maxResults, pageToken, olderThan, userEmail: userData.email });
+      const result = await getSentEmails(userId, { maxResults, pageToken, olderThan });
       return ctx.json({ ...result, is_gmail: true }, 200);
     }
 

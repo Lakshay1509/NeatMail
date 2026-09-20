@@ -28,19 +28,54 @@ import type {
 
 const MAX_CANDIDATE_MESSAGES = 40;
 
-/** Strip Gmail-style operators the model may emit — Outlook $search is keyword-only. */
-function extractKeywords(raw: string): string {
-  return raw
-    .replace(/"/g, "")
-    .split(/\s+/)
-    .filter((t) => {
-      const upper = t.toUpperCase();
-      return (
-        !t.includes(":") && upper !== "AND" && upper !== "OR" && upper !== "NOT"
-      );
-    })
-    .join(" ")
-    .trim();
+const DAY_MS = 86400000;
+const UNIT_DAYS: Record<string, number> = { d: 1, m: 30, y: 365 };
+// Graph $search is KQL and understands these natively (display name, alias or address)
+const KQL_PROPS = new Set(["from", "to", "cc", "subject", "participants"]);
+
+/**
+ * The model speaks Gmail operators (it knows them far better than KQL), so
+ * translate the common ones: dates and unread go to $filter/KQL, in:sent picks
+ * the folder. Gmail-only ones (category:, label:, is:starred, negations) have
+ * no Outlook equivalent and are dropped.
+ */
+export function parseOutlookQuery(raw: string, now = Date.now()) {
+  const terms: string[] = [];
+  let since: Date | undefined;
+  let until: Date | undefined;
+  let sent = false;
+  let unread = false;
+  const tokens = raw.replace(/"/g, "").replace(/[()]/g, " ").split(/\s+/);
+  for (const tok of tokens.filter(Boolean)) {
+    if (tok.startsWith("-") || tok.endsWith(":") || /^(AND|OR|NOT)$/i.test(tok)) continue;
+    const m = tok.match(/^([a-z_]+):(.+)$/i);
+    if (!m) {
+      terms.push(tok);
+      continue;
+    }
+    const key = m[1].toLowerCase();
+    const val = m[2].toLowerCase();
+    const age = val.match(/^(\d+)([dmy])$/);
+    const date = new Date(val.replace(/\//g, "-"));
+    if (key === "from" && val === "me") sent = true;
+    else if (key === "to" && val === "me") continue; // everything in the mailbox is
+    else if (KQL_PROPS.has(key)) terms.push(`${key}:${m[2]}`);
+    else if (key === "has" && val === "attachment") terms.push("hasAttachments:true");
+    else if (key === "in" && val === "sent") sent = true;
+    else if (key === "is" && val === "unread") unread = true;
+    else if (age && (key === "newer_than" || key === "older_than")) {
+      const d = new Date(now - Number(age[1]) * UNIT_DAYS[age[2]] * DAY_MS);
+      if (key === "newer_than") since = d;
+      else until = d;
+    } else if (!Number.isNaN(date.getTime()) && key === "after") since = date;
+    else if (!Number.isNaN(date.getTime()) && key === "before") until = date;
+  }
+  return { terms, since, until, sent, unread };
+}
+
+/** True when the query narrows anything; an all-dropped query would match everything. */
+function narrows(q: ReturnType<typeof parseOutlookQuery>) {
+  return q.terms.length > 0 || !!q.since || !!q.until || q.unread || q.sent;
 }
 
 interface GraphMsg {
@@ -51,6 +86,8 @@ interface GraphMsg {
   toRecipients?: { emailAddress?: { address?: string } }[];
   receivedDateTime?: string;
   bodyPreview?: string;
+  isRead?: boolean;
+  isDraft?: boolean;
 }
 
 function toItem(msg: GraphMsg): MailSearchItem {
@@ -73,30 +110,43 @@ export class OutlookProvider implements MailProvider {
 
   async search(query: string, maxResults: number): Promise<MailSearchItem[]> {
     const client = await getGraphClient(this.userId);
-    const keywords = extractKeywords(query);
-    const select =
-      "id,conversationId,subject,from,toRecipients,receivedDateTime,bodyPreview";
-    try {
-      if (!keywords) {
-        const res = await client
-          .api("/me/messages")
-          .top(maxResults)
-          .select(select)
-          .orderby("receivedDateTime desc")
-          .get();
-        return (res.value ?? []).map(toItem);
-      }
-      const res = await client
-        .api("/me/messages")
-        .search(`"${keywords}"`)
-        .top(maxResults)
-        .select(select)
+    const q = parseOutlookQuery(query);
+    const ymd = (d: Date) => d.toISOString().slice(0, 10);
+    const req = client
+      .api(q.sent ? "/me/mailFolders('sentitems')/messages" : "/me/messages")
+      .top(maxResults)
+      .select(
+        "id,conversationId,subject,from,toRecipients,receivedDateTime,bodyPreview,isRead,isDraft",
+      );
+    if (q.terms.length === 0) {
+      // $orderby's property must lead the $filter or Graph rejects it as
+      // InefficientFilter, hence the always-present lower bound
+      const parts = [
+        `receivedDateTime ge ${(q.since ?? new Date(0)).toISOString()}`,
+      ];
+      // exclusive, like Gmail's before:
+      if (q.until) parts.push(`receivedDateTime lt ${q.until.toISOString()}`);
+      if (q.unread) parts.push("isRead eq false");
+      // NeatMail's own AI drafts would otherwise crowd the newest-mail list
+      parts.push("isDraft eq false");
+      const res = await req
+        .filter(parts.join(" and "))
+        .orderby("receivedDateTime desc")
         .get();
       return (res.value ?? []).map(toItem);
-    } catch (err) {
-      console.error("[OutlookProvider] search failed", err);
-      return [];
     }
+    // $search can't be combined with $filter on messages, so dates ride in
+    // the KQL. Explicit AND: KQL ORs repeated restrictions on one property,
+    // which would turn a date range into "either bound". Newest-first.
+    const kql = [...q.terms];
+    if (q.since) kql.push(`received>=${ymd(q.since)}`);
+    if (q.until) kql.push(`received<${ymd(q.until)}`);
+    // the SDK doesn't encode query params; a stray & or # would split the URL
+    const res = await req.search(encodeURIComponent(`"${kql.join(" AND ")}"`)).get();
+    // ponytail: unread/draft are post-filtered in KQL mode, so it can return < maxResults
+    return ((res.value ?? []) as GraphMsg[])
+      .filter((m) => !m.isDraft && (!q.unread || m.isRead === false))
+      .map(toItem);
   }
 
   async searchFiltered(
@@ -114,7 +164,10 @@ export class OutlookProvider implements MailProvider {
       ? now - spec.olderThanDays * 86400000
       : undefined;
 
-    if (spec.query) {
+    // bulk_cleanup stages trash/archive from this: a query made only of
+    // unsupported operators (category:, is:starred) must not fall through to
+    // "newest mail in every folder", so treat it as no query at all
+    if (spec.query && narrows(parseOutlookQuery(spec.query))) {
       const items = await this.search(spec.query, Math.min(maxResults * 2, 50));
       return items
         .filter((m) => {
@@ -269,11 +322,12 @@ export class OutlookProvider implements MailProvider {
   }
 
   async getSentAwaitingReply(
-    olderThanDays: number,
+    newerThanDays: number,
     maxResults: number,
   ): Promise<SentAwaitingReply[]> {
     const res = await getSentEmailsOutlook(this.userId, {
-      olderThan: olderThanDays,
+      olderThan: 0,
+      newerThan: newerThanDays,
       maxResults,
     });
     return res.data.map((m) => ({
@@ -282,6 +336,7 @@ export class OutlookProvider implements MailProvider {
       subject: m.subject,
       to: m.to,
       date: m.date,
+      snippet: m.snippet,
     }));
   }
 }

@@ -22,6 +22,7 @@ const TOOL_STATUS: Record<string, string> = {
   get_availability: "Checking your calendar…",
   draft_calendar_reply: "Finding open times to offer…",
   who_am_i_waiting_on: "Checking who you're waiting on…",
+  list_commitments: "Checking open promises…",
   draft_nudge: "Writing a follow-up nudge…",
   trash_emails: "Lining those up to trash…",
   archive_emails: "Lining those up to archive…",

@@ -222,12 +222,16 @@ export function ChatPage() {
         confirmationStatus: data.pendingConfirmation ? "pending" : undefined,
       }
       setMessages((prev) => [...prev, assistantMsg])
-    } catch {
+    } catch (err) {
       if (threadTokenRef.current !== requestToken) return
       const errorMsg: ChatMessageData = {
         id: nextId(),
         role: "assistant",
-        content: "Sorry, I couldn't process that request. Please try again.",
+        // the hook already maps every failure to plain language
+        content:
+          err instanceof Error && err.message
+            ? err.message
+            : "Sorry, I couldn't process that request. Please try again.",
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, errorMsg])
@@ -252,7 +256,7 @@ export function ChatPage() {
       try {
         const result = await confirmAction.mutateAsync({ actionId })
         setMessageFields(messageId, {
-          confirmationStatus: result.ok ? "done" : "pending",
+          confirmationStatus: result.ok ? "done" : "failed",
           confirmationResult: result.message,
         })
       } catch {

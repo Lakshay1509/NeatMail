@@ -6,7 +6,8 @@ import { z } from "zod";
 import { db } from "@/lib/prisma";
 import { checkFeatureAccess } from "@/lib/tier-guard";
 import { runAgent, executeConfirmedAction } from "@/lib/agent/orchestrator";
-import { consumeAttachment } from "@/lib/chat/attachment-store";
+import { getAttachment } from "@/lib/chat/attachment-store";
+import { friendlyError } from "@/lib/agent/errors";
 import {
   resolveChatSession,
   saveUserMessage,
@@ -36,15 +37,26 @@ const listMessagesSchema = z.object({
   cursor: z.string().uuid().optional(),
 });
 
+const SESSION_GONE = {
+  error: "Session not found",
+  message: "This chat isn't available anymore. Start a new chat to keep going.",
+};
+
 async function requireChatAccess() {
   const { userId } = await auth();
-  if (!userId) return { error: "Unauthorized" as const, status: 401 as const };
+  if (!userId)
+    return {
+      error: "Unauthorized" as const,
+      status: 401 as const,
+      message: "You've been signed out. Refresh the page and sign in again.",
+    };
 
   const access = await checkFeatureAccess(userId);
   if (!access.allowed) {
     return {
       error: "Upgrade required" as const,
       status: 402 as const,
+      message: "AI Email Chat is available on Pro and Max plans.",
       tier: access.tier,
     };
   }
@@ -53,7 +65,13 @@ async function requireChatAccess() {
     where: { clerk_user_id: userId },
     select: { is_gmail: true },
   });
-  if (!userTokens) return { error: "User not found" as const, status: 404 as const };
+  if (!userTokens)
+    return {
+      error: "User not found" as const,
+      status: 404 as const,
+      message:
+        "We couldn't find a connected mailbox for your account. Finish connecting Gmail or Outlook, then try again.",
+    };
 
   return { userId, isGmail: userTokens.is_gmail };
 }
@@ -65,13 +83,11 @@ const app = new Hono()
     const gate = await requireChatAccess();
     if ("error" in gate) {
       return ctx.json(
-        gate.status === 402
-          ? {
-              error: gate.error,
-              message: "AI Email Chat is available on Pro and Max plans.",
-              tier: gate.tier,
-            }
-          : { error: gate.error },
+        {
+          error: gate.error,
+          message: gate.message,
+          tier: "tier" in gate ? gate.tier : undefined,
+        },
         gate.status,
       );
     }
@@ -79,7 +95,7 @@ const app = new Hono()
     const { query, sessionId } = ctx.req.valid("json");
 
     const resolved = await resolveChatSession(gate.userId, sessionId);
-    if (!resolved) return ctx.json({ error: "Session not found" }, 404);
+    if (!resolved) return ctx.json(SESSION_GONE, 404);
 
     try {
       await saveUserMessage(resolved.sessionId, query);
@@ -124,8 +140,7 @@ const app = new Hono()
       return ctx.json(
         {
           error: "Chat processing failed",
-          message:
-            error instanceof Error ? error.message : "Internal server error",
+          message: friendlyError(error, gate.isGmail ? "gmail" : "outlook").message,
           sessionId: resolved.sessionId, // so a retry lands on the same thread
         },
         500,
@@ -140,13 +155,11 @@ const app = new Hono()
     if ("error" in gate) {
       // Auth/tier/rate errors happen before we open the stream — plain JSON.
       return ctx.json(
-        gate.status === 402
-          ? {
-              error: gate.error,
-              message: "AI Email Chat is available on Pro and Max plans.",
-              tier: gate.tier,
-            }
-          : { error: gate.error },
+        {
+          error: gate.error,
+          message: gate.message,
+          tier: "tier" in gate ? gate.tier : undefined,
+        },
         gate.status,
       );
     }
@@ -156,7 +169,7 @@ const app = new Hono()
     // do this before streamSSE opens, otherwise a bad sessionId turns into a
     // half-open stream instead of a plain 404
     const resolved = await resolveChatSession(gate.userId, sessionId);
-    if (!resolved) return ctx.json({ error: "Session not found" }, 404);
+    if (!resolved) return ctx.json(SESSION_GONE, 404);
     await saveUserMessage(resolved.sessionId, query);
 
     const titlePromise = resolved.createdSession
@@ -178,6 +191,10 @@ const app = new Hono()
         );
         return chain;
       };
+
+      // keep proxies (Cloudflare drops idle streams at ~100s) from cutting a
+      // long step; the client ignores unknown events
+      const ping = setInterval(() => enqueue("ping", {}), 15_000);
 
       // send this first so the client has the session id even if the run below errors
       await enqueue("session", {
@@ -213,9 +230,10 @@ const app = new Hono()
           error,
         );
         await enqueue("error", {
-          message:
-            error instanceof Error ? error.message : "Chat processing failed",
+          message: friendlyError(error, gate.isGmail ? "gmail" : "outlook").message,
         });
+      } finally {
+        clearInterval(ping);
       }
       // Flush anything still queued before the callback resolves (closes stream).
       await chain;
@@ -226,7 +244,7 @@ const app = new Hono()
   .post("/confirm", zValidator("json", confirmSchema), async (ctx) => {
     const gate = await requireChatAccess();
     if ("error" in gate) {
-      return ctx.json({ error: gate.error }, gate.status);
+      return ctx.json({ error: gate.error, message: gate.message }, gate.status);
     }
 
     const { actionId } = ctx.req.valid("json");
@@ -236,16 +254,16 @@ const app = new Hono()
         gate.isGmail,
         actionId,
       );
-      return ctx.json(result, result.ok ? 200 : 400);
+      // ok:false is a normal outcome the card renders, not a request failure
+      return ctx.json(result, 200);
     } catch (error) {
       console.error("[chat/confirm] error:", error);
       return ctx.json(
         {
           ok: false,
-          message:
-            error instanceof Error ? error.message : "Confirmation failed",
+          message: friendlyError(error, gate.isGmail ? "gmail" : "outlook").message,
         },
-        500,
+        200,
       );
     }
   })
@@ -254,7 +272,7 @@ const app = new Hono()
   .get("/sessions", zValidator("query", listSessionsSchema), async (ctx) => {
     const gate = await requireChatAccess();
     if ("error" in gate) {
-      return ctx.json({ error: gate.error }, gate.status);
+      return ctx.json({ error: gate.error, message: gate.message }, gate.status);
     }
 
     const { limit, cursor } = ctx.req.valid("query");
@@ -294,7 +312,7 @@ const app = new Hono()
     async (ctx) => {
       const gate = await requireChatAccess();
       if ("error" in gate) {
-        return ctx.json({ error: gate.error }, gate.status);
+        return ctx.json({ error: gate.error, message: gate.message }, gate.status);
       }
 
       const { sessionId } = ctx.req.param();
@@ -347,10 +365,15 @@ const app = new Hono()
     }
 
     const { key } = ctx.req.param();
-    const attachment = consumeAttachment(key);
+    // not consumed on read: the model often links the same file twice, and the
+    // store already expires entries after an hour
+    const attachment = getAttachment(key);
 
     if (!attachment) {
-      return ctx.json({ error: "Attachment not found or expired" }, 404);
+      return ctx.json(
+        { error: "This download link expired. Ask me for the file again." },
+        404,
+      );
     }
 
     const blob = new Blob([new Uint8Array(attachment.data)], {
@@ -358,7 +381,8 @@ const app = new Hono()
     });
     return new Response(blob, {
       headers: {
-        "Content-Disposition": `attachment; filename="${attachment.filename}"`,
+        // header values must be latin-1; non-ASCII names go in filename*
+        "Content-Disposition": `attachment; filename="${attachment.filename.replace(/[^\x20-\x7E]|"/g, "_")}"; filename*=UTF-8''${encodeURIComponent(attachment.filename)}`,
         "Content-Length": blob.size.toString(),
       },
     });

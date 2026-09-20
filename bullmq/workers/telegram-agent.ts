@@ -1,7 +1,8 @@
 import { Job } from "bullmq";
 import { runAgent, executeLatestPending } from "@/lib/agent/orchestrator";
+import { friendlyError } from "@/lib/agent/errors";
 import { getUserIsGmail, getUserSubscribed } from "@/lib/supabase";
-import { htmlToTelegramHtml } from "@/lib/telegramFormatter";
+import { escapeTelegramHtml, htmlToTelegramHtml } from "@/lib/telegramFormatter";
 import {
   deleteTelegramMessage,
   editTelegramMessage,
@@ -21,11 +22,15 @@ export async function telegramAgent(job: Job<TelegramQueryData>) {
   // re-verify here in case entitlement lapsed between enqueue and processing.
   const subscription = await getUserSubscribed(userId);
   if (!subscription.subscribed) {
-    await sendTelegramMessage(chatId, "You are not subscribed");
+    await sendTelegramMessage(
+      chatId,
+      "Your NeatMail plan isn't active, so I can't read your inbox. Start a free trial or pick a plan at https://dashboard.neatmail.app/billing, then message me again.",
+    );
     return { skipped: true, reason: "not subscribed" };
   }
 
   let thinkingMsgId: number | undefined | null;
+  let isGmail = true;
 
   try {
     const thinkingMessages = [
@@ -63,10 +68,12 @@ export async function telegramAgent(job: Job<TelegramQueryData>) {
 
     let answer: string;
     try {
-      const { isGmail } = await getUserIsGmail(userId);
+      ({ isGmail } = await getUserIsGmail(userId));
       const trimmed = text.trim().toLowerCase();
 
-      if (trimmed === "confirm" || trimmed === "yes" || trimmed === "y") {
+      // only the literal word: a "yes" meant for an ordinary question must not
+      // run a trash/archive the user staged minutes earlier
+      if (trimmed === "confirm") {
         // Confirm a previously-staged destructive action (drafts/reads never stage one).
         const result = await executeLatestPending(userId, isGmail);
         answer = htmlToTelegramHtml(result.message);
@@ -94,9 +101,10 @@ export async function telegramAgent(job: Job<TelegramQueryData>) {
     }
     await sendTelegramMessage(
       chatId,
-      "⚠️ Sorry, I encountered an error processing your request.",
+      `⚠️ ${escapeTelegramHtml(friendlyError(error, isGmail ? "gmail" : "outlook").message)}`,
     );
-    throw error;
+    // not rethrown: the queue retries 3x, which would send the user 3 apologies
+    return { success: false };
   }
 }
 

@@ -77,9 +77,32 @@ interface AgentStatusEvent {
   tool?: string;
 }
 
+const LOST_CONNECTION =
+  "I lost the connection before the answer arrived. Check your internet and send it again.";
+const TOO_SLOW =
+  "This is taking too long, so I stopped waiting. Nothing in your mailbox was changed. Please send it again.";
+
+// the page shows err.message verbatim, so browser errors ("Failed to fetch",
+// "network error", TimeoutError) get mapped to plain language here
+async function streamChat(
+  query: string,
+  onStatus: (label: string) => void,
+  sessionId?: string,
+  onSession?: (info: SessionInfo) => void,
+): Promise<ChatResponse> {
+  try {
+    return await streamChatRaw(query, onStatus, sessionId, onSession);
+  } catch (err) {
+    if (err instanceof DOMException && (err.name === "TimeoutError" || err.name === "AbortError"))
+      throw new Error(TOO_SLOW);
+    if (err instanceof TypeError) throw new Error(LOST_CONNECTION);
+    throw err;
+  }
+}
+
 // posts to /api/chat/stream and parses the SSE frames by hand (no EventSource,
 // we need POST with a body). resolves once the `done` frame comes through.
-async function streamChat(
+async function streamChatRaw(
   query: string,
   onStatus: (label: string) => void,
   sessionId?: string,
@@ -89,6 +112,7 @@ async function streamChat(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(sessionId ? { query, sessionId } : { query }),
+    signal: AbortSignal.timeout(5 * 60_000),
   });
 
   // auth/tier/rate-limit failures come back as plain JSON, not SSE
@@ -96,7 +120,9 @@ async function streamChat(
     // SSE bypasses the hono client, so report the plan refusal ourselves.
     notifyTierGate(res.status, "/api/chat/stream");
 
-    let message = "Failed to process chat query";
+    if (res.status === 429)
+      throw new Error("You're sending messages faster than I can keep up. Wait a minute and try again.");
+    let message = "Something went wrong on our side. Nothing in your mailbox was changed. Please try again.";
     try {
       const data = (await res.json()) as { message?: string };
       if (data.message) message = data.message;
@@ -135,7 +161,9 @@ async function streamChat(
     } else if (event === "done") {
       result = payload as ChatResponse;
     } else if (event === "error") {
-      errorMessage = (payload as { message?: string }).message ?? "Chat processing failed";
+      errorMessage =
+        (payload as { message?: string }).message ??
+        "Something went wrong on our side. Nothing in your mailbox was changed. Please try again.";
     }
   };
 
@@ -153,7 +181,7 @@ async function streamChat(
   if (buffer.trim()) handleFrame(buffer);
 
   if (errorMessage) throw new Error(errorMessage);
-  if (!result) throw new Error("The assistant didn't return a response.");
+  if (!result) throw new Error(LOST_CONNECTION);
   return result;
 }
 
@@ -172,11 +200,9 @@ export const useChatStream = () => {
       try {
         return await streamChat(query, setStatus, sessionId, onSession);
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to process chat query";
+        // no toast: the page puts err.message in the reply bubble
         console.error("[useChatStream]", err);
-        toast.error(message);
-        throw err instanceof Error ? err : new Error(message);
+        throw err instanceof Error ? err : new Error(LOST_CONNECTION);
       } finally {
         setIsPending(false);
         setStatus(null);

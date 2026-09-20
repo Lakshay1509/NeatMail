@@ -25,7 +25,7 @@ export interface PendingConfirmation {
   targets: PendingTarget[]
 }
 
-export type ConfirmationStatus = "pending" | "running" | "done" | "cancelled"
+export type ConfirmationStatus = "pending" | "running" | "done" | "failed" | "cancelled"
 
 export interface ChatMessageData {
   id: string
@@ -71,7 +71,27 @@ function ConfirmationCard({
     return (
       <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-xl bg-[#f0f7f0] border border-[#cfe6cf] text-[13px] text-[#2f6b32]">
         <Check size={14} strokeWidth={2.5} />
-        <span>{message.confirmationResult || "Done."}</span>
+        {/* markdown so an unsubscribe redirect arrives as a clickable link */}
+        <ReactMarkdown
+          components={{
+            p: ({ children }) => <span>{children}</span>,
+            a: ({ href, children }) => (
+              <a href={href} target="_blank" rel="noreferrer" className="underline font-medium">
+                {children}
+              </a>
+            ),
+          }}
+        >
+          {message.confirmationResult || "Done."}
+        </ReactMarkdown>
+      </div>
+    )
+  }
+
+  if (status === "failed") {
+    return (
+      <div className="mt-3 px-3 py-2 rounded-xl bg-[#fdf6ec] border border-[#f0dcc0] text-[13px] text-[#7a5520]">
+        {message.confirmationResult || "That didn't go through, so nothing was changed."}
       </div>
     )
   }

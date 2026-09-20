@@ -817,6 +817,7 @@ interface SentEmailMessage {
   subject: string;
   to: string;
   date: string;
+  snippet: string;
 }
 
 interface SentEmailsResult {
@@ -830,6 +831,7 @@ interface GraphMessage {
   subject?: string;
   toRecipients?: { emailAddress?: { address?: string } }[];
   sentDateTime?: string;
+  bodyPreview?: string;
 }
 
 export async function searchOutlook(
@@ -1126,13 +1128,16 @@ async function outlookRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T>
 
 export async function getSentEmailsOutlook(
   userId: string,
-  opts?: { maxResults?: number; skip?: number; olderThan?: number; userEmail?: string },
+  opts?: { maxResults?: number; skip?: number; olderThan?: number; newerThan?: number; userEmail?: string },
 ): Promise<SentEmailsResult> {
   const client = await getGraphClient(userId);
 
   const maxResults = opts?.maxResults ?? 20;
   const days = opts?.olderThan ?? 14;
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const floor = opts?.newerThan
+    ? ` and sentDateTime ge ${new Date(Date.now() - opts.newerThan * 24 * 60 * 60 * 1000).toISOString()}`
+    : "";
 
   // get sent items folder ID to identify user-sent messages via parentFolderId
   const sentFolderRes = await outlookRetry(() => client.api("/me/mailFolders('sentitems')").select("id").get()) as { id: string };
@@ -1140,10 +1145,10 @@ export async function getSentEmailsOutlook(
 
   let req = client
     .api("/me/mailFolders('sentitems')/messages")
-    .filter(`sentDateTime lt ${since}`)   // lt = older than X days (gt is for testing only)
+    .filter(`sentDateTime lt ${since}${floor}`)   // lt = older than X days (gt is for testing only)
     .orderby("sentDateTime desc")
     .top(maxResults)
-    .select(["id", "conversationId", "subject", "toRecipients", "sentDateTime"].join(","));
+    .select(["id", "conversationId", "subject", "toRecipients", "sentDateTime", "bodyPreview"].join(","));
 
   if (opts?.skip) req = req.query({ $skip: opts.skip });
 
@@ -1169,11 +1174,13 @@ export async function getSentEmailsOutlook(
         client
           .api("/me/messages")
           .filter(`conversationId eq '${msg.conversationId}'`)
-          .select("id,from,sender,sentDateTime,parentFolderId")
+          .select("id,from,sender,sentDateTime,parentFolderId,isDraft")
           .get(),
-      ) as { value?: { id: string; from?: { emailAddress?: { address?: string } }; sender?: { emailAddress?: { address?: string } }; sentDateTime?: string; parentFolderId?: string }[] };
+      ) as { value?: { id: string; from?: { emailAddress?: { address?: string } }; sender?: { emailAddress?: { address?: string } }; sentDateTime?: string; parentFolderId?: string; isDraft?: boolean }[] };
 
-      const convMessages = convRes.value ?? [];
+      // NeatMail's own reply/follow-up drafts live in this conversation too;
+      // counting one as a "reply" hides exactly the threads we're nudging on
+      const convMessages = (convRes.value ?? []).filter((m) => !m.isDraft);
       if (convMessages.length === 0) return null;
 
       // find messages sent AFTER this one (actual replies to this sent message)
@@ -1189,6 +1196,7 @@ export async function getSentEmailsOutlook(
           subject: msg.subject ?? "",
           to: msg.toRecipients?.[0]?.emailAddress?.address ?? "",
           date: msg.sentDateTime ?? "",
+          snippet: msg.bodyPreview ?? "",
         } satisfies SentEmailMessage;
       }
 
@@ -1206,6 +1214,7 @@ export async function getSentEmailsOutlook(
           subject: msg.subject ?? "",
           to: msg.toRecipients?.[0]?.emailAddress?.address ?? "",
           date: latestReply.sentDateTime ?? msg.sentDateTime ?? "",
+          snippet: msg.bodyPreview ?? "",
         } satisfies SentEmailMessage;
       }
 

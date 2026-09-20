@@ -25,9 +25,8 @@ export function ChatInput({ value, onChange, onSend, onNewChat, disabled, showNe
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      if (e.target.value.length <= 2000) {
-        onChange(e.target.value)
-      }
+      // clip instead of ignoring, or pasting a long email silently does nothing
+      onChange(e.target.value.slice(0, 2000))
       adjustHeight()
     },
     [onChange, adjustHeight],

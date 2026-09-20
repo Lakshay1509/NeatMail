@@ -2,22 +2,38 @@ import { db } from "./prisma";
 import { convert } from "html-to-text";
 
 // lib/telegram.ts
-export async function sendTelegramMessage(chatId: string, text: string) {
+async function postTelegramMessage(chatId: string, text: string, html: boolean) {
   const res = await fetch(
     `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML", disable_web_page_preview: true, }),
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        ...(html ? { parse_mode: "HTML" } : {}),
+        disable_web_page_preview: true,
+      }),
     },
   );
+  return res.json();
+}
 
-  const json = await res.json();
-  if (!json.ok) {
-    console.error("Telegram API error:", JSON.stringify(json));
-    return undefined;
+export async function sendTelegramMessage(chatId: string, text: string) {
+  const json = await postTelegramMessage(chatId, text, true);
+  if (json.ok) return json.result?.message_id as number | undefined;
+  console.error("Telegram API error:", JSON.stringify(json));
+
+  // a stray & or < in an answer, or anything over 4096 chars, makes Telegram
+  // reject the whole message; resend as plain text so the reply never vanishes
+  if (!/parse entities|too long/i.test(json.description ?? "")) return undefined;
+  const plain = convert(text, { wordwrap: false });
+  let firstId: number | undefined;
+  for (let i = 0; i < plain.length; i += 4000) {
+    const part = await postTelegramMessage(chatId, plain.slice(i, i + 4000), false);
+    firstId ??= part.result?.message_id;
   }
-  return json.result?.message_id as number | undefined;
+  return firstId;
 }
 
 export async function editTelegramMessage(chatId: string, messageId: number, text: string) {

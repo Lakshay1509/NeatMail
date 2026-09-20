@@ -740,13 +740,12 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
 
 export async function getSentEmails(
   userId: string,
-  opts?: { maxResults?: number; pageToken?: string; olderThan?: number; userEmail?: string },
+  opts?: { maxResults?: number; pageToken?: string; olderThan?: number; newerThan?: number },
 ) {
   const gmail = await getGmailClient(userId);
   const days = opts?.olderThan ?? 14;
-  const query = `in:sent older_than:${days}d newer_than:60d`;
+  const query = `in:sent${days ? ` older_than:${days}d` : ""} newer_than:${opts?.newerThan ?? 60}d`;
   const maxResults = opts?.maxResults ?? 20;
-  const userEmail = opts?.userEmail;
 
   const listRes = await withRetry(() =>
     gmail.users.threads.list({
@@ -775,27 +774,20 @@ export async function getSentEmails(
             }),
           );
 
-        const messages = res.data.messages ?? [];
+        // threads include drafts, and NeatMail itself drafts replies and
+        // follow-ups into them, so a draft must never count as the last word
+        const messages = (res.data.messages ?? []).filter(
+          (m) => !m.labelIds?.includes("DRAFT"),
+        );
         if (messages.length === 0) return null;
 
         const getHeader = (headers: { name?: string | null; value?: string | null }[], name: string) =>
           headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value ?? "";
 
-        if (userEmail) {
-          const lastMsg = messages[messages.length - 1];
-          const lastFrom = getHeader(lastMsg.payload?.headers ?? [], "From");
-
-          if (!lastFrom.toLowerCase().includes(userEmail.toLowerCase())) return null;
-        }
-
-        const myMsg = userEmail
-          ? [...messages].reverse().find((msg) => {
-              const from = getHeader(msg.payload?.headers ?? [], "From");
-              return from.toLowerCase().includes(userEmail.toLowerCase());
-            })
-          : messages[messages.length - 1];
-
-        if (!myMsg) return null;
+        // SENT label, not a From match: survives send-as aliases and a sign-in
+        // email that differs from the mailbox address
+        const myMsg = messages[messages.length - 1];
+        if (!myMsg.labelIds?.includes("SENT")) return null;
 
         const headers = myMsg.payload?.headers ?? [];
 
@@ -805,6 +797,7 @@ export async function getSentEmails(
           subject: getHeader(headers, "Subject"),
           to: getHeader(headers, "To"),
           date: getHeader(headers, "Date"),
+          snippet: myMsg.snippet ?? "",
         };
       } catch (error: any) {
         if (error?.code === 404 || error?.status === 404) return null;
