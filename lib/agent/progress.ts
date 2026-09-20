@@ -5,13 +5,16 @@
 // reads as "the assistant is doing things", not a frozen spinner. Keep the copy
 // short, present-tense, and honest — every label maps to work actually running.
 
-export interface AgentEvent {
-  type: "status";
-  /** User-facing line, e.g. "Searching your inbox…". */
-  label: string;
-  /** The tool that triggered it, when applicable (lets the UI pick an icon). */
-  tool?: string;
-}
+export type AgentEvent =
+  | {
+      type: "status";
+      /** User-facing line, e.g. "Searching your inbox…". */
+      label: string;
+      /** The tool that triggered it, when applicable (lets the UI pick an icon). */
+      tool?: string;
+    }
+  /** A chunk of the answer as the model writes it, so the reply appears live. */
+  | { type: "delta"; text: string };
 
 /** One friendly line per tool the model can call. */
 const TOOL_STATUS: Record<string, string> = {

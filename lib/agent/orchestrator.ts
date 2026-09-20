@@ -67,6 +67,67 @@ async function ensureMarkdown(text: string): Promise<string> {
   }
 }
 
+// One model turn, streamed. Same shape as a non-streaming choices[0].message,
+// but content arrives in chunks so the UI can paint the answer as it is written
+// instead of sitting on "Thinking it through…" for the whole generation.
+// onDelta also fires for any preamble the model writes before a tool call — the
+// client drops that buffer the moment the next status event lands.
+async function streamTurn(
+  params: Omit<OpenAI.Chat.ChatCompletionCreateParamsStreaming, "stream">,
+  onDelta?: (text: string) => void,
+): Promise<StreamedTurn> {
+  const stream = await openai.chat.completions.create({ ...params, stream: true });
+  return collectTurn(stream, onDelta);
+}
+
+export interface StreamedTurn {
+  content: string | null;
+  // the agent only ever registers function tools, never custom ones
+  tool_calls?: OpenAI.Chat.ChatCompletionMessageFunctionToolCall[];
+}
+
+/**
+ * Reassemble a streamed turn: content is concatenated in order, and each tool
+ * call is stitched back together from fragments keyed by `index` (the id and
+ * name arrive on the first fragment, arguments trickle in across the rest).
+ * Exported so scripts/stream-turn-check.ts can exercise it without an API call.
+ */
+export async function collectTurn(
+  stream: AsyncIterable<OpenAI.Chat.ChatCompletionChunk>,
+  onDelta?: (text: string) => void,
+): Promise<StreamedTurn> {
+  let content = "";
+  const parts: { id: string; name: string; args: string }[] = [];
+
+  for await (const chunk of stream) {
+    const delta = chunk.choices[0]?.delta;
+    if (!delta) continue;
+    if (delta.content) {
+      content += delta.content;
+      onDelta?.(delta.content);
+    }
+    for (const tc of delta.tool_calls ?? []) {
+      const slot = (parts[tc.index] ??= { id: "", name: "", args: "" });
+      if (tc.id) slot.id = tc.id;
+      if (tc.function?.name) slot.name = tc.function.name;
+      if (tc.function?.arguments) slot.args += tc.function.arguments;
+    }
+  }
+
+  const tool_calls = parts
+    .filter((c) => c && c.id)
+    .map((c) => ({
+      id: c.id,
+      type: "function" as const,
+      function: { name: c.name, arguments: c.args },
+    }));
+
+  return {
+    content: content || null,
+    tool_calls: tool_calls.length ? tool_calls : undefined,
+  };
+}
+
 // the chat agent: tool-calling loop over gpt-5-mini, provider-agnostic
 // (gmail/outlook), confirm-before-destroy for anything irreversible.
 // caller (HTTP route / telegram worker) formats the returned AgentResult.
@@ -83,13 +144,27 @@ export async function runAgent(
 ): Promise<AgentResult> {
   const emit = (label: string, tool?: string) =>
     onEvent?.({ type: "status", label, tool });
+  const emitDelta = onEvent
+    ? (text: string) => onEvent({ type: "delta", text })
+    : undefined;
   emit(START_STATUS);
 
   const provider: MailProvider =
     providerOverride ??
     (isGmail ? new GmailProvider(userId) : new OutlookProvider(userId));
 
-  // Draft styling + timezone + display name (all best-effort, non-fatal).
+  // web chats get their own history per session; telegram has no concept of
+  // sessions so it just keeps one rolling buffer per user. a new web chat's
+  // first message has no sessionId yet, so there's nothing to key on.
+  const historyKey = sessionId
+    ? `agent:history:${userId}:${sessionId}`
+    : channel !== "api"
+      ? `agent:history:${userId}`
+      : null;
+
+  // Draft styling + timezone + display name + chat history (all best-effort,
+  // non-fatal). None of these depend on each other, so one round-trip's worth
+  // of latency instead of three before the first model call.
   let prefsRow: {
     fontColor: string;
     fontSize: number;
@@ -97,8 +172,9 @@ export async function runAgent(
     timezone: string | null;
   } | null = null;
   let userName: string | null = null;
+  let cachedHistory: string | null = null;
   try {
-    [prefsRow, userName] = await Promise.all([
+    [prefsRow, userName, cachedHistory] = await Promise.all([
       db.draft_preference.findUnique({
         where: { user_id: userId },
         select: { fontColor: true, fontSize: true, signature: true, timezone: true },
@@ -107,6 +183,9 @@ export async function runAgent(
         .then((c) => c.users.getUser(userId))
         .then((u) => u.fullName)
         .catch(() => null),
+      historyKey
+        ? redis.get(historyKey).then((raw) => (typeof raw === "string" ? raw : null))
+        : Promise.resolve(null),
     ]);
   } catch (err) {
     console.error("[agent] preload failed", err);
@@ -135,22 +214,12 @@ export async function runAgent(
   const toolMap = new Map(tools.map((t) => [t.schema.function.name, t]));
   const toolSchemas = tools.map((t) => t.schema);
 
-  // web chats get their own history per session; telegram has no concept of
-  // sessions so it just keeps one rolling buffer per user. a new web chat's
-  // first message has no sessionId yet, so there's nothing to key on.
-  const historyKey = sessionId
-    ? `agent:history:${userId}:${sessionId}`
-    : channel !== "api"
-      ? `agent:history:${userId}`
-      : null;
-
   let history: OpenAI.Chat.ChatCompletionMessageParam[] = [];
-  if (historyKey) {
+  if (cachedHistory) {
     try {
-      const raw = await redis.get(historyKey);
-      if (typeof raw === "string") history = JSON.parse(raw);
+      history = JSON.parse(cachedHistory);
     } catch (err) {
-      console.error("[agent] history load failed", err);
+      console.error("[agent] history parse failed", err);
     }
   }
 
@@ -208,25 +277,30 @@ export async function runAgent(
   let fatal: string | null = null;
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
-    const response = await openai.chat.completions.create({
-      model: MODEL,
-      reasoning_effort: "medium",
-      tools: toolSchemas,
-      tool_choice: "auto",
-      // reasoning tokens count against this; 3000 left big reviews with empty content
-      max_completion_tokens: MAX_COMPLETION_TOKENS,
-      messages,
-    });
+    const message = await streamTurn(
+      {
+        model: MODEL,
+        reasoning_effort: "medium",
+        tools: toolSchemas,
+        tool_choice: "auto",
+        // reasoning tokens count against this; 3000 left big reviews with empty content
+        max_completion_tokens: MAX_COMPLETION_TOKENS,
+        messages,
+      },
+      emitDelta,
+    );
 
-    const message = response.choices[0].message;
-
-    if (!message.tool_calls || message.tool_calls.length === 0) {
+    if (!message.tool_calls) {
       // empty content = reasoning used up the token budget; the wrap-up
       // below retries instead of showing a blank answer
       finalAnswer = message.content?.trim() || null;
       break;
     }
-    messages.push(message);
+    messages.push({
+      role: "assistant",
+      content: message.content,
+      tool_calls: message.tool_calls,
+    });
 
     // Surface what's about to run. When the model batches several tools, the
     // last label wins on screen — fine, they fire near-simultaneously.
@@ -273,23 +347,26 @@ export async function runAgent(
     // Out of tool steps (or the last reply came back empty): answer from
     // everything gathered so far instead of a canned "ran out of steps".
     emit(THINKING_STATUS);
-    const wrapUp = await openai.chat.completions.create({
-      model: MODEL,
-      reasoning_effort: "low",
-      tools: toolSchemas,
-      tool_choice: "none",
-      max_completion_tokens: MAX_COMPLETION_TOKENS,
-      messages: [
-        ...messages,
-        {
-          role: "system",
-          content:
-            "Tool budget exhausted. Answer the user now using only the tool results above. If part of the request wasn't covered, say which part in one short line at the end.",
-        },
-      ],
-    });
+    const wrapUp = await streamTurn(
+      {
+        model: MODEL,
+        reasoning_effort: "low",
+        tools: toolSchemas,
+        tool_choice: "none",
+        max_completion_tokens: MAX_COMPLETION_TOKENS,
+        messages: [
+          ...messages,
+          {
+            role: "system",
+            content:
+              "Tool budget exhausted. Answer the user now using only the tool results above. If part of the request wasn't covered, say which part in one short line at the end.",
+          },
+        ],
+      },
+      emitDelta,
+    );
     finalAnswer =
-      wrapUp.choices[0].message.content?.trim() ||
+      wrapUp.content?.trim() ||
       "Sorry, I couldn't finish writing that answer. Please send it again, or split it into two smaller questions.";
   }
   // telegram renders HTML, not markdown; error copy is already final

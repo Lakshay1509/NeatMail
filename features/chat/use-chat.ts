@@ -87,11 +87,12 @@ const TOO_SLOW =
 async function streamChat(
   query: string,
   onStatus: (label: string) => void,
+  onDelta: (text: string) => void,
   sessionId?: string,
   onSession?: (info: SessionInfo) => void,
 ): Promise<ChatResponse> {
   try {
-    return await streamChatRaw(query, onStatus, sessionId, onSession);
+    return await streamChatRaw(query, onStatus, onDelta, sessionId, onSession);
   } catch (err) {
     if (err instanceof DOMException && (err.name === "TimeoutError" || err.name === "AbortError"))
       throw new Error(TOO_SLOW);
@@ -105,6 +106,7 @@ async function streamChat(
 async function streamChatRaw(
   query: string,
   onStatus: (label: string) => void,
+  onDelta: (text: string) => void,
   sessionId?: string,
   onSession?: (info: SessionInfo) => void,
 ): Promise<ChatResponse> {
@@ -155,6 +157,11 @@ async function streamChatRaw(
     if (event === "status") {
       const label = (payload as AgentStatusEvent).label;
       if (label) onStatus(label);
+      // anything streamed before a tool step was a preamble, not the answer
+      onDelta("");
+    } else if (event === "delta") {
+      const text = (payload as { text?: string }).text;
+      if (text) onDelta(text);
     } else if (event === "session") {
       const info = payload as SessionInfo;
       if (info.sessionId) onSession?.(info);
@@ -188,6 +195,8 @@ async function streamChatRaw(
 export const useChatStream = () => {
   const [isPending, setIsPending] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  // the answer as it is being written; "" from onDelta resets it
+  const [partial, setPartial] = useState("");
 
   const send = useCallback(
     async (
@@ -197,21 +206,41 @@ export const useChatStream = () => {
     ): Promise<ChatResponse> => {
       setIsPending(true);
       setStatus(null);
+      setPartial("");
+
+      // Flush at ~20fps instead of once per token — a state update per token
+      // repaints the whole thread and janks on a long conversation.
+      let buffer = "";
+      let flush: ReturnType<typeof setTimeout> | null = null;
+      const onDelta = (text: string) => {
+        if (flush) clearTimeout(flush);
+        if (!text) {
+          buffer = "";
+          flush = null;
+          setPartial("");
+          return;
+        }
+        buffer += text;
+        flush = setTimeout(() => setPartial(buffer), 50);
+      };
+
       try {
-        return await streamChat(query, setStatus, sessionId, onSession);
+        return await streamChat(query, setStatus, onDelta, sessionId, onSession);
       } catch (err) {
         // no toast: the page puts err.message in the reply bubble
         console.error("[useChatStream]", err);
         throw err instanceof Error ? err : new Error(LOST_CONNECTION);
       } finally {
+        if (flush) clearTimeout(flush);
         setIsPending(false);
         setStatus(null);
+        setPartial("");
       }
     },
     [],
   );
 
-  return { send, isPending, status };
+  return { send, isPending, status, partial };
 };
 
 export const useConfirmAction = () => {

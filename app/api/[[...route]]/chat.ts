@@ -208,7 +208,7 @@ const app = new Hono()
           gate.userId,
           gate.isGmail,
           "api",
-          (e) => enqueue("status", e),
+          (e) => enqueue(e.type, e),
           resolved.sessionId,
         );
 

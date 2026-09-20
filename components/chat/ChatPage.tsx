@@ -175,7 +175,7 @@ export function ChatPage() {
         el.scrollTo({ top: el.scrollHeight, behavior: "smooth" })
       })
     }
-  }, [messages, chat.isPending, chat.status])
+  }, [messages, chat.isPending, chat.status, chat.partial])
 
   const handleSend = useCallback(async () => {
     const query = input.trim()
@@ -408,7 +408,10 @@ export function ChatPage() {
                     ))}
                     <AnimatePresence>
                       {chat.isPending && (
-                        <ChatThinking status={chat.status ?? undefined} />
+                        <ChatThinking
+                          status={chat.status ?? undefined}
+                          partial={chat.partial}
+                        />
                       )}
                     </AnimatePresence>
                   </>

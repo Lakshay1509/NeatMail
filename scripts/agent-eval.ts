@@ -817,7 +817,7 @@ async function ask(question: string, kind: ProviderKind): Promise<Ctx> {
     kind === "gmail",
     "api",
     (e) => {
-      if (e.tool) tools.push(e.tool);
+      if (e.type === "status" && e.tool) tools.push(e.tool);
     },
     undefined,
     p,
