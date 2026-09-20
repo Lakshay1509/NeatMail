@@ -61,6 +61,7 @@ export interface SentAwaitingReply {
   subject: string;
   to: string;
   date: string;
+  snippet: string;
 }
 
 export interface UnsubscribeResult {
@@ -97,7 +98,7 @@ export interface MailProvider {
   readonly kind: ProviderKind;
   readonly userId: string;
 
-  /** Provider-native search. Gmail: operator query. Outlook: keyword $search. */
+  /** Gmail-operator query; Outlook translates the common operators to Graph. */
   search(query: string, maxResults: number): Promise<MailSearchItem[]>;
   /** Structured search used by bulk cleanup (date ranges, sender, category). */
   searchFiltered(spec: SearchFilterSpec, maxResults: number): Promise<MailSearchItem[]>;
@@ -137,9 +138,9 @@ export interface MailProvider {
   archive(messageIds: string[]): Promise<BulkResult>;
   unsubscribe(messageId: string): Promise<UnsubscribeResult>;
 
-  /** Recently-sent threads that appear to still be awaiting a reply. */
+  /** Threads the user sent within the last `newerThanDays` that still await a reply. */
   getSentAwaitingReply(
-    olderThanDays: number,
+    newerThanDays: number,
     maxResults: number,
   ): Promise<SentAwaitingReply[]>;
 }
@@ -169,6 +170,13 @@ export interface PendingAction {
 export interface ToolContext {
   userId: string;
   provider: MailProvider;
+  /**
+   * The user's own message, verbatim. The ONLY trusted instruction source in
+   * the context — everything else (subjects, bodies, snippets) is written by
+   * whoever emailed them. Tools compare against this to tell "the user asked
+   * for it" from "an email asked for it".
+   */
+  userQuery: string;
   /** "api" for the web chat; a Telegram chat id otherwise. */
   channel: string;
   timezone: string;

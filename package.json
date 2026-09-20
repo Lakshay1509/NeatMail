@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "type-check": "tsc --noEmit",
-    "workers": "bun run bullmq/workers/index.ts"
+    "workers": "bun run bullmq/workers/index.ts",
+    "agent:eval": "bun scripts/agent-eval.ts"
   },
   "dependencies": {
     "@bull-board/api": "^7.1.5",

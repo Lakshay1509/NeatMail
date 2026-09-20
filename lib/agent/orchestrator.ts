@@ -10,6 +10,7 @@ import { GmailProvider } from "./providers/gmail";
 import { OutlookProvider } from "./providers/outlook";
 import { getAttachment as getStoredAttachment } from "../chat/attachment-store";
 import { decrypt } from "@/lib/encode";
+import { friendlyError } from "./errors";
 import {
   loadPendingAction,
   loadAnyPendingAction,
@@ -24,12 +25,16 @@ import type {
   ToolContext,
 } from "./types";
 
+// SDK default is a 10-minute timeout per attempt, which reads as a frozen chat
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
+  timeout: 90_000,
+  maxRetries: 1,
 });
 
 const MODEL = "gpt-5-mini";
 const MAX_ITERATIONS = 8;
+const MAX_COMPLETION_TOKENS = 8000;
 const HISTORY_LIMIT = 8;
 
 // bold/heading/list/table/code — if none of these show up the reply is plain prose
@@ -72,14 +77,17 @@ export async function runAgent(
   channel = "api",
   onEvent?: (e: AgentEvent) => void,
   sessionId?: string,
+  // only scripts/agent-eval.ts passes this — a fake inbox so the whole loop
+  // (prompt, tools, guardrails) can be exercised without touching a mailbox
+  providerOverride?: MailProvider,
 ): Promise<AgentResult> {
   const emit = (label: string, tool?: string) =>
     onEvent?.({ type: "status", label, tool });
   emit(START_STATUS);
 
-  const provider: MailProvider = isGmail
-    ? new GmailProvider(userId)
-    : new OutlookProvider(userId);
+  const provider: MailProvider =
+    providerOverride ??
+    (isGmail ? new GmailProvider(userId) : new OutlookProvider(userId));
 
   // Draft styling + timezone + display name (all best-effort, non-fatal).
   let prefsRow: {
@@ -115,6 +123,7 @@ export async function runAgent(
   const ctx: ToolContext = {
     userId,
     provider,
+    userQuery,
     channel,
     timezone,
     attachmentKeys,
@@ -188,12 +197,15 @@ export async function runAgent(
         userName,
         timezone,
         today: new Date().toISOString().split("T")[0],
+        channel,
       }),
     },
     ...history,
   ];
 
-  let finalAnswer = "No answer generated.";
+  let finalAnswer: string | null = null;
+  // set when a tool hits something retrying can't fix (e.g. expired login)
+  let fatal: string | null = null;
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
     const response = await openai.chat.completions.create({
@@ -201,17 +213,20 @@ export async function runAgent(
       reasoning_effort: "medium",
       tools: toolSchemas,
       tool_choice: "auto",
-      max_completion_tokens: 3000,
+      // reasoning tokens count against this; 3000 left big reviews with empty content
+      max_completion_tokens: MAX_COMPLETION_TOKENS,
       messages,
     });
 
     const message = response.choices[0].message;
-    messages.push(message);
 
     if (!message.tool_calls || message.tool_calls.length === 0) {
-      finalAnswer = message.content?.trim() || "No answer generated.";
+      // empty content = reasoning used up the token budget; the wrap-up
+      // below retries instead of showing a blank answer
+      finalAnswer = message.content?.trim() || null;
       break;
     }
+    messages.push(message);
 
     // Surface what's about to run. When the model batches several tools, the
     // last label wins on screen — fine, they fire near-simultaneously.
@@ -235,24 +250,50 @@ export async function runAgent(
               content = await tool.handler(args, ctx);
             }
           } catch (err) {
-            content = `Error: ${err instanceof Error ? err.message : String(err)}`;
+            console.error(`[agent] tool ${tc.function.name} failed`, err);
+            if (err instanceof SyntaxError) {
+              content = "Error: your arguments were not valid JSON. Call the tool again with valid JSON.";
+            } else {
+              const f = friendlyError(err, provider.kind);
+              if (f.fatal) fatal ??= f.message;
+              content = `Error: ${f.message}`;
+            }
           }
           return { role: "tool" as const, tool_call_id: tc.id, content };
         }),
     );
     messages.push(...toolResults);
-
-    // Not the last hop — the model will now reason over these results.
-    if (i < MAX_ITERATIONS - 1) emit(THINKING_STATUS);
-
-    if (i === MAX_ITERATIONS - 1) {
-      finalAnswer =
-        message.content?.trim() ||
-        "I did part of that but ran out of steps — try narrowing the request.";
-    }
+    if (fatal) break;
+    emit(THINKING_STATUS);
   }
 
-  finalAnswer = await ensureMarkdown(finalAnswer);
+  if (fatal) {
+    finalAnswer = fatal;
+  } else if (finalAnswer === null) {
+    // Out of tool steps (or the last reply came back empty): answer from
+    // everything gathered so far instead of a canned "ran out of steps".
+    emit(THINKING_STATUS);
+    const wrapUp = await openai.chat.completions.create({
+      model: MODEL,
+      reasoning_effort: "low",
+      tools: toolSchemas,
+      tool_choice: "none",
+      max_completion_tokens: MAX_COMPLETION_TOKENS,
+      messages: [
+        ...messages,
+        {
+          role: "system",
+          content:
+            "Tool budget exhausted. Answer the user now using only the tool results above. If part of the request wasn't covered, say which part in one short line at the end.",
+        },
+      ],
+    });
+    finalAnswer =
+      wrapUp.choices[0].message.content?.trim() ||
+      "Sorry, I couldn't finish writing that answer. Please send it again, or split it into two smaller questions.";
+  }
+  // telegram renders HTML, not markdown; error copy is already final
+  if (!fatal && channel === "api") finalAnswer = await ensureMarkdown(finalAnswer);
 
   // only cache the user query + final answer, not the tool call traffic in
   // between. (first turn of a new chat has no historyKey yet — fine, next
@@ -289,43 +330,63 @@ async function runPendingAction(
   userId: string,
   isGmail: boolean,
   action: PendingAction,
+  providerOverride?: MailProvider,
 ): Promise<{ ok: boolean; message: string }> {
-  const provider: MailProvider = isGmail
-    ? new GmailProvider(userId)
-    : new OutlookProvider(userId);
+  const provider: MailProvider =
+    providerOverride ??
+    (isGmail ? new GmailProvider(userId) : new OutlookProvider(userId));
 
   const ids = action.targets.map((t) => t.id);
   // Re-validate against the seen set — never act on ids that aren't grounded.
   const { seen } = await partitionSeen(userId, ids);
   if (seen.length === 0) {
     await clearPendingAction(userId);
-    return { ok: false, message: "Could not verify those emails — nothing changed." };
+    return {
+      ok: false,
+      message: "This request expired, so nothing was changed. Ask me again and I'll set it up fresh.",
+    };
   }
 
+  const plural = (n: number) => `${n} email${n === 1 ? "" : "s"}`;
   try {
-    let message: string;
-    if (action.kind === "trash") {
-      const r = await provider.trash(seen);
-      message = `Moved ${r.count} email${r.count === 1 ? "" : "s"} to trash.`;
-    } else if (action.kind === "archive") {
-      const r = await provider.archive(seen);
-      message = `Archived ${r.count} email${r.count === 1 ? "" : "s"}.`;
-    } else {
+    let result: { ok: boolean; message: string };
+    if (action.kind === "unsubscribe") {
       const r = await provider.unsubscribe(seen[0]);
-      message =
+      result =
         r.requiresRedirect && r.redirectUrl
-          ? `To finish unsubscribing, open: ${r.redirectUrl}`
+          ? { ok: true, message: `Almost done: [open the unsubscribe page](${r.redirectUrl}) to finish.` }
           : r.success
-            ? "Unsubscribed."
-            : "Couldn't complete the unsubscribe automatically.";
+            ? { ok: true, message: "Unsubscribed." }
+            : {
+                ok: false,
+                message:
+                  "This sender doesn't support one-click unsubscribe. Open one of their emails and use the unsubscribe link at the bottom, or ask me to archive everything from them.",
+              };
+    } else {
+      const r =
+        action.kind === "trash" ? await provider.trash(seen) : await provider.archive(seen);
+      const done = action.kind === "trash" ? "moved to trash" : "archived";
+      result =
+        r.count === 0
+          ? {
+              ok: false,
+              message: `None of those emails could be ${done}, so nothing was changed. They may already be gone. Try again in a minute.`,
+            }
+          : r.count < seen.length
+            ? {
+                ok: true,
+                message: `${plural(r.count)} ${done}. ${plural(seen.length - r.count)} couldn't be; they may already be gone.`,
+              }
+            : { ok: true, message: `${plural(r.count)} ${done}.` };
     }
     await clearPendingAction(userId);
-    return { ok: true, message };
+    return result;
   } catch (err) {
+    console.error("[agent] confirmed action failed", err);
     await clearPendingAction(userId);
     return {
       ok: false,
-      message: err instanceof Error ? err.message : "Action failed.",
+      message: friendlyError(err, isGmail ? "gmail" : "outlook").message,
     };
   }
 }
@@ -335,12 +396,17 @@ export async function executeConfirmedAction(
   userId: string,
   isGmail: boolean,
   actionId: string,
+  providerOverride?: MailProvider,
 ): Promise<{ ok: boolean; message: string }> {
   const action = await loadPendingAction(userId, actionId);
   if (!action) {
-    return { ok: false, message: "That action expired or was already handled." };
+    return {
+      ok: false,
+      message:
+        "This request expired (confirmations last 10 minutes) or was already done, so nothing changed. Ask me again and I'll set it up fresh.",
+    };
   }
-  return runPendingAction(userId, isGmail, action);
+  return runPendingAction(userId, isGmail, action, providerOverride);
 }
 
 /** Execute whatever action is staged (Telegram "confirm" reply). */
@@ -350,7 +416,11 @@ export async function executeLatestPending(
 ): Promise<{ ok: boolean; message: string }> {
   const action = await loadAnyPendingAction(userId);
   if (!action) {
-    return { ok: false, message: "Nothing is waiting for confirmation." };
+    return {
+      ok: false,
+      message:
+        "There's nothing waiting for your OK. Confirmations expire after 10 minutes, so tell me again what you'd like to clean up and I'll set it up.",
+    };
   }
   return runPendingAction(userId, isGmail, action);
 }
