@@ -38,6 +38,19 @@ interface ProcessOutlookMailData {
   subscriptionId: string;
 }
 
+async function getOrCreateFolderId(
+  client: Awaited<ReturnType<typeof getGraphClient>>,
+  name: string,
+): Promise<string> {
+  const found = await client
+    .api("/me/mailFolders")
+    .filter(`displayName eq '${name}'`)
+    .get();
+  if (found.value?.length > 0) return found.value[0].id;
+  const created = await client.api("/me/mailFolders").post({ displayName: name });
+  return created.id;
+}
+
 export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
   const { messageId, subscriptionId } = job.data;
 
@@ -290,7 +303,7 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
             return { success: true, sent: true, needsFollowUp, skippedDueToLimit: true };
           }
           await incrementFollowUpCount(subscription.clerk_user_id);
-          await followUpQueue.remove(`follow-up:outlook:${threadId}`);
+          await followUpQueue.remove(`follow-up-outlook-${threadId}`);
           await followUpQueue.add(
             "follow-up",
             {
@@ -323,7 +336,7 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
   const isDirectTo = toEmails.includes(userEmail);
 
   if (threadId) {
-    await followUpQueue.remove(`follow-up:outlook:${threadId}`);
+    await followUpQueue.remove(`follow-up-outlook-${threadId}`);
   }
 
   const clerk = await clerkClient();
@@ -432,12 +445,18 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
         .get();
 
       if (messagesInFollowUp.value?.length > 0) {
-        const inbox = await client.api("/me/mailFolders/inbox").get();
+        // Folder users get it filed next to the reply (same category folder),
+        // otherwise the thread is split between that folder and the Inbox.
+        const toLabelFolder =
+          subscription.is_folder === true && labelName.trim().length > 0;
+        const destinationId = toLabelFolder
+          ? await getOrCreateFolderId(client, labelName)
+          : (await client.api("/me/mailFolders/inbox").get()).id;
 
         for (const msg of messagesInFollowUp.value) {
           const moved = await client
             .api(`/me/messages/${msg.id}/move`)
-            .post({ destinationId: inbox.id });
+            .post({ destinationId });
 
           if (labelName && labelName.trim().length > 0) {
             await client.api(`/me/messages/${moved.id}`).patch({
@@ -446,7 +465,7 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
           }
 
           console.log(
-            `[outlook-followup] Moved ${msg.id} from "Follow up" to Inbox`,
+            `[outlook-followup] Moved ${msg.id} from "Follow up" to ${toLabelFolder ? labelName : "Inbox"}`,
           );
 
           await markMessageProcessed(moved.id);
@@ -533,21 +552,7 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
     }
 
     if (subscription.is_folder === true) {
-      const foldersResponse = await graphClient
-        .api("/me/mailFolders")
-        .filter(`displayName eq '${labelName}'`)
-        .get();
-
-      let folderId: string;
-
-      if (foldersResponse.value && foldersResponse.value.length > 0) {
-        folderId = foldersResponse.value[0].id;
-      } else {
-        const newFolder = await graphClient.api("/me/mailFolders").post({
-          displayName: labelName,
-        });
-        folderId = newFolder.id;
-      }
+      const folderId = await getOrCreateFolderId(graphClient, labelName);
 
       const movedMessage = await graphClient
         .api(`/me/messages/${messageId}/move`)

@@ -221,7 +221,7 @@ export async function processGmailSent(
     }
 
     await incrementFollowUpCount(clerkUserId);
-    await followUpQueue.remove(`follow-up:gmail:${threadId}`);
+    await followUpQueue.remove(`follow-up-gmail-${threadId}`);
     await followUpQueue.add(
       "follow-up",
       {

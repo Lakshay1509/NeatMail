@@ -145,7 +145,7 @@ export async function processGmailMail(
     const isDirectTo = toEmails.some((a) => ownAddresses.has(a.toLowerCase()));
 
     if (emailData.threadId) {
-      await followUpQueue.remove(`follow-up:gmail:${emailData.threadId}`);
+      await followUpQueue.remove(`follow-up-gmail-${emailData.threadId}`);
     }
 
     const tagsOfUser = await getTagsUser(clerkUserId);
