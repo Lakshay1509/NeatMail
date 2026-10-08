@@ -1,5 +1,4 @@
 import { Job } from "bullmq";
-import OpenAI from "openai";
 import { useGetUserDraftPreference, incrementDraftCount } from "@/lib/supabase";
 import {
   createGmailDraft,
@@ -23,15 +22,19 @@ import {
 } from "@/lib/outlook";
 import { sendDraftNotification } from "@/lib/telegram";
 import { getUserTier, getTierLimits } from "@/lib/tier-guard";
+import { pickBestAttachment } from "@/lib/agent/attachments";
+import { jevDecide } from "@/lib/jev";
+
+// Skip drafting only when Jev is fairly sure no reply is needed. On 13 labeled
+// inbound emails, "no" scored <=0.30 (a calendar invite) and "yes" >=0.76; set
+// under the middle because a missed draft costs more than an unneeded one.
+// ponytail: tuned on synthetic mail, re-pick from real logged probabilities.
+const DRAFT_SKIP_BELOW = 0.5;
 
 // ── Attachment auto-resolution ──────────────────────────────────────────────
 // When an incoming email asks the user to (re)send a file, find the best match
 // from prior mail with that contact and attach it to the draft. Best-effort:
 // any failure returns [] and the draft goes out as plain text.
-
-const attachmentPickerAI = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
 
 // Attachment size ceilings, kept modest to respect the worker's memory budget
 // on the target VPS. Gmail drafts go out via media upload (35 MB API limit);
@@ -50,87 +53,6 @@ interface AttachmentCandidate {
   date: string;
   /** Subject of the email that carried this file — often more descriptive than the filename. */
   subject: string;
-}
-
-/**
- * Ask a small model which candidate file best matches the request. Returns -1
- * when nothing matches OR the best match is only low-confidence — in both cases
- * the caller attaches nothing and the draft goes out as plain text.
- */
-async function pickBestAttachment(
-  query: string,
-  candidates: AttachmentCandidate[],
-): Promise<number> {
-  if (candidates.length === 0) return -1;
-  try {
-    const list = candidates
-      .map(
-        (c, i) =>
-          `${i}. "${c.filename}" (email subject: ${c.subject ? `"${c.subject}"` : "none"}) — from ${c.from || "unknown"} on ${c.date || "unknown"}, ${Math.round(c.size / 1024)} KB`,
-      )
-      .join("\n");
-
-    const completion = await attachmentPickerAI.chat.completions.create({
-      model: "gpt-5-nano",
-      reasoning_effort: "low",
-      max_completion_tokens: 200,
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "AttachmentPick",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              index: {
-                type: "integer",
-                description:
-                  "0-based index of the single best-matching file, or -1 if none clearly match the request.",
-              },
-              confidence: {
-                type: "string",
-                enum: ["high", "low"],
-                description:
-                  "'high' only when the chosen file clearly matches the request; 'low' when it is a guess or nothing really fits.",
-              },
-            },
-            required: ["index", "confidence"],
-            additionalProperties: false,
-          },
-        },
-      },
-      messages: [
-        {
-          role: "system",
-          content:
-            "You select which previously-shared file best matches what an email sender is asking to be sent. The candidate files have already been narrowed to the specific contact or company the request refers to, so a generic or time-based request usually maps to one of them. Judge relevance using BOTH the filename and the subject of the email that carried each file (the subject is often more descriptive than the filename). Return the 0-based index of the single best match, or -1 if none genuinely fit. When several files fit, prefer the most recent. Set confidence: 'high' when the chosen file clearly satisfies the request — this INCLUDES generic or time-based requests such as 'the latest file', 'send me the file', or 'that document', where the most recent candidate is the intended one. Use 'low' only when none of the candidates genuinely fit the request, so the system abstains instead of attaching the wrong file.",
-        },
-        {
-          role: "user",
-          content: `The sender is asking for: "${query}"\n\nAvailable files:\n${list}\n\nReturn JSON {"index": n, "confidence": "high"|"low"}.`,
-        },
-      ],
-    });
-
-    const raw = completion.choices?.[0]?.message?.content ?? "";
-    if (!raw) return -1;
-    const parsed = JSON.parse(raw) as { index?: number; confidence?: string };
-    const idx = typeof parsed.index === "number" ? parsed.index : -1;
-    if (idx < 0 || idx >= candidates.length) return -1;
-    // Only attach on a confident match. A low-confidence guess abstains so we
-    // never staple the wrong file — the draft still goes out as plain text.
-    if (parsed.confidence !== "high") {
-      console.log("[resolveAttachments] low-confidence match, not attaching", {
-        query,
-        filename: candidates[idx]?.filename,
-      });
-      return -1;
-    }
-    return idx;
-  } catch (err) {
-    console.error("[resolveAttachments] pick failed", err);
-    return -1;
-  }
 }
 
 // Words that carry no signal for locating a file. Stripping them from the
@@ -495,6 +417,37 @@ export async function processDraft(job: Job<ProcessDraftData>) {
     senderEmail,
     receivedAt: new Date(emailData.receivedAt || Date.now()),
   };
+
+  // Cheap Jev gate before the draft-context API and gpt-5-mini. Fails open:
+  // on a Jev error we draft anyway, and the draft model's own noReplyNeeded
+  // check still backs this up.
+  try {
+    const { needs_reply } = await jevDecide(
+      {
+        from: senderEmail,
+        subject: emailData.subject,
+        body: fullEmailBody.slice(0, 6000),
+      },
+      {
+        needs_reply: {
+          type: "noul",
+          instructions:
+            "The user received this email directly. Is the user expected to reply to it?",
+          criteria: {
+            true: "It asks the user a direct question, requests action, approval or a decision, assigns a task or deadline, reports a failure or issue the user must handle, or is a complaint or escalation.",
+            false:
+              "It is purely informational (FYI, status update, digest), automated or system-generated (noreply sender, newsletter, receipt, alert), addressed to a group rather than the user, or a meeting invite or calendar notification.",
+          },
+        },
+      },
+    );
+    console.log(`[processDraft] jev needs_reply=${needs_reply.noul}`, { userId, messageId });
+    if (needs_reply.noul < DRAFT_SKIP_BELOW) {
+      return { status: "skipped", reason: "No reply needed" };
+    }
+  } catch (err) {
+    console.error("[processDraft] jev gate failed, drafting anyway", { userId, messageId, err });
+  }
 
   const response = await getDraftContext({
     user_name: userName,

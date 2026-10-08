@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { fromZonedTime } from "date-fns-tz/fromZonedTime";
 import { formatInTimeZone } from "date-fns-tz";
 import type { CalendarEventLite } from "@/lib/promise-calendar";
+import { jevDecide } from "@/lib/jev";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -122,6 +123,47 @@ function needsCalendarLookup(subject: string, body: string): boolean {
   return !TEMPORAL_CUE.test(haystack) && EVENT_CUE.test(haystack);
 }
 
+// Below this Jev probability we skip the nano extraction entirely. On 12
+// labeled emails, "no" scored <=0.29 and "yes" >=0.96; set under the middle
+// since nano's own hasPromise + MIN_CONFIDENCE still filter what gets through.
+// ponytail: tuned on synthetic mail, re-pick from real logged probabilities.
+const PROMISE_GATE = 0.5;
+
+/**
+ * Jev yes/no on whether the email's SENDER commits to a dated deliverable at
+ * all. The same question serves both directions: inbound the sender is the
+ * contact, outbound it's the user. Spares the nano call and any calendar
+ * lookup on regex false positives. Fails open so a Jev outage never drops a
+ * promise.
+ */
+async function senderMakesDatedCommitment(
+  subject: string,
+  body: string,
+): Promise<boolean> {
+  try {
+    const { commits } = await jevDecide(
+      { subject, body: body.slice(0, 6000) },
+      {
+        commits: {
+          type: "noul",
+          instructions:
+            "Does the SENDER of this email commit to send, deliver, share, or do something for the recipient by a specific deadline?",
+          criteria: {
+            true: "The sender promises a concrete deliverable with a deadline (a date, day, time, or a named upcoming meeting/event).",
+            false:
+              "No such promise: a vague intention with no deadline, marketing 'launching soon' copy, a question or request aimed at the recipient, or pleasantries with no concrete deliverable.",
+          },
+        },
+      },
+    );
+    console.log(`[promise] jev commits=${commits.noul}`);
+    return commits.noul >= PROMISE_GATE;
+  } catch (err) {
+    console.error("[promise] jev gate failed, extracting anyway:", err);
+    return true;
+  }
+}
+
 // Extraction: one gpt-5-nano call, only on gated candidates. The model turns
 // natural language into a local wall-clock date; code turns that into a UTC
 // instant against the user's timezone (mirrors the calendar providers).
@@ -143,6 +185,8 @@ export async function extractInboundPromise(input: {
   /** Lazy — only invoked when the gate matched EVENT_CUE with no literal date. */
   getUpcomingEvents?: () => Promise<CalendarEventLite[]>;
 }): Promise<ExtractedPromise | null> {
+  if (!(await senderMakesDatedCommitment(input.subject, input.body))) return null;
+
   const tz = input.userTimezone || "UTC";
   // Anchor relative dates ("tomorrow", "Friday") on when the mail actually
   // arrived, expressed in the recipient's own timezone.
@@ -413,6 +457,8 @@ export async function extractOutboundPromise(input: {
   /** Lazy — only invoked when the gate matched EVENT_CUE with no literal date. */
   getUpcomingEvents?: () => Promise<CalendarEventLite[]>;
 }): Promise<ExtractedPromise | null> {
+  if (!(await senderMakesDatedCommitment(input.subject, input.body))) return null;
+
   const tz = input.userTimezone || "UTC";
   // Anchor relative dates ("tomorrow", "Friday") on when the mail was sent,
   // expressed in the user's own timezone.

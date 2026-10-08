@@ -1,16 +1,12 @@
 // Smart attachment resolution — lifted from bullmq/workers/process-draft.ts and
 // generalized over MailProvider. This is the one piece of the old chat worth
 // keeping: it finds the file a user means from a vague request ("send me the
-// invoice from Acme", "the latest file I got") using a confidence-gated AI
+// invoice from Acme", "the latest file I got") using a confidence-gated Jev
 // picker with a most-recent / keyword fallback, and abstains rather than attach
 // the wrong file.
 
-import OpenAI from "openai";
+import { jevDecide } from "@/lib/jev";
 import type { AttachmentCandidate, MailProvider } from "./types";
-
-const picker = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
 
 // Keep in-memory attachment blobs modest for the 768 MB runtime.
 const ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024;
@@ -60,63 +56,51 @@ function mostRecentIndex(candidates: AttachmentCandidate[]): number {
   return best;
 }
 
-/** Ask a small model which candidate best matches; -1 if none / low confidence. */
-async function pickBestAttachment(
+// Below this Jev confidence the picker abstains rather than attach a guess. On
+// 12 labeled requests every no-match picked "none" outright, and the lowest
+// correct pick was 0.58 (one candidate: confidence runs lower on small sets).
+// ponytail: tuned on synthetic requests, raise it if wrong files get attached.
+const PICK_MIN_CONFIDENCE = 0.5;
+
+/**
+ * Ask Jev which candidate is the requested file. Returns -1 when none fits or
+ * the pick is low-confidence, so the caller attaches nothing. Shared with the
+ * auto-draft worker (bullmq/workers/process-draft.ts).
+ */
+export async function pickBestAttachment(
   query: string,
-  candidates: AttachmentCandidate[],
+  candidates: Pick<AttachmentCandidate, "filename" | "subject" | "from" | "date" | "size">[],
 ): Promise<number> {
   if (candidates.length === 0) return -1;
   try {
-    const list = candidates
-      .map(
-        (c, i) =>
-          `${i}. "${c.filename}" (email subject: ${c.subject ? `"${c.subject}"` : "none"}) — from ${c.from || "unknown"} on ${c.date || "unknown"}, ${Math.round(c.size / 1024)} KB`,
-      )
-      .join("\n");
+    const criteria: Record<string, string> = {};
+    candidates.forEach((c, i) => {
+      criteria[i] = `"${c.filename}" (email subject: ${c.subject ? `"${c.subject}"` : "none"}) from ${c.from || "unknown"} on ${c.date || "unknown"}, ${Math.round(c.size / 1024)} KB`;
+    });
+    criteria.none = "None of these files is the one being asked for.";
 
-    const completion = await picker.chat.completions.create({
-      model: "gpt-5-nano",
-      reasoning_effort: "low",
-      max_completion_tokens: 200,
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "AttachmentPick",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              index: {
-                type: "integer",
-                description:
-                  "0-based index of the single best-matching file, or -1 if none clearly match.",
-              },
-              confidence: { type: "string", enum: ["high", "low"] },
-            },
-            required: ["index", "confidence"],
-            additionalProperties: false,
-          },
+    const { file } = await jevDecide(
+      { request: query },
+      {
+        file: {
+          type: "choice",
+          instructions:
+            "Which previously-shared file is being asked for? Judge using BOTH the filename and the subject of the email that carried it. A generic or time-based request ('the latest file', 'send me the file', 'that document') means the most recent fitting file. When several fit, prefer the most recent.",
+          criteria,
         },
       },
-      messages: [
-        {
-          role: "system",
-          content:
-            "You select which previously-shared file best matches what the user is asking for. Judge relevance using BOTH the filename and the subject of the email that carried each file. Return the 0-based index of the single best match, or -1 if none genuinely fit. When several fit, prefer the most recent. Set confidence 'high' when the chosen file clearly satisfies the request — INCLUDING generic/time-based asks like 'the latest file' where the most recent candidate is intended. Use 'low' only when nothing genuinely fits, so the system abstains rather than attach the wrong file.",
-        },
-        {
-          role: "user",
-          content: `The user is asking for: "${query}"\n\nAvailable files:\n${list}\n\nReturn JSON {"index": n, "confidence": "high"|"low"}.`,
-        },
-      ],
-    });
+    );
 
-    const raw = completion.choices?.[0]?.message?.content ?? "";
-    if (!raw) return -1;
-    const parsed = JSON.parse(raw) as { index?: number; confidence?: string };
-    const idx = typeof parsed.index === "number" ? parsed.index : -1;
-    if (idx < 0 || idx >= candidates.length) return -1;
-    if (parsed.confidence !== "high") return -1;
+    const idx = Number(file.choice);
+    if (!Number.isInteger(idx) || idx < 0 || idx >= candidates.length) return -1;
+    if ((file.confidence ?? 0) < PICK_MIN_CONFIDENCE) {
+      console.log("[attachments] low-confidence match, not attaching", {
+        query,
+        filename: candidates[idx]?.filename,
+        confidence: file.confidence,
+      });
+      return -1;
+    }
     return idx;
   } catch (err) {
     console.error("[attachments] pick failed", err);

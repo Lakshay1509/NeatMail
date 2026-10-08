@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { jevDecide } from "@/lib/jev";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -10,64 +11,37 @@ export interface SentFollowUpRequest {
   to: string;
 }
 
+// Below this P(reply expected) we don't schedule a follow-up. On 13 labeled
+// sent emails, "no" scored <=0.09 and "yes" >=0.94; set a bit under the middle
+// because an extra follow-up is only a draft the user reviews.
+// ponytail: tuned on synthetic mail, re-pick from real logged probabilities.
+const FOLLOW_UP_THRESHOLD = 0.4;
+
 export async function checkSentRequiresFollowUp(
   request: SentFollowUpRequest,
 ): Promise<boolean> {
-  const prompt = `You are analyzing an email that was SENT by the user. Determine if this email requires a follow-up response from the recipient.
-
-An email requires follow-up if it asks a question, requests information, proposes a meeting or call, or otherwise expects a reply from the recipient.
-
-Do NOT consider this as requiring follow-up if:
-- The email is an unsubscribe request, newsletter opt-out, or mailing list management
-- The email is purely informational with no expected response (e.g., status update, notification)
-- The email is a thank-you note, acknowledgment, or brief confirmation with no question asked
-
-Examples:
-
-Subject: Quick question about the deploy
-To: devin@company.com
-Body: Hey! Are we deploying to staging today? Also, do you have the new env vars handy?
--> true
-
-Subject: Fwd: Q3 planning notes
-To: team@company.com
-Body: Just sharing the meeting notes from today. No action needed.
--> false
-
-Subject: Checking in
-To: priya@company.com
-Body: Hey — wanted to ask about the dashboard feedback, and also can you share the Figma link when you get a sec? Are you free for a sync this week?
--> true
-
-Now classify the email below. Reply with exactly one word: true or false. No punctuation, no explanation, no extra text.
-
-Subject: ${request.subject}
-To: ${request.to}
-
-Body:
-${request.body.slice(0, 2000)}`;
-
-  const completion = await openai.chat.completions.create({
-    model: "gpt-5-nano",
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are a helpful assistant that analyzes emails. Reply with exactly one word: true or false.",
+  const { expects_reply } = await jevDecide(
+    {
+      subject: request.subject,
+      to: request.to,
+      body: request.body.slice(0, 2000),
+    },
+    {
+      expects_reply: {
+        type: "noul",
+        instructions:
+          "This email was SENT by the user. Does it expect a reply from the recipient?",
+        criteria: {
+          true: "It asks a question, requests information, proposes a meeting or call, or otherwise expects the recipient to respond.",
+          false:
+            "It is purely informational (status update, shared notes, notification), a thank-you, acknowledgment or brief confirmation with no question, or an unsubscribe / mailing-list request.",
+        },
       },
-      { role: "user", content: prompt },
-    ],
-    reasoning_effort: "low",
-    max_completion_tokens: 200,
-    seed: 42,
-  });
+    },
+  );
 
-  const content = completion.choices[0]?.message?.content?.trim().toLowerCase();
-  const raw = completion.choices[0]?.message?.content;
-  console.log("raw response:", JSON.stringify(raw));
-  console.log("finish_reason:", completion.choices[0]?.finish_reason);
-
-  return content === "true";
+  console.log(`[sent-followup] jev expects_reply=${expects_reply.noul}`);
+  return expects_reply.noul >= FOLLOW_UP_THRESHOLD;
 }
 
 export async function generateFollowUpMessage(
