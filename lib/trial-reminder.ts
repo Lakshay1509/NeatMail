@@ -97,3 +97,31 @@ export async function maybeScheduleTrialReminder(payload: PaymentPayload) {
     console.error("Failed to schedule trial reminder", error);
   }
 }
+
+/**
+ * Keeps a pending "charged tomorrow" reminder aligned with the real charge date
+ * when it moves — e.g. a trial extended (or shortened) from the Dodo dashboard,
+ * which arrives as a subscription webhook with a new next_billing_date. Only
+ * touches a reminder that hasn't fired yet. Best-effort; never throws.
+ */
+export async function rescheduleTrialReminder(
+  subscriptionId: string,
+  nextBillingDate: string | null | undefined,
+) {
+  if (!nextBillingDate) return;
+  try {
+    const job = await trialReminderQueue.getJob(`trial-reminder-${subscriptionId}`);
+    if (!job || !(await job.isDelayed())) return;
+
+    const chargeAt = new Date(nextBillingDate);
+    if (Number.isNaN(chargeAt.getTime())) return;
+    if (chargeAt.toISOString() === job.data.chargeAt) return;
+
+    await job.updateData({ ...job.data, chargeAt: chargeAt.toISOString() });
+    await job.changeDelay(
+      Math.max(0, chargeAt.getTime() - REMINDER_LEAD_MS - Date.now()),
+    );
+  } catch (error) {
+    console.error("Failed to reschedule trial reminder", error);
+  }
+}

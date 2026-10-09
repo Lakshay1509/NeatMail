@@ -26,6 +26,7 @@ import {
   type Tier,
 } from "./tiers";
 import { getBillingTeamIds, isBillingOwner } from "./organization";
+import { rescheduleTrialReminder } from "./trial-reminder";
 
 export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
   try {
@@ -106,6 +107,10 @@ export async function addSubscriptiontoDb(payload: SubscriptionPayload) {
 
       return sub;
     });
+
+    // A moved charge date (e.g. trial extended in the Dodo dashboard) must move
+    // the pending "charged tomorrow" reminder with it.
+    await rescheduleTrialReminder(data.subscription_id, data.next_billing_date);
 
     // Step 2: Handle watch operations & tier updates outside transaction
     const clerkUserId = data.metadata?.clerk_user_id;
