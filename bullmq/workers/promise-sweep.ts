@@ -1,9 +1,17 @@
 import { Job } from "bullmq";
 import { db } from "@/lib/prisma";
-import { createGmailDraft, getGmailClient } from "@/lib/gmail";
-import { createOutlookDraft, getGraphClient } from "@/lib/outlook";
-import { markMessageProcessed } from "@/lib/redis";
+import {
+  createGmailDraft,
+  getGmailClient,
+  stripGmailStatusLabels,
+} from "@/lib/gmail";
+import {
+  createOutlookDraft,
+  getGraphClient,
+  surfaceOutlookFollowUp,
+} from "@/lib/outlook";
 import { getUserTier } from "@/lib/tier-guard";
+import { isMemberAccessPaused } from "@/lib/organization";
 import {
   getUserSubscribed,
   useGetUserDraftPreference,
@@ -22,7 +30,8 @@ const SWEEP_BATCH = 200;
  * Periodic sweep for overdue, still-open inbound promises. For each, resurfaces
  * the thread and drops a pre-written nudge draft, then flips it to NUDGED:
  *   - Gmail  → tag in place: "Follow up" label + INBOX + UNREAD.
- *   - Outlook → move the mail into the "Follow up" folder + mark unread.
+ *   - Outlook → back to the Inbox ("Follow up" folder in folder mode), tagged
+ *     "Follow up" + unread (surfaceOutlookFollowUp).
  * Fulfillment (per-arrival, in the mail workers) is event-driven, so anything
  * the sender already delivered was flipped to FULFILLED and never appears here.
  */
@@ -30,7 +39,9 @@ export async function processPromiseSweep(_job: Job) {
   const now = new Date();
 
   const due = await db.tracked_promise.findMany({
-    where: { status: "PENDING", due_at: { lte: now } },
+    // INBOUND only: an overdue "I owe them" promise is promise-nudge's job, and
+    // this sweep's draft chases the other person.
+    where: { status: "PENDING", direction: "INBOUND", due_at: { lte: now } },
     orderBy: { due_at: "asc" },
     take: SWEEP_BATCH,
     select: {
@@ -53,6 +64,8 @@ export async function processPromiseSweep(_job: Job) {
       // opt-in that created it.
       const tier = await getUserTier(p.user_id);
       if (tier === "FREE") continue;
+      // Paused team members: same skip as the mail workers.
+      if (await isMemberAccessPaused(p.user_id)) continue;
 
       const sub = await getUserSubscribed(p.user_id);
       if (!sub.subscribed) continue;
@@ -62,7 +75,7 @@ export async function processPromiseSweep(_job: Job) {
         select: {
           track_promises: true,
           ai_drafts: true,
-          user_tokens: { select: { deleted_flag: true } },
+          user_tokens: { select: { deleted_flag: true, is_folder: true } },
         },
       });
       if (pref?.user_tokens?.deleted_flag) continue;
@@ -79,7 +92,7 @@ export async function processPromiseSweep(_job: Job) {
       const tz = draftPref.timezone ?? "UTC";
       const dueLabel = formatInTimeZone(p.due_at, tz, "MMMM d");
 
-      // ---- Outlook: move the promise mail into the "Follow up" folder ----
+      // ---- Outlook: bring the promise mail back under "Follow up" ----
       if (p.user_tokens?.is_gmail === false) {
         const graphClient = await getGraphClient(p.user_id);
 
@@ -101,31 +114,22 @@ export async function processPromiseSweep(_job: Job) {
           throw err;
         }
 
-        // Find or create the "Follow up" folder.
-        const foldersResponse = await graphClient
-          .api("/me/mailFolders")
-          .filter("displayName eq 'Follow up'")
-          .get();
-        let folderId: string;
-        if (foldersResponse.value && foldersResponse.value.length > 0) {
-          folderId = foldersResponse.value[0].id;
-        } else {
-          const newFolder = await graphClient
-            .api("/me/mailFolders")
-            .post({ displayName: "Follow up" });
-          folderId = newFolder.id;
+        // Bring it back the same way as a regular follow-up: Inbox (folder
+        // mode: "Follow up" folder), tagged, unread, other labels stripped.
+        const newId = await surfaceOutlookFollowUp(graphClient, {
+          userId: p.user_id,
+          messageId: p.message_id,
+          conversationId: p.thread_id,
+          isFolder: pref.user_tokens?.is_folder === true,
+        });
+        if (!newId) {
+          // In Deleted Items / Junk: the user threw it away, never bring it back.
+          await db.tracked_promise.update({
+            where: { id: p.id },
+            data: { status: "DISMISSED" },
+          });
+          continue;
         }
-
-        // Move it there and mark unread. The move mints a NEW message id; mark
-        // it processed so the move's own "created" notification (when the
-        // Follow up folder is watched) can't be misread as the promiser
-        // delivering — same guard the follow-up move-back uses.
-        const moved = await graphClient
-          .api(`/me/messages/${p.message_id}/move`)
-          .post({ destinationId: folderId });
-        const newId = moved.id as string;
-        await markMessageProcessed(newId);
-        await graphClient.api(`/me/messages/${newId}`).patch({ isRead: false });
 
         // Claim BEFORE the non-idempotent draft, and repoint the row at the
         // moved id (the old id no longer exists after a move).
@@ -162,6 +166,7 @@ export async function processPromiseSweep(_job: Job) {
       const gmail = await getGmailClient(p.user_id);
 
       let subject = "";
+      let trashed = false;
       try {
         const msg = await gmail.users.messages.get({
           userId: "me",
@@ -172,6 +177,8 @@ export async function processPromiseSweep(_job: Job) {
         subject =
           msg.data.payload?.headers?.find((h) => h.name === "Subject")?.value ||
           "";
+        const labelIds = msg.data.labelIds ?? [];
+        trashed = labelIds.includes("TRASH") || labelIds.includes("SPAM");
       } catch (err: any) {
         if (err?.code === 404 || err?.status === 404) {
           await db.tracked_promise.update({
@@ -181,6 +188,15 @@ export async function processPromiseSweep(_job: Job) {
           continue;
         }
         throw err;
+      }
+
+      if (trashed) {
+        // In Trash / Spam: the user threw it away, never bring it back.
+        await db.tracked_promise.update({
+          where: { id: p.id },
+          data: { status: "DISMISSED" },
+        });
+        continue;
       }
 
       const labelsResponse = await gmail.users.labels.list({ userId: "me" });
@@ -205,6 +221,12 @@ export async function processPromiseSweep(_job: Job) {
         id: p.message_id,
         requestBody: { addLabelIds: [labelId, "INBOX", "UNREAD"] },
       });
+      // "Follow up" replaces the thread's NeatMail label (one label per thread).
+      await stripGmailStatusLabels(
+        gmail,
+        p.thread_id,
+        labelsResponse.data.labels ?? [],
+      );
 
       // Claim BEFORE the non-idempotent draft so a failure can't re-draft.
       await db.tracked_promise.update({

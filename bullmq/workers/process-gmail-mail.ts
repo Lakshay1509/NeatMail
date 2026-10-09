@@ -23,6 +23,7 @@ import { fetchUpcomingGoogleEvents } from "@/lib/promise-calendar";
 import { markBufferedEmailArchived } from "@/lib/batch-insert";
 import { draftQueue, followUpQueue } from "@/lib/queue";
 import { gmailUserBurstLimiter } from "@/lib/rate-limit";
+import { STATUS_TAG_NAMES } from "@/lib/tags";
 
 interface ProcessGmailMailData {
   clerkUserId: string;
@@ -221,12 +222,20 @@ export async function processGmailMail(
       }
     }
 
+    // Kept for the one-label-per-thread cleanup after this message is labeled.
+    let threadMessages: {
+      id?: string | null;
+      labelIds?: string[] | null;
+      internalDate?: string | null;
+    }[] = [];
+
     if (emailData.threadId) {
       try {
         const threadData = await gmail.users.threads.get({
           userId: "me",
           id: emailData.threadId,
         });
+        threadMessages = threadData.data.messages ?? [];
 
         const labelsResponse = await gmail.users.labels.list({ userId: "me" });
         const followUpLabelId = labelsResponse.data.labels?.find(
@@ -245,7 +254,13 @@ export async function processGmailMail(
             status: { in: ["PENDING", "NUDGED"] },
             message_id: { not: messageId },
           },
-          select: { id: true, message_id: true, from_email: true },
+          select: {
+            id: true,
+            message_id: true,
+            from_email: true,
+            direction: true,
+            status: true,
+          },
         });
 
         const fulfilledMessageIds = new Set<string>();
@@ -253,6 +268,9 @@ export async function processGmailMail(
           const senderNow = fromEmail.toLowerCase();
           const fulfilledIds: string[] = [];
           for (const p of openThreadPromises) {
+            // OUTBOUND rows hold the counterparty in from_email: them replying
+            // doesn't deliver what the user promised (only the user's send does).
+            if (p.direction !== "INBOUND") continue;
             let promiser = "";
             try {
               promiser = (await decrypt(p.from_email)).toLowerCase();
@@ -275,11 +293,15 @@ export async function processGmailMail(
           }
         }
 
-        // Message ids still carrying an OPEN promise must survive the reply-cancel
-        // below; only fulfillment or a manual dismiss clears a promise's label.
+        // Message ids whose promise was NUDGED (that's what added "Follow up")
+        // and is still open must survive the reply-cancel below; only
+        // fulfillment, a manual dismiss or the user's own send clears it.
         const openPromiseMessageIds = new Set(
           openThreadPromises
-            .filter((p) => !fulfilledMessageIds.has(p.message_id))
+            .filter(
+              (p) =>
+                p.status === "NUDGED" && !fulfilledMessageIds.has(p.message_id),
+            )
             .map((p) => p.message_id),
         );
 
@@ -452,6 +474,43 @@ export async function processGmailMail(
           return { skipped: true, reason: "message deleted before label applied" };
         }
         throw err;
+      }
+
+      // One status per thread: a status label (Action Needed / Pending Response /
+      // Resolved) replaces the other status labels on OLDER messages (a newer
+      // one processed at the same time keeps its own). Topic and user labels
+      // (Finance, Read only, …) never replace anything and are never removed. Per message and remove-only on purpose:
+      // handleLabelCorrections ignores pure removals, and leaving this message
+      // untouched keeps its history free of anything that could read as a
+      // correction. A muted sender's (auto-archived) mail never drives the label.
+      if (!autoArchive && STATUS_TAG_NAMES.has(labelName)) {
+        const staleIds = new Set(
+          (labelsResponse.data.labels ?? [])
+            .filter(
+              (l) =>
+                l.id && l.id !== labelId && STATUS_TAG_NAMES.has(l.name ?? ""),
+            )
+            .map((l) => l.id!),
+        );
+        const receivedAt = Number(email.data.internalDate ?? 0);
+        for (const m of threadMessages) {
+          if (!m.id || m.id === messageId) continue;
+          if (Number(m.internalDate ?? 0) >= receivedAt) continue;
+          const stale = (m.labelIds ?? []).filter((id) => staleIds.has(id));
+          if (!stale.length) continue;
+          try {
+            await gmail.users.messages.modify({
+              userId: "me",
+              id: m.id,
+              requestBody: { removeLabelIds: stale },
+            });
+          } catch (err) {
+            console.error(
+              `[gmail-one-label] Failed to strip old categories from ${m.id}:`,
+              err,
+            );
+          }
+        }
       }
 
       const { senderEmail } = parseFromHeader(emailData.from);

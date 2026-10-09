@@ -1,15 +1,23 @@
 import { Job } from "bullmq";
 import { db } from "@/lib/prisma";
-import { createGmailDraft, getGmailClient } from "@/lib/gmail";
-import { createOutlookDraft, getGraphClient } from "@/lib/outlook";
+import {
+  createGmailDraft,
+  getGmailClient,
+  stripGmailStatusLabels,
+} from "@/lib/gmail";
+import {
+  createOutlookDraft,
+  getGraphClient,
+  surfaceOutlookFollowUp,
+} from "@/lib/outlook";
 import {
   useGetUserDraftPreference,
   addMailtoDB,
   getUserSubscribed,
 } from "@/lib/supabase";
 import { getUserTier } from "@/lib/tier-guard";
+import { isMemberAccessPaused } from "@/lib/organization";
 import { generateFollowUpMessage } from "@/lib/sent-followup";
-import { markMessageProcessed } from "@/lib/redis";
 import { clerkClient } from "@clerk/nextjs/server";
 
 interface FollowUpDraftData {
@@ -46,7 +54,7 @@ export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
     where: { user_id: userId },
     select: {
       enabled: true,
-      user_tokens: { select: { deleted_flag: true } },
+      user_tokens: { select: { deleted_flag: true, is_folder: true } },
     },
   });
   if (followUpPref?.user_tokens?.deleted_flag) {
@@ -55,10 +63,35 @@ export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
   if (!followUpPref?.enabled) {
     return { status: "skipped", reason: "follow-ups disabled" };
   }
+  // Paused team members: same skip as the mail workers.
+  if (await isMemberAccessPaused(userId)) {
+    return { status: "skipped", reason: "member access paused" };
+  }
 
   const prefs = await useGetUserDraftPreference(userId);
 
   if (isGmail) {
+    const gmail = await getGmailClient(userId);
+    // Never bring back mail the user deleted or that went to spam (adding INBOX
+    // below would resurface it).
+    try {
+      const current = await gmail.users.messages.get({
+        userId: "me",
+        id: messageId,
+        format: "minimal",
+      });
+      const labelIds = current.data.labelIds ?? [];
+      if (labelIds.includes("TRASH") || labelIds.includes("SPAM")) {
+        return { status: "skipped", reason: "message trashed" };
+      }
+    } catch (err) {
+      const e = err as { code?: number; status?: number };
+      if (e?.code === 404 || e?.status === 404) {
+        return { status: "skipped", reason: "message deleted" };
+      }
+      throw err;
+    }
+
     if (aiDrafts !== false) {
       const followUpBody = await generateFollowUpMessage({ subject, body, to });
       if (followUpBody) {
@@ -75,8 +108,6 @@ export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
         );
       }
     }
-
-    const gmail = await getGmailClient(userId);
 
     const labelsResponse = await gmail.users.labels.list({ userId: "me" });
     let labelId = labelsResponse.data.labels?.find(
@@ -111,9 +142,18 @@ export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
       userId: "me",
       id: messageId,
       requestBody: {
-        addLabelIds: ["UNREAD"],
+        // INBOX brings it back even if the thread was archived (same rule as
+        // Outlook: no reply, so it comes back for attention).
+        addLabelIds: ["UNREAD", "INBOX"],
       },
     });
+
+    // "Follow up" replaces the thread's NeatMail label (one label per thread).
+    await stripGmailStatusLabels(
+      gmail,
+      threadId,
+      labelsResponse.data.labels ?? [],
+    );
 
     await addMailtoDB(userId, null, messageId, to, `send follow up to ${to}`, "follow up required");
 
@@ -124,37 +164,32 @@ export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
     return { status: "success" };
   }
 
-  // --- Outlook path: remove from Sent Items → "Follow up" folder → draft → mark unread ---
+  // --- Outlook path: Sent Items → back to the Inbox (folder mode: "Follow up"
+  // folder, since there the label is the folder) → "Follow up" category → draft
+  // → mark unread. Same rule as Gmail: no reply, so it comes back for attention.
   const graphClient = await getGraphClient(userId);
-
-  const foldersResponse = await graphClient
-    .api("/me/mailFolders")
-    .filter("displayName eq 'Follow up'")
-    .get();
-
-  let folderId: string;
-  if (foldersResponse.value && foldersResponse.value.length > 0) {
-    folderId = foldersResponse.value[0].id;
-  } else {
-    const newFolder = await graphClient.api("/me/mailFolders").post({
-      displayName: "Follow up",
+  let targetMessageId: string | null;
+  try {
+    targetMessageId = await surfaceOutlookFollowUp(graphClient, {
+      userId,
+      messageId,
+      conversationId: threadId,
+      isFolder: followUpPref.user_tokens?.is_folder === true,
     });
-    folderId = newFolder.id;
+  } catch (err) {
+    // Gone, or already moved under a new id (e.g. a promise nudge surfaced this
+    // same sent mail first) — nothing to bring back, so don't burn retries.
+    if ((err as { statusCode?: number })?.statusCode === 404) {
+      return { status: "skipped", reason: "message moved or deleted" };
+    }
+    throw err;
   }
-
-  const movedMessage = await graphClient
-    .api(`/me/messages/${messageId}/move`)
-    .post({
-      destinationId: folderId,
-    });
-
-  const targetMessageId = movedMessage.id as string;
-
-  // The "Follow up" folder is now watched for promise tracking, so this move
-  // fires its own "created" notification. Mark the moved id processed so the
-  // mail worker ignores it — otherwise it reprocesses and the move-back logic
-  // bounces this follow-up right back to the Inbox.
-  await markMessageProcessed(targetMessageId);
+  if (!targetMessageId) {
+    return { status: "skipped", reason: "message in Deleted Items / Junk" };
+  }
+  // The move minted a new id: a retry after a later failure must use it, not
+  // the old Sent Items id (which would 404 on every attempt).
+  await job.updateData({ ...job.data, messageId: targetMessageId });
 
   const clerk = await clerkClient();
   const externalAccounts = await clerk.users.getUserOauthAccessToken(
@@ -205,7 +240,7 @@ export async function processFollowUpDraft(job: Job<FollowUpDraftData>) {
   await addMailtoDB(userId, null, targetMessageId, to, `send follow up to ${to}`, "follow up required");
 
   console.log(
-    `[follow-up-draft] Moved to "Follow up" folder (id=${targetMessageId}) and marked unread (outlook)`,
+    `[follow-up-draft] Surfaced for follow-up (id=${targetMessageId}), tagged and marked unread (outlook)`,
   );
 
   return { status: "success" };

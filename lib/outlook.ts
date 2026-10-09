@@ -3,6 +3,9 @@ import { Subscription } from "@microsoft/microsoft-graph-types";
 import { clerkClient } from "@clerk/nextjs/server";
 import { extractUnsubscribeLinkFromBodyOutlook } from "./unsubscribe";
 import { toEditorHtml } from "./signature-html";
+import { db } from "./prisma";
+import { markMessageProcessed } from "./redis";
+import { STATUS_TAG_NAMES } from "./tags";
 
 // Thrown when the Microsoft OAuth token is missing/revoked/invalid, so callers
 // can distinguish "user needs to reconnect" from transient Graph failures.
@@ -1271,4 +1274,262 @@ export async function getLastSentMessageInThreadOutlook(
     date: message.sentDateTime ?? "",
     subject: message.subject ?? "",
   };
+}
+
+// An Outlook move mints a new message id. Mark it processed (a watched folder
+// reports it as "created", which would reprocess the mail as incoming) and
+// repoint rows keyed by message id: the promise sweep dismisses on a 404, and
+// email_tracked drives read status, un-mute-on-read and label corrections.
+async function repointMovedMessage(userId: string, oldId: string, newId: string) {
+  await Promise.all([
+    markMessageProcessed(newId),
+    db.tracked_promise.updateMany({
+      where: { user_id: userId, message_id: oldId },
+      data: { message_id: newId },
+    }),
+    db.email_tracked.updateMany({
+      where: { user_id: userId, message_id: oldId },
+      data: { message_id: newId },
+    }),
+  ]);
+}
+
+/**
+ * One NeatMail label per Outlook conversation. Strips every category in
+ * `tagNames` except `keepCategory` from the conversation's other messages and,
+ * with `move`, moves the ones sitting in a folder named in `move.from` (or the
+ * Inbox, with `move.fromInbox`) into `move.to`. Categories are remove-only on
+ * purpose: handleOutlookLabelCorrection reads a newly added category as a user
+ * correction. With `olderThan`, messages received at or after it are left alone
+ * so two replies processed at once can't strip each other's label.
+ *
+ * With `returnOwnMail`, the user's own mail that a follow-up pulled out of Sent
+ * Items goes back there, read — the follow-up is over, so it returns where
+ * users look for what they sent (Gmail never has this problem: SENT is a
+ * label, not a folder). Only mail NeatMail surfaced counts (it carries the
+ * "Follow up" category or sits in the "Follow up" folder), so a Bcc-to-self
+ * copy or mail the user filed themselves is never touched.
+ *
+ * With `topicFolders` (folder mode), mail leaving the "Follow up" folder that
+ * carries a topic category (e.g. Finance) goes back to that topic's folder
+ * instead of `move.to`: topic folders keep their mail.
+ *
+ * Best-effort — logs and never throws.
+ */
+export async function consolidateOutlookThread(
+  client: Client,
+  opts: {
+    userId: string;
+    conversationId: string;
+    skipIds: string[];
+    tagNames: Set<string>;
+    keepCategory: string | null;
+    move: { to: string; from: Set<string>; fromInbox: boolean } | null;
+    olderThan?: string;
+    returnOwnMail?: { ownAddress: string; sentItemsId: string };
+    topicFolders?: Set<string>;
+  },
+) {
+  const {
+    userId,
+    conversationId,
+    skipIds,
+    tagNames,
+    keepCategory,
+    move,
+    olderThan,
+    returnOwnMail,
+    topicFolders,
+  } = opts;
+  let threadMsgs;
+  try {
+    threadMsgs = await client
+      .api("/me/messages")
+      .filter(`conversationId eq '${conversationId.replace(/'/g, "''")}'`)
+      .select("id,parentFolderId,categories,receivedDateTime,from")
+      .top(100)
+      .get();
+  } catch (err) {
+    console.error(
+      `[outlook-one-label] Failed to list conversation ${conversationId}:`,
+      err,
+    );
+    return;
+  }
+
+  const folderNames = new Map<string, string>();
+  let inboxId: string | undefined;
+  const getInboxId = async () =>
+    (inboxId ??= (await client.api("/me/mailFolders/inbox").select("id").get()).id);
+  const getFolderName = async (folderId: string) => {
+    if (!folderNames.has(folderId)) {
+      const folder = await client
+        .api(`/me/mailFolders/${folderId}`)
+        .select("displayName")
+        .get();
+      folderNames.set(folderId, folder.displayName);
+    }
+    return folderNames.get(folderId)!;
+  };
+
+  const own = returnOwnMail?.ownAddress.toLowerCase();
+  const folderIdByName = async (name: string): Promise<string | undefined> =>
+    (
+      await client
+        .api("/me/mailFolders")
+        .filter(`displayName eq '${name.replace(/'/g, "''")}'`)
+        .get()
+    ).value?.[0]?.id;
+
+  for (const msg of threadMsgs.value ?? []) {
+    // skipIds carries both pre- and post-move ids: the listing can lag a move.
+    if (skipIds.includes(msg.id)) continue;
+    if (olderThan && new Date(msg.receivedDateTime) >= new Date(olderThan)) continue;
+
+    // Per message, so one stale id (moved since the listing) can't stop the rest.
+    try {
+      const categories: string[] = msg.categories ?? [];
+      const kept = categories.filter((c) => !tagNames.has(c) || c === keepCategory);
+
+      // Only resolved when needed: most messages never move.
+      const inFollowUpFolder = async () =>
+        (await getFolderName(msg.parentFolderId)) === "Follow up";
+
+      let destination: string | null = null;
+      const isSurfacedOwnMail =
+        !!returnOwnMail &&
+        msg.from?.emailAddress?.address?.toLowerCase() === own &&
+        msg.parentFolderId !== returnOwnMail.sentItemsId &&
+        (categories.includes("Follow up") || (await inFollowUpFolder()));
+      if (isSurfacedOwnMail) {
+        destination = returnOwnMail!.sentItemsId;
+      } else if (move && msg.parentFolderId !== move.to) {
+        if (
+          (move.fromInbox && msg.parentFolderId === (await getInboxId())) ||
+          move.from.has(await getFolderName(msg.parentFolderId))
+        ) {
+          destination = move.to;
+          const topic = topicFolders && categories.find((c) => topicFolders.has(c));
+          if (topic && (await inFollowUpFolder())) {
+            destination = (await folderIdByName(topic)) ?? move.to;
+          }
+        }
+      }
+
+      let targetId: string = msg.id;
+      if (destination) {
+        const moved = await client
+          .api(`/me/messages/${msg.id}/move`)
+          .post({ destinationId: destination });
+        targetId = moved.id;
+        await repointMovedMessage(userId, msg.id, targetId);
+      }
+      if (isSurfacedOwnMail) {
+        // Surfacing marked it unread; back in Sent Items it should read as sent.
+        await client
+          .api(`/me/messages/${targetId}`)
+          .patch({ categories: kept, isRead: true });
+      } else if (kept.length !== categories.length) {
+        await client.api(`/me/messages/${targetId}`).patch({ categories: kept });
+      }
+    } catch (err) {
+      console.error(
+        `[outlook-one-label] Skipped ${msg.id} in conversation ${conversationId}:`,
+        err,
+      );
+    }
+  }
+}
+
+/**
+ * Bring an Outlook message back for follow-up (one label per thread). Folder
+ * mode: into the "Follow up" folder (there the label is the folder); otherwise
+ * back to the Inbox. Tags it "Follow up", marks it unread, and strips status
+ * categories from it and the rest of the conversation (folder mode: pulls the
+ * Inbox / status-folder mail into "Follow up" too; topic folders stay put). Returns the message's id — new if it moved — or
+ * null when it sits in Deleted Items / Junk: the user threw it away, so it is
+ * never brought back.
+ */
+export async function surfaceOutlookFollowUp(
+  client: Client,
+  opts: {
+    userId: string;
+    messageId: string;
+    conversationId: string;
+    isFolder: boolean;
+  },
+): Promise<string | null> {
+  const { userId, messageId, conversationId, isFolder } = opts;
+
+  const [msg, deleted, junk] = await Promise.all([
+    client.api(`/me/messages/${messageId}`).select("parentFolderId,categories").get(),
+    client.api("/me/mailFolders/deleteditems").select("id").get(),
+    client.api("/me/mailFolders/junkemail").select("id").get(),
+  ]);
+  if (msg.parentFolderId === deleted.id || msg.parentFolderId === junk.id) {
+    return null;
+  }
+
+  let destinationId: string;
+  if (isFolder) {
+    const found = await client
+      .api("/me/mailFolders")
+      .filter("displayName eq 'Follow up'")
+      .get();
+    destinationId =
+      found.value?.[0]?.id ??
+      (await client.api("/me/mailFolders").post({ displayName: "Follow up" })).id;
+  } else {
+    destinationId = (await client.api("/me/mailFolders/inbox").select("id").get()).id;
+  }
+
+  let id = messageId;
+  if (msg.parentFolderId !== destinationId) {
+    const moved = await client
+      .api(`/me/messages/${messageId}/move`)
+      .post({ destinationId });
+    id = moved.id;
+    await repointMovedMessage(userId, messageId, id);
+  }
+
+  // Best-effort, and separately: the move already happened, so neither may
+  // throw a job retry, and a failed master-category create (e.g. two jobs racing
+  // to create it) must not stop the message being tagged and marked unread.
+  try {
+    const master = await client.api("/me/outlook/masterCategories").get();
+    if (
+      !master.value?.some(
+        (c: { displayName?: string }) => c.displayName === "Follow up",
+      )
+    ) {
+      await client
+        .api("/me/outlook/masterCategories")
+        .post({ displayName: "Follow up", color: "preset5" });
+    }
+  } catch (err) {
+    console.error(`[outlook-follow-up] "Follow up" master category:`, err);
+  }
+  try {
+    const kept = ((msg.categories ?? []) as string[]).filter(
+      (c) => !STATUS_TAG_NAMES.has(c) && c !== "Follow up",
+    );
+    await client
+      .api(`/me/messages/${id}`)
+      .patch({ categories: [...kept, "Follow up"], isRead: false });
+  } catch (err) {
+    console.error(`[outlook-follow-up] Failed to tag ${id} "Follow up":`, err);
+  }
+
+  await consolidateOutlookThread(client, {
+    userId,
+    conversationId,
+    skipIds: [messageId, id],
+    tagNames: STATUS_TAG_NAMES,
+    keepCategory: null,
+    move: isFolder
+      ? { to: destinationId, from: STATUS_TAG_NAMES, fromInbox: true }
+      : null,
+  });
+
+  return id;
 }

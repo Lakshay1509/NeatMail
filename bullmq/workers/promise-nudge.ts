@@ -1,10 +1,18 @@
 import { Job } from "bullmq";
 import { clerkClient } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
-import { createGmailDraft, getGmailClient } from "@/lib/gmail";
-import { createOutlookDraft, getGraphClient } from "@/lib/outlook";
-import { markMessageProcessed } from "@/lib/redis";
+import {
+  createGmailDraft,
+  getGmailClient,
+  stripGmailStatusLabels,
+} from "@/lib/gmail";
+import {
+  createOutlookDraft,
+  getGraphClient,
+  surfaceOutlookFollowUp,
+} from "@/lib/outlook";
 import { getUserTier } from "@/lib/tier-guard";
+import { isMemberAccessPaused } from "@/lib/organization";
 import {
   getUserSubscribed,
   useGetUserDraftPreference,
@@ -36,7 +44,8 @@ function formatDueLabel(due: Date, tz: string): string {
  * genuinely needs a nudge). Surfaces the thread under "Follow up", emails the user
  * a reminder, and — best-effort, metered — drops a ready-to-send delivery draft.
  *   - Gmail  → tag the sent message in place: "Follow up" + INBOX + UNREAD.
- *   - Outlook → move the sent message into the "Follow up" folder + mark unread.
+ *   - Outlook → back to the Inbox ("Follow up" folder in folder mode), tagged
+ *     "Follow up" + unread (surfaceOutlookFollowUp).
  */
 export async function processPromiseNudge(job: Job<PromiseNudgeData>) {
   const { promiseId } = job.data;
@@ -54,7 +63,12 @@ export async function processPromiseNudge(job: Job<PromiseNudgeData>) {
       status: true,
       direction: true,
       user_tokens: {
-        select: { is_gmail: true, deleted_flag: true, email: true },
+        select: {
+          is_gmail: true,
+          is_folder: true,
+          deleted_flag: true,
+          email: true,
+        },
       },
     },
   });
@@ -71,6 +85,10 @@ export async function processPromiseNudge(job: Job<PromiseNudgeData>) {
   // subscription, or opt-in may have lapsed since. Mirrors the promise sweep.
   const tier = await getUserTier(p.user_id);
   if (tier === "FREE") return { status: "skipped", reason: "not subscribed" };
+  // Paused team members: same skip as the mail workers.
+  if (await isMemberAccessPaused(p.user_id)) {
+    return { status: "skipped", reason: "member access paused" };
+  }
 
   const sub = await getUserSubscribed(p.user_id);
   if (!sub.subscribed) return { status: "skipped", reason: "not subscribed" };
@@ -104,6 +122,7 @@ export async function processPromiseNudge(job: Job<PromiseNudgeData>) {
   if (isGmail) {
     const gmail = await getGmailClient(p.user_id);
 
+    let trashed = false;
     try {
       const msg = await gmail.users.messages.get({
         userId: "me",
@@ -114,6 +133,8 @@ export async function processPromiseNudge(job: Job<PromiseNudgeData>) {
       subject =
         msg.data.payload?.headers?.find((h) => h.name === "Subject")?.value ||
         "";
+      const labelIds = msg.data.labelIds ?? [];
+      trashed = labelIds.includes("TRASH") || labelIds.includes("SPAM");
     } catch (err: any) {
       if (err?.code === 404 || err?.status === 404) {
         await db.tracked_promise.update({
@@ -123,6 +144,15 @@ export async function processPromiseNudge(job: Job<PromiseNudgeData>) {
         return { status: "skipped", reason: "message deleted" };
       }
       throw err;
+    }
+
+    if (trashed) {
+      // In Trash / Spam: the user threw it away, never bring it back.
+      await db.tracked_promise.update({
+        where: { id: p.id },
+        data: { status: "DISMISSED" },
+      });
+      return { status: "skipped", reason: "message trashed" };
     }
 
     const labelsResponse = await gmail.users.labels.list({ userId: "me" });
@@ -147,6 +177,12 @@ export async function processPromiseNudge(job: Job<PromiseNudgeData>) {
       id: p.message_id,
       requestBody: { addLabelIds: [labelId, "INBOX", "UNREAD"] },
     });
+    // "Follow up" replaces the thread's NeatMail label (one label per thread).
+    await stripGmailStatusLabels(
+      gmail,
+      p.thread_id,
+      labelsResponse.data.labels ?? [],
+    );
 
     // Claim NUDGED before the non-idempotent draft/email so a retry can't
     // re-surface or double-draft; the status guard above then short-circuits it.
@@ -174,28 +210,22 @@ export async function processPromiseNudge(job: Job<PromiseNudgeData>) {
       throw err;
     }
 
-    const foldersResponse = await graphClient
-      .api("/me/mailFolders")
-      .filter("displayName eq 'Follow up'")
-      .get();
-    let folderId: string;
-    if (foldersResponse.value && foldersResponse.value.length > 0) {
-      folderId = foldersResponse.value[0].id;
-    } else {
-      const newFolder = await graphClient
-        .api("/me/mailFolders")
-        .post({ displayName: "Follow up" });
-      folderId = newFolder.id;
+    // Bring it back the same way as a regular follow-up: Inbox (folder mode:
+    // "Follow up" folder), tagged, unread, other labels stripped.
+    const newId = await surfaceOutlookFollowUp(graphClient, {
+      userId: p.user_id,
+      messageId: p.message_id,
+      conversationId: p.thread_id,
+      isFolder: p.user_tokens?.is_folder === true,
+    });
+    if (!newId) {
+      // In Deleted Items / Junk: the user threw it away, never bring it back.
+      await db.tracked_promise.update({
+        where: { id: p.id },
+        data: { status: "DISMISSED" },
+      });
+      return { status: "skipped", reason: "message deleted" };
     }
-
-    // Move mints a NEW id; mark it processed so the move's own "created"
-    // notification on the watched Follow up folder isn't misread as a delivery.
-    const moved = await graphClient
-      .api(`/me/messages/${p.message_id}/move`)
-      .post({ destinationId: folderId });
-    const newId = moved.id as string;
-    await markMessageProcessed(newId);
-    await graphClient.api(`/me/messages/${newId}`).patch({ isRead: false });
     draftMessageId = newId;
 
     // Claim + repoint at the moved id (the old id no longer exists post-move).

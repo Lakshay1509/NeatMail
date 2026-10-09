@@ -8,6 +8,18 @@ import { Prisma } from "@/prisma/generated/prisma/client";
  */
 export const RESOLVED_TAG_NAME = "Resolved";
 
+/**
+ * Status labels say what to do NOW, so they replace each other on a thread (one
+ * status per thread; "Follow up" joins them but isn't a tag). Every other label —
+ * topic/type ones like Finance or Read only, and anything the user created — is
+ * for finding mail later and is never removed or moved by NeatMail.
+ */
+export const STATUS_TAG_NAMES = new Set([
+  "Action Needed",
+  "Pending Response",
+  RESOLVED_TAG_NAME,
+]);
+
 // Accepts either the base `db` client (assignable to the narrower tx type) or a
 // transaction client from db.$transaction(async (tx) => ...).
 type PrismaLike = Prisma.TransactionClient;

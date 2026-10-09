@@ -75,6 +75,50 @@ export async function processGmailSent(
       email.data.payload?.headers?.find((h) => h.name === "To")?.value || "";
     const threadId = email.data.threadId ?? "";
 
+    // The user sending in a thread means they've acted on it: clear "Follow up"
+    // (kept an "I owe them" promise, or sent the nudge) and "Pending Response"
+    // (they answered) on OLDER mail — a reply that lands a moment later keeps
+    // its own. Per message and remove-only, so nothing reads as a label
+    // correction. If this mail expects a reply, the timer below brings it back
+    // if they go quiet.
+    if (threadId) {
+      try {
+        const labelsResponse = await gmail.users.labels.list({ userId: "me" });
+        const clearIds = new Set(
+          (labelsResponse.data.labels ?? [])
+            .filter(
+              (l) =>
+                l.id && (l.name === "Follow up" || l.name === "Pending Response"),
+            )
+            .map((l) => l.id!),
+        );
+        if (clearIds.size) {
+          const thread = await gmail.users.threads.get({
+            userId: "me",
+            id: threadId,
+            format: "minimal",
+          });
+          const sentAt = Number(email.data.internalDate ?? 0);
+          for (const m of thread.data.messages ?? []) {
+            if (!m.id || m.id === messageId) continue;
+            if (Number(m.internalDate ?? 0) >= sentAt) continue;
+            const stale = (m.labelIds ?? []).filter((id) => clearIds.has(id));
+            if (!stale.length) continue;
+            await gmail.users.messages.modify({
+              userId: "me",
+              id: m.id,
+              requestBody: { removeLabelIds: stale },
+            });
+          }
+        }
+      } catch (err) {
+        console.error(
+          `[gmail-sent] Failed to clear "Follow up" / "Pending Response" on thread ${threadId}:`,
+          err,
+        );
+      }
+    }
+
     // --- Outbound promise tracking ("I owe them") ---
     // Independent of the follow-up feature: gated only on track_promises.
     // Fulfillment runs first (excluding the current message) so a promise can't

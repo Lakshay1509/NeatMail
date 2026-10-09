@@ -1,5 +1,10 @@
 import { Job } from "bullmq";
-import { getGraphClient, OAuthError, archiveMessagesOutlook } from "@/lib/outlook";
+import {
+  getGraphClient,
+  OAuthError,
+  archiveMessagesOutlook,
+  consolidateOutlookThread,
+} from "@/lib/outlook";
 import { db } from "@/lib/prisma";
 import { encrypt, encryptDomain, decrypt } from "@/lib/encode";
 import {
@@ -32,6 +37,7 @@ import { flow, followUpQueue, promiseNudgeQueue } from "@/lib/queue";
 import { getUserTier } from "@/lib/tier-guard";
 import { isMemberAccessPaused } from "@/lib/organization";
 import { checkSentRequiresFollowUp } from "@/lib/sent-followup";
+import { STATUS_TAG_NAMES } from "@/lib/tags";
 
 interface ProcessOutlookMailData {
   messageId: string;
@@ -174,6 +180,56 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
   const isSentMessage = mail.parentFolderId === sentItemsFolder.id;
 
   if (isSentMessage) {
+    // An old sent mail showing up in Sent Items again is NeatMail moving the
+    // user's mail back after a follow-up, never a new send — normally its id is
+    // marked processed, this is the backstop so it can't schedule a second
+    // follow-up or re-extract its promise.
+    const SENT_REPLAY_WINDOW_MS = 12 * 60 * 60 * 1000;
+    if (
+      mail.sentDateTime &&
+      Date.now() - new Date(mail.sentDateTime).getTime() > SENT_REPLAY_WINDOW_MS
+    ) {
+      return { skipped: true, reason: "old sent mail moved back" };
+    }
+
+    // The user sending in a thread means they've acted on it: clear "Follow up"
+    // (kept an "I owe them" promise, or sent the nudge) and "Pending Response"
+    // (they answered) on OLDER mail — a reply that lands a moment later keeps
+    // its own. Their own mail a follow-up pulled out of Sent Items goes back
+    // there; anything else parked in "Follow up" / "Pending Response" folders
+    // moves to the Inbox (folder mode: no status = Inbox), or to its topic folder.
+    // If this mail expects a reply, the timer below brings it back if they go quiet.
+    if (threadId) {
+      try {
+        const cleared = new Set(["Follow up", "Pending Response"]);
+        await consolidateOutlookThread(client, {
+          userId: subscription.clerk_user_id,
+          conversationId: threadId,
+          skipIds: [messageId],
+          tagNames: cleared,
+          keepCategory: null,
+          move: { to: "inbox", from: cleared, fromInbox: false },
+          olderThan: mail.sentDateTime ?? mail.receivedDateTime,
+          returnOwnMail: {
+            ownAddress: subscription.email,
+            sentItemsId: sentItemsFolder.id,
+          },
+          topicFolders: subscription.is_folder === true
+            ? new Set(
+                tagsOfUser
+                  .map((t) => t.tag.name)
+                  .filter((n) => !STATUS_TAG_NAMES.has(n)),
+              )
+            : undefined,
+        });
+      } catch (err) {
+        console.error(
+          `[outlook-sent] Failed to clear "Follow up" on conversation ${threadId}:`,
+          err,
+        );
+      }
+    }
+
     // --- Outbound promise tracking ("I owe them") — Outlook ---
     // Independent of the follow-up feature: gated only on track_promises.
     // Fulfillment first (excluding the current message) so a promise can't fulfill
@@ -392,6 +448,13 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
   // Fulfillment first (before creation, excluding the current message) so a
   // promise can't fulfill itself. Delivery detection rides on the Inbox watch:
   // the promiser's reply lands here as a normal incoming message.
+  // Ids of messages whose promise was nudged and is still open after this
+  // reply: their "Follow up" survives a reply from someone else (mirrors Gmail).
+  // PENDING ones haven't surfaced yet, so they follow the normal rules.
+  const openPromiseMessageIds = new Set<string>();
+  // If the lookup fails we can't tell which "Follow up" must survive, so the
+  // thread clean-up below is skipped (the next event cleans up instead).
+  let promiseLookupOk = true;
   if (threadId) {
     try {
       const openThreadPromises = await db.tracked_promise.findMany({
@@ -401,19 +464,31 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
           status: { in: ["PENDING", "NUDGED"] },
           message_id: { not: messageId },
         },
-        select: { id: true, from_email: true },
+        select: {
+          id: true,
+          message_id: true,
+          from_email: true,
+          direction: true,
+          status: true,
+        },
       });
       if (openThreadPromises.length) {
         const senderNow = from.toLowerCase();
         const fulfilledIds: string[] = [];
         for (const p of openThreadPromises) {
-          let promiser = "";
-          try {
-            promiser = (await decrypt(p.from_email)).toLowerCase();
-          } catch {
-            continue;
+          // Only an INBOUND promise is kept by the other side replying. OUTBOUND
+          // rows hold the counterparty in from_email: them replying doesn't
+          // deliver what the user promised (only the user's send does).
+          let fulfilled = false;
+          if (p.direction === "INBOUND") {
+            try {
+              fulfilled = (await decrypt(p.from_email)).toLowerCase() === senderNow;
+            } catch {
+              // Undecryptable: treat as still open rather than drop it.
+            }
           }
-          if (promiser === senderNow) fulfilledIds.push(p.id);
+          if (fulfilled) fulfilledIds.push(p.id);
+          else if (p.status === "NUDGED") openPromiseMessageIds.add(p.message_id);
         }
         if (fulfilledIds.length) {
           await db.tracked_promise.updateMany({
@@ -426,51 +501,8 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
         }
       }
     } catch (err: any) {
+      promiseLookupOk = false;
       console.error(`[promise] outlook fulfillment failed: ${err?.message ?? err}`);
-    }
-  }
-
-  if (threadId) {
-    const followUpFolderResponse = await client
-      .api("/me/mailFolders")
-      .filter("displayName eq 'Follow up'")
-      .get();
-
-    const followUpFolderId = followUpFolderResponse.value?.[0]?.id;
-    if (followUpFolderId) {
-      const messagesInFollowUp = await client
-        .api(`/me/mailFolders/${followUpFolderId}/messages`)
-        .filter(`conversationId eq '${threadId}'`)
-        .select("id,subject")
-        .get();
-
-      if (messagesInFollowUp.value?.length > 0) {
-        // Folder users get it filed next to the reply (same category folder),
-        // otherwise the thread is split between that folder and the Inbox.
-        const toLabelFolder =
-          subscription.is_folder === true && labelName.trim().length > 0;
-        const destinationId = toLabelFolder
-          ? await getOrCreateFolderId(client, labelName)
-          : (await client.api("/me/mailFolders/inbox").get()).id;
-
-        for (const msg of messagesInFollowUp.value) {
-          const moved = await client
-            .api(`/me/messages/${msg.id}/move`)
-            .post({ destinationId });
-
-          if (labelName && labelName.trim().length > 0) {
-            await client.api(`/me/messages/${moved.id}`).patch({
-              categories: [labelName],
-            });
-          }
-
-          console.log(
-            `[outlook-followup] Moved ${msg.id} from "Follow up" to ${toLabelFolder ? labelName : "Inbox"}`,
-          );
-
-          await markMessageProcessed(moved.id);
-        }
-      }
     }
   }
 
@@ -511,6 +543,7 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
   }
 
   let movedMessageId: string = messageId;
+  let labelFolderId: string | null = null;
 
   if (labelName.trim().length === 0) {
     addMailtoDB(subscription.clerk_user_id, null, movedMessageId, from);
@@ -553,12 +586,16 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
 
     if (subscription.is_folder === true) {
       const folderId = await getOrCreateFolderId(graphClient, labelName);
+      labelFolderId = folderId;
 
       const movedMessage = await graphClient
         .api(`/me/messages/${messageId}/move`)
         .post({
           destinationId: folderId,
         });
+      // The move mints a new id; if this category folder is watched, its
+      // "created" notification would reprocess the mail (duplicate draft/ping).
+      await markMessageProcessed(movedMessage.id);
 
       await graphClient.api(`/me/messages/${movedMessage.id}`).patch({
         categories: [labelName],
@@ -625,6 +662,46 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
     }
   }
 
+  // One NeatMail category per thread (mirrors Gmail): any reply clears the
+  // "Follow up" category and brings mail parked in the "Follow up" folder back;
+  // a reply with a STATUS label also replaces the other status labels on OLDER
+  // messages and, for folder users, pulls the Inbox / status-folder mail into
+  // its folder. Topic and user labels (Finance, Read only, …) never replace
+  // anything and are never removed or moved. The user's own mail a follow-up
+  // pulled out of Sent Items goes back there. A muted sender's (auto-archived)
+  // mail never drives the thread's label.
+  if (threadId && promiseLookupOk) {
+    const drivesThread = STATUS_TAG_NAMES.has(labelName) && !autoArchive;
+    await consolidateOutlookThread(client, {
+      userId: subscription.clerk_user_id,
+      conversationId: threadId,
+      skipIds: [messageId, movedMessageId, ...openPromiseMessageIds],
+      tagNames: new Set(["Follow up", ...(drivesThread ? STATUS_TAG_NAMES : [])]),
+      keepCategory: drivesThread ? labelName : null,
+      move:
+        drivesThread && labelFolderId
+          ? {
+              to: labelFolderId,
+              from: new Set(["Follow up", ...STATUS_TAG_NAMES]),
+              fromInbox: true,
+            }
+          : { to: "inbox", from: new Set(["Follow up"]), fromInbox: false },
+      olderThan: mail.receivedDateTime,
+      returnOwnMail: {
+        ownAddress: subscription.email,
+        sentItemsId: sentItemsFolder.id,
+      },
+      topicFolders:
+        subscription.is_folder === true
+          ? new Set(
+              tagsOfUser
+                .map((t) => t.tag.name)
+                .filter((n) => !STATUS_TAG_NAMES.has(n)),
+            )
+          : undefined,
+    });
+  }
+
   if (shouldDraft && isDirectTo) {
     const clerk = await clerkClient();
     const externalAccounts = await clerk.users.getUserOauthAccessToken(
@@ -672,7 +749,14 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
   // moves the mail into a category folder, minting a new id; using the pre-move
   // id would leave the sweep unable to find it (fetch 404 → wrongly dismissed).
   // Opt-in, gated by the zero-cost regex; never track the user's own outbound mail.
-  if (isDirectTo && threadId && from.toLowerCase() !== userEmail) {
+  // Skipped for auto-archived (muted) senders: the non-folder archive move mints
+  // an id we don't get back, so the promise would point at a dead id.
+  if (
+    isDirectTo &&
+    threadId &&
+    !autoArchive &&
+    from.toLowerCase() !== userEmail
+  ) {
     try {
       const followUpPref = await db.follow_up_preference.findUnique({
         where: { user_id: subscription.clerk_user_id },

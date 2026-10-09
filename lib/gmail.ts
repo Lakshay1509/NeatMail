@@ -1,9 +1,10 @@
-import { google } from "googleapis";
+import { google, gmail_v1 } from "googleapis";
 import { clerkClient } from "@clerk/nextjs/server";
 import { db } from "./prisma";
 import { extractUnsubscribeLinkFromBodyGmail } from "./unsubscribe";
 import { applyCorrectionsToText } from "./openai";
 import { toEditorHtml } from "./signature-html";
+import { STATUS_TAG_NAMES } from "./tags";
 
 export class OAuthError extends Error {
   constructor(msg: string) {
@@ -1437,4 +1438,32 @@ export async function getPreviousMails(userId: string) {
   }
 
   return results;
+}
+/**
+ * "Follow up" replaces the thread's status: remove every status label (Action
+ * Needed / Pending Response / Resolved) from the thread. Topic and user labels
+ * stay. Remove-only on purpose — handleLabelCorrections ignores pure removals.
+ * Best-effort; never throws.
+ */
+export async function stripGmailStatusLabels(
+  gmail: gmail_v1.Gmail,
+  threadId: string,
+  labels: gmail_v1.Schema$Label[],
+) {
+  try {
+    const ids = labels
+      .filter((l) => l.id && STATUS_TAG_NAMES.has(l.name ?? ""))
+      .map((l) => l.id!);
+    if (!ids.length) return;
+    await gmail.users.threads.modify({
+      userId: "me",
+      id: threadId,
+      requestBody: { removeLabelIds: ids },
+    });
+  } catch (err) {
+    console.error(
+      `[gmail-one-label] Failed to strip status labels on thread ${threadId}:`,
+      err,
+    );
+  }
 }
