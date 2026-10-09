@@ -91,6 +91,11 @@ export async function handleLabelCorrections(
     if (!correctTag || !wrongTag) continue;
 
     try {
+      await db.email_tracked.updateMany({
+        where: { user_id: clerkUserId, message_id: messageId },
+        data: { tag_id: correctTag.id },
+      });
+
       // Fetch the message to get subject & body
       const message = await gmail.users.messages.get({
         userId: "me",

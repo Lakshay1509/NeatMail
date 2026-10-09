@@ -68,6 +68,12 @@ export async function handleOutlookLabelCorrection(
 
     if (!correctTag || !wrongTag) return;
 
+    // Also stops every later update event re-sending this same correction.
+    await db.email_tracked.update({
+      where: { message_id: messageId },
+      data: { tag_id: correctTag.id },
+    });
+
     console.log(
       `[Outlook Correction] Sending: "${correct_label}" → "${wrong_label}"`,
     );
