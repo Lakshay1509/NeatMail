@@ -1,3 +1,5 @@
+import { stripTags } from "./strip-tags";
+
 export function extractUnsubscribeLinkFromBodyGmail(payload: any): string | null {
   if (!payload) return null;
 
@@ -26,7 +28,7 @@ export function extractUnsubscribeLinkFromBodyGmail(payload: any): string | null
   let match;
   while ((match = linkRegex.exec(html)) !== null) {
     const href = match[1];
-    const text = match[2].replace(/<[^>]+>/g, "").toLowerCase();
+    const text = stripTags(match[2]).toLowerCase();
     if (text.includes("unsubscribe") || href.toLowerCase().includes("unsubscribe")) {
       return href;
     }
@@ -44,7 +46,7 @@ export function extractUnsubscribeLinkFromBodyOutlook(content: string | null | u
   let match;
   while ((match = linkRegex.exec(html)) !== null) {
     const href = match[1];
-    const text = match[2].replace(/<[^>]+>/g, "").toLowerCase();
+    const text = stripTags(match[2]).toLowerCase();
     if (text.includes("unsubscribe") || href.toLowerCase().includes("unsubscribe")) {
       return href;
     }

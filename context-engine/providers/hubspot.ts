@@ -1,4 +1,5 @@
 import { clerkClient } from "@clerk/nextjs/server"
+import { stripTags } from "@/lib/strip-tags"
 import {
   ContextProvider,
   ContextCard,
@@ -10,7 +11,7 @@ import {
 const HUBSPOT_API = "https://api.hubapi.com"
 
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>?/gm, "").replace(/\s+/g, " ").trim()
+  return stripTags(html).replace(/\s+/g, " ").trim()
 }
 
 function daysAgo(dateStr: string): string {

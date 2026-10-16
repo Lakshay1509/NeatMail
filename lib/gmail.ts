@@ -2,6 +2,7 @@ import { google, gmail_v1 } from "googleapis";
 import { clerkClient } from "@clerk/nextjs/server";
 import { db } from "./prisma";
 import { extractUnsubscribeLinkFromBodyGmail } from "./unsubscribe";
+import { stripTags } from "./strip-tags";
 import { applyCorrectionsToText } from "./openai";
 import { toEditorHtml } from "./signature-html";
 import { STATUS_TAG_NAMES } from "./tags";
@@ -162,7 +163,7 @@ function extractBodyFromPart(part: any): string[] {
   } else if (part.mimeType === "text/html" && part.body?.data) {
     // Decode and strip HTML tags
     const htmlContent = decodeGmailBase64Url(part.body.data);
-    text.push(htmlContent.replace(/<[^>]*>?/gm, "").trim());
+    text.push(stripTags(htmlContent).trim());
   }
 
   if (Array.isArray(part.parts)) {

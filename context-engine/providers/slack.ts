@@ -60,9 +60,9 @@ function cleanSlackText(raw: string): string {
     .replace(/<#[A-Z0-9]+>/g, "#channel")           // <#C123>       → #channel
     .replace(/<([^|>]+)\|([^>]+)>/g, "$2")         // <url|label>   → label
     .replace(/<([^>]+)>/g, "$1")                    // <url>         → url
-    .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")                         // last, so "&amp;lt;" stays "&lt;"
     .replace(/\n+/g, " ")
     .trim()
     .slice(0, MAX_MESSAGE_LENGTH)

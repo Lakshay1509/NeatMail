@@ -1,5 +1,6 @@
 import { clerkClient } from "@clerk/nextjs/server"
 import { redis } from "@/lib/redis"
+import { stripTags } from "@/lib/strip-tags"
 import { eng } from "stopword"
 import {
   ContextProvider,
@@ -101,7 +102,7 @@ interface GitHubCheckRuns {
 
 function stripHtml(html: string): string {
   if (!html || typeof html !== "string") return ""
-  return html.replace(/<[^>]*>?/gm, "").trim()
+  return stripTags(html).trim()
 }
 
 function truncate(str: string, max: number): string {

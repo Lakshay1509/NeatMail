@@ -1,6 +1,7 @@
 // src/context-engine/pipeline.ts
 
 import { convert } from "html-to-text";
+import { stripTags } from "@/lib/strip-tags";
 import { ContextAssembler }        from "./assembler"
 import { GoogleCalendarProvider } from "./providers/google-calender"
 import { OutlookCalendarProvider } from "./providers/outlook-calender"
@@ -42,7 +43,7 @@ export function stripHtml(html: string): string {
   try {
     return convert(html, { wordwrap: false }).trim();
   } catch {
-    return html.replace(/<[^>]*>?/gm, "").trim();
+    return stripTags(html).trim();
   }
 }
 

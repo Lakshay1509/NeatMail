@@ -37,8 +37,8 @@ function parseFromHeader(fromHeader: string): {
 } {
   const emailMatch = fromHeader.match(/<([^>]+)>/);
   const senderEmail = (emailMatch?.[1] || fromHeader).trim();
-  const senderName = fromHeader
-    .replace(/<[^>]+>/, "")
+  // The name is whatever precedes "<address>"
+  const senderName = (emailMatch ? fromHeader.slice(0, emailMatch.index) : fromHeader)
     .replace(/"/g, "")
     .trim();
 
