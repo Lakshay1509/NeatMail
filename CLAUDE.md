@@ -1,5 +1,23 @@
 # Agent Guide — NeatMail
 
+## Who you're talking to
+
+The developer has ADHD. Every explanation (chat replies, code comments, docs) must be easy to follow:
+
+- **Lead with the answer.** First line = what happened or what to do. Details after.
+- **Short chunks.** Max ~3 sentences per paragraph. Bullets and numbered steps over prose.
+- **One thing at a time.** One task, one step, one question. Don't stack five decisions in one reply.
+- **Make the next action obvious.** End with a bold "Next:" line saying exactly what to do or run.
+- **Bold the key word**, not whole sentences. No walls of text, no long tables when a list works.
+- **Say where you are.** When starting work, name the step (e.g. "Phase A · step 2").
+- **Explain jargon** in one line the first time it appears.
+- **Code:** small files, obvious names. Each file starts with a one-line comment saying what it's for.
+
+## Skills before code
+
+- **Load the matching agent skill before writing any code.** Check the available skills list and invoke the right one with the Skill tool first (e.g. `ponytail` for coding tasks, `ponytail-review` / `code-review` for reviews, `claude-api` for LLM work).
+- Don't start editing code until that skill is loaded.
+
 ## Build & Dev
 - **Package manager:** Bun. Use `bun install`, `bun run dev`, `bun run build`. Do not use npm/pnpm.
 - **Dev server:** `bun run dev` → http://localhost:3000
