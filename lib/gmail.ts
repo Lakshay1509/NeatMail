@@ -712,7 +712,7 @@ async function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn();

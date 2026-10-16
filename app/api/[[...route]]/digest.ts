@@ -13,6 +13,7 @@ import {
   snoozeEmail,
   getAutoMutedForUser,
 } from "@/lib/digest";
+import { dropHandledEmails } from "@/lib/digest-live-check";
 import { db } from "@/lib/prisma";
 import { Resend } from "resend";
 import DailyDigestEmail from "@/components/Email/DailyDigestEmail";
@@ -161,11 +162,16 @@ const app = new Hono()
         return c.json({ error: "User email not found" }, 400);
       }
 
+      const isGmail = user.is_gmail ?? true;
       const count = await getDigestCount(userId);
+      const digest =
+        count > 0
+          ? await dropHandledEmails(userId, isGmail, await getDigestForUser(userId), 10)
+          : [];
       const followUps = await getFollowUpsForUser(userId, 5);
       const autoMuted = await getAutoMutedForUser(userId);
 
-      if (count === 0 && followUps.total === 0 && autoMuted.length === 0) {
+      if (digest.length === 0 && followUps.total === 0 && autoMuted.length === 0) {
         await resend.emails.send({
           from: "NeatMail <digest@send.neatmail.app>",
           to: user.email,
@@ -180,14 +186,11 @@ const app = new Hono()
           </div>`,
         });
       } else {
-        const digest = count > 0 ? await getDigestForUser(userId) : [];
         const trimmed = trimDigestForEmail(digest, 10);
         const shownCount = trimmed.groups.reduce((sum, g) => sum + g.emails.length, 0);
         const shownFollowUps = followUps.items.length;
         const followUpRemaining = followUps.total - shownFollowUps;
         const dateLabel = formatInTimeZone(new Date(), "UTC", "EEEE, MMMM d");
-
-        const isGmail = user?.is_gmail ?? true;
 
         const emailHtml = await render(
           DailyDigestEmail({

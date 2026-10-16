@@ -1109,7 +1109,7 @@ async function outlookBatch<T>(items: T[], fn: (item: T) => Promise<T | null>, c
   return results;
 }
 
-async function outlookRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+export async function outlookRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
@@ -1354,8 +1354,10 @@ export async function consolidateOutlookThread(
       `[outlook-one-label] Failed to list conversation ${conversationId}:`,
       err,
     );
-    return;
+    return [];
   }
+  // Ids (post-move) of the older messages handled here, so callers can update their rows.
+  const handledIds: string[] = [];
 
   const folderNames = new Map<string, string>();
   let inboxId: string | undefined;
@@ -1424,6 +1426,7 @@ export async function consolidateOutlookThread(
         targetId = moved.id;
         await repointMovedMessage(userId, msg.id, targetId);
       }
+      handledIds.push(targetId);
       if (isSurfacedOwnMail) {
         // Surfacing marked it unread; back in Sent Items it should read as sent.
         await client
@@ -1439,6 +1442,7 @@ export async function consolidateOutlookThread(
       );
     }
   }
+  return handledIds;
 }
 
 /**

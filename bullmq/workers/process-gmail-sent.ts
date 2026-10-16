@@ -92,24 +92,31 @@ export async function processGmailSent(
             )
             .map((l) => l.id!),
         );
-        if (clearIds.size) {
-          const thread = await gmail.users.threads.get({
+        const thread = await gmail.users.threads.get({
+          userId: "me",
+          id: threadId,
+          format: "minimal",
+        });
+        const sentAt = Number(email.data.internalDate ?? 0);
+        const olderIds: string[] = [];
+        for (const m of thread.data.messages ?? []) {
+          if (!m.id || m.id === messageId) continue;
+          if (Number(m.internalDate ?? 0) >= sentAt) continue;
+          olderIds.push(m.id);
+          const stale = (m.labelIds ?? []).filter((id) => clearIds.has(id));
+          if (!stale.length) continue;
+          await gmail.users.messages.modify({
             userId: "me",
-            id: threadId,
-            format: "minimal",
+            id: m.id,
+            requestBody: { removeLabelIds: stale },
           });
-          const sentAt = Number(email.data.internalDate ?? 0);
-          for (const m of thread.data.messages ?? []) {
-            if (!m.id || m.id === messageId) continue;
-            if (Number(m.internalDate ?? 0) >= sentAt) continue;
-            const stale = (m.labelIds ?? []).filter((id) => clearIds.has(id));
-            if (!stale.length) continue;
-            await gmail.users.messages.modify({
-              userId: "me",
-              id: m.id,
-              requestBody: { removeLabelIds: stale },
-            });
-          }
+        }
+        // Replying handled the thread: keep it out of the digest and dashboard.
+        if (olderIds.length) {
+          await db.email_tracked.updateMany({
+            where: { user_id: clerkUserId, message_id: { in: olderIds }, isDone: false },
+            data: { isDone: true },
+          });
         }
       } catch (err) {
         console.error(

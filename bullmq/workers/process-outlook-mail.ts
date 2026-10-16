@@ -202,7 +202,7 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
     if (threadId) {
       try {
         const cleared = new Set(["Follow up", "Pending Response"]);
-        await consolidateOutlookThread(client, {
+        const olderIds = await consolidateOutlookThread(client, {
           userId: subscription.clerk_user_id,
           conversationId: threadId,
           skipIds: [messageId],
@@ -222,6 +222,13 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
               )
             : undefined,
         });
+        // Replying handled the conversation: keep it out of the digest and dashboard.
+        if (olderIds.length) {
+          await db.email_tracked.updateMany({
+            where: { user_id: subscription.clerk_user_id, message_id: { in: olderIds }, isDone: false },
+            data: { isDone: true },
+          });
+        }
       } catch (err) {
         console.error(
           `[outlook-sent] Failed to clear "Follow up" on conversation ${threadId}:`,

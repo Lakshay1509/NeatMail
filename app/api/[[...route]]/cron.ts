@@ -26,6 +26,7 @@ import {
   getFollowUpsForUser,
   getAutoMutedForUser,
 } from "@/lib/digest";
+import { dropHandledEmails } from "@/lib/digest-live-check";
 import { formatInTimeZone } from "date-fns-tz";
 import { render } from "@react-email/render";
 import { zValidator } from "@hono/zod-validator";
@@ -952,13 +953,22 @@ Also — as an early user, I'm locking in your current plan at a rate I can't of
           }
 
           const count = await getDigestCount(userId);
+          const digest =
+            count > 0
+              ? await dropHandledEmails(
+                  userId,
+                  pref.user_tokens.is_gmail,
+                  await getDigestForUser(userId),
+                  10,
+                )
+              : [];
           const followUps = await getFollowUpsForUser(userId, 5);
           const autoMuted = await getAutoMutedForUser(
             userId,
             pref.last_sent_at ?? undefined,
           );
 
-          if (count === 0 && followUps.total === 0 && autoMuted.length === 0) {
+          if (digest.length === 0 && followUps.total === 0 && autoMuted.length === 0) {
             await resend.emails.send({
               from: "NeatMail <digest@send.neatmail.app>",
               to: userEmail,
@@ -973,7 +983,6 @@ Also — as an early user, I'm locking in your current plan at a rate I can't of
               </div>`,
             });
           } else {
-            const digest = count > 0 ? await getDigestForUser(userId) : [];
             const trimmed = trimDigestForEmail(digest, 10);
             const shownCount = trimmed.groups.reduce((sum, g) => sum + g.emails.length, 0);
             const shownFollowUps = followUps.items.length;
