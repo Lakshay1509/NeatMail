@@ -449,13 +449,24 @@ export async function processDraft(job: Job<ProcessDraftData>) {
     console.error("[processDraft] jev gate failed, drafting anyway", { userId, messageId, err });
   }
 
+  // Fetch the provider token now, not the one stored at enqueue: a retried or
+  // backlogged job's stored token may have expired (Graph 401 "Invalid token
+  // lifetime"). Clerk refreshes on request. Falls back to the stored token.
+  const freshToken = await clerk.users
+    .getUserOauthAccessToken(userId, is_gmail ? "google" : "microsoft")
+    .then((res) => res.data[0]?.token)
+    .catch((err) => {
+      console.warn("[processDraft] fresh token fetch failed, using stored token", { userId, err });
+      return undefined;
+    });
+
   const response = await getDraftContext({
     user_name: userName,
     user_id: userId,
     subject: emailData.subject,
     sender_email: senderEmail,
     body: fullEmailBody,
-    token: tokenData,
+    token: freshToken ?? tokenData,
     timezone: draftPreference.timezone ?? "UTC",
     is_gmail: is_gmail,
     threadId: emailData.threadId,
