@@ -544,7 +544,9 @@ export async function processGmailMail(
       }
     }
 
-    if (shouldDraft && isDirectTo) {
+    // Never draft a reply to the user's own mail (note-to-self, external sender
+    // using their address without Gmail's SENT label).
+    if (shouldDraft && isDirectTo && !ownAddresses.has(fromEmail.toLowerCase())) {
       const client = await clerkClient();
       const userDataFromClerk = await client.users.getUser(clerkUserId);
       const fullName = `${userDataFromClerk.fullName ?? ""}`.trim();

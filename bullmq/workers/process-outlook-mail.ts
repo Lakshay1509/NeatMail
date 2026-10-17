@@ -709,7 +709,9 @@ export async function processOutlookMail(job: Job<ProcessOutlookMailData>) {
     });
   }
 
-  if (shouldDraft && isDirectTo) {
+  // Never draft a reply to the user's own mail: emailing yourself drops a
+  // separate Inbox copy (From = To = you) next to the Sent Items one.
+  if (shouldDraft && isDirectTo && from.toLowerCase() !== userEmail) {
     const clerk = await clerkClient();
     const externalAccounts = await clerk.users.getUserOauthAccessToken(
       clerkUser.id,
