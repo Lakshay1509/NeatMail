@@ -1,26 +1,26 @@
 <div align="center">
   <h1>NeatMail</h1>
   <h2><strong>Never drop a promise buried in your inbox</strong></h2>
-  <p>NeatMail is an <strong>AI email assistant for Gmail and Outlook</strong> that tracks every promise you make and every promise made to you, files them under one Follow up label, and drafts the follow-up when it's due — plus auto-labeling, replies in your own voice, and a clearer inbox.</p>
+  <p>NeatMail is an <strong>AI email assistant for Gmail and Outlook</strong> that tracks every promise you make and every promise made to you, files them under one Follow up label, and drafts the follow-up when it's due. It also auto-labels incoming mail and drafts replies in your own voice.</p>
 
   <p>
     <a href="https://www.neatmail.app">Website</a> •
     <a href="https://www.neatmail.app/pricing">Pricing</a> •
+    <a href="#how-neatmail-compares">Compare</a> •
     <a href="https://www.neatmail.app/blog">Blog</a> •
-    <a href="#built-for-your-team--industry">Use Cases</a> •
     <a href="https://www.neatmail.app/tools">Free Tools</a> •
     <a href="#features">Features</a> •
-    <a href="#getting-started">Getting Started</a>
+    <a href="#getting-started">Self-host</a>
   </p>
 
   <p>
-    <img src="https://img.shields.io/badge/license-ELv2-blue.svg" alt="License" />
-    <img src="https://img.shields.io/badge/TypeScript-5.0-blue" alt="TypeScript" />
-    <img src="https://img.shields.io/badge/Next.js-16.1-black" alt="Next.js" />
-    <img src="https://img.shields.io/badge/React-19.2-blue" alt="React" />
+    <img src="https://img.shields.io/badge/license-ELv2-blue.svg" alt="License: Elastic License 2.0" />
+    <img src="https://img.shields.io/badge/TypeScript-5-blue" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/Next.js-16-black" alt="Next.js" />
+    <img src="https://img.shields.io/badge/React-19-blue" alt="React" />
   </p>
 
-  <img src=".github/workflows/assets/hero.png" alt="NeatMail Hero" width="800" />
+  <img src=".github/workflows/assets/hero.png" alt="NeatMail tracking promises inside Gmail" width="800" />
 </div>
 
 ---
@@ -28,8 +28,9 @@
 ## Table of Contents
 
 - [What is NeatMail?](#what-is-neatmail)
+- [How NeatMail compares](#how-neatmail-compares)
 - [Features](#features)
-- [Built for Your Team & Industry](#built-for-your-team--industry)
+- [Who it's for](#who-its-for)
 - [Guides & Resources](#guides--resources)
 - [Free Email Tools](#free-email-tools)
 - [Getting Started](#getting-started)
@@ -46,22 +47,50 @@
 
 ## What is NeatMail?
 
-NeatMail is an [email management platform](https://www.neatmail.app) that automatically organizes your Gmail and Outlook inboxes in real-time. No complicated setup, no manual sorting — just clean, organized emails labeled exactly where you need them.
+[NeatMail](https://www.neatmail.app) is an AI email assistant for Gmail and Outlook that tracks promises and drafts the follow-up. It reads every email you send or receive for a commitment with a deadline, such as "I'll send the deck by Friday", whether you made the promise or someone made it to you. Each one goes into a single **Follow up** label with its due date. When your own deadline is close, NeatMail drafts the delivery email. When someone else's promise to you is overdue, it drafts a polite nudge. You review and hit send. It works inside the Gmail or Outlook client you already use, so there is no new app to learn.
 
-Want to see how it stacks up? Read [Superhuman vs NeatMail: email productivity compared (2026)](https://www.neatmail.app/blog/superhuman-vs-neatmail-email-productivity-compared-2026), check out our [pricing plans](https://www.neatmail.app/pricing), or learn more [about the team](https://www.neatmail.app/about).
+| Key facts | |
+|---|---|
+| What it is | An AI email assistant that tracks promises in both directions and drafts follow-ups |
+| Works with | Gmail and Outlook, inside your existing client, connected via OAuth |
+| Pricing | Pro $9/month ($7.50/month billed annually), Max $19/month ($15.83/month billed annually). 7-day free trial of Max and a 14-day money-back guarantee on the first payment. [Plans](https://www.neatmail.app/pricing) |
+| Self-hosting | Free for personal and commercial use |
+| License | Source-available under the [Elastic License 2.0](LICENSE) (ELv2). Reselling a hosted version or building a competing SaaS is not allowed |
+| AI models | gpt-5-mini and gpt-5-nano, via Azure OpenAI or OpenAI |
+| Your data | OAuth access you can revoke at any time. Email content is not stored, only metadata |
+| Security | CASA Tier 2 and ESOF verified |
+| Built by | [Lakshay Gupta](https://www.neatmail.app/about), since February 2026. Release notes in the [changelog](https://www.neatmail.app/changelog) |
+
+---
+
+## How NeatMail compares
+
+US list prices for one user on monthly billing, checked October 2026.
+
+| | Starts at | Works in | AI-drafted replies | Self-host | License |
+|---|---|---|---|---|---|
+| **NeatMail** | $9/month (Pro) | Your Gmail or Outlook | 100 a month on Pro, unlimited on Max ($19) | Yes, free | Source-available (ELv2) |
+| [Inbox Zero](https://www.getinboxzero.com) | $20/month (Starter) | Your Gmail or Outlook | Yes | Yes | Open source (AGPL-3.0) |
+| [Fyxer](https://www.neatmail.app/comparison/neatmail-vs-fyxer) | $49/seat (Pro) | Your Gmail or Outlook | Pro and Team. The Free plan doesn't draft | No | Proprietary |
+| [Superhuman](https://www.neatmail.app/comparison/neatmail-vs-superhuman) | $30/seat (Mail Starter) | Its own email app | On request on Starter, Auto Drafts on Business ($40). Its separate Email Assistant drafts inside Gmail or Outlook on the $15 Pro suite | No | Proprietary |
+| [SaneBox](https://www.neatmail.app/comparison/neatmail-vs-sanebox) | $9.49/month (Snack) | Your existing mailbox, including iCloud and Yahoo | Dinner plan only ($42.99) | No | Proprietary |
+
+**When another tool fits better:** Inbox Zero if you need an OSI-approved open-source license. SaneBox if your mail is on iCloud or Yahoo, or you only need sorting (Snack is $65 a year against NeatMail Pro at $90). Superhuman for team collaboration and enterprise compliance. Fyxer if you want a team plan or a meeting notetaker, which NeatMail doesn't have.
+
+Full price breakdowns at 1, 5, 10 and 25 seats: [Fyxer](https://www.neatmail.app/comparison/neatmail-vs-fyxer), [Superhuman](https://www.neatmail.app/comparison/neatmail-vs-superhuman), [SaneBox](https://www.neatmail.app/comparison/neatmail-vs-sanebox), [Boomerang](https://www.neatmail.app/blog/boomerang-pricing). Also: [NeatMail vs Shortwave](https://www.neatmail.app/comparison/neatmail-vs-shortwave), [NeatMail vs Notion Mail](https://www.neatmail.app/comparison/neatmail-vs-notion-mail).
 
 ---
 
 ## Features
 
-- **Gmail & Outlook Integration:** Connect in minutes via OAuth. Labels sync directly in real time.
-- **Smart Email Labeling:** AI automatically categorizes incoming emails into labels like **Action Needed** or **Pending Response**.
-- **Custom Labels:** Create personalized label systems to match your exact workflow.
-- **AI-Powered Draft Replies:** Auto-generate context-aware draft responses based on your conversation history and writing tone. See [how AI draft generation actually works](https://www.neatmail.app/blog/how-ai-draft-generation-actually-works-in-neatmail-context-pipeline-explained).
-- **One-Click Unsubscribe:** Instantly remove unwanted newsletters to keep your inbox clutter-free.
-- **Auto-Archive Rules:** Set rules to automatically archive emails based on labels, senders, or categories.
-- **Follow-Ups:** Never drop a thread — NeatMail surfaces emails that need a nudge. Learn [how to handle email follow-ups](https://www.neatmail.app/blog/how-to-handle-email-follow-ups).
-- **Telegram Integration:** Receive alerts, set routing rules, and approve AI drafts directly from Telegram.
+- **Promise tracking:** Every commitment with a deadline, yours and theirs, lands in one **Follow up** label with its due date. NeatMail drafts the delivery email before your deadline and a polite nudge when someone else's promise is overdue. Try it on any thread with the free [Email Promise Extractor](https://www.neatmail.app/tools/email-promise-extractor).
+- **Smart labels:** AI sorts incoming mail into labels such as **Action Needed**, **Pending Response**, **Receipts** and **Newsletters**, or your own custom labels. Reassign a label once and NeatMail learns the preference.
+- **Replies in your voice:** Drafts use your past conversations and your tone, check your calendar before suggesting meeting times, and pull context from Slack, HubSpot and GitHub. See [how NeatMail's AI draft generation works](https://www.neatmail.app/blog/how-ai-draft-generation-actually-works-in-neatmail-context-pipeline-explained).
+- **Gmail and Outlook integration:** Connect in minutes via OAuth. Labels and drafts sync to your mailbox in real time.
+- **One-click unsubscribe:** Clear newsletters you no longer read in bulk.
+- **Auto-archive rules:** Archive expired or low-value mail by label, sender or category.
+- **Daily briefing:** A short summary of what needs you today.
+- **Telegram and Slack alerts:** Get alerts in Telegram or Slack, set routing rules and approve AI drafts from Telegram.
 
 See the full [feature list and pricing →](https://www.neatmail.app/pricing)
 
@@ -118,45 +147,25 @@ See the full [feature list and pricing →](https://www.neatmail.app/pricing)
 
 ---
 
-## Built for Your Team & Industry
+## Who it's for
 
-NeatMail adapts to how different teams and industries handle email. Explore the workflow built for you:
-
-**By role**
-
-- [NeatMail for Founders](https://www.neatmail.app/for/founders)
-- [NeatMail for Sales Teams](https://www.neatmail.app/for/sales-teams)
-- [NeatMail for Customer Support](https://www.neatmail.app/for/customer-support)
-- [NeatMail for Recruiters](https://www.neatmail.app/for/recruiters)
-- [NeatMail for Consultants](https://www.neatmail.app/for/consultants)
-- [NeatMail for Executive Assistants](https://www.neatmail.app/for/executive-assistants)
-
-**By industry**
-
-- [NeatMail for Law Firms](https://www.neatmail.app/for/law-firms)
-- [NeatMail for Real Estate](https://www.neatmail.app/for/real-estate)
-- [NeatMail for Accounting Firms](https://www.neatmail.app/for/accounting-firms)
-- [NeatMail for MSPs](https://www.neatmail.app/for/msps)
-- [NeatMail for Financial Advisors](https://www.neatmail.app/for/financial-advisors)
-- [NeatMail for Healthcare Clinics](https://www.neatmail.app/for/healthcare-clinics)
+People who get 50 to 200 emails a day and lose hours to triage: founders, sales teams, recruiters, consultants and agencies, executive assistants, support teams, and client-heavy firms in law, accounting, real estate and IT services.
 
 ---
 
 ## Guides & Resources
 
-Practical guides from the [NeatMail blog](https://www.neatmail.app/blog) on inbox zero, email organization, and productivity:
+From the [NeatMail blog](https://www.neatmail.app/blog):
 
-- [How to manage your email inbox — the complete guide (2026)](https://www.neatmail.app/blog/how-to-manage-email-inbox-complete-guide-2026)
-- [Inbox zero when you get 100+ emails a day](https://www.neatmail.app/blog/inbox-zero-100-emails-a-day)
-- [Inbox zero for freelancers](https://www.neatmail.app/blog/inbox-zero-for-freelancers)
-- [Best email filters and folders for inbox zero](https://www.neatmail.app/blog/best-email-filters-folders-inbox-zero)
-- [Email labels vs folders — which should you use?](https://www.neatmail.app/blog/email-labels-vs-folders)
-- [How to stop newsletter clutter in Gmail (2026)](https://www.neatmail.app/blog/how-to-stop-newsletter-clutter-gmail-2026)
-- [How to handle promotional & marketing emails](https://www.neatmail.app/blog/how-to-handle-promotional-emails-marketing)
-- [Open-source email assistant — 2026 guide](https://www.neatmail.app/blog/open-source-email-assistant-2026-guide)
-- [Superhuman vs NeatMail — email productivity compared (2026)](https://www.neatmail.app/blog/superhuman-vs-neatmail-email-productivity-compared-2026)
+- [How to handle email follow-ups (2026 guide)](https://www.neatmail.app/blog/how-to-handle-email-follow-ups)
+- [Best AI tools for email follow-ups (2026)](https://www.neatmail.app/blog/best-ai-tools-email-follow-ups-2026)
+- [How NeatMail's AI draft generation works](https://www.neatmail.app/blog/how-ai-draft-generation-actually-works-in-neatmail-context-pipeline-explained)
+- [Open source email assistant: 2026 guide](https://www.neatmail.app/blog/open-source-email-assistant-2026-guide)
+- [Boomerang pricing 2026: every plan and unpublished rate](https://www.neatmail.app/blog/boomerang-pricing)
+- [43 out of office message examples](https://www.neatmail.app/blog/out-of-office-message-examples)
+- [Short email reply examples: the ARC pattern](https://www.neatmail.app/blog/short-email-reply-examples)
 
-See all posts on the [blog →](https://www.neatmail.app/blog) · Track updates in the [changelog](https://www.neatmail.app/changelog).
+Track updates in the [changelog](https://www.neatmail.app/changelog).
 
 ---
 
@@ -164,17 +173,12 @@ See all posts on the [blog →](https://www.neatmail.app/blog) · Track updates 
 
 Free, no-signup [email tools](https://www.neatmail.app/tools) from NeatMail:
 
-- [Gmail Filter Generator](https://www.neatmail.app/tools/gmail-filter-generator)
-- [Unsubscribe Email Generator](https://www.neatmail.app/tools/unsubscribe-email-generator)
-- [Email Header Parser](https://www.neatmail.app/tools/email-header-parser)
-- [SPF Record Generator](https://www.neatmail.app/tools/spf-record-generator)
-- [Spam Word Checker](https://www.neatmail.app/tools/spam-word-checker)
-- [Email Read Time Calculator](https://www.neatmail.app/tools/email-read-time)
-- [Email Open Rate Checker](https://www.neatmail.app/tools/email-rate-open-checker)
-- [Meeting Agenda Generator](https://www.neatmail.app/tools/meeting-agenda-generator)
-- [Meeting Cost Calculator](https://www.neatmail.app/tools/meeting-cost-calculator)
-- [Text Case Converter](https://www.neatmail.app/tools/text-case-converter)
-- [Remove Duplicate Lines](https://www.neatmail.app/tools/remove-duplicate-lines)
+- [Email Promise Extractor](https://www.neatmail.app/tools/email-promise-extractor): lists every commitment in a thread, yours and theirs, with a due date
+- [Follow-Up Email Generator](https://www.neatmail.app/tools/follow-up-email-generator): for when you get no response
+- [Gentle Reminder Email Generator](https://www.neatmail.app/tools/gentle-reminder-email-generator)
+- [AI Email Response Generator](https://www.neatmail.app/tools/ai-email-response-generator)
+- [Out of Office Message Generator](https://www.neatmail.app/tools/out-of-office-message-generator)
+- [Gmail Filter Rule Generator](https://www.neatmail.app/tools/gmail-filter-generator)
 
 ---
 
@@ -260,9 +264,9 @@ graph TD
 
 ## Tech Stack
 
-- **Frontend**: Next.js 16.1.1, React 19, Tailwind CSS 4, shadcn/ui, TanStack Query
+- **Frontend**: Next.js 16.3, React 19, Tailwind CSS 4, shadcn/ui, TanStack Query
 - **Backend**: Hono.js, Prisma, PostgreSQL, Redis (Upstash), Clerk, BullMQ
-- **AI**: OpenAI GPT-4 Mini
+- **AI**: gpt-5-mini and gpt-5-nano via Azure OpenAI or OpenAI
 - **Integrations**: Google APIs, Microsoft Graph API, DodoPay, Svix
 
 ---
@@ -302,7 +306,7 @@ Distributed under the Elastic License 2.0. See `LICENSE` for more information.
 ---
 
 <div align="center">
-  <p>Built by the NeatMail team — <a href="https://www.neatmail.app">neatmail.app</a></p>
+  <p>Built by <a href="https://www.neatmail.app/about">Lakshay Gupta</a> · <a href="https://www.neatmail.app">neatmail.app</a></p>
   <p>
     <a href="https://www.neatmail.app/pricing">Pricing</a> •
     <a href="https://www.neatmail.app/blog">Blog</a> •
